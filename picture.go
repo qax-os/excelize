@@ -366,7 +366,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 		width = int(float64(width) * opts.ScaleX)
 		height = int(float64(height) * opts.ScaleY)
 	}
-	colStart, rowStart, colEnd, rowEnd, x1, y1, x2, y2 := f.positionObjectPixels(sheet, opts.Positioning, col, row, opts.OffsetX, opts.OffsetY, width, height)
+	colStart, rowStart, colEnd, rowEnd, x1, y1, x2, y2 := f.positionObjectPixels(sheet, col, row, width, height, opts)
 	content, cNvPrID, err := f.drawingParser(drawingXML)
 	if err != nil {
 		return err

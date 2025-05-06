@@ -331,7 +331,7 @@ func (f *File) twoCellAnchorShape(sheet, drawingXML, cell string, width, height 
 	}
 	w := int(float64(width) * format.ScaleX)
 	h := int(float64(height) * format.ScaleY)
-	colStart, rowStart, colEnd, rowEnd, x1, y1, x2, y2 := f.positionObjectPixels(sheet, format.Positioning, fromCol, fromRow, format.OffsetX, format.OffsetY, w, h)
+	colStart, rowStart, colEnd, rowEnd, x1, y1, x2, y2 := f.positionObjectPixels(sheet, fromCol, fromRow, w, h, &format)
 	content, cNvPrID, err := f.drawingParser(drawingXML)
 	if err != nil {
 		return content, nil, cNvPrID, err
