@@ -1406,7 +1406,7 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	}
 	width = int(float64(width) * opts.ScaleX)
 	height = int(float64(height) * opts.ScaleY)
-	colStart, rowStart, colEnd, rowEnd, x2, y2 := f.positionObjectPixels(sheet, col, row, opts.OffsetX, opts.OffsetY, width, height)
+	colStart, rowStart, colEnd, rowEnd, x1, y1, x2, y2 := f.positionObjectPixels(sheet, col, row, width, height, opts)
 	content, cNvPrID, err := f.drawingParser(drawingXML)
 	if err != nil {
 		return err
@@ -1415,9 +1415,9 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	twoCellAnchor.EditAs = opts.Positioning
 	from := xlsxFrom{}
 	from.Col = colStart
-	from.ColOff = opts.OffsetX * EMU
+	from.ColOff = x1 * EMU
 	from.Row = rowStart
-	from.RowOff = opts.OffsetY * EMU
+	from.RowOff = y1 * EMU
 	to := xlsxTo{}
 	to.Col = colEnd
 	to.ColOff = x2 * EMU

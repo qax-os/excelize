@@ -1206,7 +1206,7 @@ func TestAdjustDrawings(t *testing.T) {
 	assert.NoError(t, f.InsertRows("Sheet1", 15, 1))
 	cells, err := f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"D3", "D13", "B21"}, cells)
+	assert.Equal(t, []string{"D3", "B21", "D13"}, cells)
 	wb := filepath.Join("test", "TestAdjustDrawings.xlsx")
 	assert.NoError(t, f.SaveAs(wb))
 
@@ -1215,7 +1215,7 @@ func TestAdjustDrawings(t *testing.T) {
 	assert.NoError(t, f.RemoveRow("Sheet1", 1))
 	cells, err = f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"C2", "C12", "B21"}, cells)
+	assert.Equal(t, []string{"C2", "B21", "C12"}, cells)
 
 	// Test adjust existing pictures on inserting columns and rows
 	f, err = OpenFile(wb)
@@ -1227,7 +1227,7 @@ func TestAdjustDrawings(t *testing.T) {
 	assert.NoError(t, f.InsertRows("Sheet1", 16, 1))
 	cells, err = f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"F4", "F15", "B21"}, cells)
+	assert.Equal(t, []string{"F4", "B21", "F15"}, cells)
 
 	// Test adjust drawings with unsupported charset
 	f, err = OpenFile(wb)
@@ -1267,6 +1267,11 @@ func TestAdjustDrawings(t *testing.T) {
 	assert.NoError(t, err)
 	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(xml.Header+`<wsDr xmlns="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"><twoCellAnchor><from><col>0</col><colOff>0</colOff><row>0</row><rowOff>0</rowOff></from><to><col>1</col><colOff>0</colOff><row>1</row><rowOff>0</rowOff></to><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"></mc:AlternateContent><clientData/></twoCellAnchor></wsDr>`))
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
+
+	f, err = OpenFile(wb)
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(xml.Header+fmt.Sprintf(`<wsDr xmlns="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"><oneCellAnchor><from><col>%d</col><row>0</row></from><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"></mc:AlternateContent><clientData/></oneCellAnchor></wsDr>`, MaxColumns)))
+	assert.EqualError(t, f.InsertCols("Sheet1", "A", 1), "the column number must be greater than or equal to 1 and less than or equal to 16384")
 }
 
 func TestAdjustDefinedNames(t *testing.T) {
@@ -1330,5 +1335,5 @@ func TestAdjustDefinedNames(t *testing.T) {
 	f = NewFile()
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.adjustDefinedNames(nil, "Sheet1", columns, 0, 0, 1), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.adjustDefinedNames("Sheet1", columns, 0, 0), "XML syntax error on line 1: invalid UTF-8")
 }
