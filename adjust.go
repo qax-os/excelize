@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -467,9 +468,10 @@ func adjustRangeSheetName(rng, source, target string) string {
 				if singleQuote {
 					part = strings.TrimPrefix(strings.TrimSuffix(part, "'"), "'")
 				}
+				needsQuoting := regexp.MustCompile(`\W`).MatchString(target)
 				if part == source {
-					if part = target; singleQuote {
-						part = "'" + part + "'"
+					if part = target; needsQuoting {
+						part = "'" + strings.ReplaceAll(part, "'", "''") + "'"
 					}
 				}
 				parts[k] = part
