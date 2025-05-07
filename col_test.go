@@ -396,7 +396,7 @@ func TestColWidth(t *testing.T) {
 	width, err = f.GetColWidth("Sheet1", "A")
 	assert.NoError(t, err)
 	assert.Equal(t, 10.0, width)
-	assert.Equal(t, 76, f.getColWidth("Sheet1", 1))
+	assert.Equal(t, 80, f.getColWidth("Sheet1", 1))
 
 	// Test set and get column width with illegal cell reference
 	width, err = f.GetColWidth("Sheet1", "*")

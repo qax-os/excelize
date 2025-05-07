@@ -205,7 +205,7 @@ func TestRowHeight(t *testing.T) {
 	assert.NoError(t, f.SetCellValue("Sheet2", "A2", true))
 	height, err = f.GetRowHeight("Sheet2", 1)
 	assert.NoError(t, err)
-	assert.Equal(t, 15.0, height)
+	assert.Equal(t, 15.6, height)
 
 	err = f.SaveAs(filepath.Join("test", "TestRowHeight.xlsx"))
 	if !assert.NoError(t, err) {

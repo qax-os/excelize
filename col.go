@@ -14,7 +14,6 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
-	"math"
 	"strconv"
 	"strings"
 
@@ -23,10 +22,10 @@ import (
 
 // Define the default cell size and EMU unit of measurement.
 const (
-	defaultColWidth        float64 = 9.140625
-	defaultColWidthPixels  float64 = 64
-	defaultRowHeight       float64 = 15
-	defaultRowHeightPixels float64 = 20
+	defaultColWidth        float64 = 10.5
+	defaultColWidthPixels  float64 = 84.0
+	defaultRowHeight       float64 = 15.6
+	defaultRowHeightPixels float64 = 20.8
 	EMU                    int     = 9525
 )
 
@@ -621,40 +620,35 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 //
 //	width           # Width of object frame.
 //	height          # Height of object frame.
-func (f *File) positionObjectPixels(sheet string, col, row, x1, y1, width, height int) (int, int, int, int, int, int) {
+func (f *File) positionObjectPixels(sheet string, col, row, width, height int, opts *GraphicOptions) (int, int, int, int, int, int, int, int) {
 	colIdx, rowIdx := col-1, row-1
-	// Adjust start column for offsets that are greater than the col width.
-	for x1 >= f.getColWidth(sheet, colIdx+1) {
-		colIdx++
-		x1 -= f.getColWidth(sheet, colIdx)
-	}
-
-	// Adjust start row for offsets that are greater than the row height.
-	for y1 >= f.getRowHeight(sheet, rowIdx+1) {
-		rowIdx++
-		y1 -= f.getRowHeight(sheet, rowIdx)
-	}
-
 	// Initialized end cell to the same as the start cell.
 	colEnd, rowEnd := colIdx, rowIdx
+	x1, y1, x2, y2 := opts.OffsetX, opts.OffsetY, width, height
+	if opts.Positioning == "" || opts.Positioning == "twoCell" {
+		// Using a twoCellAnchor, the maximum possible offset is limited by the
+		// "from" cell dimensions. If these were to be exceeded the "toPoint" would
+		// be calculated incorrectly, since the requested "fromPoint" is not possible
 
-	width += x1
-	height += y1
+		x1 = min(x1, f.getColWidth(sheet, col))
+		y1 = min(y1, f.getRowHeight(sheet, row))
 
-	// Subtract the underlying cell widths to find end cell of the object.
-	for width >= f.getColWidth(sheet, colEnd+1) {
-		colEnd++
-		width -= f.getColWidth(sheet, colEnd)
+		x2 += x1
+		y2 += y1
+		// Subtract the underlying cell widths to find end cell of the object.
+		for x2 >= f.getColWidth(sheet, colEnd+1) {
+			colEnd++
+			x2 -= f.getColWidth(sheet, colEnd)
+		}
+
+		// Subtract the underlying cell heights to find end cell of the object.
+		for y2 >= f.getRowHeight(sheet, rowEnd+1) {
+			rowEnd++
+			y2 -= f.getRowHeight(sheet, rowEnd)
+		}
 	}
-
-	// Subtract the underlying cell heights to find end cell of the object.
-	for height >= f.getRowHeight(sheet, rowEnd+1) {
-		rowEnd++
-		height -= f.getRowHeight(sheet, rowEnd)
-	}
-
 	// The end vertices are whatever is left from the width and height.
-	return colIdx, rowIdx, colEnd, rowEnd, width, height
+	return colIdx, rowIdx, colEnd, rowEnd, x1, y1, x2, y2
 }
 
 // getColWidth provides a function to get column width in pixels by given
@@ -664,13 +658,14 @@ func (f *File) getColWidth(sheet string, col int) int {
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
 	if ws.Cols != nil {
-		var width float64
+		width := -1.0
 		for _, v := range ws.Cols.Col {
 			if v.Min <= col && col <= v.Max && v.Width != nil {
 				width = *v.Width
+				break
 			}
 		}
-		if width != 0 {
+		if width != -1.0 {
 			return int(convertColWidthToPixels(width))
 		}
 	}
@@ -801,16 +796,15 @@ func (f *File) RemoveCol(sheet, col string) error {
 // pixel. If the width hasn't been set by the user we use the default value.
 // If the column is hidden it has a value of zero.
 func convertColWidthToPixels(width float64) float64 {
-	var padding float64 = 5
 	var pixels float64
-	var maxDigitWidth float64 = 7
+	var maxDigitWidth float64 = 8
 	if width == 0 {
 		return pixels
 	}
 	if width < 1 {
 		pixels = (width * 12) + 0.5
-		return math.Ceil(pixels)
+		return float64(int(pixels))
 	}
-	pixels = (width*maxDigitWidth + 0.5) + padding
-	return math.Ceil(pixels)
+	pixels = (width*maxDigitWidth + 0.5)
+	return float64(int(pixels))
 }
