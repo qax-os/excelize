@@ -15,7 +15,6 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io"
-	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
