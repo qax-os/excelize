@@ -457,20 +457,15 @@ func transformParenthesesToken(token efp.Token) string {
 // adjustRangeSheetName returns replaced range reference by given source and
 // target sheet name.
 func adjustRangeSheetName(rng, source, target string) string {
+	source = escapeSheetName(source)
 	cellRefs := strings.Split(rng, ",")
 	for i, cellRef := range cellRefs {
 		rangeRefs := strings.Split(cellRef, ":")
 		for j, rangeRef := range rangeRefs {
 			parts := strings.Split(rangeRef, "!")
 			for k, part := range parts {
-				singleQuote := strings.HasPrefix(part, "'") && strings.HasSuffix(part, "'")
-				if singleQuote {
-					part = strings.TrimPrefix(strings.TrimSuffix(part, "'"), "'")
-				}
-				if part == source {
-					if part = target; singleQuote {
-						part = "'" + part + "'"
-					}
+				if strings.TrimPrefix(strings.TrimSuffix(part, "'"), "'") == source {
+					part = escapeSheetName(target)
 				}
 				parts[k] = part
 			}

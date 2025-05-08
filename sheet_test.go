@@ -481,6 +481,8 @@ func TestSetSheetName(t *testing.T) {
 	assert.Equal(t, "sheet1", f.GetSheetName(0))
 	// Test set sheet name with invalid sheet name
 	assert.Equal(t, f.SetSheetName("Sheet:1", "Sheet1"), ErrSheetNameInvalid)
+	_, err := f.NewSheet("Sheet 3")
+	assert.NoError(t, err)
 
 	// Test set worksheet name with existing defined name and auto filter
 	assert.NoError(t, f.AutoFilter("Sheet1", "A1:A2", nil))
@@ -496,8 +498,12 @@ func TestSetSheetName(t *testing.T) {
 		Name:     "Name3",
 		RefersTo: "Sheet1!$A$1:'Sheet1'!A1:Sheet1!$A$1,Sheet1!A1:Sheet3!A1,Sheet3!A1",
 	}))
-	assert.NoError(t, f.SetSheetName("Sheet1", "Sheet2"))
-	for i, expected := range []string{"'Sheet2'!$A$1:$A$2", "$B$2", "$A1$2:A2", "Sheet2!$A$1:'Sheet2'!A1:Sheet2!$A$1,Sheet2!A1:Sheet3!A1,Sheet3!A1"} {
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "Name4",
+		RefersTo: "'Sheet 3'!$A1$2:A2",
+	}))
+	assert.NoError(t, f.SetSheetName("Sheet1", "Sheet 2"))
+	for i, expected := range []string{"'Sheet 2'!$A$1:$A$2", "$B$2", "$A1$2:A2", "'Sheet 2'!$A$1:'Sheet 2'!A1:'Sheet 2'!$A$1,'Sheet 2'!A1:Sheet3!A1,Sheet3!A1", "'Sheet 3'!$A1$2:A2"} {
 		assert.Equal(t, expected, f.WorkBook.DefinedNames.DefinedName[i].Data)
 	}
 }
