@@ -467,7 +467,7 @@ func (f *File) getRowHeight(sheet string, row int) int {
 		return int(convertRowHeightToPixels(ws.SheetFormatPr.DefaultRowHeight))
 	}
 	// Optimization for when the row heights haven't changed.
-	return int(math.Round(defaultRowHeightPixels))
+	return int(defaultRowHeightPixels)
 }
 
 // GetRowHeight provides a function to get row height by given worksheet name
@@ -1012,5 +1012,5 @@ func convertRowHeightToPixels(height float64) float64 {
 	if height == 0 {
 		return 0
 	}
-	return float64(int(height*4.0/3.0 + 0.5))
+	return math.Ceil(4.0 / 3.4 * height)
 }

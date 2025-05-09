@@ -93,7 +93,7 @@ func TestChartSize(t *testing.T) {
 		t.FailNow()
 	}
 
-	if !assert.Equal(t, 11, anchor.To.Col, "Expected 'to' column 11") ||
+	if !assert.Equal(t, 14, anchor.To.Col, "Expected 'to' column 14") ||
 		!assert.Equal(t, 27, anchor.To.Row, "Expected 'to' row 27") {
 
 		t.FailNow()
