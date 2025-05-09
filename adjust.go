@@ -416,30 +416,48 @@ func (f *File) adjustFormulaOperand(sheet, sheetN string, keepRelative bool, tok
 // adjustFormulaRef returns adjusted formula by giving adjusting direction and
 // the base number of column or row, and offset.
 func (f *File) adjustFormulaRef(sheet, sheetN, formula string, keepRelative bool, dir adjustDirection, num, offset int) (string, error) {
-	var definedNames []string
+	var (
+		val          string
+		definedNames []string
+		ps           = efp.ExcelParser()
+	)
 	for _, definedName := range f.GetDefinedName() {
 		if definedName.Scope == "Workbook" || definedName.Scope == sheet {
 			definedNames = append(definedNames, definedName.Name)
 		}
 	}
-	ps := efp.ExcelParser()
-	tokens := ps.Parse(formula)
-	for i, token := range tokens {
+	for _, token := range ps.Parse(formula) {
 		if token.TType == efp.TokenTypeUnknown {
-			return formula, nil
+			val = formula
+			break
 		}
 		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeRange {
-			if inStrSlice(definedNames, token.TValue, true) != -1 || strings.ContainsAny(token.TValue, "[]") {
+			if inStrSlice(definedNames, token.TValue, true) != -1 {
+				val += token.TValue
+				continue
+			}
+			if strings.ContainsAny(token.TValue, "[]") {
+				val += token.TValue
 				continue
 			}
 			operand, err := f.adjustFormulaOperand(sheet, sheetN, keepRelative, token, dir, num, offset)
 			if err != nil {
-				return ps.Render(), err
+				return val, err
 			}
-			tokens[i].TValue = operand
+			val += operand
+			continue
 		}
+		if paren := transformParenthesesToken(token); paren != "" {
+			val += transformParenthesesToken(token)
+			continue
+		}
+		if token.TType == efp.TokenTypeOperand && token.TSubType == efp.TokenSubTypeText {
+			val += string(efp.QuoteDouble) + strings.ReplaceAll(token.TValue, "\"", "\"\"") + string(efp.QuoteDouble)
+			continue
+		}
+		val += token.TValue
 	}
-	return ps.Render(), nil
+	return val, nil
 }
 
 // transformParenthesesToken returns formula part with parentheses by given

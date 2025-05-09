@@ -612,7 +612,7 @@ func (f *File) addDrawingSlicer(sheet, slicerName string, ns xml.Attr, opts *Sli
 				Name: slicerName,
 			},
 		},
-		Xfrm: xlsxXfrm{Off: xlsxOff{}, Ext: aExt{}},
+		Xfrm: xlsxXfrm{Off: xlsxOff{}, Ext: xlsxPositiveSize2D{}},
 		Graphic: &xlsxGraphic{
 			GraphicData: &xlsxGraphicData{
 				URI: NameSpaceDrawingMLSlicer.Value,
@@ -632,7 +632,7 @@ func (f *File) addDrawingSlicer(sheet, slicerName string, ns xml.Attr, opts *Sli
 			},
 		},
 		SpPr: &xlsxSpPr{
-			Xfrm:      xlsxXfrm{Off: xlsxOff{X: 2914650, Y: 152400}, Ext: aExt{Cx: 1828800, Cy: 2238375}},
+			Xfrm:      xlsxXfrm{Off: xlsxOff{X: 2914650, Y: 152400}, Ext: xlsxPositiveSize2D{Cx: 1828800, Cy: 2238375}},
 			SolidFill: &xlsxInnerXML{Content: "<a:prstClr val=\"white\"/>"},
 			PrstGeom: xlsxPrstGeom{
 				Prst: "rect",

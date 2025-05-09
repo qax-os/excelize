@@ -189,11 +189,11 @@ func (f *File) removeFormula(c *xlsxC, ws *xlsxWorksheet, sheet string) error {
 		}
 		if c.F.T == STCellFormulaTypeShared && c.F.Ref != "" {
 			si := c.F.Si
-			ws.deleteSharedFormula(c)
 			for r, row := range ws.SheetData.Row {
 				for col, cell := range row.C {
 					if cell.F != nil && cell.F.Si != nil && *cell.F.Si == *si {
 						ws.SheetData.Row[r].C[col].F = nil
+						ws.deleteSharedFormula(c)
 						_ = f.deleteCalcChain(sheetID, cell.R)
 					}
 				}

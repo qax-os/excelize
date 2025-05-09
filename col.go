@@ -22,10 +22,10 @@ import (
 
 // Define the default cell size and EMU unit of measurement.
 const (
-	defaultColWidth        float64 = 10.5
-	defaultColWidthPixels  float64 = 84.0
-	defaultRowHeight       float64 = 15.6
-	defaultRowHeightPixels float64 = 20.8
+	defaultColWidth        float64 = 9.140625
+	defaultColWidthPixels  float64 = 64
+	defaultRowHeight       float64 = 15
+	defaultRowHeightPixels float64 = 20
 	EMU                    int     = 9525
 )
 
@@ -625,7 +625,7 @@ func (f *File) positionObjectPixels(sheet string, col, row, width, height int, o
 	// Initialized end cell to the same as the start cell.
 	colEnd, rowEnd := colIdx, rowIdx
 	x1, y1, x2, y2 := opts.OffsetX, opts.OffsetY, width, height
-	if opts.Positioning == "" || opts.Positioning == "twoCell" {
+	if opts.Positioning != "oneCell" {
 		// Using a twoCellAnchor, the maximum possible offset is limited by the
 		// "from" cell dimensions. If these were to be exceeded the "toPoint" would
 		// be calculated incorrectly, since the requested "fromPoint" is not possible
@@ -800,10 +800,6 @@ func convertColWidthToPixels(width float64) float64 {
 	var maxDigitWidth float64 = 8
 	if width == 0 {
 		return pixels
-	}
-	if width < 1 {
-		pixels = (width * 12) + 0.5
-		return float64(int(pixels))
 	}
 	pixels = (width*maxDigitWidth + 0.5)
 	return float64(int(pixels))

@@ -484,5 +484,5 @@ func TestRemoveCol(t *testing.T) {
 }
 
 func TestConvertColWidthToPixels(t *testing.T) {
-	assert.Equal(t, -11.0, convertColWidthToPixels(-1))
+	assert.Equal(t, -7.0, convertColWidthToPixels(-1))
 }

@@ -372,7 +372,6 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 		return err
 	}
 	cellAnchor := xdrCellAnchor{}
-	cellAnchor.EditAs = opts.Positioning
 	from := xlsxFrom{}
 	from.Col = colStart
 	from.ColOff = x1 * EMU
@@ -387,6 +386,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 		to.Row = rowEnd
 		to.RowOff = y2 * EMU
 		cellAnchor.To = &to
+		cellAnchor.EditAs = opts.Positioning
 	}
 
 	pic := xlsxPic{}
@@ -420,7 +420,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 	if opts.Positioning == "oneCell" {
 		cx := x2 * EMU
 		cy := y2 * EMU
-		cellAnchor.Ext = &aExt{
+		cellAnchor.Ext = &xlsxPositiveSize2D{
 			Cx: cx,
 			Cy: cy,
 		}
