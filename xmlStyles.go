@@ -253,13 +253,13 @@ type xlsxDxfs struct {
 // xlsxDxf directly maps the dxf element. A single dxf record, expressing
 // incremental formatting to be applied.
 type xlsxDxf struct {
-	Font       *xlsxFont       `xml:"font"`
-	NumFmt     *xlsxNumFmt     `xml:"numFmt"`
-	Fill       *xlsxFill       `xml:"fill"`
-	Alignment  *xlsxAlignment  `xml:"alignment"`
-	Border     *xlsxBorder     `xml:"border"`
-	Protection *xlsxProtection `xml:"protection"`
-	ExtLst     *aExt           `xml:"extLst"`
+	Font       *xlsxFont           `xml:"font"`
+	NumFmt     *xlsxNumFmt         `xml:"numFmt"`
+	Fill       *xlsxFill           `xml:"fill"`
+	Alignment  *xlsxAlignment      `xml:"alignment"`
+	Border     *xlsxBorder         `xml:"border"`
+	Protection *xlsxProtection     `xml:"protection"`
+	ExtLst     *xlsxPositiveSize2D `xml:"extLst"`
 }
 
 // xlsxTableStyles directly maps the tableStyles element. This element

@@ -420,7 +420,7 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 	if opts.Positioning == "oneCell" {
 		cx := x2 * EMU
 		cy := y2 * EMU
-		cellAnchor.Ext = &aExt{
+		cellAnchor.Ext = &xlsxPositiveSize2D{
 			Cx: cx,
 			Cy: cy,
 		}

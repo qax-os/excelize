@@ -83,8 +83,8 @@ type xlsxOff struct {
 	Y int `xml:"y,attr"`
 }
 
-// aExt directly maps the a:ext element.
-type aExt struct {
+// xlsxPositiveSize2D directly maps the a:ext element.
+type xlsxPositiveSize2D struct {
 	Cx int `xml:"cx,attr"`
 	Cy int `xml:"cy,attr"`
 }
@@ -102,8 +102,8 @@ type xlsxPrstGeom struct {
 // frame. This transformation is applied to the graphic frame just as it would
 // be for a shape or group shape.
 type xlsxXfrm struct {
-	Off xlsxOff `xml:"a:off"`
-	Ext aExt    `xml:"a:ext"`
+	Off xlsxOff            `xml:"a:off"`
+	Ext xlsxPositiveSize2D `xml:"a:ext"`
 }
 
 // xlsxCNvPicPr directly maps the cNvPicPr (Non-Visual Picture Drawing
@@ -222,7 +222,7 @@ type xdrCellAnchor struct {
 	Pos              *xlsxPoint2D            `xml:"xdr:pos"`
 	From             *xlsxFrom               `xml:"xdr:from"`
 	To               *xlsxTo                 `xml:"xdr:to"`
-	Ext              *aExt                   `xml:"xdr:ext"`
+	Ext              *xlsxPositiveSize2D     `xml:"xdr:ext"`
 	Sp               *xdrSp                  `xml:"xdr:sp"`
 	Pic              *xlsxPic                `xml:"xdr:pic,omitempty"`
 	GraphicFrame     string                  `xml:",innerxml"`
@@ -237,7 +237,7 @@ type xlsxCellAnchorPos struct {
 	From             *xlsxFrom               `xml:"xdr:from"`
 	To               *xlsxTo                 `xml:"xdr:to"`
 	Pos              *xlsxInnerXML           `xml:"xdr:pos"`
-	Ext              *xlsxInnerXML           `xml:"xdr:ext"`
+	Ext              *xlsxPositiveSize2D     `xml:"xdr:ext"`
 	Sp               *xlsxSp                 `xml:"xdr:sp"`
 	GrpSp            *xlsxInnerXML           `xml:"xdr:grpSp"`
 	GraphicFrame     *xlsxInnerXML           `xml:"xdr:graphicFrame"`

@@ -21,6 +21,7 @@ type decodeCellAnchor struct {
 	EditAs           string                  `xml:"editAs,attr,omitempty"`
 	From             *decodeFrom             `xml:"from"`
 	To               *decodeTo               `xml:"to"`
+	Ext              *decodePositiveSize2D   `xml:"ext"`
 	Sp               *decodeSp               `xml:"sp"`
 	Pic              *decodePic              `xml:"pic"`
 	ClientData       *decodeClientData       `xml:"clientData"`
@@ -35,7 +36,7 @@ type decodeCellAnchorPos struct {
 	From             *xlsxFrom               `xml:"from"`
 	To               *xlsxTo                 `xml:"to"`
 	Pos              *xlsxInnerXML           `xml:"pos"`
-	Ext              *xlsxInnerXML           `xml:"ext"`
+	Ext              *xlsxPositiveSize2D     `xml:"ext"`
 	Sp               *xlsxSp                 `xml:"sp"`
 	GrpSp            *xlsxInnerXML           `xml:"grpSp"`
 	GraphicFrame     *xlsxInnerXML           `xml:"graphicFrame"`
@@ -85,9 +86,9 @@ type decodeSp struct {
 // shape. This allows for additional information that does not affect the
 // appearance of the shape to be stored.
 type decodeNvSpPr struct {
-	CNvPr   *decodeCNvPr   `xml:"cNvPr"`
-	ExtLst  *decodeAExt    `xml:"extLst"`
-	CNvSpPr *decodeCNvSpPr `xml:"cNvSpPr"`
+	CNvPr   *decodeCNvPr          `xml:"cNvPr"`
+	ExtLst  *decodePositiveSize2D `xml:"extLst"`
+	CNvSpPr *decodeCNvSpPr        `xml:"cNvSpPr"`
 }
 
 // decodeCNvSpPr (Connection Non-Visual Shape Properties) directly maps the
@@ -164,8 +165,8 @@ type decodeOff struct {
 	Y int `xml:"y,attr"`
 }
 
-// decodeAExt directly maps the a:ext element.
-type decodeAExt struct {
+// decodePositiveSize2D directly maps the a:ext element.
+type decodePositiveSize2D struct {
 	Cx int `xml:"cx,attr"`
 	Cy int `xml:"cy,attr"`
 }
@@ -183,8 +184,8 @@ type decodePrstGeom struct {
 // frame. This transformation is applied to the graphic frame just as it would
 // be for a shape or group shape.
 type decodeXfrm struct {
-	Off decodeOff  `xml:"off"`
-	Ext decodeAExt `xml:"ext"`
+	Off decodeOff            `xml:"off"`
+	Ext decodePositiveSize2D `xml:"ext"`
 }
 
 // decodeCNvPicPr directly maps the cNvPicPr (Non-Visual Picture Drawing
