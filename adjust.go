@@ -413,7 +413,6 @@ func (f *File) adjustFormulaOperand(sheet, sheetN string, keepRelative bool, tok
 	return operand, err
 }
 
-
 // adjustFormulaRef returns adjusted formula by giving adjusting direction and
 // the base number of column or row, and offset.
 func (f *File) adjustFormulaRef(sheet, sheetN, formula string, keepRelative bool, dir adjustDirection, num, offset int) (string, error) {
