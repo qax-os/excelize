@@ -625,7 +625,7 @@ func (f *File) positionObjectPixels(sheet string, col, row, width, height int, o
 	// Initialized end cell to the same as the start cell.
 	colEnd, rowEnd := colIdx, rowIdx
 	x1, y1, x2, y2 := opts.OffsetX, opts.OffsetY, width, height
-	if opts.Positioning == "" || opts.Positioning == "twoCell" {
+	if opts.Positioning != "oneCell" {
 		// Using a twoCellAnchor, the maximum possible offset is limited by the
 		// "from" cell dimensions. If these were to be exceeded the "toPoint" would
 		// be calculated incorrectly, since the requested "fromPoint" is not possible
