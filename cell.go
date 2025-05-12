@@ -1502,11 +1502,11 @@ func (f *File) getCellStringFunc(sheet, cell string, fn func(x *xlsxWorksheet, c
 	idx, found := sort.Find(len(ws.SheetData.Row), func(i int) int {
 		if ws.SheetData.Row[i].R == row {
 			return 0
-		} else if ws.SheetData.Row[i].R > row {
-			return -1
-		} else {
-			return 1
 		}
+		if ws.SheetData.Row[i].R > row {
+			return -1
+		}
+		return 1
 	})
 	if !found {
 		return "", nil

@@ -1265,3 +1265,14 @@ func TestSetCellIntFunc(t *testing.T) {
 func TestSIString(t *testing.T) {
 	assert.Empty(t, xlsxSI{}.String())
 }
+
+func TestGetCellStringFunc(t *testing.T) {
+	f := NewFile()
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetData.Row = []xlsxRow{{R: 2}}
+	val, err := f.GetCellValue("Sheet1", "A1")
+	assert.Empty(t, val)
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+}
