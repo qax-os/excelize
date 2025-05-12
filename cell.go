@@ -17,6 +17,7 @@ import (
 	"math"
 	"os"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -1498,16 +1499,22 @@ func (f *File) getCellStringFunc(sheet, cell string, fn func(x *xlsxWorksheet, c
 		return "", nil
 	}
 
-	for rowIdx := range ws.SheetData.Row {
-		rowData := &ws.SheetData.Row[rowIdx]
-		if rowData.R != row {
-			continue
+	idx, found := sort.Find(len(ws.SheetData.Row), func(i int) int {
+		if ws.SheetData.Row[i].R == row {
+			return 0
 		}
-		for colIdx := range rowData.C {
-			colData := &rowData.C[colIdx]
-			if cell != colData.R {
-				continue
-			}
+		if ws.SheetData.Row[i].R > row {
+			return -1
+		}
+		return 1
+	})
+	if !found {
+		return "", nil
+	}
+	rowData := ws.SheetData.Row[idx]
+	for colIdx := range rowData.C {
+		colData := &rowData.C[colIdx]
+		if cell == colData.R {
 			val, ok, err := fn(ws, colData)
 			if err != nil {
 				return "", err
@@ -1515,6 +1522,7 @@ func (f *File) getCellStringFunc(sheet, cell string, fn func(x *xlsxWorksheet, c
 			if ok {
 				return val, nil
 			}
+			break
 		}
 	}
 	return "", nil
