@@ -315,41 +315,27 @@ func TestRemoveRow(t *testing.T) {
 	assert.EqualError(t, f.RemoveRow(sheet1, 0), newInvalidRowNumberError(0).Error())
 
 	assert.NoError(t, f.RemoveRow(sheet1, 4))
-	if !assert.Len(t, r.SheetData.Row, rowCount-1) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount-1)
 
 	assert.NoError(t, f.MergeCell(sheet1, "B3", "B5"))
 
 	assert.NoError(t, f.RemoveRow(sheet1, 2))
-	if !assert.Len(t, r.SheetData.Row, rowCount-2) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount-2)
 
 	assert.NoError(t, f.RemoveRow(sheet1, 4))
-	if !assert.Len(t, r.SheetData.Row, rowCount-3) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount-3)
 
 	err = f.AutoFilter(sheet1, "A2:A2", []AutoFilterOptions{{Column: "A", Expression: "x != blanks"}})
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 
 	assert.NoError(t, f.RemoveRow(sheet1, 1))
-	if !assert.Len(t, r.SheetData.Row, rowCount-4) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount-4)
 
 	assert.NoError(t, f.RemoveRow(sheet1, 2))
-	if !assert.Len(t, r.SheetData.Row, rowCount-5) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount-5)
 
 	assert.NoError(t, f.RemoveRow(sheet1, 1))
-	if !assert.Len(t, r.SheetData.Row, rowCount-6) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount-6)
 
 	assert.NoError(t, f.RemoveRow(sheet1, 10))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemoveRow.xlsx")))
@@ -367,6 +353,14 @@ func TestRemoveRow(t *testing.T) {
 	assert.EqualError(t, f.RemoveRow("SheetN", 1), "sheet SheetN does not exist")
 	// Test remove row with invalid sheet name
 	assert.EqualError(t, f.RemoveRow("Sheet:1", 1), ErrSheetNameInvalid.Error())
+
+	f = NewFile()
+	formulaType, ref := STCellFormulaTypeShared, "C1:C5"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=A1+B1",
+		FormulaOpts{Ref: &ref, Type: &formulaType}))
+	f.CalcChain = nil
+	f.Pkg.Store(defaultXMLPathCalcChain, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.RemoveRow("Sheet1", 1), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestInsertRows(t *testing.T) {
@@ -383,19 +377,13 @@ func TestInsertRows(t *testing.T) {
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 
 	assert.NoError(t, f.InsertRows(sheet1, 1, 1))
-	if !assert.Len(t, r.SheetData.Row, rowCount+1) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount+1)
 
 	assert.NoError(t, f.InsertRows(sheet1, 4, 1))
-	if !assert.Len(t, r.SheetData.Row, rowCount+2) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount+2)
 
 	assert.NoError(t, f.InsertRows(sheet1, 4, 2))
-	if !assert.Len(t, r.SheetData.Row, rowCount+4) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount+4)
 	// Test insert rows with invalid sheet name
 	assert.EqualError(t, f.InsertRows("Sheet:1", 1, 1), ErrSheetNameInvalid.Error())
 

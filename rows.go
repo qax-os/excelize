@@ -643,6 +643,16 @@ func (f *File) RemoveRow(sheet string, row int) error {
 	if row > len(ws.SheetData.Row) {
 		return f.adjustHelper(sheet, rows, row, -1)
 	}
+	for rowIdx := range ws.SheetData.Row {
+		v := &ws.SheetData.Row[rowIdx]
+		if v.R == row {
+			for _, c := range v.C {
+				if err := f.removeFormula(&c, ws, sheet); err != nil {
+					return err
+				}
+			}
+		}
+	}
 	keep := 0
 	for rowIdx := range ws.SheetData.Row {
 		v := &ws.SheetData.Row[rowIdx]

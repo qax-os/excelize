@@ -194,7 +194,7 @@ func (f *File) removeFormula(c *xlsxC, ws *xlsxWorksheet, sheet string) error {
 				for col, cell := range row.C {
 					if cell.F != nil && cell.F.Si != nil && *cell.F.Si == *si {
 						ws.SheetData.Row[r].C[col].F = nil
-						ws.deleteSharedFormula(c)
+						ws.formulaSI.Delete(si)
 						_ = f.deleteCalcChain(sheetID, cell.R)
 					}
 				}

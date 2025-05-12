@@ -5,13 +5,13 @@ go 1.23.0
 require (
 	github.com/richardlehane/mscfb v1.0.4
 	github.com/stretchr/testify v1.10.0
-	github.com/tiendc/go-deepcopy v1.5.2
-	github.com/xuri/efp v0.0.0-20250227110027-3491fafc2b79
-	github.com/xuri/nfp v0.0.0-20250226145837-86d5fc24b2ba
-	golang.org/x/crypto v0.36.0
+	github.com/tiendc/go-deepcopy v1.6.0
+	github.com/xuri/efp v0.0.1
+	github.com/xuri/nfp v0.0.1
+	golang.org/x/crypto v0.38.0
 	golang.org/x/image v0.25.0
-	golang.org/x/net v0.38.0
-	golang.org/x/text v0.23.0
+	golang.org/x/net v0.40.0
+	golang.org/x/text v0.25.0
 )
 
 require (
