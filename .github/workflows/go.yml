@@ -28,6 +28,15 @@ jobs:
     - name: Build
       run: go build -v .
 
+    - name: Build on ARM
+      if: runner.os == 'Linux'
+      run: |
+        GOARCH=arm GOARM=5 go build .
+        GOARCH=arm GOARM=6 go build .
+        GOARCH=arm GOARM=7 go build .
+        GOARCH=arm64 go build .
+        GOARCH=arm64 GOOS=android go build .
+
     - name: Test
       run: env GO111MODULE=on go test -v -timeout 50m -race ./... -coverprofile='coverage.txt' -covermode=atomic
 

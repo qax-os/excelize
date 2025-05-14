@@ -211,7 +211,7 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 			break
 		}
 		content, _ := f.Pkg.Load(path)
-		if n, err = fi.Write(content.([]byte)); n > math.MaxUint32 {
+		if n, err = fi.Write(content.([]byte)); int64(n) > math.MaxUint32 {
 			f.zip64Entries = append(f.zip64Entries, path)
 		}
 	}
@@ -228,7 +228,7 @@ func (f *File) writeToZip(zw *zip.Writer) error {
 		if fi, err = zw.Create(path); err != nil {
 			break
 		}
-		if n, err = fi.Write(f.readBytes(path)); n > math.MaxUint32 {
+		if n, err = fi.Write(f.readBytes(path)); int64(n) > math.MaxUint32 {
 			f.zip64Entries = append(f.zip64Entries, path)
 		}
 	}
