@@ -176,7 +176,7 @@ func (f *File) checkOpenReaderOptions() error {
 // OpenReader read data stream from io.Reader and return a populated
 // spreadsheet file.
 func OpenReader(r io.Reader, opts ...Options) (*File, error) {
-	b, err := io.ReadAll(r)
+	b, err := readAll(r)
 	if err != nil {
 		return nil, err
 	}
