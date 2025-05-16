@@ -344,6 +344,9 @@ func getDataValidations(dvs *xlsxDataValidations) []*DataValidation {
 			Sqref:            dv.Sqref,
 			Type:             dv.Type,
 		}
+		if dv.ExtLst != nil {
+			dataValidation.ExtLstXML = dv.ExtLst.Ext
+		}
 		if dv.Formula1 != nil {
 			dataValidation.Formula1 = unescapeDataValidationFormula(dv.Formula1.Content)
 		}

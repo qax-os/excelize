@@ -446,6 +446,7 @@ type xlsxDataValidation struct {
 	Type             string        `xml:"type,attr,omitempty"`
 	Formula1         *xlsxInnerXML `xml:"formula1"`
 	Formula2         *xlsxInnerXML `xml:"formula2"`
+	ExtLst           *xlsxExtLst   `xml:"extLst,omitempty"`
 }
 
 // xlsxC collection represents a cell in the worksheet. Information about the
@@ -884,6 +885,7 @@ type DataValidation struct {
 	Type             string
 	Formula1         string
 	Formula2         string
+	ExtLstXML        string
 }
 
 // SparklineOptions directly maps the settings of the sparkline.
