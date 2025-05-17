@@ -448,6 +448,39 @@ type xlsxDataValidation struct {
 	Formula2         *xlsxInnerXML `xml:"formula2"`
 }
 
+// xlsxX14DataValidation directly maps the single item of data validation
+// defined on a extLst element of the worksheet.
+type xlsxX14DataValidation struct {
+	XMLName          xml.Name      `xml:"x14:dataValidation"`
+	AllowBlank       bool          `xml:"allowBlank,attr"`
+	Error            *string       `xml:"error,attr"`
+	ErrorStyle       *string       `xml:"errorStyle,attr"`
+	ErrorTitle       *string       `xml:"errorTitle,attr"`
+	Operator         string        `xml:"operator,attr,omitempty"`
+	Prompt           *string       `xml:"prompt,attr"`
+	PromptTitle      *string       `xml:"promptTitle,attr"`
+	ShowDropDown     bool          `xml:"showDropDown,attr,omitempty"`
+	ShowErrorMessage bool          `xml:"showErrorMessage,attr,omitempty"`
+	ShowInputMessage bool          `xml:"showInputMessage,attr,omitempty"`
+	Sqref            string        `xml:"sqref,attr"`
+	Type             string        `xml:"type,attr,omitempty"`
+	Formula1         *xlsxInnerXML `xml:"x14:formula1"`
+	Formula2         *xlsxInnerXML `xml:"x14:formula2"`
+	XMSqref          string        `xml:"xm:sqref,omitempty"`
+}
+
+// xlsxX14DataValidations expresses all data validation information for cells in
+// a sheet extLst element which have data validation features applied.
+type xlsxX14DataValidations struct {
+	XMLName        xml.Name `xml:"x14:dataValidations"`
+	XMLNSXM        string   `xml:"xmlns:xm,attr,omitempty"`
+	Count          int      `xml:"count,attr,omitempty"`
+	DisablePrompts bool     `xml:"disablePrompts,attr,omitempty"`
+	XWindow        int      `xml:"xWindow,attr,omitempty"`
+	YWindow        int      `xml:"yWindow,attr,omitempty"`
+	DataValidation []*xlsxX14DataValidation
+}
+
 // xlsxC collection represents a cell in the worksheet. Information about the
 // cell's location (reference), value, data type, formatting, and formula is
 // expressed here.
