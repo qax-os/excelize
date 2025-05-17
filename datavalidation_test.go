@@ -16,6 +16,7 @@ import (
 	"math"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -242,4 +243,31 @@ func TestDeleteDataValidation(t *testing.T) {
 	// Test delete all data validations in the worksheet
 	assert.NoError(t, f.DeleteDataValidation("Sheet1"))
 	assert.Nil(t, ws.(*xlsxWorksheet).DataValidations)
+
+	t.Run("delete_data_validation_from_extLst", func(t *testing.T) {
+		f := NewFile()
+		f.Sheet.Delete("xl/worksheets/sheet1.xml")
+		f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil,
+			`<worksheet xmlns="%s"><sheetData/><extLst><ext xmlns:x14="%s" uri="%s"><x14:dataValidations xmlns:xm="%s" count="2"><x14:dataValidation allowBlank="true" showErrorMessage="true" showInputMessage="true" sqref="" type="list"><xm:sqref>A1:A2</xm:sqref><x14:formula1><xm:f>Sheet1!$A$2:$A$4</xm:f></x14:formula1></x14:dataValidation><x14:dataValidation allowBlank="true" showErrorMessage="true" showInputMessage="true" sqref="" type="list"><xm:sqref>B1:B2</xm:sqref><x14:formula1><xm:f>Sheet1!$B$2:$B$3</xm:f></x14:formula1></x14:dataValidation></x14:dataValidations></ext></extLst></worksheet>`,
+			NameSpaceSpreadSheet.Value, NameSpaceSpreadSheetExcel2006Main.Value,
+			ExtURIDataValidations, NameSpaceSpreadSheetExcel2006Main.Value))
+		f.checked = sync.Map{}
+		assert.NoError(t, f.DeleteDataValidation("Sheet1", "A1:A2"))
+		dvs, err := f.GetDataValidations("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, dvs, 1)
+		assert.Equal(t, "B1:B2", dvs[0].Sqref)
+
+		assert.NoError(t, f.DeleteDataValidation("Sheet1", "B1:B2"))
+		dvs, err = f.GetDataValidations("Sheet1")
+		assert.NoError(t, err)
+		assert.Empty(t, dvs)
+	})
+
+	t.Run("delete_data_validation_failed_from_extLst", func(t *testing.T) {
+		f := NewFile()
+		assert.EqualError(t, f.deleteX14DataValidation(&xlsxWorksheet{
+			ExtLst: &xlsxExtLst{Ext: "<extLst><x14:dataValidations></x14:dataValidation></x14:dataValidations></ext></extLst>"},
+		}, nil), "XML syntax error on line 1: element <dataValidations> closed by </dataValidation>")
+	})
 }
