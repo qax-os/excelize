@@ -14998,18 +14998,11 @@ func (fn *formulaFuncs) HYPERLINK(argsList *list.List) formulaArg {
 
 // calcMatch returns the position of the value by given match type, criteria
 // and lookup array for the formula function MATCH.
+// matchType only contains -1, and 1.
 func calcMatchMatrix(vertical bool, matchType int, criteria *formulaCriteria, lookupArray [][]formulaArg) formulaArg {
 	idx := -1
-	var result *formulaArg
-
 	var calc = func(i int, arg formulaArg) bool {
 		switch matchType {
-		case 0:
-			if ok, _ := formulaCriteriaEval(arg, criteria); ok {
-				out := newNumberFormulaArg(float64(i + 1))
-				result = &out
-				return true
-			}
 		case -1:
 			if ok, _ := formulaCriteriaEval(arg, &formulaCriteria{
 				Type: criteriaGe, Condition: criteria.Condition,
@@ -15046,9 +15039,6 @@ func calcMatchMatrix(vertical bool, matchType int, criteria *formulaCriteria, lo
 				break
 			}
 		}
-	}
-	if result != nil {
-		return *result
 	}
 	if idx == -1 {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
