@@ -350,6 +350,7 @@ type Font struct {
 	ColorTheme   *int
 	ColorTint    float64
 	VertAlign    string
+	Charset      int
 }
 
 // Fill directly maps the fill settings of the cells.

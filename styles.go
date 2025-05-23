@@ -1875,9 +1875,10 @@ func (f *File) newFont(style *Style) (*xlsxFont, error) {
 		style.Font.Size = 11
 	}
 	fnt := xlsxFont{
-		Sz:     &attrValFloat{Val: float64Ptr(style.Font.Size)},
-		Name:   &attrValString{Val: stringPtr(style.Font.Family)},
-		Family: &attrValInt{Val: intPtr(2)},
+		Sz:      &attrValFloat{Val: float64Ptr(style.Font.Size)},
+		Name:    &attrValString{Val: stringPtr(style.Font.Family)},
+		Family:  &attrValInt{Val: intPtr(2)},
+		Charset: &attrValInt{Val: intPtr(style.Font.Charset)},
 	}
 	fnt.Color = newFontColor(style.Font)
 	if style.Font.Bold {

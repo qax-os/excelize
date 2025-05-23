@@ -3,6 +3,7 @@ package excelize
 import (
 	"fmt"
 	"math"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -760,4 +761,30 @@ func TestGetStyle(t *testing.T) {
 	style, err = f.GetStyle(1)
 	assert.Nil(t, style)
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestSetFontCharset(t *testing.T) {
+	f := NewFile()
+	styleID, err := f.NewStyle(&Style{
+		Font: &Font{
+			Family:  "B Titr",
+			Size:    12,
+			Charset: 178,
+			Color:   "#000000",
+		},
+	})
+	assert.NoError(t, err, "failed to create style")
+	assert.NotZero(t, styleID, "styleID should not be zero")
+
+	err = f.SetCellValue("Sheet1", "A1", "این یک متن آزمایشی است.")
+	assert.NoError(t, err, "failed to set cell value")
+
+	err = f.SetCellStyle("Sheet1", "A1", "A1", styleID)
+	assert.NoError(t, err, "failed to set cell style")
+
+	outputDir := "test"
+	assert.NoError(t, os.MkdirAll(outputDir, os.ModePerm))
+
+	outputPath := filepath.Join(outputDir, "TestSetFontCharset.xlsx")
+	assert.NoError(t, f.SaveAs(outputPath), "failed to save Excel file")
 }
