@@ -428,7 +428,7 @@ type xlsxDataValidations struct {
 	DataValidation []*xlsxDataValidation `xml:"dataValidation"`
 }
 
-// DataValidation directly maps the single item of data validation defined
+// xlsxDataValidation directly maps the single item of data validation defined
 // on a range of the worksheet.
 type xlsxDataValidation struct {
 	AllowBlank       bool          `xml:"allowBlank,attr"`
