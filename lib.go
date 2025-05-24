@@ -447,12 +447,12 @@ func float64Ptr(f float64) *float64 { return &f }
 // stringPtr returns a pointer to a string with the given value.
 func stringPtr(s string) *string { return &s }
 
-// Value extracts string data type text from a attribute value.
-func (avb *attrValString) Value() string {
-	if avb != nil && avb.Val != nil {
-		return *avb.Val
+// Value extracts float64 data type numeric from a attribute value.
+func (attr *attrValFloat) Value() float64 {
+	if attr != nil && attr.Val != nil {
+		return *attr.Val
 	}
-	return ""
+	return 0
 }
 
 // Value extracts boolean data type value from a attribute value.
@@ -463,12 +463,12 @@ func (avb *attrValBool) Value() bool {
 	return false
 }
 
-// Value extracts float64 data type numeric from a attribute value.
-func (attr *attrValFloat) Value() float64 {
-	if attr != nil && attr.Val != nil {
-		return *attr.Val
+// Value extracts string data type text from a attribute value.
+func (avb *attrValString) Value() string {
+	if avb != nil && avb.Val != nil {
+		return *avb.Val
 	}
-	return 0
+	return ""
 }
 
 // MarshalXML convert the boolean data type to literal values 0 or 1 on

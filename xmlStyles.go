@@ -87,20 +87,21 @@ type xlsxFonts struct {
 // xlsxFont directly maps the font element. This element defines the
 // properties for one of the fonts used in this workbook.
 type xlsxFont struct {
-	B        *attrValBool   `xml:"b"`
-	I        *attrValBool   `xml:"i"`
-	Strike   *attrValBool   `xml:"strike"`
-	Outline  *attrValBool   `xml:"outline"`
-	Shadow   *attrValBool   `xml:"shadow"`
-	Condense *attrValBool   `xml:"condense"`
-	Extend   *attrValBool   `xml:"extend"`
-	U        *attrValString `xml:"u"`
-	Sz       *attrValFloat  `xml:"sz"`
-	Color    *xlsxColor     `xml:"color"`
-	Name     *attrValString `xml:"name"`
-	Family   *attrValInt    `xml:"family"`
-	Charset  *attrValInt    `xml:"charset"`
-	Scheme   *attrValString `xml:"scheme"`
+	Name      *attrValString `xml:"name"`
+	Charset   *attrValInt    `xml:"charset"`
+	Family    *attrValInt    `xml:"family"`
+	B         *attrValBool   `xml:"b"`
+	I         *attrValBool   `xml:"i"`
+	Strike    *attrValBool   `xml:"strike"`
+	Outline   *attrValBool   `xml:"outline"`
+	Shadow    *attrValBool   `xml:"shadow"`
+	Condense  *attrValBool   `xml:"condense"`
+	Extend    *attrValBool   `xml:"extend"`
+	Color     *xlsxColor     `xml:"color"`
+	Sz        *attrValFloat  `xml:"sz"`
+	U         *attrValString `xml:"u"`
+	VertAlign *attrValString `xml:"vertAlign"`
+	Scheme    *attrValString `xml:"scheme"`
 }
 
 // xlsxFills directly maps the fills' element. This element defines the cell
@@ -350,7 +351,7 @@ type Font struct {
 	ColorTheme   *int
 	ColorTint    float64
 	VertAlign    string
-	Charset      int
+	Charset      *int
 }
 
 // Fill directly maps the fill settings of the cells.
