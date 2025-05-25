@@ -960,7 +960,6 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 func (f *File) NewStyle(style *Style) (int, error) {
 	var (
 		fs                                  *Style
-		font                                *xlsxFont
 		err                                 error
 		cellXfsID, fontID, borderID, fillID int
 	)
@@ -991,11 +990,10 @@ func (f *File) NewStyle(style *Style) (int, error) {
 	numFmtID := newNumFmt(s, fs)
 
 	if fs.Font != nil {
-		fontID, _ = f.getFontID(s, fs)
+		fontID = f.getFontID(s, fs)
 		if fontID == -1 {
 			s.Fonts.Count++
-			font, _ = f.newFont(fs)
-			s.Fonts.Font = append(s.Fonts.Font, font)
+			s.Fonts.Font = append(s.Fonts.Font, fs.Font.newFont())
 			fontID = s.Fonts.Count - 1
 		}
 	}
@@ -1505,37 +1503,32 @@ func (f *File) extractFills(fl *xlsxFill, s *xlsxStyleSheet, style *Style) {
 
 // extractFont provides a function to extract font styles settings by given
 // font styles definition.
-func (f *File) extractFont(fnt *xlsxFont, s *xlsxStyleSheet, style *Style) {
-	if fnt != nil {
-		var font Font
-		if fnt.B != nil {
-			font.Bold = fnt.B.Value()
-		}
-		if fnt.I != nil {
-			font.Italic = fnt.I.Value()
-		}
-		if fnt.U != nil {
-			if font.Underline = fnt.U.Value(); font.Underline == "" {
-				font.Underline = "single"
-			}
-		}
-		if fnt.Name != nil {
-			font.Family = fnt.Name.Value()
-		}
-		if fnt.Sz != nil {
-			font.Size = fnt.Sz.Value()
-		}
-		if fnt.Strike != nil {
-			font.Strike = fnt.Strike.Value()
-		}
-		if fnt.Color != nil {
-			font.Color = strings.TrimPrefix(fnt.Color.RGB, "FF")
-			font.ColorIndexed = fnt.Color.Indexed
-			font.ColorTheme = fnt.Color.Theme
-			font.ColorTint = fnt.Color.Tint
-		}
-		style.Font = &font
+func extractFont(fnt *xlsxFont) *Font {
+	if fnt == nil {
+		return nil
 	}
+	var font Font
+	if fnt.Charset != nil {
+		font.Charset = fnt.Charset.Val
+	}
+	font.Bold = fnt.B.Value()
+	font.Italic = fnt.I.Value()
+	if fnt.U != nil {
+		if font.Underline = fnt.U.Value(); font.Underline == "" {
+			font.Underline = "single"
+		}
+	}
+	font.Family = fnt.Name.Value()
+	font.Size = fnt.Sz.Value()
+	font.Strike = fnt.Strike.Value()
+	if fnt.Color != nil {
+		font.Color = strings.TrimPrefix(fnt.Color.RGB, "FF")
+		font.ColorIndexed = fnt.Color.Indexed
+		font.ColorTheme = fnt.Color.Theme
+		font.ColorTint = fnt.Color.Tint
+	}
+	font.VertAlign = fnt.VertAlign.Value()
+	return &font
 }
 
 // extractNumFmt provides a function to extract number format by given styles
@@ -1628,7 +1621,7 @@ func (f *File) GetStyle(idx int) (*Style, error) {
 		f.extractBorders(s.Borders.Border[*xf.BorderID], s, style)
 	}
 	if extractStyleCondFuncs["font"](xf, s) {
-		f.extractFont(s.Fonts.Font[*xf.FontID], s, style)
+		style.Font = extractFont(s.Fonts.Font[*xf.FontID])
 	}
 	if extractStyleCondFuncs["alignment"](xf, s) {
 		f.extractAlignment(xf.Alignment, s, style)
@@ -1645,16 +1638,13 @@ func (f *File) GetStyle(idx int) (*Style, error) {
 func (f *File) getStyleID(ss *xlsxStyleSheet, style *Style) (int, error) {
 	var (
 		err     error
-		fontID  int
 		styleID = -1
 	)
 	if ss.CellXfs == nil {
 		return styleID, err
 	}
 	numFmtID, borderID, fillID := getNumFmtID(ss, style), getBorderID(ss, style), getFillID(ss, style)
-	if fontID, err = f.getFontID(ss, style); err != nil {
-		return styleID, err
-	}
+	fontID := f.getFontID(ss, style)
 	if style.CustomNumFmt != nil {
 		numFmtID = getCustomNumFmtID(ss, style)
 	}
@@ -1700,7 +1690,7 @@ func (f *File) NewConditionalStyle(style *Style) (int, error) {
 		dxf.Border = newBorders(fs)
 	}
 	if fs.Font != nil {
-		dxf.Font, _ = f.newFont(fs)
+		dxf.Font = fs.Font.newFont()
 	}
 	if fs.Protection != nil {
 		dxf.Protection = newProtection(fs)
@@ -1735,7 +1725,7 @@ func (f *File) GetConditionalStyle(idx int) (*Style, error) {
 	}
 	f.extractFills(xf.Fill, s, style)
 	f.extractBorders(xf.Border, s, style)
-	f.extractFont(xf.Font, s, style)
+	style.Font = extractFont(xf.Font)
 	f.extractAlignment(xf.Alignment, s, style)
 	f.extractProtection(xf.Protection, s, style)
 	if xf.NumFmt != nil {
@@ -1820,23 +1810,18 @@ func (f *File) readDefaultFont() (*xlsxFont, error) {
 
 // getFontID provides a function to get font ID.
 // If given font does not exist, will return -1.
-func (f *File) getFontID(styleSheet *xlsxStyleSheet, style *Style) (int, error) {
-	var err error
+func (f *File) getFontID(styleSheet *xlsxStyleSheet, style *Style) int {
 	fontID := -1
 	if styleSheet.Fonts == nil || style.Font == nil {
-		return fontID, err
+		return fontID
 	}
 	for idx, fnt := range styleSheet.Fonts.Font {
-		font, err := f.newFont(style)
-		if err != nil {
-			return fontID, err
-		}
-		if reflect.DeepEqual(*fnt, *font) {
+		if reflect.DeepEqual(*fnt, *style.Font.newFont()) {
 			fontID = idx
-			return fontID, err
+			return fontID
 		}
 	}
-	return fontID, err
+	return fontID
 }
 
 // newFontColor set font color by given styles.
@@ -1869,35 +1854,37 @@ func newFontColor(font *Font) *xlsxColor {
 
 // newFont provides a function to add font style by given cell format
 // settings.
-func (f *File) newFont(style *Style) (*xlsxFont, error) {
-	var err error
-	if style.Font.Size < MinFontSize {
-		style.Font.Size = 11
+func (fnt *Font) newFont() *xlsxFont {
+	if fnt.Size < MinFontSize {
+		fnt.Size = 11
 	}
-	fnt := xlsxFont{
-		Sz:     &attrValFloat{Val: float64Ptr(style.Font.Size)},
-		Name:   &attrValString{Val: stringPtr(style.Font.Family)},
+	font := xlsxFont{
+		Sz:     &attrValFloat{Val: float64Ptr(fnt.Size)},
 		Family: &attrValInt{Val: intPtr(2)},
 	}
-	fnt.Color = newFontColor(style.Font)
-	if style.Font.Bold {
-		fnt.B = &attrValBool{Val: &style.Font.Bold}
+	if fnt.Family != "" {
+		font.Name = &attrValString{Val: stringPtr(fnt.Family)}
 	}
-	if style.Font.Italic {
-		fnt.I = &attrValBool{Val: &style.Font.Italic}
+	if fnt.Charset != nil {
+		font.Charset = &attrValInt{Val: fnt.Charset}
 	}
-	if *fnt.Name.Val == "" {
-		if *fnt.Name.Val, err = f.GetDefaultFont(); err != nil {
-			return &fnt, err
-		}
+	font.Color = newFontColor(fnt)
+	if fnt.Bold {
+		font.B = &attrValBool{Val: &fnt.Bold}
 	}
-	if style.Font.Strike {
-		fnt.Strike = &attrValBool{Val: &style.Font.Strike}
+	if fnt.Italic {
+		font.I = &attrValBool{Val: &fnt.Italic}
 	}
-	if idx := inStrSlice(supportedUnderlineTypes, style.Font.Underline, true); idx != -1 {
-		fnt.U = &attrValString{Val: stringPtr(supportedUnderlineTypes[idx])}
+	if fnt.Strike {
+		font.Strike = &attrValBool{Val: &fnt.Strike}
 	}
-	return &fnt, err
+	if idx := inStrSlice(supportedUnderlineTypes, fnt.Underline, true); idx != -1 {
+		font.U = &attrValString{Val: stringPtr(supportedUnderlineTypes[idx])}
+	}
+	if inStrSlice([]string{"baseline", "superscript", "subscript"}, fnt.VertAlign, true) != -1 {
+		font.VertAlign = &attrValString{Val: &fnt.VertAlign}
+	}
+	return &font
 }
 
 // getNumFmtID provides a function to get number format code ID.

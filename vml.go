@@ -77,7 +77,7 @@ func (f *File) GetComments(sheet string) ([]Comment, error) {
 				if text.T != nil {
 					run := RichTextRun{Text: text.T.Val}
 					if text.RPr != nil {
-						run.Font = newFont(text.RPr)
+						run.Font = text.RPr.getFont()
 					}
 					comment.Paragraph = append(comment.Paragraph, run)
 				}
@@ -314,7 +314,7 @@ func (f *File) addComment(commentsXML string, opts vmlOptions) error {
 			}},
 		}
 		if run.Font != nil {
-			r.RPr = newRpr(run.Font)
+			r.RPr = run.Font.newRpr()
 		}
 		cmt.Text.R = append(cmt.Text.R, r)
 	}
