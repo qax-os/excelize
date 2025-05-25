@@ -1121,7 +1121,7 @@ func getCellRichText(si *xlsxSI) (runs []RichTextRun) {
 			Text: v.T.Val,
 		}
 		if v.RPr != nil {
-			run.Font = newFont(v.RPr)
+			run.Font = v.RPr.getFont()
 		}
 		runs = append(runs, run)
 	}
@@ -1162,64 +1162,46 @@ func (f *File) GetCellRichText(sheet, cell string) (runs []RichTextRun, err erro
 }
 
 // newRpr create run properties for the rich text by given font format.
-func newRpr(fnt *Font) *xlsxRPr {
-	rpr := xlsxRPr{}
-	trueVal := ""
-	if fnt.Bold {
-		rpr.B = &trueVal
+func (fnt *Font) newRpr() *xlsxRPr {
+	font := fnt.newFont()
+	return &xlsxRPr{
+		RFont:     font.Name,
+		Charset:   font.Charset,
+		Family:    font.Family,
+		B:         font.B,
+		I:         font.I,
+		Strike:    font.Strike,
+		Outline:   font.Outline,
+		Shadow:    font.Shadow,
+		Condense:  font.Condense,
+		Extend:    font.Extend,
+		Color:     font.Color,
+		Sz:        font.Sz,
+		U:         font.U,
+		VertAlign: font.VertAlign,
+		Scheme:    font.Scheme,
 	}
-	if fnt.Italic {
-		rpr.I = &trueVal
-	}
-	if fnt.Strike {
-		rpr.Strike = &trueVal
-	}
-	if fnt.Underline != "" {
-		rpr.U = &attrValString{Val: &fnt.Underline}
-	}
-	if fnt.Family != "" {
-		rpr.RFont = &attrValString{Val: &fnt.Family}
-	}
-	if inStrSlice([]string{"baseline", "superscript", "subscript"}, fnt.VertAlign, true) != -1 {
-		rpr.VertAlign = &attrValString{Val: &fnt.VertAlign}
-	}
-	if fnt.Size > 0 {
-		rpr.Sz = &attrValFloat{Val: &fnt.Size}
-	}
-	rpr.Color = newFontColor(fnt)
-	return &rpr
 }
 
-// newFont create font format by given run properties for the rich text.
-func newFont(rPr *xlsxRPr) *Font {
-	var font Font
-	font.Bold = rPr.B != nil
-	font.Italic = rPr.I != nil
-	if rPr.U != nil {
-		font.Underline = "single"
-		if rPr.U.Val != nil {
-			font.Underline = *rPr.U.Val
-		}
-	}
-	if rPr.RFont != nil && rPr.RFont.Val != nil {
-		font.Family = *rPr.RFont.Val
-	}
-	if rPr.Sz != nil && rPr.Sz.Val != nil {
-		font.Size = *rPr.Sz.Val
-	}
-	if rPr.VertAlign != nil && rPr.VertAlign.Val != nil {
-		font.VertAlign = *rPr.VertAlign.Val
-	}
-	font.Strike = rPr.Strike != nil
-	if rPr.Color != nil {
-		font.Color = strings.TrimPrefix(rPr.Color.RGB, "FF")
-		if rPr.Color.Theme != nil {
-			font.ColorTheme = rPr.Color.Theme
-		}
-		font.ColorIndexed = rPr.Color.Indexed
-		font.ColorTint = rPr.Color.Tint
-	}
-	return &font
+// getFont create font format by given internal font properties.
+func (rPr *xlsxRPr) getFont() *Font {
+	return extractFont(&xlsxFont{
+		Name:      rPr.RFont,
+		Charset:   rPr.Charset,
+		Family:    rPr.Family,
+		B:         rPr.B,
+		I:         rPr.I,
+		Strike:    rPr.Strike,
+		Outline:   rPr.Outline,
+		Shadow:    rPr.Shadow,
+		Condense:  rPr.Condense,
+		Extend:    rPr.Extend,
+		Color:     rPr.Color,
+		Sz:        rPr.Sz,
+		U:         rPr.U,
+		VertAlign: rPr.VertAlign,
+		Scheme:    rPr.Scheme,
+	})
 }
 
 // setRichText provides a function to set rich text of a cell.
@@ -1237,7 +1219,7 @@ func setRichText(runs []RichTextRun) ([]xlsxR, error) {
 		run.T.Val, run.T.Space = trimCellValue(textRun.Text, false)
 		fnt := textRun.Font
 		if fnt != nil {
-			run.RPr = newRpr(fnt)
+			run.RPr = fnt.newRpr()
 		}
 		textRuns = append(textRuns, run)
 	}
