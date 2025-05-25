@@ -368,7 +368,7 @@ func (f *File) commentsWriter() {
 	}
 }
 
-// AddFormControl provides the method to add form control button in a worksheet
+// AddFormControl provides the method to add form control object in a worksheet
 // by given worksheet name and form control options. Supported form control
 // type: button, check box, group box, label, option button, scroll bar and
 // spinner. If set macro for the form control, the workbook extension should be
