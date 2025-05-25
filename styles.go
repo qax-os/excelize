@@ -1855,12 +1855,9 @@ func newFontColor(font *Font) *xlsxColor {
 // newFont provides a function to add font style by given cell format
 // settings.
 func (fnt *Font) newFont() *xlsxFont {
-	if fnt.Size < MinFontSize {
-		fnt.Size = 11
-	}
-	font := xlsxFont{
-		Sz:     &attrValFloat{Val: float64Ptr(fnt.Size)},
-		Family: &attrValInt{Val: intPtr(2)},
+	font := xlsxFont{Family: &attrValInt{Val: intPtr(2)}}
+	if fnt.Size >= MinFontSize {
+		font.Sz = &attrValFloat{Val: float64Ptr(fnt.Size)}
 	}
 	if fnt.Family != "" {
 		font.Name = &attrValString{Val: stringPtr(fnt.Family)}
