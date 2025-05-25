@@ -777,25 +777,25 @@ func TestCalcCellValue(t *testing.T) {
 		"=ROUNDUP(-11.111,-1)":        "-20",
 		"=ROUNDUP(ROUNDUP(100,1),-1)": "100",
 		// SEARCH
-		"=SEARCH(\"s\",F1)":           "1",
-		"=SEARCH(\"s\",F1,2)":         "5",
-		"=SEARCH(\"e\",F1)":           "4",
-		"=SEARCH(\"e*\",F1)":          "4",
-		"=SEARCH(\"?e\",F1)":          "3",
-		"=SEARCH(\"??e\",F1)":         "2",
-		"=SEARCH(6,F2)":               "2",
+		"=SEARCH(\"s\",F1)":             "1",
+		"=SEARCH(\"s\",F1,2)":           "5",
+		"=SEARCH(\"e\",F1)":             "4",
+		"=SEARCH(\"e*\",F1)":            "4",
+		"=SEARCH(\"?e\",F1)":            "3",
+		"=SEARCH(\"??e\",F1)":           "2",
+		"=SEARCH(6,F2)":                 "2",
 		"=SEARCH(\"?\",\"你好world\")":  "1",
 		"=SEARCH(\"?l\",\"你好world\")": "5",
 		"=SEARCH(\"?+\",\"你好 1+2\")":  "4",
 		"=SEARCH(\" ?+\",\"你好 1+2\")": "3",
 		// SEARCHB
-		"=SEARCHB(\"s\",F1)":           "1",
-		"=SEARCHB(\"s\",F1,2)":         "5",
-		"=SEARCHB(\"e\",F1)":           "4",
-		"=SEARCHB(\"e*\",F1)":          "4",
-		"=SEARCHB(\"?e\",F1)":          "3",
-		"=SEARCHB(\"??e\",F1)":         "2",
-		"=SEARCHB(6,F2)":               "2",
+		"=SEARCHB(\"s\",F1)":             "1",
+		"=SEARCHB(\"s\",F1,2)":           "5",
+		"=SEARCHB(\"e\",F1)":             "4",
+		"=SEARCHB(\"e*\",F1)":            "4",
+		"=SEARCHB(\"?e\",F1)":            "3",
+		"=SEARCHB(\"??e\",F1)":           "2",
+		"=SEARCHB(6,F2)":                 "2",
 		"=SEARCHB(\"?\",\"你好world\")":  "5",
 		"=SEARCHB(\"?l\",\"你好world\")": "7",
 		"=SEARCHB(\"?+\",\"你好 1+2\")":  "6",
@@ -1764,16 +1764,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=FINDB(\"\",\"Original Text\",2)":  "2",
 		"=FINDB(\"s\",\"Sales\",2)":         "5",
 		// LEFT
-		"=LEFT(\"Original Text\")":    "O",
-		"=LEFT(\"Original Text\",4)":  "Orig",
-		"=LEFT(\"Original Text\",0)":  "",
-		"=LEFT(\"Original Text\",13)": "Original Text",
-		"=LEFT(\"Original Text\",20)": "Original Text",
-		"=LEFT(\"オリジナルテキスト\")":        "オ",
-		"=LEFT(\"オリジナルテキスト\",2)":      "オリ",
-		"=LEFT(\"オリジナルテキスト\",5)":      "オリジナル",
-		"=LEFT(\"オリジナルテキスト\",7)":      "オリジナルテキ",
-		"=LEFT(\"オリジナルテキスト\",20)":     "オリジナルテキスト",
+		"=LEFT(\"Original Text\")":         "O",
+		"=LEFT(\"Original Text\",4)":       "Orig",
+		"=LEFT(\"Original Text\",0)":       "",
+		"=LEFT(\"Original Text\",13)":      "Original Text",
+		"=LEFT(\"Original Text\",20)":      "Original Text",
+		"=LEFT(\"オリジナルテキスト\")":    "オ",
+		"=LEFT(\"オリジナルテキスト\",2)":  "オリ",
+		"=LEFT(\"オリジナルテキスト\",5)":  "オリジナル",
+		"=LEFT(\"オリジナルテキスト\",7)":  "オリジナルテキ",
+		"=LEFT(\"オリジナルテキスト\",20)": "オリジナルテキスト",
 		// LEFTB
 		"=LEFTB(\"Original Text\")":    "O",
 		"=LEFTB(\"Original Text\",4)":  "Orig",
@@ -1781,16 +1781,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=LEFTB(\"Original Text\",13)": "Original Text",
 		"=LEFTB(\"Original Text\",20)": "Original Text",
 		// LEN
-		"=LEN(\"\")":              "0",
-		"=LEN(D1)":                "5",
-		"=LEN(\"テキスト\")":          "4",
-		"=LEN(\"オリジナルテキスト\")":     "9",
-		"=LEN(7+LEN(A1&B1&C1))":   "1",
-		"=LEN(8+LEN(A1+(C1-B1)))": "2",
+		"=LEN(\"\")":                   "0",
+		"=LEN(D1)":                     "5",
+		"=LEN(\"テキスト\")":           "4",
+		"=LEN(\"オリジナルテキスト\")": "9",
+		"=LEN(7+LEN(A1&B1&C1))":        "1",
+		"=LEN(8+LEN(A1+(C1-B1)))":      "2",
 		// LENB
-		"=LENB(\"\")":          "0",
-		"=LENB(D1)":            "5",
-		"=LENB(\"テキスト\")":      "8",
+		"=LENB(\"\")":                   "0",
+		"=LENB(D1)":                     "5",
+		"=LENB(\"テキスト\")":           "8",
 		"=LENB(\"オリジナルテキスト\")": "18",
 		// LOWER
 		"=LOWER(\"test\")":     "test",
@@ -1803,7 +1803,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=MID(\"255 years\",3,1)":     "5",
 		"=MID(\"text\",3,6)":          "xt",
 		"=MID(\"text\",6,0)":          "",
-		"=MID(\"你好World\",5,1)":       "r",
+		"=MID(\"你好World\",5,1)":     "r",
 		"=MID(\"\u30AA\u30EA\u30B8\u30CA\u30EB\u30C6\u30AD\u30B9\u30C8\",6,4)": "\u30C6\u30AD\u30B9\u30C8",
 		"=MID(\"\u30AA\u30EA\u30B8\u30CA\u30EB\u30C6\u30AD\u30B9\u30C8\",3,5)": "\u30B8\u30CA\u30EB\u30C6\u30AD",
 		// MIDB
@@ -1812,7 +1812,7 @@ func TestCalcCellValue(t *testing.T) {
 		"=MIDB(\"255 years\",3,1)":     "5",
 		"=MIDB(\"text\",3,6)":          "xt",
 		"=MIDB(\"text\",6,0)":          "",
-		"=MIDB(\"你好World\",5,1)":       "W",
+		"=MIDB(\"你好World\",5,1)":     "W",
 		"=MIDB(\"\u30AA\u30EA\u30B8\u30CA\u30EB\u30C6\u30AD\u30B9\u30C8\",6,4)": "\u30B8\u30CA",
 		"=MIDB(\"\u30AA\u30EA\u30B8\u30CA\u30EB\u30C6\u30AD\u30B9\u30C8\",3,5)": "\u30EA\u30B8\xe3",
 		// PROPER
@@ -1835,16 +1835,16 @@ func TestCalcCellValue(t *testing.T) {
 		"=REPT(\"*\",1)":  "*",
 		"=REPT(\"**\",2)": "****",
 		// RIGHT
-		"=RIGHT(\"Original Text\")":    "t",
-		"=RIGHT(\"Original Text\",4)":  "Text",
-		"=RIGHT(\"Original Text\",0)":  "",
-		"=RIGHT(\"Original Text\",13)": "Original Text",
-		"=RIGHT(\"Original Text\",20)": "Original Text",
-		"=RIGHT(\"オリジナルテキスト\")":        "ト",
-		"=RIGHT(\"オリジナルテキスト\",2)":      "スト",
-		"=RIGHT(\"オリジナルテキスト\",4)":      "テキスト",
-		"=RIGHT(\"オリジナルテキスト\",7)":      "ジナルテキスト",
-		"=RIGHT(\"オリジナルテキスト\",20)":     "オリジナルテキスト",
+		"=RIGHT(\"Original Text\")":         "t",
+		"=RIGHT(\"Original Text\",4)":       "Text",
+		"=RIGHT(\"Original Text\",0)":       "",
+		"=RIGHT(\"Original Text\",13)":      "Original Text",
+		"=RIGHT(\"Original Text\",20)":      "Original Text",
+		"=RIGHT(\"オリジナルテキスト\")":    "ト",
+		"=RIGHT(\"オリジナルテキスト\",2)":  "スト",
+		"=RIGHT(\"オリジナルテキスト\",4)":  "テキスト",
+		"=RIGHT(\"オリジナルテキスト\",7)":  "ジナルテキスト",
+		"=RIGHT(\"オリジナルテキスト\",20)": "オリジナルテキスト",
 		// RIGHTB
 		"=RIGHTB(\"Original Text\")":    "t",
 		"=RIGHTB(\"Original Text\",4)":  "Text",
@@ -2806,11 +2806,11 @@ func TestCalcCellValue(t *testing.T) {
 		"=SEARCH(2,A1)":      {"#VALUE!", "#VALUE!"},
 		"=SEARCH(1,A1,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		// SEARCHB
-		"=SEARCHB()":                   {"#VALUE!", "SEARCHB requires at least 2 arguments"},
-		"=SEARCHB(1,A1,1,1)":           {"#VALUE!", "SEARCHB allows at most 3 arguments"},
-		"=SEARCHB(2,A1)":               {"#VALUE!", "#VALUE!"},
+		"=SEARCHB()":                     {"#VALUE!", "SEARCHB requires at least 2 arguments"},
+		"=SEARCHB(1,A1,1,1)":             {"#VALUE!", "SEARCHB allows at most 3 arguments"},
+		"=SEARCHB(2,A1)":                 {"#VALUE!", "#VALUE!"},
 		"=SEARCHB(\"?w\",\"你好world\")": {"#VALUE!", "#VALUE!"},
-		"=SEARCHB(1,A1,\"\")":          {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"=SEARCHB(1,A1,\"\")":            {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		// SEC
 		"=_xlfn.SEC()":      {"#VALUE!", "SEC requires 1 numeric argument"},
 		"=_xlfn.SEC(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
@@ -6501,4 +6501,112 @@ func TestParseToken(t *testing.T) {
 	assert.Equal(t, formulaErrorNAME, f.parseToken(nil, "Sheet1",
 		efp.Token{TSubType: efp.TokenSubTypeRange, TValue: "1A"}, nil, nil,
 	).Error())
+}
+
+// TestCalcCellValueCache tests the calculation cache functionality
+func TestCalcCellValueCache(t *testing.T) {
+	f := NewFile()
+
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 40))
+	assert.NoError(t, f.SetCellValue("Sheet1", "A2", 50))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "A1+A2"))
+
+	result1, err := f.CalcCellValue("Sheet1", "A3")
+	assert.NoError(t, err)
+	assert.Equal(t, "90", result1)
+
+	result2, err := f.CalcCellValue("Sheet1", "A3")
+	assert.NoError(t, err)
+	assert.Equal(t, result1, result2, "cached result should be consistent")
+
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 60))
+
+	result3, err := f.CalcCellValue("Sheet1", "A3")
+	assert.NoError(t, err)
+	assert.Equal(t, "110", result3)
+	assert.NotEqual(t, result1, result3, "result should be updated after cache clear")
+}
+
+// TestCalcCacheMultipleCells tests cache functionality with multiple dependent cells
+func TestCalcCacheMultipleCells(t *testing.T) {
+	f := NewFile()
+
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 10))
+	assert.NoError(t, f.SetCellValue("Sheet1", "A2", 10))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "A1+A2"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A4", "A3*3"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A5", "A3+A4"))
+
+	result3, err := f.CalcCellValue("Sheet1", "A3")
+	assert.NoError(t, err)
+	assert.Equal(t, "20", result3)
+
+	result4, err := f.CalcCellValue("Sheet1", "A4")
+	assert.NoError(t, err)
+	assert.Equal(t, "60", result4)
+
+	result5, err := f.CalcCellValue("Sheet1", "A5")
+	assert.NoError(t, err)
+	assert.Equal(t, "80", result5)
+
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 20))
+
+	newResult3, err := f.CalcCellValue("Sheet1", "A3")
+	assert.NoError(t, err)
+	assert.Equal(t, "30", newResult3)
+	assert.NotEqual(t, result3, newResult3, "A3 should be updated")
+
+	newResult5, err := f.CalcCellValue("Sheet1", "A5")
+	assert.NoError(t, err)
+	assert.Equal(t, "120", newResult5)
+	assert.NotEqual(t, result5, newResult5, "A5 should be updated")
+}
+
+// TestSetFunctionsClearCache tests that all Set functions properly clear the cache
+func TestSetFunctionsClearCache(t *testing.T) {
+	f := NewFile()
+
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 10))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "A1*2"))
+
+	result1, err := f.CalcCellValue("Sheet1", "A2")
+	assert.NoError(t, err)
+	assert.Equal(t, "20", result1)
+
+	result2, err := f.CalcCellValue("Sheet1", "A2")
+	assert.NoError(t, err)
+	assert.Equal(t, result1, result2, "results should be consistent from cache")
+
+	testCases := []struct {
+		name    string
+		setFunc func() error
+	}{
+		{"SetCellValue", func() error { return f.SetCellValue("Sheet1", "B1", 100) }},
+		{"SetCellInt", func() error { return f.SetCellInt("Sheet1", "B2", 200) }},
+		{"SetCellUint", func() error { return f.SetCellUint("Sheet1", "B3", 300) }},
+		{"SetCellFloat", func() error { return f.SetCellFloat("Sheet1", "B4", 3.14, 2, 64) }},
+		{"SetCellStr", func() error { return f.SetCellStr("Sheet1", "B5", "test") }},
+		{"SetCellBool", func() error { return f.SetCellBool("Sheet1", "B6", true) }},
+		{"SetCellDefault", func() error { return f.SetCellDefault("Sheet1", "B7", "default") }},
+		{"SetCellFormula", func() error { return f.SetCellFormula("Sheet1", "B8", "=1+1") }},
+		{"SetCellHyperLink", func() error { return f.SetCellHyperLink("Sheet1", "B9", "http://example.com", "External") }},
+		{"SetCellRichText", func() error {
+			runs := []RichTextRun{{Text: "Rich", Font: &Font{Bold: true}}}
+			return f.SetCellRichText("Sheet1", "B10", runs)
+		}},
+		{"SetSheetRow", func() error { return f.SetSheetRow("Sheet1", "C1", &[]interface{}{1, 2, 3}) }},
+		{"SetSheetCol", func() error { return f.SetSheetCol("Sheet1", "D1", &[]interface{}{4, 5, 6}) }},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Ensure cache is built
+			_, err := f.CalcCellValue("Sheet1", "A2")
+			assert.NoError(t, err)
+			assert.NoError(t, tc.setFunc())
+			result, err := f.CalcCellValue("Sheet1", "A2")
+			assert.NoError(t, err)
+			assert.Equal(t, "20", result, "calculation should still work after cache clear")
+		})
+	}
 }
