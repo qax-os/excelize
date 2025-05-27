@@ -356,7 +356,7 @@ func TestRemoveRow(t *testing.T) {
 
 	f = NewFile()
 	formulaType, ref := STCellFormulaTypeShared, "C1:C5"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=A1+B1",
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "A1+B1",
 		FormulaOpts{Ref: &ref, Type: &formulaType}))
 	f.CalcChain = nil
 	f.Pkg.Store(defaultXMLPathCalcChain, MacintoshCyrillicCharset)

@@ -637,7 +637,7 @@ func TestGetCellFormula(t *testing.T) {
 	// formula cell reference range covered the previous.
 	f = NewFile()
 	formulaType, ref = STCellFormulaTypeShared, "C2:C6"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	formula, err = f.GetCellFormula("Sheet1", "C2")
 	assert.NoError(t, err)
 	assert.Equal(t, "A2+B2", formula)
@@ -646,7 +646,7 @@ func TestGetCellFormula(t *testing.T) {
 	assert.Equal(t, "A6+B6", formula)
 
 	formulaType, ref = STCellFormulaTypeShared, "C2:C8"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	formula, err = f.GetCellFormula("Sheet1", "C2")
 	assert.NoError(t, err)
 	assert.Equal(t, "A2*B2", formula)
@@ -659,7 +659,7 @@ func TestGetCellFormula(t *testing.T) {
 	// formula cell reference range not over the previous.
 	f = NewFile()
 	formulaType, ref = STCellFormulaTypeShared, "C2:C6"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	formula, err = f.GetCellFormula("Sheet1", "C2")
 	assert.NoError(t, err)
 	assert.Equal(t, "A2+B2", formula)
@@ -668,7 +668,7 @@ func TestGetCellFormula(t *testing.T) {
 	assert.Equal(t, "A6+B6", formula)
 
 	formulaType, ref = STCellFormulaTypeShared, "C2:C4"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	formula, err = f.GetCellFormula("Sheet1", "C2")
 	assert.NoError(t, err)
 	assert.Equal(t, "A2*B2", formula)
@@ -679,7 +679,7 @@ func TestGetCellFormula(t *testing.T) {
 	// Test get shared formula after remove refer cell formula
 	f = NewFile()
 	formulaType, ref = STCellFormulaTypeShared, "C2:C6"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
 
 	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", ""))
 
@@ -691,7 +691,7 @@ func TestGetCellFormula(t *testing.T) {
 	assert.Empty(t, formula)
 
 	formulaType, ref = STCellFormulaTypeShared, "C2:C8"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	formula, err = f.GetCellFormula("Sheet1", "C2")
 	assert.NoError(t, err)
 	assert.Equal(t, "A2*B2", formula)
@@ -791,16 +791,16 @@ func TestSetCellFormula(t *testing.T) {
 		assert.NoError(t, f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", r), &[]interface{}{r, r + 1}))
 	}
 	formulaType, ref := STCellFormulaTypeShared, "C1:C5"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=A1+B1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "A1+B1", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	sharedFormulaSpreadsheet := filepath.Join("test", "TestSetCellFormula4.xlsx")
 	assert.NoError(t, f.SaveAs(sharedFormulaSpreadsheet))
 
 	f, err = OpenFile(sharedFormulaSpreadsheet)
 	assert.NoError(t, err)
 	ref = "D1:D5"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	ref = ""
-	assert.Equal(t, ErrParameterInvalid, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.Equal(t, ErrParameterInvalid, f.SetCellFormula("Sheet1", "D1", "A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula5.xlsx")))
 
 	// Test set table formula for the cells
@@ -810,7 +810,7 @@ func TestSetCellFormula(t *testing.T) {
 	}
 	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:C2", Name: "Table1", StyleName: "TableStyleMedium2"}))
 	formulaType = STCellFormulaTypeDataTable
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=SUM(Table1[[A]:[B]])", FormulaOpts{Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "SUM(Table1[[A]:[B]])", FormulaOpts{Type: &formulaType}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula6.xlsx")))
 
 	// Test set array formula with invalid cell range reference

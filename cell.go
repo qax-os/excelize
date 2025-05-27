@@ -712,41 +712,41 @@ type FormulaOpts struct {
 // calculate the formula automatically when the workbook has been opened,
 // please call "UpdateLinkedValue" after setting the cell formula functions.
 //
-// Example 1, set normal formula "=SUM(A1,B1)" for the cell "A3" on "Sheet1":
+// Example 1, set normal formula "SUM(A1,B1)" for the cell "A3" on "Sheet1":
 //
-//	err := f.SetCellFormula("Sheet1", "A3", "=SUM(A1,B1)")
+//	err := f.SetCellFormula("Sheet1", "A3", "SUM(A1,B1)")
 //
 // Example 2, set one-dimensional vertical constant array (column array) formula
 // "1,2,3" for the cell "A3" on "Sheet1":
 //
-//	err := f.SetCellFormula("Sheet1", "A3", "={1;2;3}")
+//	err := f.SetCellFormula("Sheet1", "A3", "{1;2;3}")
 //
 // Example 3, set one-dimensional horizontal constant array (row array)
 // formula '"a","b","c"' for the cell "A3" on "Sheet1":
 //
-//	err := f.SetCellFormula("Sheet1", "A3", "={\"a\",\"b\",\"c\"}")
+//	err := f.SetCellFormula("Sheet1", "A3", "{\"a\",\"b\",\"c\"}")
 //
 // Example 4, set two-dimensional constant array formula '{1,2,"a","b"}' for
 // the cell "A3" on "Sheet1":
 //
 //	formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
-//	err := f.SetCellFormula("Sheet1", "A3", "={1,2;\"a\",\"b\"}",
+//	err := f.SetCellFormula("Sheet1", "A3", "{1,2;\"a\",\"b\"}",
 //	    excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
 //
 // Example 5, set range array formula "A1:A2" for the cell "A3" on "Sheet1":
 //
 //	formulaType, ref := excelize.STCellFormulaTypeArray, "A3:A3"
-//	err := f.SetCellFormula("Sheet1", "A3", "=A1:A2",
+//	err := f.SetCellFormula("Sheet1", "A3", "A1:A2",
 //	       excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
 //
-// Example 6, set shared formula "=A1+B1" for the cell "C1:C5"
+// Example 6, set shared formula "A1+B1" for the cell "C1:C5"
 // on "Sheet1", "C1" is the master cell:
 //
 //	formulaType, ref := excelize.STCellFormulaTypeShared, "C1:C5"
-//	err := f.SetCellFormula("Sheet1", "C1", "=A1+B1",
+//	err := f.SetCellFormula("Sheet1", "C1", "A1+B1",
 //	    excelize.FormulaOpts{Ref: &ref, Type: &formulaType})
 //
-// Example 7, set table formula "=SUM(Table1[[A]:[B]])" for the cell "C2"
+// Example 7, set table formula "SUM(Table1[[A]:[B]])" for the cell "C2"
 // on "Sheet1":
 //
 //	package main
@@ -777,7 +777,7 @@ type FormulaOpts struct {
 //	        return
 //	    }
 //	    formulaType := excelize.STCellFormulaTypeDataTable
-//	    if err := f.SetCellFormula("Sheet1", "C2", "=SUM(Table1[[A]:[B]])",
+//	    if err := f.SetCellFormula("Sheet1", "C2", "SUM(Table1[[A]:[B]])",
 //	        excelize.FormulaOpts{Type: &formulaType}); err != nil {
 //	        fmt.Println(err)
 //	        return
