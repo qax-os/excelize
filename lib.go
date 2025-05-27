@@ -118,7 +118,7 @@ func (f *File) readBytes(name string) []byte {
 	if err != nil {
 		return content
 	}
-	content, _ = io.ReadAll(file)
+	content, _ = readAll(file)
 	f.Pkg.Store(name, content)
 	_ = file.Close()
 	return content
