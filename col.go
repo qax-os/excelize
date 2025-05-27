@@ -748,6 +748,7 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 // worksheet, it will cause a file error when you open it. The excelize only
 // partially updates these references currently.
 func (f *File) InsertCols(sheet, col string, n int) error {
+	f.clearCalcCache()
 	num, err := ColumnNameToNumber(col)
 	if err != nil {
 		return err
@@ -768,6 +769,7 @@ func (f *File) InsertCols(sheet, col string, n int) error {
 // worksheet, it will cause a file error when you open it. The excelize only
 // partially updates these references currently.
 func (f *File) RemoveCol(sheet, col string) error {
+	f.clearCalcCache()
 	num, err := ColumnNameToNumber(col)
 	if err != nil {
 		return err

@@ -50,6 +50,7 @@ func (mc *xlsxMergeCell) Rect() ([]int, error) {
 //	|A8(x3,y4)      C8(x4,y4)|
 //	+------------------------+
 func (f *File) MergeCell(sheet, topLeftCell, bottomRightCell string) error {
+	f.clearCalcCache()
 	rect, err := rangeRefToCoordinates(topLeftCell + ":" + bottomRightCell)
 	if err != nil {
 		return err
@@ -94,6 +95,7 @@ func (f *File) MergeCell(sheet, topLeftCell, bottomRightCell string) error {
 //
 // Attention: overlapped range will also be unmerged.
 func (f *File) UnmergeCell(sheet, topLeftCell, bottomRightCell string) error {
+	f.clearCalcCache()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
