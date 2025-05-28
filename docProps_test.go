@@ -97,6 +97,26 @@ func TestSetDocProps(t *testing.T) {
 	assert.EqualError(t, f.SetDocProps(&DocProperties{}), "XML syntax error on line 1: invalid UTF-8")
 }
 
+func TestSetDocCustomProps(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	assert.NoError(t, f.SetDocCustomProps("version", "v1.0.0"))
+	assert.NoError(t, f.SetDocCustomProps("user", "root"))
+	assert.NoError(t, f.SetDocCustomProps("user", "Microsoft Office User"))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetDocCustomProps.xlsx")))
+	f.Pkg.Store(defaultXMLPathDocPropsCustom, nil)
+	assert.NoError(t, f.SetDocCustomProps("version", ""))
+	assert.NoError(t, f.Close())
+
+	// Test unsupported charset
+	f = NewFile()
+	f.Pkg.Store(defaultXMLPathDocPropsCustom, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetDocCustomProps("version", ""), "XML syntax error on line 1: invalid UTF-8")
+}
+
 func TestGetDocProps(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
@@ -114,5 +134,29 @@ func TestGetDocProps(t *testing.T) {
 	f = NewFile()
 	f.Pkg.Store(defaultXMLPathDocPropsCore, MacintoshCyrillicCharset)
 	_, err = f.GetDocProps()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestFile_GetDocCustomProps(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	// now no custom properties in f
+	props, err := f.GetDocCustomProps()
+	assert.NoError(t, err)
+	assert.Empty(t, props)
+
+	assert.NoError(t, f.SetDocCustomProps("version", "v1.0.0"))
+
+	props, err = f.GetDocCustomProps()
+	assert.NoError(t, err)
+	assert.Equal(t, "v1.0.0", props["version"])
+
+	// Test get workbook properties with unsupported charset
+	f = NewFile()
+	f.Pkg.Store(defaultXMLPathDocPropsCustom, MacintoshCyrillicCharset)
+	_, err = f.GetDocCustomProps()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }

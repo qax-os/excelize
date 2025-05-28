@@ -34,6 +34,7 @@ func NewFile(opts ...Options) *File {
 	f.Pkg.Store("_rels/.rels", []byte(xml.Header+templateRels))
 	f.Pkg.Store(defaultXMLPathDocPropsApp, []byte(xml.Header+templateDocpropsApp))
 	f.Pkg.Store(defaultXMLPathDocPropsCore, []byte(xml.Header+templateDocpropsCore))
+	f.Pkg.Store(defaultXMLPathDocPropsCustom, []byte(xml.Header+templateDocpropsCustom))
 	f.Pkg.Store(defaultXMLPathWorkbookRels, []byte(xml.Header+templateWorkbookRels))
 	f.Pkg.Store("xl/theme/theme1.xml", []byte(xml.Header+templateTheme))
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+templateSheet))
