@@ -2,6 +2,7 @@ package excelize
 
 import (
 	"container/list"
+	"fmt"
 	"math"
 	"path/filepath"
 	"strings"
@@ -6501,4 +6502,171 @@ func TestParseToken(t *testing.T) {
 	assert.Equal(t, formulaErrorNAME, f.parseToken(nil, "Sheet1",
 		efp.Token{TSubType: efp.TokenSubTypeRange, TValue: "1A"}, nil, nil,
 	).Error())
+}
+
+// TestBAHTTEXT 测试 BAHTTEXT 函数
+func TestBAHTTEXT(t *testing.T) {
+	// 创建一个空的 File 实例和计算上下文
+	f := NewFile()
+	ctx := &calcContext{}
+	fn := &formulaFuncs{
+		f:     f,
+		ctx:   ctx,
+		sheet: "Sheet1",
+		cell:  "A1",
+	}
+
+	// 定义测试用例结构体
+	type testCase struct {
+		input    float64
+		expected string
+		name     string
+	}
+
+	// 定义测试用例
+	testCases := []testCase{
+		{
+			input:    0,
+			expected: "ศูนย์บาทถ้วน",
+			name:     "Zero value",
+		},
+		{
+			input:    123,
+			expected: "หนึ่งร้อยยี่สิบสามบาท",
+			name:     "Integer value",
+		},
+		{
+			input:    123.45,
+			expected: "หนึ่งร้อยยี่สิบสามบาทสี่สิบห้าสตางค์",
+			name:     "Value with decimal",
+		},
+		{
+			input:    1000000,
+			expected: "หนึ่งล้านบาท",
+			name:     "Large integer value",
+		},
+		{
+			input:    0.50,
+			expected: "ห้าสิบสตางค์",
+			name:     "Only decimal value",
+		},
+	}
+
+	// 执行测试用例
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			argsList := list.New()
+			argsList.PushFront(newNumberFormulaArg(tc.input))
+			result := fn.BAHTTEXT(argsList)
+
+			if result.Type != ArgString || result.String != tc.expected {
+				t.Errorf("Expected %q, but got %q", tc.expected, result.String)
+			}
+		})
+	}
+}
+
+// TestDOLLAR 测试 DOLLAR 函数
+func TestDOLLAR(t *testing.T) {
+	// 测试不同区域设置
+	cultureInfos := []CultureName{
+		CultureNameUnknown,
+		CultureNameEnUS,
+		CultureNameJaJP,
+		CultureNameKoKR,
+		CultureNameZhCN,
+		CultureNameZhTW,
+	}
+
+	// 定义测试用例结构体
+	type testCase struct {
+		inputArgs []float64
+		culture   CultureName
+		expected  string
+		name      string
+		expectErr bool
+	}
+
+	// 定义测试用例
+	testCases := []testCase{
+		{
+			inputArgs: []float64{1234.5678},
+			culture:   CultureNameEnUS,
+			expected:  "$1,234.57",
+			name:      "Single argument, default decimals",
+			expectErr: false,
+		},
+		{
+			inputArgs: []float64{1234.5678, 3},
+			culture:   CultureNameJaJP,
+			expected:  "¥1,234.568",
+			name:      "Two arguments, specified decimals",
+			expectErr: false,
+		},
+		{
+			inputArgs: []float64{1234.5678, -1},
+			culture:   CultureNameZhCN,
+			expected:  "¥1,230",
+			name:      "Negative decimal places",
+			expectErr: false,
+		},
+		{
+			inputArgs: []float64{1234.5678, 128},
+			culture:   CultureNameKoKR,
+			expected:  "#VALUE!",
+			name:      "Decimal value >= 128",
+			expectErr: true,
+		},
+		{
+			inputArgs: []float64{},
+			culture:   CultureNameEnUS,
+			expected:  "#VALUE!",
+			name:      "No arguments",
+			expectErr: true,
+		},
+		{
+			inputArgs: []float64{1234.5678, 1, 2},
+			culture:   CultureNameZhTW,
+			expected:  "#VALUE!",
+			name:      "More than 2 arguments",
+			expectErr: true,
+		},
+	}
+
+	for _, culture := range cultureInfos {
+		// 为每个区域设置创建新的 File 实例和计算上下文
+		f := NewFile()
+		f.options.CultureInfo = culture
+		ctx := &calcContext{}
+		fn := &formulaFuncs{
+			f:     f,
+			ctx:   ctx,
+			sheet: "Sheet1",
+			cell:  "A1",
+		}
+
+		for _, tc := range testCases {
+			if tc.culture != culture {
+				continue
+			}
+			t.Run(fmt.Sprintf("%d_%s", tc.culture, tc.name), func(t *testing.T) {
+				argsList := list.New()
+				for _, arg := range tc.inputArgs {
+					argsList.PushBack(newNumberFormulaArg(arg))
+				}
+
+				result := fn.DOLLAR(argsList)
+
+				if tc.expectErr {
+					if result.Type != ArgError {
+						t.Errorf("Expected error, but got %v", result)
+					}
+				} else {
+					if result.Type != ArgString || result.String != tc.expected {
+						t.Errorf("Expected %q, but got %q", tc.expected, result.String)
+					}
+				}
+			})
+		}
+	}
 }
