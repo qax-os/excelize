@@ -178,6 +178,8 @@ var (
 	// ErrWorkbookPassword defined the error message on receiving the incorrect
 	// workbook password.
 	ErrWorkbookPassword = errors.New("the supplied open workbook password is not correct")
+	// ErrUnsupportedCustomPropertyDataType defined the error message on unsupported custom property value data type.
+	ErrUnsupportedCustomPropertyDataType = errors.New("unsupported custom property value data type")
 )
 
 // ErrSheetNotExist defined an error of sheet that does not exist.

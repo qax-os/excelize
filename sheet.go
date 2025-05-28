@@ -239,6 +239,15 @@ func (f *File) setContentTypes(partName, contentType string) error {
 	}
 	content.mu.Lock()
 	defer content.mu.Unlock()
+
+	// if target partName exists, update it
+	for i, v := range content.Overrides {
+		if v.PartName == partName {
+			content.Overrides[i].ContentType = contentType
+			return nil
+		}
+	}
+
 	content.Overrides = append(content.Overrides, xlsxOverride{
 		PartName:    partName,
 		ContentType: contentType,
