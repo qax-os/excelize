@@ -16,6 +16,7 @@ import (
 	"encoding/xml"
 	"io"
 	"reflect"
+	"strconv"
 )
 
 // SetAppProps provides a function to set document application properties. The
@@ -204,6 +205,80 @@ func (f *File) SetDocProps(docProperties *DocProperties) error {
 	f.saveFileList(defaultXMLPathDocPropsCore, output)
 
 	return err
+}
+
+const (
+	customPropertiesFMTIDMagicNumber = "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}"
+)
+
+// SetDocCustomProps provides a function to set excel custom properties.
+func (f *File) SetDocCustomProps(name string, value string) error {
+	customProps := new(xlsxCustomProperties)
+
+	// find existing custom properties
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCustom)))).
+		Decode(customProps); err != nil && err != io.EOF {
+		return err
+	}
+
+	props := customProps.Props
+	existingPropertyMap := make(map[string]xlsxCustomProperty)
+	maxPID := 1 // pid from 2
+	for _, prop := range props {
+		pid, err := strconv.Atoi(prop.PID)
+		if err == nil && pid > maxPID {
+			maxPID = pid
+		}
+
+		existingPropertyMap[prop.Name] = prop
+	}
+
+	// update existing custom properties
+	if existingProperty, ok := existingPropertyMap[name]; ok {
+		existingProperty.V = value
+	} else {
+		// add new custom property
+		newProperty := xlsxCustomProperty{
+			FmtID: customPropertiesFMTIDMagicNumber,
+			PID:   strconv.FormatInt(int64(maxPID+1), 10), // max pid plus 1 to create a new unique pid
+			Name:  name,
+			V:     value,
+		}
+
+		props = append(props, newProperty)
+	}
+
+	newCustomProps := &xlsxCustomProperties{
+		Vt:    NameSpaceDocumentPropertiesVariantTypes.Value,
+		Props: props,
+	}
+
+	output, err := xml.Marshal(newCustomProps)
+	// f.saveFileList(defaultXMLPathDocPropsCustom, output)
+	f.Pkg.Store(defaultXMLPathDocPropsCustom, append([]byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+"\n"), output...))
+
+	return err
+}
+
+// GetDocCustomProps provides a function to get document custom properties.
+func (f *File) GetDocCustomProps() (kv map[string]string, err error) {
+	custom := new(xlsxCustomProperties)
+
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCustom)))).
+		Decode(custom); err != nil && err != io.EOF {
+		return
+	}
+
+	kv = make(map[string]string)
+	if custom == nil || len(custom.Props) == 0 {
+		return kv, nil
+	}
+
+	for _, prop := range custom.Props {
+		kv[prop.Name] = prop.V
+	}
+
+	return kv, nil
 }
 
 // GetDocProps provides a function to get document core properties.
