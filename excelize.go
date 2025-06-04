@@ -40,6 +40,8 @@ type File struct {
 	streams          map[string]*StreamWriter
 	tempFiles        sync.Map
 	xmlAttr          sync.Map
+	calcCache        sync.Map
+	calcCacheMu      sync.RWMutex
 	CalcChain        *xlsxCalcChain
 	CharsetReader    charsetTranscoderFn
 	Comments         map[string]*xlsxComments
