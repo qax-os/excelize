@@ -14,6 +14,7 @@ package excelize
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -97,6 +98,30 @@ func TestSetDocProps(t *testing.T) {
 	assert.EqualError(t, f.SetDocProps(&DocProperties{}), "XML syntax error on line 1: invalid UTF-8")
 }
 
+func TestSetDocCustomProps(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	assert.NoError(t, f.SetDocCustomProps("string", "v1.0.0"))
+	assert.NoError(t, f.SetDocCustomProps("string", "v2.0.0"))
+	assert.EqualError(t, f.SetDocCustomProps("string", int64(1)), ErrUnsupportedCustomPropertyDataType.Error())
+	assert.NoError(t, f.SetDocCustomProps("bool", true))
+	assert.EqualError(t, f.SetDocCustomProps("int64", int64(1)), ErrUnsupportedCustomPropertyDataType.Error())
+	assert.NoError(t, f.SetDocCustomProps("float64", 1.0))
+	assert.NoError(t, f.SetDocCustomProps("date", time.Now()))
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetDocCustomProps.xlsx")))
+	f.Pkg.Store(defaultXMLPathDocPropsCustom, nil)
+	assert.NoError(t, f.SetDocCustomProps("version", ""))
+	assert.NoError(t, f.Close())
+
+	// Test unsupported charset
+	f = NewFile()
+	f.Pkg.Store(defaultXMLPathDocPropsCustom, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetDocCustomProps("version", ""), "XML syntax error on line 1: invalid UTF-8")
+}
+
 func TestGetDocProps(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
@@ -114,5 +139,36 @@ func TestGetDocProps(t *testing.T) {
 	f = NewFile()
 	f.Pkg.Store(defaultXMLPathDocPropsCore, MacintoshCyrillicCharset)
 	_, err = f.GetDocProps()
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestFile_GetDocCustomProps(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	// now no custom properties in f
+	props, err := f.GetDocCustomProps()
+	assert.NoError(t, err)
+	assert.Empty(t, props)
+
+	assert.NoError(t, f.SetDocCustomProps("string", "v1.0.0"))
+	assert.NoError(t, f.SetDocCustomProps("bool", true))
+	assert.NoError(t, f.SetDocCustomProps("float64", 1.0))
+	dateValue := time.Date(2006, 01, 02, 15, 04, 05, 0, time.Local)
+	assert.NoError(t, f.SetDocCustomProps("date", dateValue))
+
+	props, err = f.GetDocCustomProps()
+	assert.NoError(t, err)
+	assert.Equal(t, "v1.0.0", props["string"])
+	assert.Equal(t, true, props["bool"])
+	assert.Equal(t, 1.0, props["float64"])
+	assert.Equal(t, dateValue.Unix(), props["date"].(time.Time).Unix())
+
+	// Test get workbook properties with unsupported charset
+	f = NewFile()
+	f.Pkg.Store(defaultXMLPathDocPropsCustom, MacintoshCyrillicCharset)
+	_, err = f.GetDocCustomProps()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
