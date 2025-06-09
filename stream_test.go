@@ -78,8 +78,14 @@ func TestStreamWriter(t *testing.T) {
 	assert.Equal(t, ErrMaxRowHeight, streamWriter.SetRow("A8", nil, RowOpts{Height: MaxRowHeight + 1}))
 
 	assert.NoError(t, streamWriter.SetRow("A9", []interface{}{math.NaN(), math.Inf(0), math.Inf(-1)}))
+	assert.NoError(t, streamWriter.SetRow("A10", []interface{}{
+		SetCellDefaultValue("1.0"), "1.0", 1.0,
+	}))
+	assert.NoError(t, streamWriter.SetRow("A11", []interface{}{
+		SetCellDefaultValue("2.0"), "2.0", 2.0,
+	}))
 
-	for rowID := 10; rowID <= 51200; rowID++ {
+	for rowID := 12; rowID <= 51200; rowID++ {
 		row := make([]interface{}, 50)
 		for colID := 0; colID < 50; colID++ {
 			row[colID] = rand.Intn(640000)
@@ -148,7 +154,7 @@ func TestStreamWriter(t *testing.T) {
 		cells += len(row)
 	}
 	assert.NoError(t, rows.Close())
-	assert.Equal(t, 2559562, cells)
+	assert.Equal(t, 2559468, cells)
 	// Save spreadsheet with password.
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "EncryptionTestStreamWriter.xlsx"), Options{Password: "password"}))
 	assert.NoError(t, file.Close())
