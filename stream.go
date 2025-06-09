@@ -568,6 +568,8 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
 	case []RichTextRun:
 		c.T, c.IS = "inlineStr", &xlsxSI{}
 		c.IS.R, err = setRichText(val)
+	case SetCellDefaultValue:
+		c.setCellDefault(string(val))
 	default:
 		c.setCellValue(fmt.Sprint(val))
 	}

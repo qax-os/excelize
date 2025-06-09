@@ -571,6 +571,10 @@ func (c *xlsxC) getCellBool(f *File, raw bool) (string, error) {
 	return f.formattedValue(c, raw, CellTypeBool)
 }
 
+// SetCellDefaultValue is a type for setCellDefault function, pass this type data,  setCellDefault will be used to
+// perform the write operation.
+type SetCellDefaultValue string
+
 // setCellDefault prepares cell type and string type cell value by a given
 // string.
 func (c *xlsxC) setCellDefault(value string) {
@@ -580,7 +584,8 @@ func (c *xlsxC) setCellDefault(value string) {
 			c.IS.T.Val = value
 			return
 		}
-		c.T, c.V, c.IS = value, value, nil
+
+		c.T, c.V, c.IS = "", "", nil // I modify this to set c.T = "" explicitly to avoid misunderstanding of c.Type can be value
 		return
 	}
 	c.T, c.V = "", value

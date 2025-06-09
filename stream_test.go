@@ -408,6 +408,8 @@ func TestStreamSetCellValFunc(t *testing.T) {
 		true,
 		nil,
 		complex64(5 + 10i),
+		SetCellDefaultValue("100.1588"),
+		SetCellDefaultValue(" Hello"),
 	} {
 		assert.NoError(t, sw.setCellValFunc(c, val))
 	}
