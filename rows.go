@@ -247,21 +247,21 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 }
 
 // cellXMLAttrHandler parse the cell XML element attributes of the worksheet.
-func (cell *xlsxC) cellXMLAttrHandler(start *xml.StartElement) error {
+func (c *xlsxC) cellXMLAttrHandler(start *xml.StartElement) error {
 	for _, attr := range start.Attr {
 		switch attr.Name.Local {
 		case "r":
-			cell.R = attr.Value
+			c.R = attr.Value
 		case "s":
 			val, err := strconv.ParseInt(attr.Value, 10, 64)
 			if err != nil {
 				return err
 			}
 			if math.MinInt <= val && val <= math.MaxInt {
-				cell.S = int(val)
+				c.S = int(val)
 			}
 		case "t":
-			cell.T = attr.Value
+			c.T = attr.Value
 		default:
 		}
 	}
@@ -269,9 +269,9 @@ func (cell *xlsxC) cellXMLAttrHandler(start *xml.StartElement) error {
 }
 
 // cellXMLHandler parse the cell XML element of the worksheet.
-func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement) error {
-	cell.XMLName = start.Name
-	err := cell.cellXMLAttrHandler(start)
+func (c *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement) error {
+	c.XMLName = start.Name
+	err := c.cellXMLAttrHandler(start)
 	if err != nil {
 		return err
 	}
@@ -286,11 +286,11 @@ func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement)
 			se = el
 			switch se.Name.Local {
 			case "v":
-				err = decoder.DecodeElement(&cell.V, &se)
+				err = decoder.DecodeElement(&c.V, &se)
 			case "f":
-				err = decoder.DecodeElement(&cell.F, &se)
+				err = decoder.DecodeElement(&c.F, &se)
 			case "is":
-				err = decoder.DecodeElement(&cell.IS, &se)
+				err = decoder.DecodeElement(&c.IS, &se)
 			}
 			if err != nil {
 				return err
