@@ -524,14 +524,14 @@ func TestWorksheetWriter(t *testing.T) {
 
 func TestGetWorkbookPath(t *testing.T) {
 	f := NewFile()
-	f.Pkg.Delete("_rels/.rels")
+	f.Pkg.Delete(defaultXMLPathRels)
 	assert.Empty(t, f.getWorkbookPath())
 }
 
 func TestGetWorkbookRelsPath(t *testing.T) {
 	f := NewFile()
 	f.Pkg.Delete("xl/_rels/.rels")
-	f.Pkg.Store("_rels/.rels", []byte(xml.Header+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument" Target="/workbook.xml"/></Relationships>`))
+	f.Pkg.Store(defaultXMLPathRels, []byte(xml.Header+`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://purl.oclc.org/ooxml/officeDocument/relationships/officeDocument" Target="/workbook.xml"/></Relationships>`))
 	assert.Equal(t, "_rels/workbook.xml.rels", f.getWorkbookRelsPath())
 }
 

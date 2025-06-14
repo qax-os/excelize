@@ -31,7 +31,7 @@ import (
 //	f := NewFile()
 func NewFile(opts ...Options) *File {
 	f := newFile()
-	f.Pkg.Store("_rels/.rels", []byte(xml.Header+templateRels))
+	f.Pkg.Store(defaultXMLPathRels, []byte(xml.Header+templateRels))
 	f.Pkg.Store(defaultXMLPathDocPropsApp, []byte(xml.Header+templateDocpropsApp))
 	f.Pkg.Store(defaultXMLPathDocPropsCore, []byte(xml.Header+templateDocpropsCore))
 	f.Pkg.Store(defaultXMLPathWorkbookRels, []byte(xml.Header+templateWorkbookRels))

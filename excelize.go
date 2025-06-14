@@ -419,7 +419,8 @@ func (f *File) setRels(rID, relPath, relType, target, targetMode string) int {
 // relationship type, target and target mode.
 func (f *File) addRels(relPath, relType, target, targetMode string) int {
 	uniqPart := map[string]string{
-		SourceRelationshipSharedStrings: "/xl/sharedStrings.xml",
+		SourceRelationshipCustomProperties: "/docProps/custom.xml",
+		SourceRelationshipSharedStrings:    "/xl/sharedStrings.xml",
 	}
 	rels, _ := f.relsReader(relPath)
 	if rels == nil {

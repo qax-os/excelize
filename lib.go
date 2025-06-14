@@ -892,6 +892,19 @@ func assignFieldValue(field string, immutable, mutable reflect.Value) {
 	}
 }
 
+// setPtrFields assigns the fields of the immutable struct to the mutable
+// struct. The fields name of the immutable struct must match the field names of
+// the mutable struct.
+func setPtrFields(immutable, mutable reflect.Value) {
+	for i := range immutable.NumField() {
+		srcField := immutable.Type().Field(i)
+		dstField := mutable.FieldByName(srcField.Name)
+		if dstField.IsValid() && dstField.CanSet() && dstField.Type() == immutable.Field(i).Type() {
+			dstField.Set(immutable.Field(i))
+		}
+	}
+}
+
 // setNoPtrFieldsVal assigns values from the pointer or no-pointer structs
 // fields (immutable) value to no-pointer struct field.
 func setNoPtrFieldsVal(fields []string, immutable, mutable reflect.Value) {
