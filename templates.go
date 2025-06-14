@@ -43,6 +43,7 @@ var (
 // Source relationship and namespace.
 const (
 	ContentTypeAddinMacro                         = "application/vnd.ms-excel.addin.macroEnabled.main+xml"
+	ContentTypeCustomProperties                   = "application/vnd.openxmlformats-officedocument.custom-properties+xml"
 	ContentTypeDrawing                            = "application/vnd.openxmlformats-officedocument.drawing+xml"
 	ContentTypeDrawingML                          = "application/vnd.openxmlformats-officedocument.drawingml.chart+xml"
 	ContentTypeMacro                              = "application/vnd.ms-excel.sheet.macroEnabled.main+xml"
@@ -59,7 +60,6 @@ const (
 	ContentTypeSpreadSheetMLWorksheet             = "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"
 	ContentTypeTemplate                           = "application/vnd.openxmlformats-officedocument.spreadsheetml.template.main+xml"
 	ContentTypeTemplateMacro                      = "application/vnd.ms-excel.template.macroEnabled.main+xml"
-	ContentTypeCustomProperties                   = "application/vnd.openxmlformats-officedocument.custom-properties+xml"
 	ContentTypeVBA                                = "application/vnd.ms-office.vbaProject"
 	ContentTypeVML                                = "application/vnd.openxmlformats-officedocument.vmlDrawing"
 	NameSpaceDrawingMLMain                        = "http://schemas.openxmlformats.org/drawingml/2006/main"
@@ -72,6 +72,7 @@ const (
 	SourceRelationshipChart                       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart"
 	SourceRelationshipChartsheet                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/chartsheet"
 	SourceRelationshipComments                    = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments"
+	SourceRelationshipCustomProperties            = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties"
 	SourceRelationshipDialogsheet                 = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/dialogsheet"
 	SourceRelationshipDrawingML                   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing"
 	SourceRelationshipDrawingVML                  = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing"
@@ -87,7 +88,6 @@ const (
 	SourceRelationshipTable                       = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/table"
 	SourceRelationshipVBAProject                  = "http://schemas.microsoft.com/office/2006/relationships/vbaProject"
 	SourceRelationshipWorkSheet                   = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
-	SourceRelationshipCustomProperties            = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties"
 	StrictNameSpaceDocumentPropertiesVariantTypes = "http://purl.oclc.org/ooxml/officeDocument/docPropsVTypes"
 	StrictNameSpaceDrawingMLMain                  = "http://purl.oclc.org/ooxml/drawingml/main"
 	StrictNameSpaceExtendedProperties             = "http://purl.oclc.org/ooxml/officeDocument/extendedProperties"
@@ -104,6 +104,7 @@ const (
 	ExtURICalcFeatures                   = "{B58B0392-4F1F-4190-BB64-5DF3571DCE5F}"
 	ExtURIConditionalFormattingRuleID    = "{B025F937-C7B1-47D3-B67F-A62EFF666E3E}"
 	ExtURIConditionalFormattings         = "{78C0D931-6437-407d-A8EE-F0AAD7539E65}"
+	EXtURICustomPropertyFmtID            = "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}"
 	ExtURIDataField                      = "{E15A36E0-9728-4E99-A89B-3F7291B0FE68}"
 	ExtURIDataModel                      = "{FCE2AD5D-F65C-4FA6-A056-5C36A1767C68}"
 	ExtURIDataValidations                = "{CCE6A557-97BC-4b89-ADB6-D9C93CAAB3DF}"
@@ -134,9 +135,6 @@ const (
 	ExtURIWebExtensions                  = "{F7C9EE02-42E1-4005-9D12-6889AFFD525C}"
 	ExtURIWorkbookPrX14                  = "{79F54976-1DA5-4618-B147-ACDE4B953A38}"
 	ExtURIWorkbookPrX15                  = "{140A7094-0E35-4892-8432-C4D2E57EDEB5}"
-
-	// CustomPropertiesFMTID is the format ID for custom properties items.
-	CustomPropertiesFMTID = "{D5CDD505-2E9C-101B-9397-08002B2CF9AE}"
 )
 
 // workbookExtURIPriority is the priority of URI in the workbook extension lists.
@@ -275,7 +273,6 @@ var supportedChartDataLabelsPosition = map[ChartType][]ChartDataLabelPositionTyp
 }
 
 const (
-	defaultXMLRels                        = "_rels/.rels"
 	defaultTempFileSST                    = "sharedStrings"
 	defaultXMLMetadata                    = "xl/metadata.xml"
 	defaultXMLPathCalcChain               = "xl/calcChain.xml"
@@ -283,8 +280,9 @@ const (
 	defaultXMLPathCellImagesRels          = "xl/_rels/cellimages.xml.rels"
 	defaultXMLPathContentTypes            = "[Content_Types].xml"
 	defaultXMLPathDocPropsApp             = "docProps/app.xml"
-	defaultXMLPathDocPropsCustom          = "docProps/custom.xml"
 	defaultXMLPathDocPropsCore            = "docProps/core.xml"
+	defaultXMLPathDocPropsCustom          = "docProps/custom.xml"
+	defaultXMLPathRels                    = "_rels/.rels"
 	defaultXMLPathSharedStrings           = "xl/sharedStrings.xml"
 	defaultXMLPathStyles                  = "xl/styles.xml"
 	defaultXMLPathTheme                   = "xl/theme/theme1.xml"

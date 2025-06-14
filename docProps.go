@@ -16,7 +16,7 @@ import (
 	"encoding/xml"
 	"io"
 	"reflect"
-	"strconv"
+	"slices"
 	"time"
 )
 
@@ -208,123 +208,6 @@ func (f *File) SetDocProps(docProperties *DocProperties) error {
 	return err
 }
 
-// SetDocCustomProps provides a function to set excel custom properties, support string, bool, float64,
-// time.DateTime four types.
-func (f *File) SetDocCustomProps(name string, value interface{}) error {
-	customProps := new(xlsxCustomProperties)
-
-	// find existing custom properties
-	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCustom)))).
-		Decode(customProps); err != nil && err != io.EOF {
-		return err
-	}
-
-	props := customProps.Props
-	existingPropertyMap := make(map[string]xlsxCustomProperty)
-	maxPID := 1 // pid from 2
-	for _, prop := range props {
-		pid, err := strconv.Atoi(prop.PID)
-		if err == nil && pid > maxPID {
-			maxPID = pid
-		}
-
-		existingPropertyMap[prop.Name] = prop
-	}
-
-	// different custom property value type setter function
-	var setValueFunc func(*xlsxCustomProperty) error
-	switch v := value.(type) {
-	case float64:
-		setValueFunc = func(property *xlsxCustomProperty) error {
-			property.Number = &NumberValue{Number: v}
-			return nil
-		}
-	case bool:
-		setValueFunc = func(property *xlsxCustomProperty) error {
-			property.Bool = &BoolValue{Bool: v}
-			return nil
-		}
-	case string:
-		setValueFunc = func(property *xlsxCustomProperty) error {
-			property.Text = &TextValue{Text: v}
-			return nil
-		}
-	case time.Time:
-		setValueFunc = func(property *xlsxCustomProperty) error {
-			property.DateTime = &FileTimeValue{
-				DateTime: v.Format(time.RFC3339),
-			}
-			return nil
-		}
-	default:
-		setValueFunc = func(_ *xlsxCustomProperty) error {
-			return ErrUnsupportedCustomPropertyDataType
-		}
-	}
-
-	// update existing custom properties
-	if existingProperty, ok := existingPropertyMap[name]; ok {
-		if err := setValueFunc(&existingProperty); err != nil {
-			return err
-		}
-	} else {
-		// add new custom property
-		newProperty := xlsxCustomProperty{
-			FmtID: CustomPropertiesFMTID,
-			PID:   strconv.FormatInt(int64(maxPID+1), 10), // max pid plus 1 to create a new unique pid
-			Name:  name,
-		}
-
-		if err := setValueFunc(&newProperty); err != nil {
-			return err
-		}
-
-		props = append(props, newProperty)
-	}
-
-	newCustomProps := &xlsxCustomProperties{
-		Vt:    NameSpaceDocumentPropertiesVariantTypes.Value,
-		Props: props,
-	}
-
-	output, err := xml.Marshal(newCustomProps)
-	f.saveFileList(defaultXMLPathDocPropsCustom, output)
-
-	// set custom properties if necessary
-	_ = f.addRels(defaultXMLRels, SourceRelationshipCustomProperties, defaultXMLPathDocPropsCustom, "")
-
-	// set content type if necessary
-	_ = f.setContentTypes("/"+defaultXMLPathDocPropsCustom, ContentTypeCustomProperties)
-
-	return err
-}
-
-// GetDocCustomProps provides a function to get document custom properties, supported string, bool, float64,
-// time.DateTime four types. If the custom property is not set, it will return an empty map, and if the custom property
-// value is invalid format, it returns as if the custom property does not exist.
-func (f *File) GetDocCustomProps() (kv map[string]interface{}, err error) {
-	custom := new(xlsxCustomProperties)
-
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCustom)))).
-		Decode(custom); err != nil && err != io.EOF {
-		return
-	}
-
-	kv = make(map[string]interface{})
-	if custom == nil || len(custom.Props) == 0 {
-		return kv, nil
-	}
-
-	for _, prop := range custom.Props {
-		propertyValue := prop.getPropertyValue()
-		if propertyValue != nil {
-			kv[prop.Name] = propertyValue
-		}
-	}
-
-	return kv, nil
-}
-
 // GetDocProps provides a function to get document core properties.
 func (f *File) GetDocProps() (ret *DocProperties, err error) {
 	core := new(decodeCoreProperties)
@@ -354,4 +237,118 @@ func (f *File) GetDocProps() (ret *DocProperties, err error) {
 		ret.Modified = core.Modified.Text
 	}
 	return
+}
+
+// SetCustomProps provides a function to set custom file properties by given
+// property name and value. If the property name already exists, it will be
+// updated, otherwise a new property will be added. The value can be of type
+// int32, float64, bool, string, time.Time or nil. The property will be delete
+// if the value is nil. The function returns an error if the property value is
+// not of the correct type.
+func (f *File) SetCustomProps(prop CustomProperty) error {
+	if prop.Name == "" {
+		return ErrParameterInvalid
+	}
+	props := new(decodeCustomProperties)
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCustom)))).
+		Decode(props); err != nil && err != io.EOF {
+		return err
+	}
+	customProps := xlsxCustomProperties{Vt: NameSpaceDocumentPropertiesVariantTypes.Value}
+	idx, pID := -1, 1
+	for i := range props.Property {
+		p := new(xlsxProperty)
+		setPtrFields(reflect.ValueOf(&props.Property[i]).Elem(), reflect.ValueOf(p).Elem())
+		if pID < props.Property[i].PID {
+			pID = props.Property[i].PID
+		}
+		if props.Property[i].Name == prop.Name {
+			idx = i
+		}
+		customProps.Property = append(customProps.Property, *p)
+	}
+	if idx != -1 && prop.Value == nil {
+		customProps.Property = slices.Delete(customProps.Property, idx, idx+1)
+	}
+	if prop.Value != nil {
+		property := xlsxProperty{Name: prop.Name, FmtID: EXtURICustomPropertyFmtID}
+		if err := property.setCustomProps(prop.Value); err != nil {
+			return err
+		}
+		if idx != -1 {
+			property.PID = customProps.Property[idx].PID
+			customProps.Property[idx] = property
+		} else {
+			property.PID = pID + 1
+			customProps.Property = append(customProps.Property, property)
+		}
+	}
+	_ = f.addRels(defaultXMLPathRels, SourceRelationshipCustomProperties, defaultXMLPathDocPropsCustom, "")
+	if err := f.addContentTypePart(0, "customProperties"); err != nil {
+		return err
+	}
+	output, err := xml.Marshal(customProps)
+	f.saveFileList(defaultXMLPathDocPropsCustom, output)
+	return err
+}
+
+// setCustomProps sets the custom property value based on its type.
+func (prop *xlsxProperty) setCustomProps(value interface{}) error {
+	switch v := value.(type) {
+	case int32:
+		prop.I4 = &v
+	case float64:
+		prop.R8 = float64Ptr(v)
+	case bool:
+		prop.Bool = boolPtr(v)
+	case string:
+		prop.Lpwstr = stringPtr(value.(string))
+	case time.Time:
+		prop.FileTime = stringPtr(value.(time.Time).Format(time.RFC3339))
+	default:
+		return ErrParameterInvalid
+	}
+	return nil
+}
+
+// GetCustomProps provides a function to get custom file properties.
+func (f *File) GetCustomProps() ([]CustomProperty, error) {
+	var customProps []CustomProperty
+	props := new(decodeCustomProperties)
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLPathDocPropsCustom)))).
+		Decode(props); err != nil && err != io.EOF {
+		return customProps, err
+	}
+	for _, p := range props.Property {
+		prop := CustomProperty{Name: p.Name}
+		var err error
+		if prop.Value, err = p.getCustomProps(); err != nil {
+			return customProps, err
+		}
+		customProps = append(customProps, prop)
+	}
+	return customProps, nil
+}
+
+// getCustomProps gets the custom property value based on its type.
+func (p *decodeProperty) getCustomProps() (interface{}, error) {
+	s := reflect.ValueOf(p).Elem()
+	for i := range s.NumField() {
+		if 11 <= i && i <= 20 && !s.Field(i).IsNil() {
+			return int32(s.Field(i).Elem().Int()), nil // Field vt:i1 to vt:uint
+		}
+		if 21 <= i && i <= 22 && !s.Field(i).IsNil() {
+			return s.Field(i).Elem().Float(), nil // Field vt:r4 to vt:r8
+		}
+		if p.Bool != nil {
+			return *p.Bool, nil
+		}
+		if p.Lpwstr != nil {
+			return *p.Lpwstr, nil
+		}
+		if p.FileTime != nil {
+			return time.Parse(time.RFC3339, *p.FileTime)
+		}
+	}
+	return nil, nil
 }

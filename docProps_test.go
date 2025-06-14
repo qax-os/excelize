@@ -12,7 +12,9 @@
 package excelize
 
 import (
+	"fmt"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -98,30 +100,6 @@ func TestSetDocProps(t *testing.T) {
 	assert.EqualError(t, f.SetDocProps(&DocProperties{}), "XML syntax error on line 1: invalid UTF-8")
 }
 
-func TestSetDocCustomProps(t *testing.T) {
-	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	assert.NoError(t, f.SetDocCustomProps("string", "v1.0.0"))
-	assert.NoError(t, f.SetDocCustomProps("string", "v2.0.0"))
-	assert.EqualError(t, f.SetDocCustomProps("string", int64(1)), ErrUnsupportedCustomPropertyDataType.Error())
-	assert.NoError(t, f.SetDocCustomProps("bool", true))
-	assert.EqualError(t, f.SetDocCustomProps("int64", int64(1)), ErrUnsupportedCustomPropertyDataType.Error())
-	assert.NoError(t, f.SetDocCustomProps("float64", 1.0))
-	assert.NoError(t, f.SetDocCustomProps("date", time.Now()))
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetDocCustomProps.xlsx")))
-	f.Pkg.Store(defaultXMLPathDocPropsCustom, nil)
-	assert.NoError(t, f.SetDocCustomProps("version", ""))
-	assert.NoError(t, f.Close())
-
-	// Test unsupported charset
-	f = NewFile()
-	f.Pkg.Store(defaultXMLPathDocPropsCustom, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.SetDocCustomProps("version", ""), "XML syntax error on line 1: invalid UTF-8")
-}
-
 func TestGetDocProps(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {
@@ -142,33 +120,69 @@ func TestGetDocProps(t *testing.T) {
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
-func TestFile_GetDocCustomProps(t *testing.T) {
-	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	if !assert.NoError(t, err) {
-		t.FailNow()
+func TestCustomProps(t *testing.T) {
+	f := NewFile()
+	expected := []CustomProperty{
+		{Name: "Text Prop", Value: "text"},
+		{Name: "Boolean Prop 1", Value: true},
+		{Name: "Boolean Prop 2", Value: false},
+		{Name: "Number Prop 1", Value: -123.456},
+		{Name: "Number Prop 2", Value: int32(1)},
+		{Name: "Date Prop", Value: time.Date(2021, time.September, 11, 0, 0, 0, 0, time.UTC)},
 	}
-
-	// now no custom properties in f
-	props, err := f.GetDocCustomProps()
+	for _, prop := range expected {
+		assert.NoError(t, f.SetCustomProps(prop))
+	}
+	props, err := f.GetCustomProps()
 	assert.NoError(t, err)
-	assert.Empty(t, props)
+	assert.Equal(t, expected, props)
 
-	assert.NoError(t, f.SetDocCustomProps("string", "v1.0.0"))
-	assert.NoError(t, f.SetDocCustomProps("bool", true))
-	assert.NoError(t, f.SetDocCustomProps("float64", 1.0))
-	dateValue := time.Date(2006, 01, 02, 15, 04, 05, 0, time.Local)
-	assert.NoError(t, f.SetDocCustomProps("date", dateValue))
-
-	props, err = f.GetDocCustomProps()
+	// Test delete custom property
+	assert.NoError(t, f.SetCustomProps(CustomProperty{Name: "Boolean Prop 1", Value: nil}))
+	props, err = f.GetCustomProps()
 	assert.NoError(t, err)
-	assert.Equal(t, "v1.0.0", props["string"])
-	assert.Equal(t, true, props["bool"])
-	assert.Equal(t, 1.0, props["float64"])
-	assert.Equal(t, dateValue.Unix(), props["date"].(time.Time).Unix())
+	expected = slices.Delete(expected, 1, 2)
+	assert.Equal(t, expected, props)
 
-	// Test get workbook properties with unsupported charset
+	// Test change custom property value data type
+	assert.NoError(t, f.SetCustomProps(CustomProperty{Name: "Boolean Prop 2", Value: "true"}))
+	props, err = f.GetCustomProps()
+	assert.NoError(t, err)
+	assert.Equal(t, props[1].Value, "true")
+
+	// Test set custom property with unsupported value data type
+	assert.Equal(t, ErrParameterInvalid, f.SetCustomProps(CustomProperty{Name: "Boolean Prop 2", Value: 1}))
+
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCustomProps.xlsx")))
+	assert.NoError(t, f.Close())
+
+	// Test set custom property without property name
 	f = NewFile()
+	assert.Equal(t, ErrParameterInvalid, f.SetCustomProps(CustomProperty{}))
+
+	// Test set custom property with unsupported charset
 	f.Pkg.Store(defaultXMLPathDocPropsCustom, MacintoshCyrillicCharset)
-	_, err = f.GetDocCustomProps()
+	assert.EqualError(t, f.SetCustomProps(CustomProperty{Name: "Prop"}), "XML syntax error on line 1: invalid UTF-8")
+
+	// Test get custom property with unsupported charset
+	_, err = f.GetCustomProps()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+
+	// Test set custom property with unsupported charset content types
+	f = NewFile()
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.SetCustomProps(CustomProperty{Name: "Prop"}), "XML syntax error on line 1: invalid UTF-8")
+
+	// Test get custom property with unsupported charset
+	f.Pkg.Store(defaultXMLPathDocPropsCustom, []byte(fmt.Sprintf(`<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="%s"><property fmtid="%s" pid="2" name="Prop"><vt:filetime>x</vt:filetime></property></Properties>`, NameSpaceDocumentPropertiesVariantTypes, EXtURICustomPropertyFmtID)))
+	_, err = f.GetCustomProps()
+	assert.EqualError(t, err, "parsing time \"x\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"x\" as \"2006\"")
+
+	// Test get custom property with unsupported value data type
+	f.Pkg.Store(defaultXMLPathDocPropsCustom, []byte(fmt.Sprintf(`<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="%s"><property fmtid="%s" pid="2" name="Prop"><vt:cy></vt:cy></property></Properties>`, NameSpaceDocumentPropertiesVariantTypes, EXtURICustomPropertyFmtID)))
+	props, err = f.GetCustomProps()
+	assert.Equal(t, []CustomProperty{{Name: "Prop"}}, props)
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
 }

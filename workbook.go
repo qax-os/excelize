@@ -198,7 +198,7 @@ func (f *File) setWorkbook(name string, sheetID, rid int) {
 // getWorkbookPath provides a function to get the path of the workbook.xml in
 // the spreadsheet.
 func (f *File) getWorkbookPath() (path string) {
-	if rels, _ := f.relsReader("_rels/.rels"); rels != nil {
+	if rels, _ := f.relsReader(defaultXMLPathRels); rels != nil {
 		rels.mu.Lock()
 		defer rels.mu.Unlock()
 		for _, rel := range rels.Relationships {
@@ -364,28 +364,30 @@ func (f *File) addContentTypePart(index int, contentType string) error {
 		"drawings": f.setContentTypePartImageExtensions,
 	}
 	partNames := map[string]string{
-		"chart":         "/xl/charts/chart" + strconv.Itoa(index) + ".xml",
-		"chartsheet":    "/xl/chartsheets/sheet" + strconv.Itoa(index) + ".xml",
-		"comments":      "/xl/comments" + strconv.Itoa(index) + ".xml",
-		"drawings":      "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
-		"table":         "/xl/tables/table" + strconv.Itoa(index) + ".xml",
-		"pivotTable":    "/xl/pivotTables/pivotTable" + strconv.Itoa(index) + ".xml",
-		"pivotCache":    "/xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(index) + ".xml",
-		"sharedStrings": "/xl/sharedStrings.xml",
-		"slicer":        "/xl/slicers/slicer" + strconv.Itoa(index) + ".xml",
-		"slicerCache":   "/xl/slicerCaches/slicerCache" + strconv.Itoa(index) + ".xml",
+		"chart":            "/xl/charts/chart" + strconv.Itoa(index) + ".xml",
+		"chartsheet":       "/xl/chartsheets/sheet" + strconv.Itoa(index) + ".xml",
+		"comments":         "/xl/comments" + strconv.Itoa(index) + ".xml",
+		"customProperties": "/docProps/custom.xml",
+		"drawings":         "/xl/drawings/drawing" + strconv.Itoa(index) + ".xml",
+		"table":            "/xl/tables/table" + strconv.Itoa(index) + ".xml",
+		"pivotTable":       "/xl/pivotTables/pivotTable" + strconv.Itoa(index) + ".xml",
+		"pivotCache":       "/xl/pivotCache/pivotCacheDefinition" + strconv.Itoa(index) + ".xml",
+		"sharedStrings":    "/xl/sharedStrings.xml",
+		"slicer":           "/xl/slicers/slicer" + strconv.Itoa(index) + ".xml",
+		"slicerCache":      "/xl/slicerCaches/slicerCache" + strconv.Itoa(index) + ".xml",
 	}
 	contentTypes := map[string]string{
-		"chart":         ContentTypeDrawingML,
-		"chartsheet":    ContentTypeSpreadSheetMLChartsheet,
-		"comments":      ContentTypeSpreadSheetMLComments,
-		"drawings":      ContentTypeDrawing,
-		"table":         ContentTypeSpreadSheetMLTable,
-		"pivotTable":    ContentTypeSpreadSheetMLPivotTable,
-		"pivotCache":    ContentTypeSpreadSheetMLPivotCacheDefinition,
-		"sharedStrings": ContentTypeSpreadSheetMLSharedStrings,
-		"slicer":        ContentTypeSlicer,
-		"slicerCache":   ContentTypeSlicerCache,
+		"chart":            ContentTypeDrawingML,
+		"chartsheet":       ContentTypeSpreadSheetMLChartsheet,
+		"comments":         ContentTypeSpreadSheetMLComments,
+		"customProperties": ContentTypeCustomProperties,
+		"drawings":         ContentTypeDrawing,
+		"table":            ContentTypeSpreadSheetMLTable,
+		"pivotTable":       ContentTypeSpreadSheetMLPivotTable,
+		"pivotCache":       ContentTypeSpreadSheetMLPivotCacheDefinition,
+		"sharedStrings":    ContentTypeSpreadSheetMLSharedStrings,
+		"slicer":           ContentTypeSlicer,
+		"slicerCache":      ContentTypeSlicerCache,
 	}
 	s, ok := setContentType[contentType]
 	if ok {
