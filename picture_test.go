@@ -500,6 +500,11 @@ func TestGetCellImages(t *testing.T) {
 		})
 		return f
 	}
+	addStructure := func(f *File) *File {
+		f.Pkg.Store(defaultXMLRdRichValueStructurePart, []byte(`<rvStructures xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata" count="1">
+    		<s t="_localImage"><k n="_rvRel:LocalImageIdentifier" t="i"/><k n="CalcOrigin" t="i"/><k n="Text" t="s"/></s></rvStructures>`))
+		return f
+	}
 	f = prepareWorkbook()
 	pics, err := f.GetPictures("Sheet1", "A1")
 	assert.NoError(t, err)
@@ -509,6 +514,17 @@ func TestGetCellImages(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"A1"}, cells)
 
+	f = addStructure(prepareWorkbook())
+	// Test get the cell images with rich value struct
+	pics, err = f.GetPictures("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(pics))
+	assert.Equal(t, PictureInsertTypePlaceInCell, pics[0].InsertType)
+	cells, err = f.GetPictureCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"A1"}, cells)
+
+	f = prepareWorkbook()
 	// Test get the cell images without image relationships parts
 	f.Relationships.Delete(defaultXMLRdRichValueRelRels)
 	f.Pkg.Store(defaultXMLRdRichValueRelRels, []byte(fmt.Sprintf(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="%s" Target="../media/image1.png"/></Relationships>`, SourceRelationshipHyperLink)))
@@ -605,6 +621,18 @@ func TestGetCellImages(t *testing.T) {
 	f.Pkg.Store(defaultXMLRdRichValuePart, []byte(`<rvData count="1"><rv s="1"><v></v><v>1</v><v>0</v><v>0</v></rv></rvData>`))
 	_, err = f.GetPictures("Sheet1", "A1")
 	assert.EqualError(t, err, "strconv.Atoi: parsing \"\": invalid syntax")
+
+	f = addStructure(prepareWorkbook())
+	// Test get the cell images with no valid definition and fallback old-style
+	f.Pkg.Store(defaultXMLRdRichValueStructurePart, []byte(`<rvStructures xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata" count="1"></rvStructures>`))
+	pics, err = f.GetPictures("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(pics))
+
+	// Test get the cell images with unsupported charset rich value
+	f.Pkg.Store(defaultXMLRdRichValueStructurePart, MacintoshCyrillicCharset)
+	_, err = f.GetPictures("Sheet1", "A1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestGetImageCells(t *testing.T) {
@@ -613,5 +641,35 @@ func TestGetImageCells(t *testing.T) {
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	_, err := f.getImageCells("Sheet1")
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+}
+
+func TestGetCellImagesAndAltText(t *testing.T) {
+	f, err := OpenFile(filepath.Join("test", "CellImage.xlsx"))
+	assert.NoError(t, err)
+	type imageType struct {
+		cell       string
+		insertType PictureInsertType
+		altText    string
+	}
+	want := []imageType{
+		{"B1", PictureInsertTypePlaceInCell, "Smiling alarm clock face"},
+		{"B2", PictureInsertTypePlaceInCell, ""},
+		{"B3", PictureInsertTypePlaceInCell, "Bullseye outline"},
+		{"B4", PictureInsertTypeIMAGE, ""},
+		{"B5", PictureInsertTypeIMAGE, "other alt_text"},
+
+		{"D1", PictureInsertTypePlaceInCell, "Smiling alarm clock face"},
+		{"D2", PictureInsertTypePlaceInCell, ""},
+		{"D3", PictureInsertTypePlaceInCell, "Bullseye outline"},
+		{"D4", PictureInsertTypePlaceInCell, ""},
+		{"D5", PictureInsertTypePlaceInCell, "other alt_text"},
+	}
+	for _, c := range want {
+		p, err := f.GetPictures("Sheet1", c.cell)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(p))
+		assert.Equal(t, c.insertType, p[0].InsertType, c.cell)
+	}
 	assert.NoError(t, f.Close())
 }
