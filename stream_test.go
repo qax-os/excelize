@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -485,5 +486,91 @@ func TestStreamWriterGetRowElement(t *testing.T) {
 		}
 		_, ok := getRowElement(token, 0)
 		assert.False(t, ok)
+	}
+}
+
+func TestSpecificTempDirStreamingWriter(t *testing.T) {
+	checkTempFileExist := func(testName, tempDir string, fileNames []string, exist bool) {
+		dirEntries, err := os.ReadDir(tempDir)
+		assert.NoError(t, err)
+
+		existFileNames := make(map[string]bool)
+		for _, dirEntry := range dirEntries {
+			if strings.HasPrefix(dirEntry.Name(), "excelize-") {
+				existFileNames[dirEntry.Name()] = true
+			}
+		}
+
+		// each file should exist or not exist
+		for _, fileName := range fileNames {
+			_, ok := existFileNames[fileName]
+			assert.Equal(t, exist, ok, fmt.Sprintf("test case: %s, file name: %v, expect: %v, actual: %v",
+				testName, fileName, exist, ok))
+		}
+	}
+
+	wd, err := os.Getwd()
+	assert.NoError(t, err)
+	specificTempDir := path.Join(wd, "test")
+
+	for _, test := range []struct {
+		name    string
+		tempDir string
+	}{
+		{
+			name:    "empty temp dir",
+			tempDir: "",
+		},
+		{
+			name:    "default temp dir",
+			tempDir: os.TempDir(),
+		},
+		{
+			name:    "specific temp dir",
+			tempDir: specificTempDir,
+		},
+	} {
+		tempDir := test.tempDir
+
+		file := NewFile(Options{
+			TmpDir: tempDir,
+		})
+
+		streamWriter, err := file.NewStreamWriter("Sheet1")
+		assert.NoError(t, err, fmt.Sprintf("test case: %s, new stream writer meet error, err: %v", test.name, err))
+
+		// enough to trigger temp file creation
+		for rowID := 10; rowID <= 51200; rowID++ {
+			row := make([]interface{}, 50)
+			for colID := 0; colID < 50; colID++ {
+				row[colID] = rand.Intn(640000)
+			}
+			cell, _ := CoordinatesToCellName(1, rowID)
+			assert.NoError(t, streamWriter.SetRow(cell, row), fmt.Sprintf("test case: %s, rowID: %d", test.name, rowID))
+		}
+
+		err = streamWriter.Flush()
+		assert.NoError(t, err, fmt.Sprintf("test case: %s, flush meet error, err: %v", test.name, err))
+
+		if tempDir == "" {
+			tempDir = os.TempDir()
+		}
+
+		var fileNames []string
+		file.tempFiles.Range(func(_, fileName any) bool {
+			fileNames = append(fileNames, fileName.(string))
+			return true
+		})
+
+		// when the temp file is not close, the temp file will not be deleted
+		checkTempFileExist(test.name, tempDir, fileNames, true)
+
+		assert.NoError(t, file.SaveAs(filepath.Join("test",
+			fmt.Sprintf("TestSpecificTempDirStreamingWriter_%s.xlsx", test.name))),
+			fmt.Sprintf("test case: %s, save meet error, err: %v", test.name, err))
+
+		assert.NoError(t, file.Close())
+		// when the temp file is close, the temp file will be deleted
+		checkTempFileExist(test.name, tempDir, fileNames, false)
 	}
 }
