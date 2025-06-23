@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -389,4 +390,51 @@ func TestUnzipToTemp(t *testing.T) {
 
 	_, err = f.unzipToTemp(z.File[0])
 	assert.EqualError(t, err, "EOF")
+}
+
+func TestUnzipToSpecificTempDir(t *testing.T) {
+	wd, err := os.Getwd()
+	assert.NoError(t, err)
+	specificTempDir := path.Join(wd, "test")
+
+	for _, test := range []struct {
+		name    string
+		tempDir string
+	}{
+		{
+			name:    "specific temp dir",
+			tempDir: specificTempDir,
+		},
+	} {
+		file := NewFile(Options{
+			TmpDir: test.tempDir,
+		})
+		data := []byte("PK\x03\x040000000PK\x01\x0200000" +
+			"0000000000000000000\x00" +
+			"\x00\x00\x00\x00\x00000000000000PK\x01" +
+			"\x020000000000000000000" +
+			"00000\v\x00\x00\x00\x00\x00000000000" +
+			"00000000000000PK\x01\x0200" +
+			"00000000000000000000" +
+			"00\v\x00\x00\x00\x00\x00000000000000" +
+			"00000000000PK\x01\x020000<" +
+			"0\x00\x0000000000000000\v\x00\v" +
+			"\x00\x00\x00\x00\x0000000000\x00\x00\x00\x00000" +
+			"00000000PK\x01\x0200000000" +
+			"0000000000000000\v\x00\x00\x00" +
+			"\x00\x0000PK\x05\x06000000\x05\x00\xfd\x00\x00\x00" +
+			"\v\x00\x00\x00\x00\x00")
+		z, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+		assert.NoError(t, err, fmt.Sprintf("test case: %s, new zip reader meet error, err: %v", test.name, err))
+
+		_, err = file.unzipToTemp(z.File[0])
+
+		require.Error(t, err, fmt.Sprintf("test case: %s, unzip to temp meet error, err: %v", test.name, err))
+		assert.NoError(t, os.Chmod(test.tempDir, 0o755), fmt.Sprintf("test case: %s, chmod meet error, err: %v", test.name, err))
+
+		_, err = file.unzipToTemp(z.File[0])
+		assert.EqualError(t, err, "EOF", fmt.Sprintf("test case: %s, unzip to temp meet error, err: %v", test.name, err))
+
+		assert.NoError(t, file.Close(), fmt.Sprintf("test case: %s, close file meet error, err: %v", test.name, err))
+	}
 }
