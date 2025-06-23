@@ -130,6 +130,11 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 		return nil, err
 	}
 
+	// set temporary directory for creating temporary streaming writer files
+	if tmpDir := f.options.TmpDir; tmpDir != "" {
+		sw.rawData.tmpDir = tmpDir
+	}
+
 	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
 	if f.streams == nil {
 		f.streams = make(map[string]*StreamWriter)
@@ -737,8 +742,20 @@ func bulkAppendFields(w io.Writer, ws *xlsxWorksheet, from, to int) {
 // is written to the temp file with Sync, which may return an error.
 // Therefore, Sync should be periodically called and the error checked.
 type bufferedWriter struct {
+	tmpDir string
+
 	tmp *os.File
 	buf bytes.Buffer
+}
+
+// getTempDir returns the temporary directory for creating temporary files, if
+// the value is empty, the system default temporary directory which is calculated
+// by os.TempDir() will be used.
+func (bw *bufferedWriter) getTempDir() string {
+	if bw.tmpDir != "" {
+		return bw.tmpDir
+	}
+	return os.TempDir()
 }
 
 // Write to the in-memory buffer. The error is always nil.
@@ -775,7 +792,7 @@ func (bw *bufferedWriter) Sync() (err error) {
 		return nil
 	}
 	if bw.tmp == nil {
-		bw.tmp, err = os.CreateTemp("", "excelize-")
+		bw.tmp, err = os.CreateTemp(bw.getTempDir(), "excelize-")
 		if err != nil {
 			// can not use local storage
 			return nil

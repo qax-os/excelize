@@ -77,10 +77,17 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 	return fileList, worksheets, nil
 }
 
+func (f *File) getTempDir() string {
+	if f.options.TmpDir != "" {
+		return f.options.TmpDir
+	}
+	return "" // return "" means use the system temporary directory
+}
+
 // unzipToTemp unzip the zip entity to the system temporary directory and
 // returned the unzipped file path.
 func (f *File) unzipToTemp(zipFile *zip.File) (string, error) {
-	tmp, err := os.CreateTemp("", "excelize-")
+	tmp, err := os.CreateTemp(f.getTempDir(), "excelize-")
 	if err != nil {
 		return "", err
 	}

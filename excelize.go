@@ -98,6 +98,10 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 //
 // CultureInfo specifies the country code for applying built-in language number
 // format code these effect by the system's local language settings.
+//
+// TmpDir specifies the temporary directory for creating temporary files, if the
+// value is empty, the system default temporary directory which is calculated by
+// os.TempDir() will be used.
 type Options struct {
 	MaxCalcIterations uint
 	Password          string
@@ -108,6 +112,7 @@ type Options struct {
 	LongDatePattern   string
 	LongTimePattern   string
 	CultureInfo       CultureName
+	TmpDir            string // when set this value, the temporary files will be created in this directory
 }
 
 // OpenFile take the name of a spreadsheet file and returns a populated
