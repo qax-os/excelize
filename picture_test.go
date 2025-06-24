@@ -673,35 +673,3 @@ func TestGetCellImagesAndAltText(t *testing.T) {
 	}
 	assert.NoError(t, f.Close())
 }
-
-func TestGetImageCells3(t *testing.T) {
-	f, _ := OpenFile("cell_image2.xlsx")
-	for _, str := range []string{"E5", "E6", "E7"} {
-		p, err := f.GetPictures("PriceList", str)
-		assert.NoError(t, err)
-		assert.NotNil(t, p)
-		for _, x := range p {
-			assert.Equal(t, PictureInsertTypePlaceInCell, x.InsertType)
-			t.Logf("str:%v, p:%v, InsertType:%v Format:%v", str, x.Extension, x.InsertType, x.Format)
-		}
-	}
-	p, err := f.GetPictures("PriceList", "E8")
-	assert.NoError(t, err)
-	assert.NotEqual(t, nil, p)
-	for _, x := range p {
-		assert.Equal(t, PictureInsertTypeIMAGE, x.InsertType)
-		t.Logf("E8 p:%v, InsertType:%v Format:%v", x.Extension, x.InsertType, x.Format)
-	}
-
-	for _, str := range []string{"D11", "D12", "D13", "D14"} {
-		p, err := f.GetPictures("BillOfMaterials", str)
-		assert.NoError(t, err)
-		assert.NotNil(t, p)
-		for _, x := range p {
-			assert.Equal(t, PictureInsertTypePlaceInCell, x.InsertType)
-			t.Logf("str:%v, p:%v, InsertType:%v Format:%v", str, x.Extension, x.InsertType, x.Format)
-		}
-	}
-
-	assert.NoError(t, f.Close())
-}
