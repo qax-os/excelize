@@ -371,7 +371,7 @@ func (f *File) getFromStringItem(index int) string {
 		}()
 	}
 	f.sharedStringItem = [][]uint{}
-	f.sharedStringTemp, _ = os.CreateTemp("", "excelize-")
+	f.sharedStringTemp, _ = os.CreateTemp(f.options.TmpDir, "excelize-")
 	f.tempFiles.Store(defaultTempFileSST, f.sharedStringTemp.Name())
 	var (
 		inElement string
