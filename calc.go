@@ -18842,3 +18842,93 @@ func (fn *formulaFuncs) DISPIMG(argsList *list.List) formulaArg {
 	}
 	return argsList.Front().Value.(formulaArg)
 }
+
+// 定义泰语数字到泰语字符的映射
+var thaiDigits = map[int]string{0: "ศูนย์", 1: "หนึ่ง", 2: "สอง", 3: "สาม", 4: "สี่", 5: "ห้า", 6: "หก", 7: "เจ็ด", 8: "แปด", 9: "เก้า"}
+
+// 定义泰语数位单位
+var thaiUnits = []string{"", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน", "ล้าน"}
+
+// numToThaiText 将数字转换为泰语数字文本
+func numToThaiText(num int) string {
+	if num == 0 {
+		return thaiDigits[0]
+	}
+	var result string
+	var pos int
+	for num > 0 {
+		digit := num % 10
+		if digit > 0 {
+			if pos == 1 && digit == 2 {
+				result = "ยี่" + thaiUnits[pos] + result
+			} else if pos == 1 && digit == 1 {
+				result = thaiUnits[pos] + result
+			} else if pos == 0 && num > 10 && digit == 1 {
+				result = "เอ็ด" + result
+			} else {
+				result = thaiDigits[digit] + thaiUnits[pos] + result
+			}
+		}
+		num /= 10
+		pos++
+	}
+	return result
+}
+
+// func (fn *formulaFuncs) BAHTTEXT 将数字转换为泰铢货币格式的文本
+func (fn *formulaFuncs) BAHTTEXT(argsList *list.List) formulaArg {
+	// 定义错误信息变量
+	const (
+		errNoArgMsg    = "BAHTTEXT requires at least 1 argument"
+		errTooManyArgs = "BAHTTEXT requires 1 argument"
+	)
+
+	// 验证参数数量
+	if argsList.Len() == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, errNoArgMsg)
+	}
+	if argsList.Len() > 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, errTooManyArgs)
+	}
+
+	// 提取并转换参数为数字
+	numArg := argsList.Front().Value.(formulaArg)
+	num := numArg.ToNumber()
+
+	// 检查转换结果是否为数字类型
+	if num.Type != ArgNumber {
+		return num
+	}
+
+	// 分离整数部分和小数部分
+	integerPart := int(num.Number)
+	decimalPart := int((num.Number - float64(integerPart)) * 100)
+
+	// 定义泰语货币单位变量
+	const (
+		bahtUnit    = "บาท"
+		satangUnit  = "สตางค์"
+		zeroBahtMsg = "ศูนย์บาทถ้วน"
+	)
+
+	// 转换整数部分为泰语文本
+	// 转换整数部分为泰语文本
+	var integerText string
+	if integerPart > 0 {
+		integerText = numToThaiText(integerPart) + bahtUnit
+	}
+
+	// 转换小数部分为泰语文本
+	var decimalText string
+	if decimalPart > 0 {
+		decimalText = numToThaiText(decimalPart) + satangUnit
+	}
+
+	// 组合最终结果
+	result := integerText + decimalText
+	if result == "" {
+		result = zeroBahtMsg
+	}
+
+	return newStringFormulaArg(result)
+}
