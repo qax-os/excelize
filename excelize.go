@@ -672,3 +672,14 @@ func (f *File) getRichValueWebImageRelationships(rID string) *xlsxRelationship {
 	}
 	return nil
 }
+
+// richValueStructureReader provides a function to get the pointer to the structure after
+// deserialization of xl/richData/rdrichvaluestructure.xml.
+func (f *File) richValueStructureReader() (*xlsxRichValueStructuresData, error) {
+	var richValueStruct xlsxRichValueStructuresData
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRdRichValueStructurePart)))).
+		Decode(&richValueStruct); err != nil && err != io.EOF {
+		return &richValueStruct, err
+	}
+	return &richValueStruct, nil
+}
