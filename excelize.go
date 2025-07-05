@@ -84,6 +84,9 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 // should be less than or equal to UnzipSizeLimit, the default value is
 // 16MB.
 //
+// TmpDir specifies the temporary directory for creating temporary files, if the
+// value is empty, the system default temporary directory will be used.
+//
 // ShortDatePattern specifies the short date number format code. In the
 // spreadsheet applications, date formats display date and time serial numbers
 // as date values. Date formats that begin with an asterisk (*) respond to
@@ -98,9 +101,6 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 //
 // CultureInfo specifies the country code for applying built-in language number
 // format code these effect by the system's local language settings.
-//
-// TmpDir specifies the temporary directory for creating temporary files, if the
-// value is empty, the system default temporary directory will be used.
 type Options struct {
 	MaxCalcIterations uint
 	Password          string

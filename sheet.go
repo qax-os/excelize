@@ -751,7 +751,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 //	    fmt.Println(err)
 //	    return
 //	}
-//	err := f.CopySheet(1, index)
+//	err = f.CopySheet(0, index)
 func (f *File) CopySheet(from, to int) error {
 	if from < 0 || to < 0 || from == to || f.GetSheetName(from) == "" || f.GetSheetName(to) == "" {
 		return ErrSheetIdx

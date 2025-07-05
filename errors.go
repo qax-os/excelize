@@ -328,6 +328,12 @@ func newUnsupportedChartType(chartType ChartType) error {
 	return fmt.Errorf("unsupported chart type %d", chartType)
 }
 
+// newUnsupportedPivotCacheSourceType defined the error message on receiving the
+// source type of pivot table cache.
+func newUnsupportedPivotCacheSourceType(sourceType string) error {
+	return fmt.Errorf("unsupported pivot table cache source type: %s", sourceType)
+}
+
 // newUnzipSizeLimitError defined the error message on unzip size exceeds the
 // limit.
 func newUnzipSizeLimitError(unzipSizeLimit int64) error {

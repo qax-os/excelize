@@ -585,8 +585,8 @@ func (f *File) GetRowVisible(sheet string, row int) (bool, error) {
 }
 
 // SetRowOutlineLevel provides a function to set outline level number of a
-// single row by given worksheet name and Excel row number. The value of
-// parameter 'level' is 1-7. For example, outline row 2 in Sheet1 to level 1:
+// single row by given worksheet name and row number. The range of 'level' 
+// parameter value from 1 to 7. For example, outline row 2 in Sheet1 to level 1:
 //
 //	err := f.SetRowOutlineLevel("Sheet1", 2, 1)
 func (f *File) SetRowOutlineLevel(sheet string, row int, level uint8) error {

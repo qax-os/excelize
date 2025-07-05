@@ -848,14 +848,16 @@ func (opts *Chart) parseTitle() {
 //	SecondPlotValues
 //	ShowBubbleSize
 //	ShowCatName
+//	ShowDataTable
+//	ShowDataTableKeys
 //	ShowLeaderLines
 //	ShowPercent
 //	ShowSerName
 //	ShowVal
 //	NumFmt
 //
-// SecondPlotValues: Specifies the values in second plot for the 'pieOfPie' and
-// 'barOfPie' chart.
+// SecondPlotValues: Specifies the values in second plot for the 'PieOfPie' and
+// 'BarOfPie' chart.
 //
 // ShowBubbleSize: Specifies the bubble size shall be shown in a data label. The
 // 'ShowBubbleSize' property is optional. The default value is false.
