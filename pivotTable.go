@@ -781,7 +781,9 @@ func (f *File) addWorkbookPivotCache(RID int) int {
 }
 
 // GetPivotTables returns all pivot table definitions in a worksheet by given
-// worksheet name.
+// worksheet name. Currently only support get pivot table cache with worksheet
+// source type, and doesn't support source types: external, consolidation
+// and scenario.
 func (f *File) GetPivotTables(sheet string) ([]PivotTableOptions, error) {
 	var pivotTables []PivotTableOptions
 	name, ok := f.getSheetXMLPath(sheet)
@@ -867,6 +869,9 @@ func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (Pivot
 	pt, err := f.pivotTableReader(pivotTableXML)
 	if err != nil {
 		return opts, err
+	}
+	if pc.CacheSource.WorksheetSource == nil {
+		return opts, newUnsupportedPivotCacheSourceType(pc.CacheSource.Type)
 	}
 	opts = PivotTableOptions{
 		pivotTableXML:    pivotTableXML,
