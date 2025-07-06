@@ -266,6 +266,7 @@ type aLn struct {
 	NoFill    *attrValString `xml:"a:noFill"`
 	Round     string         `xml:"a:round,omitempty"`
 	SolidFill *aSolidFill    `xml:"a:solidFill"`
+	PrstDash  *attrValString `xml:"a:prstDash"`
 }
 
 // cTxPr (Text Properties) directly maps the txPr element. This element
@@ -614,6 +615,7 @@ type ChartLegend struct {
 
 // ChartMarker directly maps the format settings of the chart marker.
 type ChartMarker struct {
+	Border ChartLine
 	Fill   Fill
 	Symbol string
 	Size   int
@@ -622,6 +624,8 @@ type ChartMarker struct {
 // ChartLine directly maps the format settings of the chart line.
 type ChartLine struct {
 	Type   ChartLineType
+	Dash   ChartDashType
+	Fill   Fill
 	Smooth bool
 	Width  float64
 }

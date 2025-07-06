@@ -80,6 +80,25 @@ const (
 	Bubble3D
 )
 
+// ChartDashType is the type of supported chart dash types.
+type ChartDashType byte
+
+// This section defines the currently supported chart dash types enumeration.
+const (
+	ChartDashUnset ChartDashType = iota
+	ChartDashSolid
+	ChartDashDot
+	ChartDashDash
+	ChartDashLgDash
+	ChartDashSashDot
+	ChartDashLgDashDot
+	ChartDashLgDashDotDot
+	ChartDashSysDash
+	ChartDashSysDot
+	ChartDashSysDashDot
+	ChartDashSysDashDotDot
+)
+
 // ChartLineType is the type of supported chart line types.
 type ChartLineType byte
 

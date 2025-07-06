@@ -816,6 +816,9 @@ func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 			SolidFill: spPr.SolidFill,
 		},
 	}
+	if opts.Series[i].Line.Dash != ChartDashUnset {
+		solid.Ln.PrstDash = &attrValString{Val: stringPtr(chartDashTypes[opts.Series[i].Line.Dash])}
+	}
 	noLn := &cSpPr{Ln: &aLn{NoFill: &attrValString{}}}
 	if chartSeriesSpPr, ok := map[ChartType]map[ChartLineType]*cSpPr{
 		Line:    {ChartLineUnset: solid, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: solid},
@@ -903,23 +906,14 @@ func (f *File) drawChartSeriesMarker(i int, opts *Chart) *cMarker {
 		marker.Size = &attrValInt{Val: size}
 	}
 	if i < 6 {
-		marker.SpPr = &cSpPr{
-			SolidFill: &aSolidFill{
-				SchemeClr: &aSchemeClr{
-					Val: "accent" + strconv.Itoa(i+1),
-				},
-			},
-			Ln: &aLn{
-				W: 9252,
-				SolidFill: &aSolidFill{
-					SchemeClr: &aSchemeClr{
-						Val: "accent" + strconv.Itoa(i+1),
-					},
-				},
-			},
-		}
+		marker.SpPr = &cSpPr{SolidFill: &aSolidFill{
+			SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa(i+1)},
+		}, Ln: &aLn{W: 9252}}
 	}
 	marker.SpPr = f.drawShapeFill(opts.Series[i].Marker.Fill, marker.SpPr)
+	if marker.SpPr != nil && marker.SpPr.Ln != nil {
+		marker.SpPr.Ln = f.drawChartLn(&opts.Series[i].Marker.Border)
+	}
 	chartSeriesMarker := map[ChartType]*cMarker{Scatter: marker, Line: marker}
 	return chartSeriesMarker[opts.Type]
 }
@@ -1322,19 +1316,24 @@ func (f *File) drawChartLn(opts *ChartLine) *aLn {
 		Cmpd: "sng",
 		Algn: "ctr",
 	}
+	if opts.Dash != ChartDashUnset {
+		ln.PrstDash = &attrValString{Val: stringPtr(chartDashTypes[opts.Dash])}
+	}
 	switch opts.Type {
 	case ChartLineSolid:
-		ln.SolidFill = &aSolidFill{
-			SchemeClr: &aSchemeClr{
-				Val: "tx1",
-				LumMod: &attrValInt{
-					Val: intPtr(15000),
-				},
-				LumOff: &attrValInt{
-					Val: intPtr(85000),
+		ln.SolidFill = f.drawShapeFill(opts.Fill, &cSpPr{
+			SolidFill: &aSolidFill{
+				SchemeClr: &aSchemeClr{
+					Val: "tx1",
+					LumMod: &attrValInt{
+						Val: intPtr(15000),
+					},
+					LumOff: &attrValInt{
+						Val: intPtr(85000),
+					},
 				},
 			},
-		}
+		}).SolidFill
 		return ln
 	case ChartLineNone:
 		ln.NoFill = &attrValString{}

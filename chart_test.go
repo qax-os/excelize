@@ -163,7 +163,13 @@ func TestAddChart(t *testing.T) {
 		{
 			Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37",
 			Marker: ChartMarker{
-				Fill: Fill{Type: "pattern", Color: []string{"FFFF00"}, Pattern: 1},
+				Fill: Fill{Type: "pattern", Color: []string{"FFFFFF"}, Pattern: 1},
+				Border: ChartLine{
+					Type:  ChartLineSolid,
+					Dash:  ChartDashDot,
+					Fill:  Fill{Type: "pattern", Color: []string{"#FFFF00"}, Pattern: 1},
+					Width: 1,
+				},
 			},
 		},
 	}
@@ -179,7 +185,7 @@ func TestAddChart(t *testing.T) {
 		{Name: "Sheet1!$A$34", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$34:$D$34"},
 		{Name: "Sheet1!$A$35", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$35:$D$35"},
 		{Name: "Sheet1!$A$36", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$36:$D$36"},
-		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Line: ChartLine{Width: 0.25}},
+		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Line: ChartLine{Dash: ChartDashDash, Width: 0.25}},
 	}
 	series3 := []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}
 	series4 := []ChartSeries{

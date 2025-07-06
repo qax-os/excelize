@@ -255,6 +255,21 @@ var chartDataLabelsPositionTypes = map[ChartDataLabelPositionType]string{
 	ChartDataLabelsPositionAbove:      "t",
 }
 
+// chartDashTypes defined supported preset chart dash types.
+var chartDashTypes = map[ChartDashType]string{
+	ChartDashSolid:         "solid",
+	ChartDashDot:           "dot",
+	ChartDashDash:          "dash",
+	ChartDashLgDash:        "lgDash",
+	ChartDashSashDot:       "dashDot",
+	ChartDashLgDashDot:     "lgDashDot",
+	ChartDashLgDashDotDot:  "lgDashDotDot",
+	ChartDashSysDash:       "sysDash",
+	ChartDashSysDot:        "sysDot",
+	ChartDashSysDashDot:    "sysDashDot",
+	ChartDashSysDashDotDot: "sysDashDotDot",
+}
+
 // supportedChartDataLabelsPosition defined supported chart data labels position
 // types for each type of chart.
 var supportedChartDataLabelsPosition = map[ChartType][]ChartDataLabelPositionType{
