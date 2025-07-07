@@ -1011,6 +1011,7 @@ func TestSetCellRichText(t *testing.T) {
 	}
 	assert.NoError(t, f.SetCellRichText("Sheet1", "A1", richTextRun))
 	assert.NoError(t, f.SetCellRichText("Sheet1", "A2", richTextRun))
+	assert.NoError(t, f.SetCellRichText("Sheet1", "A3", []RichTextRun{{Text: strings.Repeat("\u4e00", TotalCellChars)}}))
 	style, err := f.NewStyle(&Style{
 		Alignment: &Alignment{
 			WrapText: true,

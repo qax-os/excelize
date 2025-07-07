@@ -1211,7 +1211,7 @@ func setRichText(runs []RichTextRun) ([]xlsxR, error) {
 		totalCellChars int
 	)
 	for _, textRun := range runs {
-		totalCellChars += len(textRun.Text)
+		totalCellChars += utf8.RuneCountInString(textRun.Text)
 		if totalCellChars > TotalCellChars {
 			return textRuns, ErrCellCharsLength
 		}
