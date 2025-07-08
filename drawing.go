@@ -84,6 +84,20 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 			Legend: &cLegend{
 				LegendPos: &attrValString{Val: stringPtr(chartLegendPosition[opts.Legend.Position])},
 				Overlay:   &attrValBool{Val: boolPtr(false)},
+				TxPr: &cTxPr{
+					BodyPr: aBodyPr{
+						Rot:              0,
+						SpcFirstLastPara: true,
+						VertOverflow:     "ellipsis",
+						Vert:             "horz",
+						Wrap:             "square",
+						Anchor:           "ctr",
+						AnchorCtr:        true,
+					},
+					P: aP{
+						PPr: &aPPr{DefRPr: aRPr{}},
+					},
+				},
 			},
 
 			PlotVisOnly:      &attrValBool{Val: boolPtr(false)},
@@ -167,6 +181,9 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 	}
 	if opts.Legend.Position == "none" {
 		xlsxChartSpace.Chart.Legend = nil
+	} else if xlsxChartSpace.Chart.Legend != nil && xlsxChartSpace.Chart.Legend.TxPr != nil {
+		// Apply font settings to legend
+		drawChartFont(&opts.Legend.Font, &xlsxChartSpace.Chart.Legend.TxPr.P.PPr.DefRPr)
 	}
 	xlsxChartSpace.Chart.PlotArea.SpPr = f.drawShapeFill(opts.PlotArea.Fill, xlsxChartSpace.Chart.PlotArea.SpPr)
 	xlsxChartSpace.Chart.PlotArea.DTable = f.drawPlotAreaDTable(opts)

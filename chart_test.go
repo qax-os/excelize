@@ -324,6 +324,57 @@ func TestAddChart(t *testing.T) {
 	assert.EqualError(t, f.AddChart("Sheet1", "P1", &Chart{Type: Col, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"}}, Title: []RichTextRun{{Text: "2D Column Chart"}}}), "XML syntax error on line 1: invalid UTF-8")
 }
 
+func TestChartLegendFont(t *testing.T) {
+	f := NewFile()
+	categories := map[string]string{"A2": "Small", "A3": "Normal", "A4": "Large", "B1": "Apple", "C1": "Orange", "D1": "Pear"}
+	values := map[string]int{"B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
+	
+	for k, v := range categories {
+		assert.NoError(t, f.SetCellValue("Sheet1", k, v))
+	}
+	for k, v := range values {
+		assert.NoError(t, f.SetCellValue("Sheet1", k, v))
+	}
+	
+	series := []ChartSeries{
+		{Name: "Sheet1!$B$1", Categories: "Sheet1!$A$2:$A$4", Values: "Sheet1!$B$2:$B$4"},
+		{Name: "Sheet1!$C$1", Categories: "Sheet1!$A$2:$A$4", Values: "Sheet1!$C$2:$C$4"},
+		{Name: "Sheet1!$D$1", Categories: "Sheet1!$A$2:$A$4", Values: "Sheet1!$D$2:$D$4"},
+	}
+	
+	// Test chart with legend font settings
+	assert.NoError(t, f.AddChart("Sheet1", "E1", &Chart{
+		Type:   Col,
+		Series: series,
+		Title:  []RichTextRun{{Text: "Chart with Legend Font"}},
+		Legend: ChartLegend{
+			Position: "bottom",
+			Font: Font{
+				Family: "Aptos",
+				Color:  "#3E3E3E",
+				Size:   10,
+				Bold:   true,
+			},
+		},
+	}))
+	
+	// Test chart with none position (should not cause errors)
+	assert.NoError(t, f.AddChart("Sheet1", "E16", &Chart{
+		Type:   Col,
+		Series: series,
+		Title:  []RichTextRun{{Text: "Chart without Legend"}},
+		Legend: ChartLegend{
+			Position: "none",
+			Font: Font{
+				Family: "Calibri",
+				Size:   12,
+			},
+		},
+	}))
+	
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestChartLegendFont.xlsx")))
+}
+
 func TestAddChartSheet(t *testing.T) {
 	categories := map[string]string{"A2": "Small", "A3": "Normal", "A4": "Large", "B1": "Apple", "C1": "Orange", "D1": "Pear"}
 	values := map[string]int{"B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}

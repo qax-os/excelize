@@ -611,6 +611,7 @@ type Chart struct {
 type ChartLegend struct {
 	Position      string
 	ShowLegendKey bool
+	Font          Font
 }
 
 // ChartMarker directly maps the format settings of the chart marker.
