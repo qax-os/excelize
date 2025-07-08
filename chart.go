@@ -819,6 +819,7 @@ func (opts *Chart) parseTitle() {
 //
 //	Position
 //	ShowLegendKey
+//	Font
 //
 // Position: Set the position of the chart legend. The default legend position
 // is bottom. The available positions are:
@@ -832,6 +833,11 @@ func (opts *Chart) parseTitle() {
 //
 // ShowLegendKey: Set the legend keys shall be shown in data labels. The default
 // value is false.
+//
+// Font: Set the font properties of the chart legend text. The properties that
+// can be set are the same as the font object that is used for cell formatting.
+// The font family, size, color, bold, italic, underline, and strike properties
+// can be set.
 //
 // Set properties of the chart title. The properties that can be set are:
 //
