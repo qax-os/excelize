@@ -171,7 +171,8 @@ func TestAddChart(t *testing.T) {
 					Width: 1,
 				},
 			},
-			Legend: ChartLegend{Font: &Font{Family: "Arial", Size: 11, Strike: true, Color: "777777"}}},
+			Legend: ChartLegend{Font: &Font{Family: "Arial", Size: 11, Strike: true, Color: "777777"}},
+		},
 	}
 	series2 := []ChartSeries{
 		{
