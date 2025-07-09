@@ -171,7 +171,7 @@ func TestAddChart(t *testing.T) {
 					Width: 1,
 				},
 			},
-		},
+			Legend: ChartLegend{Font: &Font{Family: "Arial", Size: 11, Strike: true, Color: "777777"}}},
 	}
 	series2 := []ChartSeries{
 		{
@@ -225,7 +225,7 @@ func TestAddChart(t *testing.T) {
 		{sheetName: "Sheet1", cell: "P1", opts: &Chart{Type: Col, Series: series, Format: format, Legend: ChartLegend{Position: "none", ShowLegendKey: true}, Title: []RichTextRun{{Text: "2D Column Chart", Font: &Font{Size: 11, Family: "Calibri"}}}, PlotArea: plotArea, Border: ChartLine{Type: ChartLineNone}, ShowBlanksAs: "zero", XAxis: ChartAxis{Font: Font{Bold: true, Italic: true, Underline: "dbl", Family: "Times New Roman", Size: 15, Strike: true, Color: "000000"}, Title: []RichTextRun{{Text: "Primary Horizontal Axis Title"}}}, YAxis: ChartAxis{Font: Font{Bold: false, Italic: false, Underline: "sng", Color: "777777"}, Title: []RichTextRun{{Text: "Primary Vertical Axis Title", Font: &Font{Color: "777777", Bold: true, Italic: true, Size: 12}}}}}},
 		{sheetName: "Sheet1", cell: "X1", opts: &Chart{Type: ColStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Stacked Column Chart"}}, PlotArea: plotArea, Fill: Fill{Type: "pattern", Pattern: 1}, Border: ChartLine{Type: ChartLineAutomatic}, ShowBlanksAs: "zero", GapWidth: uintPtr(10), Overlap: intPtr(100)}},
 		{sheetName: "Sheet1", cell: "P16", opts: &Chart{Type: ColPercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "100% Stacked Column Chart"}}, PlotArea: plotArea, Fill: Fill{Type: "pattern", Color: []string{"EEEEEE"}, Pattern: 1}, Border: ChartLine{Type: ChartLineSolid, Width: 2}, ShowBlanksAs: "zero", XAxis: ChartAxis{Alignment: Alignment{Vertical: "wordArtVertRtl", TextRotation: 0}}}},
-		{sheetName: "Sheet1", cell: "X16", opts: &Chart{Type: Col3DClustered, Series: series, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "3D Clustered Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "X16", opts: &Chart{Type: Col3DClustered, Series: series, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false, Font: &Font{Size: 10}}, Title: []RichTextRun{{Text: "3D Clustered Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet1", cell: "P30", opts: &Chart{Type: Col3DStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Stacked Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{Alignment: Alignment{Vertical: "vert", TextRotation: 0}}}},
 		{sheetName: "Sheet1", cell: "X30", opts: &Chart{Type: Col3DPercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D 100% Stacked Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet1", cell: "X45", opts: &Chart{Type: Radar, Series: series, Format: format, Legend: ChartLegend{Position: "top_right", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Radar Chart"}}, PlotArea: plotArea, ShowBlanksAs: "span"}},
@@ -322,57 +322,6 @@ func TestAddChart(t *testing.T) {
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.AddChart("Sheet1", "P1", &Chart{Type: Col, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"}}, Title: []RichTextRun{{Text: "2D Column Chart"}}}), "XML syntax error on line 1: invalid UTF-8")
-}
-
-func TestChartLegendFont(t *testing.T) {
-	f := NewFile()
-	categories := map[string]string{"A2": "Small", "A3": "Normal", "A4": "Large", "B1": "Apple", "C1": "Orange", "D1": "Pear"}
-	values := map[string]int{"B2": 2, "C2": 3, "D2": 3, "B3": 5, "C3": 2, "D3": 4, "B4": 6, "C4": 7, "D4": 8}
-	
-	for k, v := range categories {
-		assert.NoError(t, f.SetCellValue("Sheet1", k, v))
-	}
-	for k, v := range values {
-		assert.NoError(t, f.SetCellValue("Sheet1", k, v))
-	}
-	
-	series := []ChartSeries{
-		{Name: "Sheet1!$B$1", Categories: "Sheet1!$A$2:$A$4", Values: "Sheet1!$B$2:$B$4"},
-		{Name: "Sheet1!$C$1", Categories: "Sheet1!$A$2:$A$4", Values: "Sheet1!$C$2:$C$4"},
-		{Name: "Sheet1!$D$1", Categories: "Sheet1!$A$2:$A$4", Values: "Sheet1!$D$2:$D$4"},
-	}
-	
-	// Test chart with legend font settings
-	assert.NoError(t, f.AddChart("Sheet1", "E1", &Chart{
-		Type:   Col,
-		Series: series,
-		Title:  []RichTextRun{{Text: "Chart with Legend Font"}},
-		Legend: ChartLegend{
-			Position: "bottom",
-			Font: Font{
-				Family: "Aptos",
-				Color:  "#3E3E3E",
-				Size:   10,
-				Bold:   true,
-			},
-		},
-	}))
-	
-	// Test chart with none position (should not cause errors)
-	assert.NoError(t, f.AddChart("Sheet1", "E16", &Chart{
-		Type:   Col,
-		Series: series,
-		Title:  []RichTextRun{{Text: "Chart without Legend"}},
-		Legend: ChartLegend{
-			Position: "none",
-			Font: Font{
-				Family: "Calibri",
-				Size:   12,
-			},
-		},
-	}))
-	
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestChartLegendFont.xlsx")))
 }
 
 func TestAddChartSheet(t *testing.T) {
