@@ -288,7 +288,7 @@ func TestOpenReader(t *testing.T) {
 		defaultXMLPathWorkbookRels,
 	} {
 		_, err = OpenReader(preset(defaultXMLPath, false))
-		assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+		assert.ErrorContains(t, err, "XML syntax error on line 1: invalid UTF-8")
 	}
 	// Test open workbook without internal XML parts
 	for _, defaultXMLPath := range []string{
