@@ -765,6 +765,7 @@ func (opts *Chart) parseTitle() {
 //	Categories
 //	Values
 //	Fill
+//	Legend
 //	Line
 //	Marker
 //	DataLabel
@@ -787,7 +788,10 @@ func (opts *Chart) parseTitle() {
 // optional and the default value was same with 'Values'.
 //
 // Fill: This set the format for the data series fill. The 'Fill' property is
-// optional
+// optional.
+//
+// Legend: This set the font of legend text for a data series. The 'Legend'
+// property is optional.
 //
 // Line: This sets the line format of the line chart. The 'Line' property is
 // optional and if it isn't supplied it will default style. The options that
@@ -819,6 +823,7 @@ func (opts *Chart) parseTitle() {
 //
 //	Position
 //	ShowLegendKey
+//	Font
 //
 // Position: Set the position of the chart legend. The default legend position
 // is bottom. The available positions are:
@@ -832,6 +837,11 @@ func (opts *Chart) parseTitle() {
 //
 // ShowLegendKey: Set the legend keys shall be shown in data labels. The default
 // value is false.
+//
+// Font: Set the font properties of the chart legend text. The properties that
+// can be set are the same as the font object that is used for cell formatting.
+// The font family, size, color, bold, italic, underline, and strike properties
+// can be set.
 //
 // Set properties of the chart title. The properties that can be set are:
 //
@@ -1007,6 +1017,9 @@ func (opts *Chart) parseTitle() {
 //
 // Set chart size by 'Dimension' property. The 'Dimension' property is optional.
 // The default width is 480, and height is 260.
+//
+// Set chart legend for all data series by 'Legend' property. The 'Legend'
+// property is optional.
 //
 // Set the bubble size in all data series for the bubble chart or 3D bubble
 // chart by 'BubbleSizes' property. The 'BubbleSizes' property is optional. The

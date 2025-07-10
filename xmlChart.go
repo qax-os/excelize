@@ -509,14 +509,22 @@ type cDLbls struct {
 	ShowLeaderLines *attrValBool   `xml:"showLeaderLines"`
 }
 
+// cLegendEntry (Legend Entry) directly maps the legendEntry element. This
+// element specifies the legend entry.
+type cLegendEntry struct {
+	IDx  *attrValInt `xml:"idx"`
+	TxPr *cTxPr      `xml:"txPr"`
+}
+
 // cLegend (Legend) directly maps the legend element. This element specifies
 // the legend.
 type cLegend struct {
-	Layout    *string        `xml:"layout"`
-	LegendPos *attrValString `xml:"legendPos"`
-	Overlay   *attrValBool   `xml:"overlay"`
-	SpPr      *cSpPr         `xml:"spPr"`
-	TxPr      *cTxPr         `xml:"txPr"`
+	Layout      *string        `xml:"layout"`
+	LegendPos   *attrValString `xml:"legendPos"`
+	LegendEntry []cLegendEntry `xml:"legendEntry"`
+	Overlay     *attrValBool   `xml:"overlay"`
+	SpPr        *cSpPr         `xml:"spPr"`
+	TxPr        *cTxPr         `xml:"txPr"`
 }
 
 // cPrintSettings directly maps the printSettings element. This element
@@ -611,6 +619,7 @@ type Chart struct {
 type ChartLegend struct {
 	Position      string
 	ShowLegendKey bool
+	Font          *Font
 }
 
 // ChartMarker directly maps the format settings of the chart marker.
@@ -644,6 +653,7 @@ type ChartSeries struct {
 	Values            string
 	Sizes             string
 	Fill              Fill
+	Legend            ChartLegend
 	Line              ChartLine
 	Marker            ChartMarker
 	DataLabel         ChartDataLabel

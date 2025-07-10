@@ -80,12 +80,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 			BackWall: &cThicknessSpPr{
 				Thickness: &attrValInt{Val: intPtr(0)},
 			},
-			PlotArea: &cPlotArea{},
-			Legend: &cLegend{
-				LegendPos: &attrValString{Val: stringPtr(chartLegendPosition[opts.Legend.Position])},
-				Overlay:   &attrValBool{Val: boolPtr(false)},
-			},
-
+			PlotArea:         &cPlotArea{},
 			PlotVisOnly:      &attrValBool{Val: boolPtr(false)},
 			DispBlanksAs:     &attrValString{Val: stringPtr(opts.ShowBlanksAs)},
 			ShowDLblsOverMax: &attrValBool{Val: boolPtr(false)},
@@ -165,9 +160,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		Bubble:                      f.drawBubbleChart,
 		Bubble3D:                    f.drawBubbleChart,
 	}
-	if opts.Legend.Position == "none" {
-		xlsxChartSpace.Chart.Legend = nil
-	}
+	xlsxChartSpace.Chart.drawChartLegend(opts)
 	xlsxChartSpace.Chart.PlotArea.SpPr = f.drawShapeFill(opts.PlotArea.Fill, xlsxChartSpace.Chart.PlotArea.SpPr)
 	xlsxChartSpace.Chart.PlotArea.DTable = f.drawPlotAreaDTable(opts)
 	addChart := func(c, p *cPlotArea) {
@@ -881,7 +874,8 @@ func (f *File) drawChartSeriesCat(v ChartSeries, opts *Chart) *cCat {
 func (f *File) drawChartSeriesVal(v ChartSeries, opts *Chart) *cVal {
 	val := &cVal{
 		NumRef: &cNumRef{
-			F: v.Values,
+			F:        v.Values,
+			NumCache: &cNumCache{},
 		},
 	}
 	chartSeriesVal := map[ChartType]*cVal{Scatter: nil, Bubble: nil, Bubble3D: nil}
@@ -935,7 +929,8 @@ func (f *File) drawChartSeriesXVal(v ChartSeries, opts *Chart) *cCat {
 func (f *File) drawChartSeriesYVal(v ChartSeries, opts *Chart) *cVal {
 	val := &cVal{
 		NumRef: &cNumRef{
-			F: v.Values,
+			F:        v.Values,
+			NumCache: &cNumCache{},
 		},
 	}
 	chartSeriesYVal := map[ChartType]*cVal{Scatter: val, Bubble: val, Bubble3D: val}
@@ -954,7 +949,8 @@ func (f *File) drawCharSeriesBubbleSize(v ChartSeries, opts *Chart) *cVal {
 	}
 	return &cVal{
 		NumRef: &cNumRef{
-			F: fVal,
+			F:        fVal,
+			NumCache: &cNumCache{},
 		},
 	}
 }
@@ -1340,6 +1336,36 @@ func (f *File) drawChartLn(opts *ChartLine) *aLn {
 		return ln
 	default:
 		return nil
+	}
+}
+
+// drawChartLegend provides a function to draw the c:legend element.
+func (c *cChart) drawChartLegend(opts *Chart) {
+	if opts.Legend.Position == "none" {
+		c.Legend = nil
+		return
+	}
+	if c.Legend == nil {
+		c.Legend = &cLegend{
+			LegendPos: &attrValString{Val: stringPtr(chartLegendPosition[opts.Legend.Position])},
+			Overlay:   &attrValBool{Val: boolPtr(false)},
+		}
+	}
+	if opts.Legend.Font != nil {
+		c.Legend.TxPr = &cTxPr{P: aP{PPr: &aPPr{}}}
+		drawChartFont(opts.Legend.Font, &c.Legend.TxPr.P.PPr.DefRPr)
+	}
+	for k := range opts.Series {
+		font := opts.Series[k].Legend.Font
+		if font == nil {
+			continue
+		}
+		legendEntry := cLegendEntry{
+			IDx:  &attrValInt{Val: intPtr(k + opts.order)},
+			TxPr: &cTxPr{P: aP{PPr: &aPPr{}}},
+		}
+		drawChartFont(font, &legendEntry.TxPr.P.PPr.DefRPr)
+		c.Legend.LegendEntry = append(c.Legend.LegendEntry, legendEntry)
 	}
 }
 
