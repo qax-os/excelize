@@ -103,7 +103,15 @@ func (f *File) readXML(name string) []byte {
 		return content.([]byte)
 	}
 	if content, ok := f.streams[name]; ok {
-		return content.rawData.buf.Bytes()
+		rawDataReader, err := content.rawData.Reader()
+		if err != nil {
+			return []byte{}
+		}
+		rawDataContent, err := io.ReadAll(rawDataReader)
+		if err != nil {
+			return []byte{}
+		}
+		return rawDataContent
 	}
 	return []byte{}
 }
