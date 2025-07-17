@@ -633,7 +633,7 @@ func (f *File) addDrawingSlicer(sheet, slicerName string, ns xml.Attr, opts *Sli
 		},
 		SpPr: &xlsxSpPr{
 			Xfrm:      xlsxXfrm{Off: xlsxOff{X: 2914650, Y: 152400}, Ext: xlsxPositiveSize2D{Cx: 1828800, Cy: 2238375}},
-			SolidFill: &xlsxInnerXML{Content: "<a:prstClr val=\"white\"/>"},
+			SolidFill: &aSolidFill{SrgbClr: &aSrgbClr{Val: stringPtr("FFFFFF")}},
 			PrstGeom: xlsxPrstGeom{
 				Prst: "rect",
 			},

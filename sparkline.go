@@ -461,7 +461,7 @@ func (f *File) parseFormatAddSparklineSet(sheet string, opts *SparklineOptions) 
 	if len(opts.Location) != len(opts.Range) {
 		return ws, ErrSparkline
 	}
-	if opts.Style < 0 || opts.Style > 35 {
+	if opts.Style < 0 || 35 < opts.Style {
 		return ws, ErrSparklineStyle
 	}
 	if ws.ExtLst == nil {

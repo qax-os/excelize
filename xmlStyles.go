@@ -356,10 +356,11 @@ type Font struct {
 
 // Fill directly maps the fill settings of the cells.
 type Fill struct {
-	Type    string
-	Pattern int
-	Color   []string
-	Shading int
+	Type         string
+	Pattern      int
+	Color        []string
+	Shading      int
+	Transparency int
 }
 
 // Protection directly maps the protection settings of the cells.

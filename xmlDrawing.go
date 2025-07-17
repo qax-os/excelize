@@ -173,7 +173,7 @@ type xlsxLineProperties struct {
 type xlsxSpPr struct {
 	Xfrm      xlsxXfrm           `xml:"a:xfrm"`
 	PrstGeom  xlsxPrstGeom       `xml:"a:prstGeom"`
-	SolidFill *xlsxInnerXML      `xml:"a:solidFill"`
+	SolidFill *aSolidFill        `xml:"a:solidFill"`
 	Ln        xlsxLineProperties `xml:"a:ln"`
 }
 

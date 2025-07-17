@@ -788,7 +788,11 @@ func (f *File) drawShapeFill(fill Fill, spPr *cSpPr) *cSpPr {
 			spPr = &cSpPr{}
 		}
 		if len(fill.Color) == 1 {
-			spPr.SolidFill = &aSolidFill{SrgbClr: &attrValString{Val: stringPtr(strings.TrimPrefix(fill.Color[0], "#"))}}
+			spPr.SolidFill = &aSolidFill{SrgbClr: &aSrgbClr{Val: stringPtr(strings.TrimPrefix(fill.Color[0], "#"))}}
+			if fill.Transparency > 0 {
+				val := (100 - fill.Transparency) * 1000
+				spPr.SolidFill.SrgbClr.Alpha = &attrValInt{Val: &val}
+			}
 			return spPr
 		}
 		spPr.SolidFill = nil
@@ -1186,7 +1190,7 @@ func drawChartFont(fnt *Font, r *aRPr) {
 			r.SolidFill = &aSolidFill{}
 		}
 		r.SolidFill.SchemeClr = nil
-		r.SolidFill.SrgbClr = &attrValString{Val: stringPtr(strings.ReplaceAll(strings.ToUpper(fnt.Color), "#", ""))}
+		r.SolidFill.SrgbClr = &aSrgbClr{Val: stringPtr(strings.ReplaceAll(strings.ToUpper(fnt.Color), "#", ""))}
 	}
 	if fnt.Family != "" {
 		if r.Latin == nil {
