@@ -78,6 +78,8 @@ const (
 	WireframeContour
 	Bubble
 	Bubble3D
+	HighLowCloseChart
+	OpenHighLowCloseChart
 )
 
 // ChartDashType is the type of supported chart dash types.
@@ -755,6 +757,8 @@ func (opts *Chart) parseTitle() {
 //	 52 | WireframeContour            | wireframe contour chart
 //	 53 | Bubble                      | bubble chart
 //	 54 | Bubble3D                    | 3D bubble chart
+//	 55 | HighLowCloseChart           | High-Low-Close stock chart
+//	 56 | OpenHighLowCloseChart       | Open-High-Low-Close stock chart
 //
 // In Excel a chart series is a collection of information that defines which
 // data is plotted such as values, axis labels and formatting.

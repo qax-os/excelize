@@ -159,6 +159,8 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		WireframeContour:            f.drawSurfaceChart,
 		Bubble:                      f.drawBubbleChart,
 		Bubble3D:                    f.drawBubbleChart,
+		HighLowCloseChart:           f.drawStockChart,
+		OpenHighLowCloseChart:       f.drawStockChart,
 	}
 	xlsxChartSpace.Chart.drawChartLegend(opts)
 	xlsxChartSpace.Chart.PlotArea.SpPr = f.drawShapeFill(opts.PlotArea.Fill, xlsxChartSpace.Chart.PlotArea.SpPr)
@@ -686,6 +688,26 @@ func (f *File) drawBubbleChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	if opts.BubbleSize > 0 && opts.BubbleSize <= 300 {
 		plotArea.BubbleChart[0].BubbleScale = &attrValFloat{Val: float64Ptr(float64(opts.BubbleSize))}
 	}
+	return plotArea
+}
+
+func (f *File) drawStockChart(pa *cPlotArea, opts *Chart) *cPlotArea {
+	plotArea := &cPlotArea{
+		StockChart: []*cCharts{
+			{
+				VaryColors: &attrValBool{
+					Val: opts.VaryColors,
+				},
+				Ser:   f.drawChartSeries(opts),
+				DLbls: f.drawChartDLbls(opts),
+				AxID:  f.genAxID(opts),
+			},
+		},
+		ValAx:  f.drawPlotAreaValAx(pa, opts),
+		DateAx: f.drawPlotAreaCatAx(pa, opts),
+	}
+	ser := *plotArea.StockChart[0].Ser
+	ser[0].Val.NumRef.NumCache = &cNumCache{}
 	return plotArea
 }
 

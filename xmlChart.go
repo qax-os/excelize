@@ -356,6 +356,7 @@ type cPlotArea struct {
 	DoughnutChart  []*cCharts `xml:"doughnutChart"`
 	LineChart      []*cCharts `xml:"lineChart"`
 	Line3DChart    []*cCharts `xml:"line3DChart"`
+	StockChart     []*cCharts `xml:"stockChart"`
 	PieChart       []*cCharts `xml:"pieChart"`
 	Pie3DChart     []*cCharts `xml:"pie3DChart"`
 	OfPieChart     []*cCharts `xml:"ofPieChart"`
@@ -365,6 +366,7 @@ type cPlotArea struct {
 	SurfaceChart   []*cCharts `xml:"surfaceChart"`
 	CatAx          []*cAxs    `xml:"catAx"`
 	ValAx          []*cAxs    `xml:"valAx"`
+	DateAx         []*cAxs    `xml:"dateAx"`
 	SerAx          []*cAxs    `xml:"serAx"`
 	DTable         *cDTable   `xml:"dTable"`
 	SpPr           *cSpPr     `xml:"spPr"`
