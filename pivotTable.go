@@ -372,7 +372,7 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, opts *PivotTableOptions)
 			Count: 1,
 			I: []*xlsxI{
 				{
-					[]*xlsxX{{}, {}},
+					[]*xlsxX{{}},
 				},
 			},
 		},
