@@ -741,6 +741,7 @@ var (
 		11265: {tags: []string{"ar-JO"}, localMonth: localMonthsNameArabicIraq, apFmt: apFmtArabic, weekdayNames: weekdayNamesArabic, weekdayNamesAbbr: weekdayNamesArabicAbbr},
 		13313: {tags: []string{"ar-KW"}, localMonth: localMonthsNameArabic, apFmt: apFmtArabic, weekdayNames: weekdayNamesArabic, weekdayNamesAbbr: weekdayNamesArabicAbbr},
 		12289: {tags: []string{"ar-LB"}, localMonth: localMonthsNameArabicIraq, apFmt: apFmtArabic, weekdayNames: weekdayNamesArabic, weekdayNamesAbbr: weekdayNamesArabicAbbr},
+		4097:  {tags: []string{"ar-LY"}, localMonth: localMonthsNameArabic, apFmt: apFmtArabic, weekdayNames: weekdayNamesArabic, weekdayNamesAbbr: weekdayNamesArabicAbbr},
 		6145:  {tags: []string{"ar-MA"}, localMonth: localMonthsNameArabic, apFmt: apFmtArabic, weekdayNames: weekdayNamesArabic, weekdayNamesAbbr: weekdayNamesArabicAbbr},
 		8193:  {tags: []string{"ar-OM"}, localMonth: localMonthsNameArabic, apFmt: apFmtArabic, weekdayNames: weekdayNamesArabic, weekdayNamesAbbr: weekdayNamesArabicAbbr},
 		16385: {tags: []string{"ar-QA"}, localMonth: localMonthsNameArabic, apFmt: apFmtArabic, weekdayNames: weekdayNamesArabic, weekdayNamesAbbr: weekdayNamesArabicAbbr},
@@ -795,51 +796,78 @@ var (
 		3076:  {tags: []string{"zh-HK"}, localMonth: localMonthsNameChinese2, apFmt: nfp.AmPm[2], weekdayNames: weekdayNamesChinese, weekdayNamesAbbr: weekdayNamesChineseAbbr2},
 		5124:  {tags: []string{"zh-MO"}, localMonth: localMonthsNameChinese3, apFmt: nfp.AmPm[2], weekdayNames: weekdayNamesChinese, weekdayNamesAbbr: weekdayNamesChineseAbbr2},
 		1028:  {tags: []string{"zh-TW"}, localMonth: localMonthsNameChinese3, apFmt: nfp.AmPm[2], weekdayNames: weekdayNamesChinese, weekdayNamesAbbr: weekdayNamesChineseAbbr2, useGannen: true},
+		131:   {tags: []string{"co"}, localMonth: localMonthsNameCorsican, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesCorsican, weekdayNamesAbbr: weekdayNamesCorsicanAbbr},
+		1155:  {tags: []string{"co-FR"}, localMonth: localMonthsNameCorsican, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesCorsican, weekdayNamesAbbr: weekdayNamesCorsicanAbbr},
+		26:    {tags: []string{"hr"}, localMonth: localMonthsNameCroatian, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesCroatian, weekdayNamesAbbr: weekdayNamesCroatianAbbr},
+		1050:  {tags: []string{"hr-HR"}, localMonth: localMonthsNameCroatian, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesCroatian, weekdayNamesAbbr: weekdayNamesCroatianAbbr},
+		4122:  {tags: []string{"hr-BA"}, localMonth: localMonthsNameCroatianLatin, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesCroatian, weekdayNamesAbbr: weekdayNamesCroatianAbbr},
+		3153:  {tags: []string{"dz-BT"}, localMonth: localMonthsNameDzongkha, apFmt: apFmtDzongkha, weekdayNames: weekdayNamesDzongkha, weekdayNamesAbbr: weekdayNamesDzongkhaAbbr},
 		9:     {tags: []string{"en"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesEnglish, weekdayNamesAbbr: weekdayNamesEnglishAbbr},
 		4096: {tags: []string{
-			"aa", "aa-DJ", "aa-ER", "aa-ER", "aa-NA", "agq", "agq-CM", "ak", "ak-GH", "sq-ML",
-			"gsw-LI", "gsw-CH", "ar-TD", "ar-KM", "ar-DJ", "ar-ER", "ar-IL", "ar-MR", "ar-PS",
-			"ar-SO", "ar-SS", "ar-SD", "ar-001", "ast", "ast-ES", "asa", "asa-TZ", "ksf", "ksf-CM",
-			"bm", "bm-Latn-ML", "bas", "bas-CM", "bem", "bem-ZM", "bez", "bez-TZ", "byn", "byn-ER",
-			"brx", "brx-IN", "ca-AD", "ca-FR", "ca-IT", "ceb", "ceb-Latn", "ceb-Latn-PH", "tzm-Latn-MA",
-			"ccp", "ccp-Cakm", "ccp-Cakm-BD", "ccp-Cakm-IN", "ce-RU", "cgg", "cgg-UG", "cu-RU", "swc",
-			"swc-CD", "kw", "ke-GB", "da-GL", "dua", "dua-CM", "nl-AW", "nl-BQ", "nl-CW", "nl-SX",
-			"nl-SR", "dz", "ebu", "ebu-KE", "en-AS", "en-AI", "en-AG", "en-AT", "en-BS", "en-BB",
-			"en-BE", "en-BM", "en-BW", "en-IO", "en-VG", "en-BI", "en-CM", "en-KY", "en-CX", "en-CC",
-			"en-CK", "en-CY", "en-DK", "en-DM", "en-ER", "en-150", "en-FK", "en-FI", "en-FJ", "en-GM",
-			"en-DE", "en-GH", "en-GI", "en-GD", "en-GU", "en-GG", "en-GY", "en-IM", "en-IL", "en-JE",
-			"en-KE", "en-KI", "en-LS", "en-LR", "en-MO", "en-MG", "en-MW", "en-MT", "en-MH", "en-MU",
-			"en-FM", "en-MS", "en-NA", "en-NR", "en-NL", "en-NG", "en-NU", "en-NF", "en-MP", "en-PK",
-			"en-PW", "en-PG", "en-PN", "en-PR", "en-RW", "en-KN", "en-LC", "en-VC", "en-WS", "en-SC",
-			"en-SL", "en-SX", "en-SI", "en-SB", "en-SS", "en-SH", "en-SD", "en-SZ", "en-SE", "en-CH",
-			"en-TZ", "en-TK", "en-TO", "en-TC", "en-TV", "en-UG", "en-UM", "en-VI", "en-VU", "en-001",
-			"en-ZM", "eo", "eo-001", "ee", "ee-GH", "ee-TG", "ewo", "ewo-CM", "fo-DK", "fr-DZ",
-			"fr-BJ", "fr-BF", "fr-BI", "fr-CF", "fr-TD", "fr-KM", "fr-CG", "fr-DJ", "fr-GQ", "fr-GF",
-			"fr-PF", "fr-GA", "fr-GP", "fr-GN", "fr-MG", "fr-MQ", "fr-MR", "fr-MU", "fr-YT", "fr-NC",
-			"fr-NE", "fr-RW", "fr-BL", "fr-MF", "fr-PM", "fr-SC", "fr-SY", "fr-TG", "fr-TN", "fr-VU",
-			"fr-WF", "fur", "fur-IT", "ff-Latn-BF", "ff-CM", "ff-Latn-CM", "ff-Latn-GM", "ff-Latn-GH",
-			"ff-GN", "ff-Latn-GN", "ff-Latn-GW", "ff-Latn-LR", "ff-MR", "ff-Latn-MR", "ff-Latn-NE",
-			"ff-Latn-SL", "lg", "lg-UG", "de-BE", "de-IT", "el-CY", "guz", "guz-KE", "ha-Latn-GH",
-			"ha-Latn-NG", "ia-FR", "ia-001", "it-SM", "it-VA", "jv", "jv-Latn", "jv-Latn-ID", "dyo",
-			"dyo-SN", "kea", "kea-CV", "kab", "kab-DZ", "kkj", "kkj-CM", "kln", "kln-KE", "kam",
-			"kam-KE", "ks-Arab-IN", "ki", "ki-KE", "sw-TZ", "sw-UG", "ko-KP", "khq", "khq-ML", "ses",
-			"ses-ML", "nmg", "nmq-CM", "ku-Arab-IR", "lkt", "lkt-US", "lag", "lag-TZ", "ln", "ln-AO",
-			"ln-CF", "ln-CD", "nds", "nds-DE", "nds-NL", "lu", "lu-CD", "luo", "luo", "luo-KE", "luy",
-			"luy-KE", "jmc", "jmc-TZ", "mgh", "mgh-MZ", "kde", "kde-TZ", "mg", "mg-MG", "gv", "gv-IM",
-			"mas", "mas-KE", "mas-TZ", "mas-IR", "mer", "mer-KE", "mgo", "mgo-CM", "mfe", "mfe-MU",
-			"mua", "mua-CM", "nqo", "nqo-GN", "nqa", "naq-NA", "nnh", "nnh-CM", "jgo", "jgo-CM",
-			"lrc-IQ", "lrc-IR", "nd", "nd-ZW", "nb-SJ", "nus", "nus-SD", "nus-SS", "nyn", "nyn-UG",
-			"om-KE", "os", "os-GE", "os-RU", "ps-PK", "fa-AF", "pt-AO", "pt-CV", "pt-GQ", "pt-GW",
-			"pt-LU", "pt-MO", "pt-MZ", "pt-ST", "pt-CH", "pt-TL", "prg-001", "ksh", "ksh-DE", "rof",
-			"rof-TZ", "rn", "rn-BI", "ru-BY", "ru-KZ", "ru-KG", "ru-UA", "rwk", "rwk-TZ", "ssy",
-			"ssy-ER", "saq", "saq-KE", "sg", "sq-CF", "sbp", "sbp-TZ", "seh", "seh-MZ", "ksb", "ksb-TZ",
-			"sn", "sn-Latn", "sn-Latn-ZW", "xog", "xog-UG", "so-DJ", "so-ET", "so-KE", "nr", "nr-ZA",
-			"st-LS", "es-BZ", "es-BR", "es-PH", "zgh", "zgh-Tfng-MA", "zgh-Tfng", "ss", "ss-ZA",
-			"ss-SZ", "sv-AX", "shi", "shi-Tfng", "shi-Tfng-MA", "shi-Latn", "shi-Latn-MA", "dav",
-			"dav-KE", "ta-MY", "ta-SG", "twq", "twq-NE", "teo", "teo-KE", "teo-UG", "bo-IN", "tig",
-			"tig-ER", "to", "to-TO", "tr-CY", "uz-Arab", "us-Arab-AF", "vai", "vai-Vaii",
-			"vai-Vaii-LR", "vai-Latn-LR", "vai-Latn", "vo", "vo-001", "vun", "vun-TZ", "wae",
-			"wae-CH", "wal", "wae-ET", "yav", "yav-CM", "yo-BJ", "dje", "dje-NE",
+			"aa", "aa-DJ", "aa-ER", "aa-ET", "af-NA", "agq", "agq-CM", "ak",
+			"ak-GH", "sq-MK", "gsw-LI", "gsw-CH", "ar-TD", "ar-KM", "ar-DJ",
+			"ar-ER", "ar-IL", "ar-MR", "ar-PS", "ar-SO", "ar-SS", "ar-SD",
+			"ar-001", "ast", "ast-ES", "asa", "asa-TZ", "ksf", "ksf-CM", "bm",
+			"bm-Latn-ML", "bas", "bas-CM", "bem", "bem-ZM", "bez", "bez-TZ",
+			"bho", "bho-Deva", "bho-Deva-IN", "byn", "byn-ER", "brx", "brx-IN",
+			"ca-AD", "ca-FR", "ca-IT", "ceb", "ceb-Latn", "ceb-Latn-PH",
+			"tzm-Latn-MA", "ccp", "ccp-Cakm", "ccp-Cakm-BD", "ccp-Cakm-IN",
+			"ce-RU", "cgg", "cgg-UG", "cu-RU", "cv", "cv-Cyrl", "cv-Cyrl-RU",
+			"swc", "swc-CD", "kw", "kw-GB", "da-GL", "dua", "dua-CM", "nl-AW",
+			"nl-BQ", "nl-CW", "nl-SX", "nl-SR", "dz", "ebu", "ebu-KE", "en-AS",
+			"en-AI", "en-AG", "en-AT", "en-BS", "en-BB", "en-BE", "en-BM",
+			"en-BW", "en-IO", "en-VG", "en-BI", "en-CM", "en-KY", "en-CX",
+			"en-CC", "en-CK", "en-CY", "en-DK", "en-DM", "en-ER", "en-150",
+			"en-FK", "en-FI", "en-FJ", "en-GM", "en-DE", "en-GH", "en-GI",
+			"en-GD", "en-GU", "en-GG", "en-GY", "en-IM", "en-IL", "en-JE",
+			"en-KE", "en-KI", "en-LS", "en-LR", "en-MO", "en-MG", "en-MW",
+			"en-MV", "en-MT", "en-MH", "en-MU", "en-FM", "en-MS", "en-NA",
+			"en-NR", "en-NL", "en-NG", "en-NU", "en-NF", "en-MP", "en-PK",
+			"en-PW", "en-PG", "en-PN", "en-PR", "en-RW", "en-KN", "en-LC",
+			"en-VC", "en-WS", "en-SC", "en-SL", "en-SX", "en-SI", "en-SB",
+			"en-SS", "en-SH", "en-SD", "en-SZ", "en-SE", "en-CH", "en-TZ",
+			"en-TK", "en-TO", "en-TC", "en-TV", "en-UG", "en-UM", "en-VI",
+			"en-VU", "en-001", "en-ZM", "eo", "eo-001", "ee", "ee-GH", "ee-TG",
+			"ewo", "ewo-CM", "fo-DK", "fr-DZ", "fr-BJ", "fr-BF", "fr-BI",
+			"fr-CF", "fr-TD", "fr-KM", "fr-CG", "fr-DJ", "fr-GQ", "fr-GF",
+			"fr-PF", "fr-GA", "fr-GP", "fr-GN", "fr-MG", "fr-MQ", "fr-MR",
+			"fr-MU", "fr-YT", "fr-NC", "fr-NE", "fr-RW", "fr-BL", "fr-MF",
+			"fr-PM", "fr-SC", "fr-SY", "fr-TG", "fr-TN", "fr-VU", "fr-WF",
+			"fur", "fur-IT", "ff-Latn-BF", "ff-CM", "ff-Latn-CM", "ff-Latn-GM",
+			"ff-Latn-GH", "ff-GN", "ff-Latn-GN", "ff-Latn-GW", "ff-Latn-LR",
+			"ff-MR", "ff-Latn-MR", "ff-Latn-NE", "ff-Latn-SL", "lg", "lg-UG",
+			"de-BE", "de-IT", "el-CY", "guz", "guz-KE", "bgc", "bgc-Deva",
+			"bgc-Deva-IN", "ha-Latn-GH", "ha-Latn-NE", "hi-Latn", "hi-Latn-IN",
+			"ia", "ia-FR", "ia-001", "it-SM", "it-VA", "jv", "jv-Latn",
+			"jv-Latn-ID", "dyo", "dyo-SN", "kea", "kea-CV", "kab", "kab-DZ",
+			"kgp", "kgp-Latn", "kgp-Latn-BR", "kkj", "kkj-CM", "kln", "kln-KE",
+			"kam", "kam-KE", "ks-Arab-IN", "ki", "ki-KE", "sw-TZ", "sw-UG",
+			"ko-KP", "khq", "khq-ML", "ses", "ses-ML", "nmg", "nmg-CM",
+			"ku-Arab-IR", "lkt", "lkt-US", "lag", "lag-TZ", "ln", "ln-AO",
+			"ln-CF", "ln-CG", "ln-CD", "nds", "nds-DE", "nds-NL", "lu", "lu-CD",
+			"luo", "luo-KE", "luy", "luy-KE", "jmc", "jmc-TZ", "mgh", "mgh-MZ",
+			"kde", "kde-TZ", "mg", "mg-MG", "gv", "gv-IM", "mas", "mas-KE",
+			"mas-TZ", "mzn-IR", "mer", "mer-KE", "mgo", "mgo-CM", "mfe",
+			"mfe-MU", "mua", "mua-CM", "nqo", "nqo-GN", "naq", "naq-NA", "nnh",
+			"nnh-CM", "jgo", "jgo-CM", "yrl", "yrl-Latn", "yrl-Latn-BR",
+			"yrl-Latn-CO", "yrl-Latn-VE", "lrc-IQ", "lrc-IR", "nd", "nd-ZW",
+			"nb-SJ", "nus", "nus-SD", "nus-SS", "nyn", "nyn-UG", "oc-ES",
+			"om-KE", "os", "os-GE", "os-RU", "ps-PK", "fa-AF", "pt-AO", "pt-CV",
+			"pt-GQ", "pt-GW", "pt-LU", "pt-MO", "pt-MZ", "pt-ST", "pt-CH",
+			"pt-TL", "prg-001", "raj", "raj-Deva", "raj-Deva-IN", "ksh",
+			"ksh-DE", "rof", "rof-TZ", "rn", "rn-BI", "ru-BY", "ru-KZ", "ru-KG",
+			"ru-UA", "rwk", "rwk-TZ", "ssy", "ssy-ER", "saq", "saq-KE", "sg",
+			"sg-CF", "sbp", "sbp-TZ", "sc", "sc-Latn", "sc-Latn-IT", "seh",
+			"seh-MZ", "ksb", "ksb-TZ", "sn", "sn-Latn", "sn-Latn-ZW", "xog",
+			"xog-UG", "so-DJ", "so-ET", "so-KE", "nr", "nr-ZA", "st-LS",
+			"es-BZ", "es-BR", "es-GQ", "es-PH", "zgh", "zgh-Tfng-MA",
+			"zgh-Tfng", "ss", "ss-ZA", "ss-SZ", "sv-AX", "shi", "shi-Tfng",
+			"shi-Tfng-MA", "shi-Latn", "shi-Latn-MA", "dav", "dav-KE", "ta-MY",
+			"ta-SG", "twq", "twq-NE", "teo", "teo-KE", "teo-UG", "bo-IN", "tig",
+			"tig-ER", "to", "to-TO", "tr-CY", "uz-Arab", "uz-Arab-AF", "vai",
+			"vai-Vaii", "vai-Vaii-LR", "vai-Latn-LR", "vai-Latn", "vo",
+			"vo-001", "vun", "vun-TZ", "wae", "wae-CH", "wal", "wal-ET", "yav",
+			"yav-CM", "yo-BJ", "dje", "dje-NE",
 		}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesEnglish, weekdayNamesAbbr: weekdayNamesEnglishAbbr},
 		3081:  {tags: []string{"en-AU"}, localMonth: localMonthsNameEnglish, apFmt: strings.ToLower(nfp.AmPm[0]), weekdayNames: weekdayNamesEnglish, weekdayNamesAbbr: weekdayNamesEnglishAbbr},
 		10249: {tags: []string{"en-BZ"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesEnglish, weekdayNamesAbbr: weekdayNamesEnglishAbbr},
@@ -882,12 +910,13 @@ var (
 		6156:  {tags: []string{"fr-MC"}, localMonth: localMonthsNameFrench, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesFrench, weekdayNamesAbbr: weekdayNamesFrenchAbbr},
 		8204:  {tags: []string{"fr-RE"}, localMonth: localMonthsNameFrench, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesFrench, weekdayNamesAbbr: weekdayNamesFrenchAbbr},
 		10252: {tags: []string{"fr-SN"}, localMonth: localMonthsNameFrench, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesFrench, weekdayNamesAbbr: weekdayNamesFrenchAbbr},
+		4108:  {tags: []string{"fr-CH"}, localMonth: localMonthsNameFrench, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesFrench, weekdayNamesAbbr: weekdayNamesFrenchAbbr},
 		98:    {tags: []string{"fy"}, localMonth: localMonthsNameFrisian, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesFrisian, weekdayNamesAbbr: weekdayNamesFrisianAbbr},
 		1122:  {tags: []string{"fy-NL"}, localMonth: localMonthsNameFrisian, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesFrisian, weekdayNamesAbbr: weekdayNamesFrisianAbbr},
 		103:   {tags: []string{"ff"}, localMonth: localMonthsNameFulah, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesFulah, weekdayNamesAbbr: weekdayNamesFulahAbbr},
 		31847: {tags: []string{"ff-Latn"}, localMonth: localMonthsNameFulah, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesFulah, weekdayNamesAbbr: weekdayNamesFulahAbbr},
 		1127:  {tags: []string{"ff-NG", "ff-Latn-NG"}, localMonth: localMonthsNameNigeria, apFmt: apFmtNigeria, weekdayNames: weekdayNamesNigeria, weekdayNamesAbbr: weekdayNamesNigeriaAbbr},
-		2151:  {tags: []string{"ff-SN"}, localMonth: localMonthsNameNigeria, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesNigeria, weekdayNamesAbbr: weekdayNamesNigeriaAbbr},
+		2151:  {tags: []string{"ff-SN", "ff-Latn-SN"}, localMonth: localMonthsNameNigeria, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesNigeria, weekdayNamesAbbr: weekdayNamesNigeriaAbbr},
 		86:    {tags: []string{"gl"}, localMonth: localMonthsNameGalician, apFmt: apFmtCuba, weekdayNames: weekdayNamesGalician, weekdayNamesAbbr: weekdayNamesGalicianAbbr},
 		1110:  {tags: []string{"gl-ES"}, localMonth: localMonthsNameGalician, apFmt: apFmtCuba, weekdayNames: weekdayNamesGalician, weekdayNamesAbbr: weekdayNamesGalicianAbbr},
 		55:    {tags: []string{"ka"}, localMonth: localMonthsNameGeorgian, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesGeorgian, weekdayNamesAbbr: weekdayNamesGeorgianAbbr},
@@ -896,6 +925,7 @@ var (
 		3079:  {tags: []string{"de-AT"}, localMonth: localMonthsNameAustria, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesGerman, weekdayNamesAbbr: weekdayNamesGermanAbbr},
 		1031:  {tags: []string{"de-DE"}, localMonth: localMonthsNameGerman, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesGerman, weekdayNamesAbbr: weekdayNamesGermanAbbr},
 		5127:  {tags: []string{"de-LI"}, localMonth: localMonthsNameGerman, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesGerman, weekdayNamesAbbr: weekdayNamesGermanAbbr},
+		4103:  {tags: []string{"de-LU"}, localMonth: localMonthsNameGerman, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesGerman, weekdayNamesAbbr: weekdayNamesGermanAbbr},
 		2055:  {tags: []string{"de-CH"}, localMonth: localMonthsNameGerman, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesGerman, weekdayNamesAbbr: weekdayNamesGermanAbbr},
 		8:     {tags: []string{"el"}, localMonth: localMonthsNameGreek, apFmt: apFmtGreek, weekdayNames: weekdayNamesGreek, weekdayNamesAbbr: weekdayNamesGreekAbbr},
 		1032:  {tags: []string{"el-GR"}, localMonth: localMonthsNameGreek, apFmt: apFmtGreek, weekdayNames: weekdayNamesGreek, weekdayNamesAbbr: weekdayNamesGreekAbbr},
@@ -1578,6 +1608,44 @@ var (
 	monthNamesChineseAbbr = []string{"一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"}
 	// monthNamesChineseNum list the month number and character abbreviation in the Chinese.
 	monthNamesChineseNum = []string{"0月", "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月"}
+	// monthNamesCorsican list the month names in the Corsican.
+	monthNamesCorsican = []string{"ghjennaghju", "ferraghju", "marzu", "aprile", "maghju", "ghjunghju", "lugliu", "aostu", "settembre", "ottobre", "nuvembre", "dicembre"}
+	// monthNamesCorsican lists the month name abbreviations in the Corsican.
+	monthNamesCorsicanAbbr = []string{"ghje", "ferr", "marz", "apri", "magh", "ghju", "lugl", "aost", "sett", "otto", "nuve", "dice"}
+	// monthNamesCroatian list the month names in the Croatian.
+	monthNamesCroatian = []string{"siječanj", "veljača", "ožujak", "travanj", "svibanj", "lipanj", "srpanj", "kolovoz", "rujan", "listopad", "studeni", "prosinac"}
+	// monthNamesCroatian lists the month name abbreviations in the Croatian.
+	monthNamesCroatianAbbr = []string{"sij", "vlj", "ožu", "tra", "svi", "lip", "srp", "kol", "ruj", "lis", "stu", "pro"}
+	// monthNamesDzongkha list the month names in the Dzongkha.
+	monthNamesDzongkha = []string{
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f51\u0f44\u0f54\u0f0b",
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f42\u0f49\u0f72\u0f66\u0f0b\u0f54\u0f0b",
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f42\u0f66\u0f74\u0f58\u0f0b\u0f54\u0f0b",
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f5e\u0f72\u0f0b\u0f54",
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f63\u0f94\u0f0b\u0f54\u0f0b",
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f51\u0fb2\u0f74\u0f42\u0f0b\u0f54",
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f51\u0f74\u0f53\u0f0b\u0f54\u0f0b",
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f62\u0f92\u0fb1\u0f51\u0f0b\u0f54\u0f0b",
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f51\u0f42\u0f74\u0f0b\u0f54\u0f0b",
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f54\u0f0d",
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f42\u0f45\u0f72\u0f42\u0f0b\u0f54\u0f0b",
+		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f42\u0f49\u0f72\u0f66\u0f0b\u0f54\u0f0b",
+	}
+	// monthNamesDzongkha lists the month name abbreviations in the Dzongkha.
+	monthNamesDzongkhaAbbr = []string{
+		"\u0f5f\u0fb3\u0f0b\u0f21",
+		"\u0f5f\u0fb3\u0f0b\u0f22",
+		"\u0f5f\u0fb3\u0f0b\u0f23",
+		"\u0f5f\u0fb3\u0f0b\u0f24",
+		"\u0f5f\u0fb3\u0f0b\u0f25",
+		"\u0f5f\u0fb3\u0f0b\u0f26",
+		"\u0f5f\u0fb3\u0f0b\u0f27",
+		"\u0f5f\u0fb3\u0f0b\u0f28",
+		"\u0f5f\u0fb3\u0f0b\u0f29",
+		"\u0f5f\u0fb3\u0f0b\u0f21\u0f20",
+		"\u0f5f\u0fb3\u0f0b\u0f21\u0f21",
+		"\u0f5f\u0fb3\u0f0b\u0f21\u0f22",
+	}
 	// monthNamesEstonian list the month names in the Estonian.
 	monthNamesEstonian = []string{"jaanuar", "veebruar", "märts", "aprill", "mai", "juuni", "juuli", "august", "september", "oktoober", "november", "detsember"}
 	// monthNamesEstonianAbbr lists the month name abbreviations in the Estonian.
@@ -2748,18 +2816,18 @@ var (
 	}
 	// monthNamesTibetanAbbr lists the month name abbreviations in the Tibetan.
 	monthNamesTibetanAbbr = []string{
-		"\u0f5f\u0fb3\u0f0b\u0f21",
-		"\u0f5f\u0fb3\u0f0b\u0f22",
-		"\u0f5f\u0fb3\u0f0b\u0f23",
-		"\u0f5f\u0fb3\u0f0b\u0f24",
-		"\u0f5f\u0fb3\u0f0b\u0f25",
-		"\u0f5f\u0fb3\u0f0b\u0f26",
-		"\u0f5f\u0fb3\u0f0b\u0f27",
-		"\u0f5f\u0fb3\u0f0b\u0f28",
-		"\u0f5f\u0fb3\u0f0b\u0f29",
-		"\u0f5f\u0fb3\u0f0b\u0f21\u0f20",
-		"\u0f5f\u0fb3\u0f0b\u0f21\u0f21",
-		"\u0f5f\u0fb3\u0f0b\u0f21\u0f22",
+		"\u0f5f\u0fb3\u0f0b \u0f21",
+		"\u0f5f\u0fb3\u0f0b \u0f22",
+		"\u0f5f\u0fb3\u0f0b \u0f23",
+		"\u0f5f\u0fb3\u0f0b \u0f24",
+		"\u0f5f\u0fb3\u0f0b \u0f25",
+		"\u0f5f\u0fb3\u0f0b \u0f26",
+		"\u0f5f\u0fb3\u0f0b \u0f27",
+		"\u0f5f\u0fb3\u0f0b \u0f28",
+		"\u0f5f\u0fb3\u0f0b \u0f29",
+		"\u0f5f\u0fb3\u0f0b \u0f21\u0f20",
+		"\u0f5f\u0fb3\u0f0b \u0f21\u0f21",
+		"\u0f5f\u0fb3\u0f0b \u0f21\u0f22",
 	}
 	// monthNamesTigrinya list the month names in the Tigrinya.
 	monthNamesTigrinya = []string{
@@ -3223,6 +3291,34 @@ var (
 		"\u13C5\u13A9\u13C1",
 		"\u13E7\u13BE\u13A9",
 		"\u13C8\u13D5\u13BE",
+	}
+	// weekdayNamesCorsican list the weekday name in the Corsican.
+	weekdayNamesCorsican = []string{"dumenica", "luni", "marti", "mercuri", "ghjovi", "venneri", "sabbatu"}
+	// weekdayNamesCorsicanAbbr list the weekday name abbreviations in the Corsican.
+	weekdayNamesCorsicanAbbr = []string{"dum.", "lun.", "mar.", "mer.", "ghj.", "ven.", "sab."}
+	// weekdayNamesCroatian list the weekday name in the Croatian.
+	weekdayNamesCroatian = []string{"nedjelja", "ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota"}
+	// weekdayNamesCroatianAbbr list the weekday name abbreviations in the Croatian.
+	weekdayNamesCroatianAbbr = []string{"ned", "pon", "uto", "sri", "čet", "pet", "sub"}
+	// weekdayNamesDzongkha list the weekday name in the Dzongkha.
+	weekdayNamesDzongkha = []string{
+		"\u0f42\u0f5f\u0f60\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f0b",
+		"\u0f42\u0f5f\u0f60\u0f0b\u0f58\u0f72\u0f42\u0f0b\u0f51\u0f58\u0f62\u0f0b",
+		"\u0f42\u0f5f\u0f60\u0f0b\u0f63\u0fb7\u0f42\u0f0b\u0f54\u0f0b",
+		"\u0f42\u0f5f\u0f60\u0f0b\u0f55\u0f74\u0f62\u0f0b\u0f56\u0f74\u0f0b",
+		"\u0f42\u0f5f\u0f60\u0f0b\u0f54\u0f0b\u0f66\u0f44\u0f66\u0f0b",
+		"\u0f42\u0f5f\u0f60\u0f0b\u0f66\u0fa4\u0f7a\u0f53\u0f0b\u0f54\u0f0b",
+		"\u0f42\u0f5f\u0f60\u0f0b\u0f49\u0f72\u0f0b\u0f58\u0f0b",
+	}
+	// weekdayNamesDzongkhaAbbr list the weekday name abbreviations in the Dzongkha.
+	weekdayNamesDzongkhaAbbr = []string{
+		"\u0f5f\u0fb3\u0f0b",
+		"\u0f58\u0f72\u0f62\u0f0b",
+		"\u0f63\u0fb7\u0f42\u0f0b",
+		"\u0f55\u0f74\u0f62\u0f0b",
+		"\u0f66\u0f44\u0f66\u0f0b",
+		"\u0f66\u0fa4\u0f7a\u0f53\u0f0b",
+		"\u0f49\u0f72\u0f0b",
 	}
 	// weekdayNamesChinese list the weekday name in the Chinese.
 	weekdayNamesChinese = []string{"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"}
@@ -4504,6 +4600,8 @@ var (
 	apFmtCentralKurdish = "\u067E.\u0646/\u062F.\u0646"
 	// apFmtCuba defined the AM/PM name in the Cuba.
 	apFmtCuba = "a.m./p.m."
+	// apFmtDzongkha defined the AM/PM name in the Dzongkha.
+	apFmtDzongkha = "\u0f66\u0f94\u0f0b\u0f46\u0f0b/\u0f55\u0fb1\u0f72\u0f0b\u0f46\u0f0b"
 	// apFmtFaroese defined the AM/PM name in the Faroese.
 	apFmtFaroese = "um fyr./um sein."
 	// apFmtFinnish defined the AM/PM name in the Finnish.
@@ -5565,6 +5663,53 @@ func localMonthsNameChinese3(t time.Time, abbr int) string {
 		return monthNamesChineseNum[t.Month()]
 	}
 	return strconv.Itoa(int(t.Month()))
+}
+
+// localMonthsNameCorsican returns the Corsican name of the month.
+func localMonthsNameCorsican(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return monthNamesCorsicanAbbr[int(t.Month())-1]
+	}
+	if abbr == 4 {
+		return monthNamesCorsican[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesCorsican[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameCroatian returns the Croatian name of the month.
+func localMonthsNameCroatian(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return monthNamesCroatianAbbr[int(t.Month())-1]
+	}
+	if abbr == 4 {
+		return monthNamesCroatian[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesCroatian[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameCroatianLatin returns the Croatian (Latin) name of the month.
+func localMonthsNameCroatianLatin(t time.Time, abbr int) string {
+	if abbr == 3 {
+		if t.Month() == 2 {
+			return string([]rune(monthNamesCroatian[(t.Month() - 1)])[:4])
+		}
+		return string([]rune(monthNamesCroatian[(t.Month() - 1)])[:3])
+	}
+	if abbr == 4 || abbr > 6 {
+		return monthNamesCroatian[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesCroatian[(t.Month() - 1)])[:1])
+}
+
+// localMonthsNameDzongkha returns the Dzongkha name of the month.
+func localMonthsNameDzongkha(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return monthNamesDzongkhaAbbr[int(t.Month())-1]
+	}
+	if abbr == 4 {
+		return monthNamesDzongkha[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesDzongkha[int(t.Month())-1])[:1])
 }
 
 // localMonthsNameEnglish returns the English name of the month.
