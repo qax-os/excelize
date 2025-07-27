@@ -309,6 +309,7 @@ const (
 	defaultXMLRdRichValueRelRels          = "xl/richData/_rels/richValueRel.xml.rels"
 	defaultXMLRdRichValueWebImagePart     = "xl/richData/rdRichValueWebImage.xml"
 	defaultXMLRdRichValueWebImagePartRels = "xl/richData/_rels/rdRichValueWebImage.xml.rels"
+	defaultXMLRdRichValueStructurePart    = "xl/richData/rdrichvaluestructure.xml"
 )
 
 // IndexedColorMapping is the table of default mappings from indexed color value
