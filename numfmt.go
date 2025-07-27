@@ -205,7 +205,7 @@ var (
 			76: "\u0E0A:\u0E19\u0E19:\u0E17\u0E17",
 			77: "\u0E27/\u0E14/\u0E1B\u0E1B\u0E1B\u0E1B \u0E0A:\u0E19\u0E19",
 			78: "\u0E19\u0E19:\u0E17\u0E17",
-			79: "[\u0E0A%5D]\u0E19\u0E19:\u0E17\u0E17",
+			79: "[\u0E0A]:\u0E19\u0E19:\u0E17\u0E17",
 			80: "\u0E19\u0E19:\u0E17\u0E17.0",
 			81: "d/m/bb",
 		},
@@ -801,6 +801,10 @@ var (
 		26:    {tags: []string{"hr"}, localMonth: localMonthsNameCroatian, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesCroatian, weekdayNamesAbbr: weekdayNamesCroatianAbbr},
 		1050:  {tags: []string{"hr-HR"}, localMonth: localMonthsNameCroatian, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesCroatian, weekdayNamesAbbr: weekdayNamesCroatianAbbr},
 		4122:  {tags: []string{"hr-BA"}, localMonth: localMonthsNameCroatianLatin, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesCroatian, weekdayNamesAbbr: weekdayNamesCroatianAbbr},
+		5:     {tags: []string{"cs"}, localMonth: localMonthsNameCzech, apFmt: apFmtCzech, weekdayNames: weekdayNamesCzech, weekdayNamesAbbr: weekdayNamesCzechAbbr},
+		1029:  {tags: []string{"cs-CZ"}, localMonth: localMonthsNameCzech, apFmt: apFmtCzech, weekdayNames: weekdayNamesCzech, weekdayNamesAbbr: weekdayNamesCzechAbbr},
+		6:     {tags: []string{"da"}, localMonth: localMonthsNameDanish, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesDanish, weekdayNamesAbbr: weekdayNamesDanishAbbr},
+		1030:  {tags: []string{"da-DK"}, localMonth: localMonthsNameDanish, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesDanish, weekdayNamesAbbr: weekdayNamesDanishAbbr},
 		3153:  {tags: []string{"dz-BT"}, localMonth: localMonthsNameDzongkha, apFmt: apFmtDzongkha, weekdayNames: weekdayNamesDzongkha, weekdayNamesAbbr: weekdayNamesDzongkhaAbbr},
 		9:     {tags: []string{"en"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesEnglish, weekdayNamesAbbr: weekdayNamesEnglishAbbr},
 		4096: {tags: []string{
@@ -1204,7 +1208,7 @@ var (
 	// republicOfChinaYear defined start time of the Republic of China
 	republicOfChinaYear = time.Date(1912, time.January, 1, 0, 0, 0, 0, time.UTC)
 	// republicOfChinaEraName defined the Republic of China era name for the Republic of China calendar.
-	republicOfChinaEraName = []string{"\u4e2d\u83ef\u6c11\u570b", "\u6c11\u570b", "\u524d"}
+	republicOfChinaEraName = []string{"\u4E2D\u83EF\u6C11\u570B", "\u6C11\u570B", "\u524D"}
 	// japaneseEraYears list the Japanese era name periods.
 	japaneseEraYears = []time.Time{
 		time.Date(1868, time.August, 8, 0, 0, 0, 0, time.UTC),
@@ -1280,7 +1284,7 @@ var (
 	}
 	// monthNamesArabicIraq list the month names in the Arabic Iraq.
 	monthNamesArabicIraq = []string{
-		"\u0643\u0627\u0646\u0648\u0646%A0\u0627\u0644\u062B\u0627\u0646\u064A",
+		"\u0643\u0627\u0646\u0648\u0646 \u0627\u0644\u062B\u0627\u0646\u064A",
 		"\u0634\u0628\u0627\u0637",
 		"\u0622\u0630\u0627\u0631",
 		"\u0646\u064A\u0633\u0627\u0646",
@@ -1289,9 +1293,9 @@ var (
 		"\u062A\u0645\u0648\u0632",
 		"\u0622\u0628",
 		"\u0623\u064A\u0644\u0648\u0644",
-		"\u062A\u0634\u0631\u064A\u0646%A0\u0627\u0644\u0623\u0648\u0644",
-		"\u062A\u0634\u0631\u064A\u0646%A0\u0627\u0644\u062B\u0627\u0646\u064A",
-		"\u0643\u0627\u0646\u0648\u0646%A0\u0627\u0644\u0623\u0648\u0644",
+		"\u062A\u0634\u0631\u064A\u0646 \u0627\u0644\u0623\u0648\u0644",
+		"\u062A\u0634\u0631\u064A\u0646 \u0627\u0644\u062B\u0627\u0646\u064A",
+		"\u0643\u0627\u0646\u0648\u0646 \u0627\u0644\u0623\u0648\u0644",
 	}
 	// monthNamesArmenian list the month names in the Armenian.
 	monthNamesArmenian = []string{
@@ -1559,7 +1563,7 @@ var (
 	monthNamesCaribbeanAbbr = []string{"Janv.", "Févr.", "Mars", "Avr.", "Mai", "Juin", "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc."}
 	//	monthNamesCentralKurdish list the month names in the Central Kurdish.
 	monthNamesCentralKurdish = []string{
-		"\u06A9\u0627\u0646\u0648\u0648\u0646\u06CC%20\u062F\u0648\u0648\u06D5\u0645",
+		"\u06A9\u0627\u0646\u0648\u0648\u0646\u06CC \u062F\u0648\u0648\u06D5\u0645",
 		"\u0634\u0648\u0628\u0627\u062A",
 		"\u0626\u0627\u0632\u0627\u0631",
 		"\u0646\u06CC\u0633\u0627\u0646",
@@ -1568,9 +1572,9 @@ var (
 		"\u062A\u06D5\u0645\u0648\u0648\u0632",
 		"\u0626\u0627\u0628",
 		"\u0626\u06D5\u06CC\u0644\u0648\u0648\u0644",
-		"\u062A\u0634\u0631\u06CC\u0646\u06CC%20\u06CC\u06D5\u06A9\u06D5\u0645",
-		"\u062A\u0634\u0631\u06CC\u0646\u06CC%20\u062F\u0648\u0648\u06D5\u0645",
-		"\u06A9\u0627\u0646\u0648\u0646\u06CC%20\u06CC\u06D5\u06A9\u06D5\u0645",
+		"\u062A\u0634\u0631\u06CC\u0646\u06CC \u06CC\u06D5\u06A9\u06D5\u0645",
+		"\u062A\u0634\u0631\u06CC\u0646\u06CC \u062F\u0648\u0648\u06D5\u0645",
+		"\u06A9\u0627\u0646\u0648\u0646\u06CC \u06CC\u06D5\u06A9\u06D5\u0645",
 	}
 	// monthNamesCherokee list the month names in the Cherokee.
 	monthNamesCherokee = []string{
@@ -1616,35 +1620,43 @@ var (
 	monthNamesCroatian = []string{"siječanj", "veljača", "ožujak", "travanj", "svibanj", "lipanj", "srpanj", "kolovoz", "rujan", "listopad", "studeni", "prosinac"}
 	// monthNamesCroatian lists the month name abbreviations in the Croatian.
 	monthNamesCroatianAbbr = []string{"sij", "vlj", "ožu", "tra", "svi", "lip", "srp", "kol", "ruj", "lis", "stu", "pro"}
+	// monthNamesCzech list the month names in the Czech.
+	monthNamesCzech = []string{"leden", "únor", "březen", "duben", "květen", "červen", "červenec", "srpen", "září", "říjen", "listopad", "prosinec"}
+	// monthNamesCzech lists the month name abbreviations in the Czech.
+	monthNamesCzechAbbr = []string{"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"}
+	// monthNamesDanish list the month names in the Danish.
+	monthNamesDanish = []string{"januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"}
+	// monthNamesDanish lists the month name abbreviations in the Danish.
+	monthNamesDanishAbbr = []string{"jan", "feb", "mar", "apr", "maj", "jun", "jul", "aug", "sep", "okt", "nov", "dec"}
 	// monthNamesDzongkha list the month names in the Dzongkha.
 	monthNamesDzongkha = []string{
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f51\u0f44\u0f54\u0f0b",
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f42\u0f49\u0f72\u0f66\u0f0b\u0f54\u0f0b",
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f42\u0f66\u0f74\u0f58\u0f0b\u0f54\u0f0b",
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f5e\u0f72\u0f0b\u0f54",
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f63\u0f94\u0f0b\u0f54\u0f0b",
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f51\u0fb2\u0f74\u0f42\u0f0b\u0f54",
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f51\u0f74\u0f53\u0f0b\u0f54\u0f0b",
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f62\u0f92\u0fb1\u0f51\u0f0b\u0f54\u0f0b",
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f51\u0f42\u0f74\u0f0b\u0f54\u0f0b",
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f54\u0f0d",
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f42\u0f45\u0f72\u0f42\u0f0b\u0f54\u0f0b",
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f42\u0f49\u0f72\u0f66\u0f0b\u0f54\u0f0b",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F51\u0F44\u0F54\u0F0B",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F42\u0F49\u0F72\u0F66\u0F0B\u0F54\u0F0B",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F42\u0F66\u0F74\u0F58\u0F0B\u0F54\u0F0B",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F56\u0F5E\u0F72\u0F0B\u0F54",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F63\u0F94\u0F0B\u0F54\u0F0B",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F51\u0FB2\u0F74\u0F42\u0F0B\u0F54",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F56\u0F51\u0F74\u0F53\u0F0B\u0F54\u0F0B",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F56\u0F62\u0F92\u0FB1\u0F51\u0F0B\u0F54\u0F0B",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F51\u0F42\u0F74\u0F0B\u0F54\u0F0B",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F56\u0F45\u0F74\u0F0B\u0F54\u0F0D",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F56\u0F45\u0F74\u0F0B\u0F42\u0F45\u0F72\u0F42\u0F0B\u0F54\u0F0B",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F56\u0F45\u0F74\u0F0B\u0F42\u0F49\u0F72\u0F66\u0F0B\u0F54\u0F0B",
 	}
 	// monthNamesDzongkha lists the month name abbreviations in the Dzongkha.
 	monthNamesDzongkhaAbbr = []string{
-		"\u0f5f\u0fb3\u0f0b\u0f21",
-		"\u0f5f\u0fb3\u0f0b\u0f22",
-		"\u0f5f\u0fb3\u0f0b\u0f23",
-		"\u0f5f\u0fb3\u0f0b\u0f24",
-		"\u0f5f\u0fb3\u0f0b\u0f25",
-		"\u0f5f\u0fb3\u0f0b\u0f26",
-		"\u0f5f\u0fb3\u0f0b\u0f27",
-		"\u0f5f\u0fb3\u0f0b\u0f28",
-		"\u0f5f\u0fb3\u0f0b\u0f29",
-		"\u0f5f\u0fb3\u0f0b\u0f21\u0f20",
-		"\u0f5f\u0fb3\u0f0b\u0f21\u0f21",
-		"\u0f5f\u0fb3\u0f0b\u0f21\u0f22",
+		"\u0F5F\u0FB3\u0F0B\u0F21",
+		"\u0F5F\u0FB3\u0F0B\u0F22",
+		"\u0F5F\u0FB3\u0F0B\u0F23",
+		"\u0F5F\u0FB3\u0F0B\u0F24",
+		"\u0F5F\u0FB3\u0F0B\u0F25",
+		"\u0F5F\u0FB3\u0F0B\u0F26",
+		"\u0F5F\u0FB3\u0F0B\u0F27",
+		"\u0F5F\u0FB3\u0F0B\u0F28",
+		"\u0F5F\u0FB3\u0F0B\u0F29",
+		"\u0F5F\u0FB3\u0F0B\u0F21\u0F20",
+		"\u0F5F\u0FB3\u0F0B\u0F21\u0F21",
+		"\u0F5F\u0FB3\u0F0B\u0F21\u0F22",
 	}
 	// monthNamesEstonian list the month names in the Estonian.
 	monthNamesEstonian = []string{"jaanuar", "veebruar", "märts", "aprill", "mai", "juuni", "juuli", "august", "september", "oktoober", "november", "detsember"}
@@ -1747,7 +1759,7 @@ var (
 	// monthNamesGreenlandicAbbr list the month abbreviations in the Greenlandic.
 	monthNamesGreenlandicAbbr = []string{"jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dec"}
 	// monthNamesGuarani list the month names in the Guarani.
-	monthNamesGuarani = []string{"jasyte\u0129", "jasyk%F5i", "jasyapy", "jasyrundy", "jasypo", "jasypote\u0129", "jasypok%F5i", "jasypoapy", "jasyporundy", "jasypa", "jasypate\u0129", "jasypak%F5i"}
+	monthNamesGuarani = []string{"jasyte\u0129", "jasykõi", "jasyapy", "jasyrundy", "jasypo", "jasypote\u0129", "jasypokõi", "jasypoapy", "jasyporundy", "jasypa", "jasypate\u0129", "jasypakõi"}
 	// monthNamesGuaraniAbbr list the month abbreviations in the Guarani.
 	monthNamesGuaraniAbbr = []string{"jteĩ", "jkõi", "japy", "jrun", "jpo", "jpot", "jpok", "jpoa", "jpor", "jpa", "jpat", "jpak"}
 	// monthNamesGujarati list the month names in the Gujarati.
@@ -2602,7 +2614,7 @@ var (
 	monthNamesSwedishFIAbbr = []string{"jan.", "feb.", "mars", "apr.", "maj", "juni", "juli", "aug.", "sep.", "okt.", "nov.", "dec."}
 	// monthNamesSyriac list the month names in the Syriac.
 	monthNamesSyriac = []string{
-		"\u071F\u0722\u0718\u0722%A0\u0710\u071A\u072A\u071D",
+		"\u071F\u0722\u0718\u0722 \u0710\u071A\u072A\u071D",
 		"\u072B\u0712\u071B",
 		"\u0710\u0715\u072A",
 		"\u0722\u071D\u0723\u0722",
@@ -2611,13 +2623,13 @@ var (
 		"\u072C\u0721\u0718\u0719",
 		"\u0710\u0712",
 		"\u0710\u071D\u0720\u0718\u0720",
-		"\u072C\u072B\u072A\u071D%A0\u0729\u0715\u071D\u0721",
-		"\u072C\u072B\u072A\u071D%A0\u0710\u071A\u072A\u071D",
-		"\u071F\u0722\u0718\u0722%A0\u0729\u0715\u071D\u0721",
+		"\u072C\u072B\u072A\u071D \u0729\u0715\u071D\u0721",
+		"\u072C\u072B\u072A\u071D \u0710\u071A\u072A\u071D",
+		"\u071F\u0722\u0718\u0722 \u0729\u0715\u071D\u0721",
 	}
 	// monthNamesSyriacAbbr lists the month name abbreviations in the Syriac.
 	monthNamesSyriacAbbr = []string{
-		"\u071F\u0722%A0\u070F\u0712",
+		"\u071F\u0722 \u070F\u0712",
 		"\u072B\u0712\u071B",
 		"\u0710\u0715\u072A",
 		"\u0722\u071D\u0723\u0722",
@@ -2626,9 +2638,9 @@ var (
 		"\u072C\u0721\u0718\u0719",
 		"\u0710\u0712",
 		"\u0710\u071D\u0720\u0718\u0720",
-		"\u070F\u072C\u072B%A0\u070F\u0710",
-		"\u070F\u072C\u072B%A0\u070F\u0712",
-		"\u070F\u071F\u0722%A0\u070F\u0710",
+		"\u070F\u072C\u072B \u070F\u0710",
+		"\u070F\u072C\u072B \u070F\u0712",
+		"\u070F\u071F\u0722 \u070F\u0710",
 	}
 	// monthNamesSyllabics list the month names in the Syllabics.
 	monthNamesSyllabics = []string{
@@ -2786,48 +2798,48 @@ var (
 	}
 	// monthNamesThai list the month names in the Thai.
 	monthNamesThai = []string{
-		"\u0e21\u0e01\u0e23\u0e32\u0e04\u0e21",
-		"\u0e01\u0e38\u0e21\u0e20\u0e32\u0e1e\u0e31\u0e19\u0e18\u0e4c",
-		"\u0e21\u0e35\u0e19\u0e32\u0e04\u0e21",
-		"\u0e40\u0e21\u0e29\u0e32\u0e22\u0e19",
-		"\u0e1e\u0e24\u0e29\u0e20\u0e32\u0e04\u0e21",
-		"\u0e21\u0e34\u0e16\u0e38\u0e19\u0e32\u0e22\u0e19",
-		"\u0e01\u0e23\u0e01\u0e0e\u0e32\u0e04\u0e21",
-		"\u0e2a\u0e34\u0e07\u0e2b\u0e32\u0e04\u0e21",
-		"\u0e01\u0e31\u0e19\u0e22\u0e32\u0e22\u0e19",
-		"\u0e15\u0e38\u0e25\u0e32\u0e04\u0e21",
-		"\u0e1e\u0e24\u0e28\u0e08\u0e34\u0e01\u0e32\u0e22\u0e19",
-		"\u0e18\u0e31\u0e19\u0e27\u0e32\u0e04\u0e21",
+		"\u0E21\u0E01\u0E23\u0E32\u0E04\u0E21",
+		"\u0E01\u0E38\u0E21\u0E20\u0E32\u0E1E\u0E31\u0E19\u0E18\u0E4C",
+		"\u0E21\u0E35\u0E19\u0E32\u0E04\u0E21",
+		"\u0E40\u0E21\u0E29\u0E32\u0E22\u0E19",
+		"\u0E1E\u0E24\u0E29\u0E20\u0E32\u0E04\u0E21",
+		"\u0E21\u0E34\u0E16\u0E38\u0E19\u0E32\u0E22\u0E19",
+		"\u0E01\u0E23\u0E01\u0E0E\u0E32\u0E04\u0E21",
+		"\u0E2A\u0E34\u0E07\u0E2B\u0E32\u0E04\u0E21",
+		"\u0E01\u0E31\u0E19\u0E22\u0E32\u0E22\u0E19",
+		"\u0E15\u0E38\u0E25\u0E32\u0E04\u0E21",
+		"\u0E1E\u0E24\u0E28\u0E08\u0E34\u0E01\u0E32\u0E22\u0E19",
+		"\u0E18\u0E31\u0E19\u0E27\u0E32\u0E04\u0E21",
 	}
 	// monthNamesTibetan list the month names in the Tibetan.
 	monthNamesTibetan = []string{
-		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f51\u0f44\u0f0b\u0f54\u0f7c\u0f0b",
-		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f42\u0f49\u0f72\u0f66\u0f0b\u0f54\u0f0b",
-		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f42\u0f66\u0f74\u0f58\u0f0b\u0f54\u0f0b",
-		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f56\u0f5e\u0f72\u0f0b\u0f54\u0f0b",
-		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f63\u0f94\u0f0b\u0f54\u0f0b",
-		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f51\u0fb2\u0f74\u0f42\u0f0b\u0f54\u0f0b",
-		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f56\u0f51\u0f74\u0f53\u0f0b\u0f54\u0f0b",
-		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f56\u0f62\u0f92\u0fb1\u0f51\u0f0b\u0f54\u0f0b",
-		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f51\u0f42\u0f74\u0f0b\u0f54\u0f0b",
-		"\u0f66\u0fa4\u0fb1\u0f72\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f54\u0f0d",
-		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f42\u0f45\u0f72\u0f42\u0f0b\u0f54\u0f0b",
-		"\u0f5f\u0fb3\u0f0b\u0f56\u0f0b\u0f56\u0f45\u0f74\u0f0b\u0f42\u0f49\u0f72\u0f66\u0f0b\u0f54\u0f0b",
+		"\u0F5F\u0FB3\u0F0B\u0F56\u0F0B\u0F51\u0F44\u0F0B\u0F54\u0F7C\u0F0B",
+		"\u0F5F\u0FB3\u0F0B\u0F56\u0F0B\u0F42\u0F49\u0F72\u0F66\u0F0B\u0F54\u0F0B",
+		"\u0F5F\u0FB3\u0F0B\u0F56\u0F0B\u0F42\u0F66\u0F74\u0F58\u0F0B\u0F54\u0F0B",
+		"\u0F5F\u0FB3\u0F0B\u0F56\u0F0B\u0F56\u0F5E\u0F72\u0F0B\u0F54\u0F0B",
+		"\u0F5F\u0FB3\u0F0B\u0F56\u0F0B\u0F63\u0F94\u0F0B\u0F54\u0F0B",
+		"\u0F5F\u0FB3\u0F0B\u0F56\u0F0B\u0F51\u0FB2\u0F74\u0F42\u0F0B\u0F54\u0F0B",
+		"\u0F5F\u0FB3\u0F0B\u0F56\u0F0B\u0F56\u0F51\u0F74\u0F53\u0F0B\u0F54\u0F0B",
+		"\u0F5F\u0FB3\u0F0B\u0F56\u0F0B\u0F56\u0F62\u0F92\u0FB1\u0F51\u0F0B\u0F54\u0F0B",
+		"\u0F5F\u0FB3\u0F0B\u0F56\u0F0B\u0F51\u0F42\u0F74\u0F0B\u0F54\u0F0B",
+		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F56\u0F45\u0F74\u0F0B\u0F54\u0F0D",
+		"\u0F5F\u0FB3\u0F0B\u0F56\u0F0B\u0F56\u0F45\u0F74\u0F0B\u0F42\u0F45\u0F72\u0F42\u0F0B\u0F54\u0F0B",
+		"\u0F5F\u0FB3\u0F0B\u0F56\u0F0B\u0F56\u0F45\u0F74\u0F0B\u0F42\u0F49\u0F72\u0F66\u0F0B\u0F54\u0F0B",
 	}
 	// monthNamesTibetanAbbr lists the month name abbreviations in the Tibetan.
 	monthNamesTibetanAbbr = []string{
-		"\u0f5f\u0fb3\u0f0b \u0f21",
-		"\u0f5f\u0fb3\u0f0b \u0f22",
-		"\u0f5f\u0fb3\u0f0b \u0f23",
-		"\u0f5f\u0fb3\u0f0b \u0f24",
-		"\u0f5f\u0fb3\u0f0b \u0f25",
-		"\u0f5f\u0fb3\u0f0b \u0f26",
-		"\u0f5f\u0fb3\u0f0b \u0f27",
-		"\u0f5f\u0fb3\u0f0b \u0f28",
-		"\u0f5f\u0fb3\u0f0b \u0f29",
-		"\u0f5f\u0fb3\u0f0b \u0f21\u0f20",
-		"\u0f5f\u0fb3\u0f0b \u0f21\u0f21",
-		"\u0f5f\u0fb3\u0f0b \u0f21\u0f22",
+		"\u0F5F\u0FB3\u0F0B \u0F21",
+		"\u0F5F\u0FB3\u0F0B \u0F22",
+		"\u0F5F\u0FB3\u0F0B \u0F23",
+		"\u0F5F\u0FB3\u0F0B \u0F24",
+		"\u0F5F\u0FB3\u0F0B \u0F25",
+		"\u0F5F\u0FB3\u0F0B \u0F26",
+		"\u0F5F\u0FB3\u0F0B \u0F27",
+		"\u0F5F\u0FB3\u0F0B \u0F28",
+		"\u0F5F\u0FB3\u0F0B \u0F29",
+		"\u0F5F\u0FB3\u0F0B \u0F21\u0F20",
+		"\u0F5F\u0FB3\u0F0B \u0F21\u0F21",
+		"\u0F5F\u0FB3\u0F0B \u0F21\u0F22",
 	}
 	// monthNamesTigrinya list the month names in the Tigrinya.
 	monthNamesTigrinya = []string{
@@ -2953,9 +2965,9 @@ var (
 	// monthNamesXhosaAbbr list the month abbreviations in the Xhosa, this prevents string concatenation.
 	monthNamesXhosaAbbr = []string{"uJan.", "uFeb.", "uMat.", "uEpr.", "uMey.", "uJun.", "uJul.", "uAg.", "uSep.", "uOkt.", "uNov.", "uDis."}
 	// monthNamesYi list the month names in the Yi.
-	monthNamesYi = []string{"\ua2cd", "\ua44d", "\ua315", "\ua1d6", "\ua26c", "\ua0d8", "\ua3c3", "\ua246", "\ua22c", "\ua2b0", "\ua2b0\ua2aa", "\ua2b0\ua44b"}
-	// monthNamesYiSuffix lists the month names in Yi with the "\ua1aa" suffix.
-	monthNamesYiSuffix = []string{"\ua2cd\ua1aa", "\ua44d\ua1aa", "\ua315\ua1aa", "\ua1d6\ua1aa", "\ua26c\ua1aa", "\ua0d8\ua1aa", "\ua3c3\ua1aa", "\ua246\ua1aa", "\ua22c\ua1aa", "\ua2b0\ua1aa", "\ua2b0\ua2aa\ua1aa", "\ua2b0\ua44b\ua1aa"}
+	monthNamesYi = []string{"\uA2CD", "\uA44D", "\uA315", "\uA1D6", "\uA26C", "\uA0D8", "\uA3C3", "\uA246", "\uA22C", "\uA2B0", "\uA2B0\uA2AA", "\uA2B0\uA44B"}
+	// monthNamesYiSuffix lists the month names in Yi with the "\uA1AA" suffix.
+	monthNamesYiSuffix = []string{"\uA2CD\uA1AA", "\uA44D\uA1AA", "\uA315\uA1AA", "\uA1D6\uA1AA", "\uA26C\uA1AA", "\uA0D8\uA1AA", "\uA3C3\uA1AA", "\uA246\uA1AA", "\uA22C\uA1AA", "\uA2B0\uA1AA", "\uA2B0\uA2AA\uA1AA", "\uA2B0\uA44B\uA1AA"}
 	// monthNamesYiddish list the month names in the Yiddish.
 	monthNamesYiddish = []string{
 		"\u05D9\u05D0\u05B7\u05E0\u05D5\u05D0\u05B7\u05E8",
@@ -2989,31 +3001,31 @@ var (
 	// monthNamesYoruba list the month names in the Yoruba.
 	monthNamesYoruba = []string{
 		"\u1E62\u1EB9\u0301r\u1EB9\u0301",
-		"%C8r%E8l%E8",
-		"\u1EB8r\u1EB9\u0300n%E0",
-		"%CCgb%E9",
+		"Èrèlè",
+		"\u1EB8r\u1EB9\u0300nà",
+		"Ìgbé",
 		"\u1EB8\u0300bibi",
-		"%D2k%FAdu",
-		"Ag\u1EB9m\u1ECD",
-		"%D2g%FAn",
+		"Òkúdu",
+		"Age\u0323mo\u0323",
+		"Ògún",
 		"Owewe",
-		"\u1ECC\u0300w%E0r%E0",
-		"B%E9l%FA",
+		"\u1ECC\u0300wàrà",
+		"Bélú",
 		"\u1ECC\u0300p\u1EB9\u0300",
 	}
 	// monthNamesYorubaAbbr lists the month name abbreviations in the Yoruba.
 	monthNamesYorubaAbbr = []string{
 		"\u1E62\u1EB9\u0301",
-		"%C8r",
+		"Èr",
 		"\u1EB8r",
-		"%CCg",
+		"Ìg",
 		"\u1EB8\u0300b",
-		"%D2k",
+		"Òk",
 		"Ag",
-		"%D2g",
+		"Òg",
 		"Ow",
 		"\u1ECC\u0300w",
-		"B%E9",
+		"Bé",
 		"\u1ECC\u0300p",
 	}
 	// monthNamesZulu list the month names in the Zulu.
@@ -3119,10 +3131,10 @@ var (
 	// weekdayNamesAzerbaijaniCyrillic list the weekday name in the Azerbaijani (Cyrillic).
 	weekdayNamesAzerbaijaniCyrillic = []string{
 		"\u0431\u0430\u0437\u0430\u0440",
-		"\u0431\u0430\u0437\u0430\u0440%A0\u0435\u0440\u0442\u04D9\u0441\u0438",
-		"\u0447\u04D9\u0440\u0448\u04D9\u043D\u0431\u04D9%A0\u0430\u0445\u0448\u0430\u043C\u044B",
+		"\u0431\u0430\u0437\u0430\u0440 \u0435\u0440\u0442\u04D9\u0441\u0438",
+		"\u0447\u04D9\u0440\u0448\u04D9\u043D\u0431\u04D9 \u0430\u0445\u0448\u0430\u043C\u044B",
 		"\u0447\u04D9\u0440\u0448\u04D9\u043D\u0431\u04D9",
-		"\u04B9\u04AF\u043C\u04D9%A0\u0430\u0445\u0448\u0430\u043C\u044B",
+		"\u04B9\u04AF\u043C\u04D9 \u0430\u0445\u0448\u0430\u043C\u044B",
 		"\u04B9\u04AF\u043C\u04D9",
 		"\u0448\u04D9\u043D\u0431\u04D9",
 	}
@@ -3131,15 +3143,15 @@ var (
 	// weekdayNamesAzerbaijani list the weekday name in the Azerbaijani.
 	weekdayNamesAzerbaijani = []string{
 		"bazar",
-		"bazar%E7ert\u0259si",
-		"%E7\u0259r\u015F\u0259nb\u0259%A0ax\u015Fam\u0131",
-		"%E7\u0259r\u015F\u0259nb\u0259",
-		"c%FCm\u0259%20ax\u015Fam\u0131",
-		"c%FCm\u0259",
+		"bazarçert\u0259si",
+		"ç\u0259r\u015F\u0259nb\u0259 ax\u015Fam\u0131",
+		"ç\u0259r\u015F\u0259nb\u0259",
+		"cüm\u0259 ax\u015Fam\u0131",
+		"cüm\u0259",
 		"\u015F\u0259nb\u0259",
 	}
 	// weekdayNamesAzerbaijaniAbbr list the weekday name abbreviations in the Azerbaijani.
-	weekdayNamesAzerbaijaniAbbr = []string{"B.", "B.E.", "%C7.A.", "%C7.", "C.A.", "C.", "\u015E."}
+	weekdayNamesAzerbaijaniAbbr = []string{"B.", "B.E.", "Ç.A.", "Ç.", "C.A.", "C.", "\u015E."}
 	// weekdayNamesBangla list the weekday name in the Bangla.
 	weekdayNamesBangla = []string{
 		"\u09B0\u09AC\u09BF\u09AC\u09BE\u09B0",
@@ -3300,25 +3312,33 @@ var (
 	weekdayNamesCroatian = []string{"nedjelja", "ponedjeljak", "utorak", "srijeda", "četvrtak", "petak", "subota"}
 	// weekdayNamesCroatianAbbr list the weekday name abbreviations in the Croatian.
 	weekdayNamesCroatianAbbr = []string{"ned", "pon", "uto", "sri", "čet", "pet", "sub"}
+	// weekdayNamesCzech list the weekday name in the Czech.
+	weekdayNamesCzech = []string{"neděle", "pondělí", "úterý", "středa", "čtvrtek", "pátek", "sobota"}
+	// weekdayNamesCzechAbbr list the weekday name abbreviations in the Czech.
+	weekdayNamesCzechAbbr = []string{"ne", "po", "út", "st", "čt", "pá", "so"}
+	// weekdayNamesDanish list the weekday name in the Danish.
+	weekdayNamesDanish = []string{"søndag", "mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag"}
+	// weekdayNamesDanishAbbr list the weekday name abbreviations in the Danish.
+	weekdayNamesDanishAbbr = []string{"sø", "ma", "ti", "on", "to", "fr", "lø"}
 	// weekdayNamesDzongkha list the weekday name in the Dzongkha.
 	weekdayNamesDzongkha = []string{
-		"\u0f42\u0f5f\u0f60\u0f0b\u0f5f\u0fb3\u0f0b\u0f56\u0f0b",
-		"\u0f42\u0f5f\u0f60\u0f0b\u0f58\u0f72\u0f42\u0f0b\u0f51\u0f58\u0f62\u0f0b",
-		"\u0f42\u0f5f\u0f60\u0f0b\u0f63\u0fb7\u0f42\u0f0b\u0f54\u0f0b",
-		"\u0f42\u0f5f\u0f60\u0f0b\u0f55\u0f74\u0f62\u0f0b\u0f56\u0f74\u0f0b",
-		"\u0f42\u0f5f\u0f60\u0f0b\u0f54\u0f0b\u0f66\u0f44\u0f66\u0f0b",
-		"\u0f42\u0f5f\u0f60\u0f0b\u0f66\u0fa4\u0f7a\u0f53\u0f0b\u0f54\u0f0b",
-		"\u0f42\u0f5f\u0f60\u0f0b\u0f49\u0f72\u0f0b\u0f58\u0f0b",
+		"\u0F42\u0F5F\u0F60\u0F0B\u0F5F\u0FB3\u0F0B\u0F56\u0F0B",
+		"\u0F42\u0F5F\u0F60\u0F0B\u0F58\u0F72\u0F42\u0F0B\u0F51\u0F58\u0F62\u0F0B",
+		"\u0F42\u0F5F\u0F60\u0F0B\u0F63\u0FB7\u0F42\u0F0B\u0F54\u0F0B",
+		"\u0F42\u0F5F\u0F60\u0F0B\u0F55\u0F74\u0F62\u0F0B\u0F56\u0F74\u0F0B",
+		"\u0F42\u0F5F\u0F60\u0F0B\u0F54\u0F0B\u0F66\u0F44\u0F66\u0F0B",
+		"\u0F42\u0F5F\u0F60\u0F0B\u0F66\u0FA4\u0F7A\u0F53\u0F0B\u0F54\u0F0B",
+		"\u0F42\u0F5F\u0F60\u0F0B\u0F49\u0F72\u0F0B\u0F58\u0F0B",
 	}
 	// weekdayNamesDzongkhaAbbr list the weekday name abbreviations in the Dzongkha.
 	weekdayNamesDzongkhaAbbr = []string{
-		"\u0f5f\u0fb3\u0f0b",
-		"\u0f58\u0f72\u0f62\u0f0b",
-		"\u0f63\u0fb7\u0f42\u0f0b",
-		"\u0f55\u0f74\u0f62\u0f0b",
-		"\u0f66\u0f44\u0f66\u0f0b",
-		"\u0f66\u0fa4\u0f7a\u0f53\u0f0b",
-		"\u0f49\u0f72\u0f0b",
+		"\u0F5F\u0FB3\u0F0B",
+		"\u0F58\u0F72\u0F62\u0F0B",
+		"\u0F63\u0FB7\u0F42\u0F0B",
+		"\u0F55\u0F74\u0F62\u0F0B",
+		"\u0F66\u0F44\u0F66\u0F0B",
+		"\u0F66\u0FA4\u0F7A\u0F53\u0F0B",
+		"\u0F49\u0F72\u0F0B",
 	}
 	// weekdayNamesChinese list the weekday name in the Chinese.
 	weekdayNamesChinese = []string{"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"}
@@ -3415,9 +3435,9 @@ var (
 	// weekdayNamesGreenlandicAbbr list the weekday name abbreviations in the Greenlandic.
 	weekdayNamesGreenlandicAbbr = []string{"sap.", "at.", "marl.", "ping.", "sis.", "tall.", "arf."}
 	// weekdayNamesGuarani list the weekday name in the Guarani.
-	weekdayNamesGuarani = []string{"arate\u0129", "arak%F5i", "araapy", "ararundy", "arapo", "arapote\u0129", "arapok%F5i"}
+	weekdayNamesGuarani = []string{"arate\u0129", "arakõi", "araapy", "ararundy", "arapo", "arapote\u0129", "arapokõi"}
 	// weekdayNamesGuaraniAbbr list the weekday name abbreviations in the Guarani.
-	weekdayNamesGuaraniAbbr = []string{"te\u0129", "k%F5i", "apy", "ndy", "po", "ote\u0129", "ok%F5i"}
+	weekdayNamesGuaraniAbbr = []string{"te\u0129", "kõi", "apy", "ndy", "po", "ote\u0129", "okõi"}
 	// weekdayNamesGujarati list the weekday name in the Gujarati.
 	weekdayNamesGujarati = []string{
 		"\u0AB0\u0AB5\u0ABF\u0AB5\u0ABE\u0AB0",
@@ -3448,22 +3468,22 @@ var (
 	weekdayNamesHawaiianAbbr = []string{"LP", "P1", "P2", "P3", "P4", "P5", "P6"}
 	// weekdayNamesHebrew list the weekday name in the Hebrew.
 	weekdayNamesHebrew = []string{
-		"\u05D9\u05D5\u05DD%A0\u05E8\u05D0\u05E9\u05D5\u05DF",
-		"\u05D9\u05D5\u05DD%A0\u05E9\u05E0\u05D9",
-		"\u05D9\u05D5\u05DD%A0\u05E9\u05DC\u05D9\u05E9\u05D9",
-		"\u05D9\u05D5\u05DD%A0\u05E8\u05D1\u05D9\u05E2\u05D9",
-		"\u05D9\u05D5\u05DD%A0\u05D7\u05DE\u05D9\u05E9\u05D9",
-		"\u05D9\u05D5\u05DD%A0\u05E9\u05D9\u05E9\u05D9",
+		"\u05D9\u05D5\u05DD \u05E8\u05D0\u05E9\u05D5\u05DF",
+		"\u05D9\u05D5\u05DD \u05E9\u05E0\u05D9",
+		"\u05D9\u05D5\u05DD \u05E9\u05DC\u05D9\u05E9\u05D9",
+		"\u05D9\u05D5\u05DD \u05E8\u05D1\u05D9\u05E2\u05D9",
+		"\u05D9\u05D5\u05DD \u05D7\u05DE\u05D9\u05E9\u05D9",
+		"\u05D9\u05D5\u05DD \u05E9\u05D9\u05E9\u05D9",
 		"\u05E9\u05D1\u05EA",
 	}
 	// weekdayNamesHebrewAbbr list the weekday name abbreviations in the Hebrew.
 	weekdayNamesHebrewAbbr = []string{
-		"\u05D9\u05D5\u05DD%A0\u05D0",
-		"\u05D9\u05D5\u05DD%A0\u05D1",
-		"\u05D9\u05D5\u05DD%A0\u05D2",
-		"\u05D9\u05D5\u05DD%A0\u05D3",
-		"\u05D9\u05D5\u05DD%A0\u05D4",
-		"\u05D9\u05D5\u05DD%A0\u05D5",
+		"\u05D9\u05D5\u05DD \u05D0",
+		"\u05D9\u05D5\u05DD \u05D1",
+		"\u05D9\u05D5\u05DD \u05D2",
+		"\u05D9\u05D5\u05DD \u05D3",
+		"\u05D9\u05D5\u05DD \u05D4",
+		"\u05D9\u05D5\u05DD \u05D5",
 		"\u05E9\u05D1\u05EA",
 	}
 	// weekdayNamesHindi list the weekday name in the Hindi.
@@ -3707,7 +3727,7 @@ var (
 	// weekdayNamesLithuanianAbbr list the weekday name abbreviations in the Lithuanian.
 	weekdayNamesLithuanianAbbr = []string{"sk", "pr", "an", "tr", "kt", "pn", "št"}
 	// weekdayNamesLowerSorbian list the weekday name in the Lower Sorbian.
-	weekdayNamesLowerSorbian = []string{"nje\u017Aela", "ponje\u017Aele", "wa\u0142tora", "srjoda", "stw%F3rtk", "p\u011Btk", "sobota"}
+	weekdayNamesLowerSorbian = []string{"njeźela", "ponjeźele", "wałtora", "srjoda", "stwórtk", "pětk", "sobota"}
 	// weekdayNamesLowerSorbianAbbr list the weekday name abbreviations in the Luxembourgish.
 	weekdayNamesLowerSorbianAbbr = []string{"nje", "pon", "wa\u0142", "srj", "stw", "p\u011Bt", "sob"}
 	// weekdayNamesLuxembourgish list the weekday name in the Luxembourgish
@@ -3824,13 +3844,13 @@ var (
 	}
 	// weekdayNamesTraditionalMongolian list the weekday name abbreviations in the Traditional Mongolian.
 	weekdayNamesTraditionalMongolian = []string{
-		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828%20\u1821\u1833\u1826\u1837",
-		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828%20\u1828\u1822\u182D\u1821\u1828",
-		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828%20\u182C\u1823\u1836\u1820\u1837",
-		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828%20\u182D\u1824\u1837\u182A\u1820\u1828",
-		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828%20\u1833\u1825\u1837\u182A\u1821\u1828",
-		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828%20\u1832\u1820\u182A\u1824\u1828",
-		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828%20\u1835\u1822\u1837\u182D\u1824\u182D\u1820\u1828",
+		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828 \u1821\u1833\u1826\u1837",
+		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828 \u1828\u1822\u182D\u1821\u1828",
+		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828 \u182C\u1823\u1836\u1820\u1837",
+		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828 \u182D\u1824\u1837\u182A\u1820\u1828",
+		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828 \u1833\u1825\u1837\u182A\u1821\u1828",
+		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828 \u1832\u1820\u182A\u1824\u1828",
+		"\u182D\u1820\u1837\u1820\u182D\u202F\u1824\u1828 \u1835\u1822\u1837\u182D\u1824\u182D\u1820\u1828",
 	}
 	// weekdayNamesTraditionalMongolianMN list the weekday name abbreviations in the Traditional Mongolian MN.
 	weekdayNamesTraditionalMongolianMN = []string{
@@ -3883,15 +3903,15 @@ var (
 		"\u0936\u0928\u093F",
 	}
 	// weekdayNamesNorwegian list the weekday name in the Norwegian.
-	weekdayNamesNorwegian = []string{"s%F8ndag", "mandag", "tirsdag", "onsdag", "torsdag", "fredag", "l%F8rdag"}
+	weekdayNamesNorwegian = []string{"søndag", "mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag"}
 	// weekdayNamesNorwegianAbbr list the weekday name abbreviations in the Norwegian.
-	weekdayNamesNorwegianAbbr = []string{"s%F8n.", "man.", "tir.", "ons.", "tor.", "fre.", "l%F8r."}
+	weekdayNamesNorwegianAbbr = []string{"søn.", "man.", "tir.", "ons.", "tor.", "fre.", "lør."}
 	// weekdayNamesNorwegianNOAbbr list the weekday name abbreviations in the Norwegian Norway.
-	weekdayNamesNorwegianNOAbbr = []string{"s%F8n", "man", "tir", "ons", "tor", "fre", "l%F8r"}
+	weekdayNamesNorwegianNOAbbr = []string{"søn", "man", "tir", "ons", "tor", "fre", "lør"}
 	// weekdayNamesNorwegianNynorsk list the weekday name abbreviations in the Norwegian Nynorsk.
-	weekdayNamesNorwegianNynorsk = []string{"s%F8ndag", "m%E5ndag", "tysdag", "onsdag", "torsdag", "fredag", "laurdag"}
+	weekdayNamesNorwegianNynorsk = []string{"søndag", "måndag", "tysdag", "onsdag", "torsdag", "fredag", "laurdag"}
 	// weekdayNamesNorwegianNynorskAbbr list the weekday name abbreviations in the Norwegian Nynorsk.
-	weekdayNamesNorwegianNynorskAbbr = []string{"s%F8n", "m%E5n", "tys", "ons", "tor", "fre", "lau"}
+	weekdayNamesNorwegianNynorskAbbr = []string{"søn", "mån", "tys", "ons", "tor", "fre", "lau"}
 	// weekdayNamesOccitan list the weekday name abbreviations in the Occitan.
 	weekdayNamesOccitan = []string{"dimenge", "diluns", "dimarts", "dimècres", "dijòus", "divendres", "dissabte"}
 	// weekdayNamesOccitanAbbr list the weekday name abbreviations in the Occitan.
@@ -3934,7 +3954,7 @@ var (
 	weekdayNamesPersian = []string{
 		"\u064A\u0643\u0634\u0646\u0628\u0647",
 		"\u062F\u0648\u0634\u0646\u0628\u0647",
-		"\u0633\u0647%A0\u0634\u0646\u0628\u0647",
+		"\u0633\u0647 \u0634\u0646\u0628\u0647",
 		"\u0686\u0647\u0627\u0631\u0634\u0646\u0628\u0647",
 		"\u067E\u0646\u062C\u0634\u0646\u0628\u0647",
 		"\u062C\u0645\u0639\u0647",
@@ -4065,20 +4085,20 @@ var (
 	// weekdayNamesSamiNorthernSEAbbr list the weekday name abbreviations in the Sami (Northern) Sweden.
 	weekdayNamesSamiNorthernSEAbbr = []string{"sotn", "mán", "dis", "gask", "duor", "bear", "láv"}
 	// weekdayNamesSamiSkolt list the weekday name abbreviations in the Sami (Skolt).
-	weekdayNamesSamiSkolt = []string{"p%E2%B4sspei%B4vv", "vu%F5ssargg", "m%E2%E2ibargg", "se%E4rad", "neljdpei%B4vv", "pi%E2tn%E2c", "sue%B4vet"}
+	weekdayNamesSamiSkolt = []string{"pâ\u00B4sspei\u00B4vv", "vuõssargg", "mââibargg", "seärad", "neljdpei\u00B4vv", "piâtnâc", "sue\u00B4vet"}
 	// weekdayNamesSamiSkoltAbbr list the weekday name abbreviations in the Sami (Skolt).
-	weekdayNamesSamiSkoltAbbr = []string{"p%E2", "vu", "m%E2", "se", "ne", "pi", "su"}
+	weekdayNamesSamiSkoltAbbr = []string{"pâ", "vu", "mâ", "se", "ne", "pi", "su"}
 	// weekdayNamesSamiSouthern list the weekday name abbreviations in the Sami (Southern).
-	weekdayNamesSamiSouthern = []string{"aejlege", "m%E5anta", "d%E6jsta", "gaskev%E5hkoe", "duarsta", "bearjadahke", "laavvardahke"}
+	weekdayNamesSamiSouthern = []string{"aejlege", "måanta", "dæjsta", "gaskevåhkoe", "duarsta", "bearjadahke", "laavvardahke"}
 	// weekdayNamesSamiSouthernAbbr list the weekday name abbreviations in the Sami (Southern).
-	weekdayNamesSamiSouthernAbbr = []string{"aej", "m%E5a", "d%E6j", "gask", "duar", "bearj", "laav"}
+	weekdayNamesSamiSouthernAbbr = []string{"aej", "måa", "dæj", "gask", "duar", "bearj", "laav"}
 	// weekdayNamesSanskrit list the weekday name abbreviations in the Sanskrit.
 	weekdayNamesSanskrit = []string{
 		"\u0930\u0935\u093F\u0935\u093E\u0938\u0930\u0903",
 		"\u0938\u094B\u092E\u0935\u093E\u0938\u0930\u0903",
 		"\u092E\u0902\u0917\u0932\u0935\u093E\u0938\u0930\u0903",
 		"\u092C\u0941\u0927\u0935\u093E\u0938\u0930\u0903",
-		"\u0917\u0941\u0930\u0941\u0935\u093E\u0938\u0930%3A",
+		"\u0917\u0941\u0930\u0941\u0935\u093E\u0938\u0930:",
 		"\u0936\u0941\u0915\u094D\u0930\u0935\u093E\u0938\u0930\u0903",
 		"\u0936\u0928\u093F\u0935\u093E\u0938\u0930\u0903",
 	}
@@ -4216,21 +4236,21 @@ var (
 	weekdayNamesSwedishAbbr = []string{"sön", "mån", "tis", "ons", "tor", "fre", "lör"}
 	// weekdayNamesSyriac list the weekday name abbreviations in the Syriac.
 	weekdayNamesSyriac = []string{
-		"\u071A\u0715%A0\u0712\u072B\u0712\u0710",
-		"\u072C\u072A\u071D\u0722%A0\u0712\u072B\u0712\u0710",
-		"\u072C\u0720\u072C\u0710%A0\u0712\u072B\u0712\u0710",
-		"\u0710\u072A\u0712\u0725\u0710%A0\u0712\u072B\u0712\u0710",
-		"\u071A\u0721\u072B\u0710%A0\u0712\u072B\u0712\u0710",
+		"\u071A\u0715 \u0712\u072B\u0712\u0710",
+		"\u072C\u072A\u071D\u0722 \u0712\u072B\u0712\u0710",
+		"\u072C\u0720\u072C\u0710 \u0712\u072B\u0712\u0710",
+		"\u0710\u072A\u0712\u0725\u0710 \u0712\u072B\u0712\u0710",
+		"\u071A\u0721\u072B\u0710 \u0712\u072B\u0712\u0710",
 		"\u0725\u072A\u0718\u0712\u072C\u0710",
 		"\u072B\u0712\u072C\u0710",
 	}
 	// weekdayNamesSyriacAbbr list the weekday name abbreviations in the Syriac.
 	weekdayNamesSyriacAbbr = []string{
-		"\u070F\u0710%A0\u070F\u0712\u072B",
-		"\u070F\u0712%A0\u070F\u0712\u072B",
-		"\u070F\u0713%A0\u070F\u0712\u072B",
-		"\u070F\u0715%A0\u070F\u0712\u072B",
-		"\u070F\u0717%A0\u070F\u0712\u072B",
+		"\u070F\u0710 \u070F\u0712\u072B",
+		"\u070F\u0712 \u070F\u0712\u072B",
+		"\u070F\u0713 \u070F\u0712\u072B",
+		"\u070F\u0715 \u070F\u0712\u072B",
+		"\u070F\u0717 \u070F\u0712\u072B",
 		"\u070F\u0725\u072A\u0718\u0712",
 		"\u070F\u072B\u0712",
 	}
@@ -4417,7 +4437,7 @@ var (
 		"\u0432\u0456\u0432\u0442\u043E\u0440\u043E\u043A",
 		"\u0441\u0435\u0440\u0435\u0434\u0430",
 		"\u0447\u0435\u0442\u0432\u0435\u0440",
-		"\u043F%27\u044F\u0442\u043D\u0438\u0446\u044F",
+		"\u043F'\u044F\u0442\u043D\u0438\u0446\u044F",
 		"\u0441\u0443\u0431\u043E\u0442\u0430",
 	}
 	// weekdayNamesUkrainianAbbr list the weekday name abbreviations in the Ukrainian.
@@ -4507,7 +4527,7 @@ var (
 	// weekdayNamesVendaAbbr list the weekday name abbreviations in the Venda.
 	weekdayNamesVendaAbbr = []string{"Swo", "Mus", "Vhi", "Rar", "Ṋa", "Ṱan", "Mug"}
 	// weekdayNamesVietnamese list the weekday name abbreviations in the Vietnamese.
-	weekdayNamesVietnamese = []string{"Ch\u1EE7%20Nh\u1EADt", "Th\u1EE9%20Hai", "Th\u1EE9%20Ba", "Th\u1EE9%20T\u01B0", "Th\u1EE9%20N\u0103m", "Th\u1EE9%20S%E1u", "Th\u1EE9%20B\u1EA3y"}
+	weekdayNamesVietnamese = []string{"Chu\u0309 Nhâ\u0323t", "Th\u01B0\u0301 Hai", "Th\u01B0\u0301 Ba", "Th\u01B0\u0301 T\u01B0", "Th\u01B0\u0301 N\u0103m", "Th\u01B0\u0301 Sa\u0301u", "Th\u01B0\u0301 Ba\u0309y"}
 	// weekdayNamesVietnameseAbbr list the weekday name abbreviations in the Vietnamese.
 	weekdayNamesVietnameseAbbr = []string{"CN", "T2", "T3", "T4", "T5", "T6", "T7"}
 	// weekdayNamesWelsh list the weekday name abbreviations in the Welsh.
@@ -4515,9 +4535,9 @@ var (
 	// weekdayNamesWelshAbbr list the weekday name abbreviations in the Welsh.
 	weekdayNamesWelshAbbr = []string{"Sul", "Llun", "Maw", "Mer", "Iau", "Gwe", "Sad"}
 	// weekdayNamesWolof list the weekday name abbreviations in the Wolof.
-	weekdayNamesWolof = []string{"Dib%E9er", "Altine", "Talaata", "%C0llarba", "Alxames", "%C0jjuma", "Gaawu"}
+	weekdayNamesWolof = []string{"Dibéer", "Altine", "Talaata", "Àllarba", "Alxames", "Àjjuma", "Gaawu"}
 	// weekdayNamesWolofAbbr list the weekday name abbreviations in the Wolof.
-	weekdayNamesWolofAbbr = []string{"Dib.", "Alt.", "Tal.", "%C0ll.", "Alx.", "%C0jj.", "Gaa."}
+	weekdayNamesWolofAbbr = []string{"Dib.", "Alt.", "Tal.", "Àll.", "Alx.", "Àjj.", "Gaa."}
 	// weekdayNamesXhosa list the weekday name abbreviations in the Xhosa.
 	weekdayNamesXhosa = []string{"Cawe", "Mvulo", "Lwesibini", "Lwesithathu", "Lwesine", "Lwesihlanu", "Mgqibelo"}
 	// weekdayNamesXhosaAbbr list the weekday name abbreviations in the Xhosa.
@@ -4554,26 +4574,26 @@ var (
 	}
 	// weekdayNamesYiddishAbbr list the weekday name abbreviations in the Yiddish.
 	weekdayNamesYiddishAbbr = []string{
-		"\u05D9\u05D5\u05DD%A0\u05D0",
-		"\u05D9\u05D5\u05DD%A0\u05D1",
-		"\u05D9\u05D5\u05DD%A0\u05D2",
-		"\u05D9\u05D5\u05DD%A0\u05D3",
-		"\u05D9\u05D5\u05DD%A0\u05D4",
-		"\u05D9\u05D5\u05DD%A0\u05D5",
+		"\u05D9\u05D5\u05DD \u05D0",
+		"\u05D9\u05D5\u05DD \u05D1",
+		"\u05D9\u05D5\u05DD \u05D2",
+		"\u05D9\u05D5\u05DD \u05D3",
+		"\u05D9\u05D5\u05DD \u05D4",
+		"\u05D9\u05D5\u05DD \u05D5",
 		"\u05E9\u05D1\u05EA",
 	}
 	// weekdayNamesYoruba list the weekday name abbreviations in the Yoruba.
 	weekdayNamesYoruba = []string{
-		"\u1ECCj\u1ECD\u0301%20%C0%ECk%FA",
-		"\u1ECCj\u1ECD\u0301%20Aj%E9",
-		"\u1ECCj\u1ECD\u0301%20%CCs\u1EB9\u0301gun",
-		"\u1ECCj\u1ECD\u0301r%FA",
+		"\u1ECCj\u1ECD\u0301 Àìkú",
+		"\u1ECCj\u1ECD\u0301 Ajé",
+		"\u1ECCj\u1ECD\u0301 Ìs\u1EB9\u0301gun",
+		"\u1ECCj\u1ECD\u0301rú",
 		"\u1ECCj\u1ECD\u0301b\u1ECD",
-		"\u1ECCj\u1ECD\u0301%20\u1EB8t%EC",
-		"\u1ECCj\u1ECD\u0301%20%C0b%E1m\u1EB9\u0301ta",
+		"\u1ECCj\u1ECD\u0301 \u1EB8tì",
+		"\u1ECCj\u1ECD\u0301 Àbám\u1EB9\u0301ta",
 	}
 	// weekdayNamesYorubaAbbr list the weekday name abbreviations in the Yoruba.
-	weekdayNamesYorubaAbbr = []string{"%C0%ECk", "Aj", "%CC\u1E63g", "\u1ECCjr", "\u1ECCjb", "\u1EB8t", "%C0b%E1"}
+	weekdayNamesYorubaAbbr = []string{"Àìk", "Aj", "Ì\u1E63g", "\u1ECCjr", "\u1ECCjb", "\u1EB8t", "Àbá"}
 	// weekdayNamesZulu list the weekday name abbreviations in the Zulu.
 	weekdayNamesZulu = []string{"ISonto", "UMsombuluko", "ULwesibili", "ULwesithathu", "ULwesine", "ULwesihlanu", "UMgqibelo"}
 	// weekdayNamesZuluAbbr list the weekday name abbreviations in the Zulu.
@@ -4600,8 +4620,10 @@ var (
 	apFmtCentralKurdish = "\u067E.\u0646/\u062F.\u0646"
 	// apFmtCuba defined the AM/PM name in the Cuba.
 	apFmtCuba = "a.m./p.m."
+	// apFmtCzech defined the AM/PM name in the Czech.
+	apFmtCzech = "dop./odp."
 	// apFmtDzongkha defined the AM/PM name in the Dzongkha.
-	apFmtDzongkha = "\u0f66\u0f94\u0f0b\u0f46\u0f0b/\u0f55\u0fb1\u0f72\u0f0b\u0f46\u0f0b"
+	apFmtDzongkha = "\u0F66\u0F94\u0F0B\u0F46\u0F0B/\u0F55\u0FB1\u0F72\u0F0B\u0F46\u0F0B"
 	// apFmtFaroese defined the AM/PM name in the Faroese.
 	apFmtFaroese = "um fyr./um sein."
 	// apFmtFinnish defined the AM/PM name in the Finnish.
@@ -4678,7 +4700,7 @@ var (
 	// apFmtSpanish defined the AM/PM name in the Spanish.
 	apFmtSpanish = "a. m./p. m."
 	// apFmtSpanishAR defined the AM/PM name in the Spanish Argentina.
-	apFmtSpanishAR = "a.%A0m./p.%A0m."
+	apFmtSpanishAR = "a. m./p. m."
 	// apFmtSwedish defined the AM/PM name in the Swedish.
 	apFmtSwedish = "fm/em"
 	// apFmtSyriac defined the AM/PM name in the Syriac.
@@ -4686,11 +4708,11 @@ var (
 	// apFmtTamil defined the AM/PM name in the Tamil.
 	apFmtTamil = "\u0B95\u0BBE\u0BB2\u0BC8/\u0BAE\u0BBE\u0BB2\u0BC8"
 	// apFmtTibetan defined the AM/PM name in the Tibetan.
-	apFmtTibetan = "\u0f66\u0f94\u0f0b\u0f51\u0fb2\u0f7c\u0f0b/\u0f55\u0fb1\u0f72\u0f0b\u0f51\u0fb2\u0f7c\u0f0b"
+	apFmtTibetan = "\u0F66\u0F94\u0F0B\u0F51\u0FB2\u0F7C\u0F0B/\u0F55\u0FB1\u0F72\u0F0B\u0F51\u0FB2\u0F7C\u0F0B"
 	// apFmtTigrinya defined the AM/PM name in the Tigrinya.
-	apFmtTigrinya = "\u1295\u1309\u1206/\u12F5\u1215\u122A%20\u1250\u1275\u122A"
+	apFmtTigrinya = "\u1295\u1309\u1206/\u12F5\u1215\u122A \u1250\u1275\u122A"
 	// apFmtTigrinyaER defined the AM/PM name in the Tigrinya Eritrea.
-	apFmtTigrinyaER = "\u1295\u1309\u1206%20\u1230\u12D3\u1270/\u12F5\u1215\u122D%20\u1230\u12D3\u1275"
+	apFmtTigrinyaER = "\u1295\u1309\u1206 \u1230\u12D3\u1270/\u12F5\u1215\u122D \u1230\u12D3\u1275"
 	// apFmtTurkish defined the AM/PM name in the Turkish.
 	apFmtTurkish = "\u00F6\u00F6/\u00F6\u0053"
 	// apFmtUpperSorbian defined the AM/PM name in the Upper Sorbian.
@@ -4698,7 +4720,7 @@ var (
 	// apFmtUrdu defined the AM/PM name in the Urdu.
 	apFmtUrdu = "\u062F\u0646/\u0631\u0627\u062A"
 	// apFmtUyghur defined the AM/PM name in the Uyghur.
-	apFmtUyghur = "\u0686\u06C8\u0634\u062A\u0649\u0646%20\u0628\u06C7\u0631\u06C7\u0646/\u0686\u06C8\u0634\u062A\u0649\u0646%20\u0643\u06D0\u064A\u0649\u0646"
+	apFmtUyghur = "\u0686\u06C8\u0634\u062A\u0649\u0646 \u0628\u06C7\u0631\u06C7\u0646/\u0686\u06C8\u0634\u062A\u0649\u0646 \u0643\u06D0\u064A\u0649\u0646"
 	// apFmtUzbek defined the AM/PM name in the Uzbek.
 	apFmtUzbek = "TO/TK"
 	// apFmtUzbekCyrillic defined the AM/PM name in the Uzbek Cyrillic.
@@ -4710,31 +4732,31 @@ var (
 	// apFmtWolof defined the AM/PM name in the Wolof.
 	apFmtWolof = "Sub/Ngo"
 	// apFmtYi defined the AM/PM name in the Yi.
-	apFmtYi = "\ua3b8\ua111/\ua06f\ua2d2"
+	apFmtYi = "\uA3B8\uA111/\uA06F\uA2D2"
 	// apFmtYiddish defined the AM/PM name in the Yiddish.
 	apFmtYiddish = "\u05E4\u05BF\u05D0\u05B7\u05E8\u05DE\u05D9\u05D8\u05D0\u05B8\u05D2/\u05E0\u05D0\u05B8\u05DB\u05DE\u05D9\u05D8\u05D0\u05B8\u05D2"
 	// apFmtYoruba defined the AM/PM name in the Yoruba.
-	apFmtYoruba = "%C0%E1r\u1ECD\u0300/\u1ECC\u0300s%E1n"
+	apFmtYoruba = "Àár\u1ECD\u0300/\u1ECC\u0300sán"
 	// switchArgumentFunc defined the switch argument printer function.
 	switchArgumentFunc = map[string]func(s string) string{
 		"[DBNum1]": func(s string) string {
 			r := strings.NewReplacer(
-				"0", "\u25cb", "1", "\u4e00", "2", "\u4e8c", "3", "\u4e09", "4", "\u56db",
-				"5", "\u4e94", "6", "\u516d", "7", "\u4e03", "8", "\u516b", "9", "\u4e5d",
+				"0", "\u25CB", "1", "\u4E00", "2", "\u4E8C", "3", "\u4E09", "4", "\u56DB",
+				"5", "\u4E94", "6", "\u516D", "7", "\u4E03", "8", "\u516B", "9", "\u4E5D",
 			)
 			return r.Replace(s)
 		},
 		"[DBNum2]": func(s string) string {
 			r := strings.NewReplacer(
-				"0", "\u96f6", "1", "\u58f9", "2", "\u8d30", "3", "\u53c1", "4", "\u8086",
-				"5", "\u4f0d", "6", "\u9646", "7", "\u67d2", "8", "\u634c", "9", "\u7396",
+				"0", "\u96F6", "1", "\u58F9", "2", "\u8D30", "3", "\u53C1", "4", "\u8086",
+				"5", "\u4F0D", "6", "\u9646", "7", "\u67D2", "8", "\u634C", "9", "\u7396",
 			)
 			return r.Replace(s)
 		},
 		"[DBNum3]": func(s string) string {
 			r := strings.NewReplacer(
-				"0", "\uff10", "1", "\uff11", "2", "\uff12", "3", "\uff13", "4", "\uff14",
-				"5", "\uff15", "6", "\uff16", "7", "\uff17", "8", "\uff18", "9", "\uff19",
+				"0", "\uFF10", "1", "\uFF11", "2", "\uFF12", "3", "\uFF13", "4", "\uFF14",
+				"5", "\uFF15", "6", "\uFF16", "7", "\uFF17", "8", "\uFF18", "9", "\uFF19",
 			)
 			return r.Replace(s)
 		},
@@ -5699,6 +5721,28 @@ func localMonthsNameCroatianLatin(t time.Time, abbr int) string {
 		return monthNamesCroatian[int(t.Month())-1]
 	}
 	return string([]rune(monthNamesCroatian[(t.Month() - 1)])[:1])
+}
+
+// localMonthsNameCzech returns the Czech name of the month.
+func localMonthsNameCzech(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return monthNamesCzechAbbr[int(t.Month())-1]
+	}
+	if abbr == 4 {
+		return monthNamesCzech[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesCzech[int(t.Month())-1])[:1])
+}
+
+// localMonthsNameDanish returns the Danish name of the month.
+func localMonthsNameDanish(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return monthNamesDanishAbbr[int(t.Month())-1]
+	}
+	if abbr == 4 {
+		return monthNamesDanish[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesDanish[int(t.Month())-1])[:1])
 }
 
 // localMonthsNameDzongkha returns the Dzongkha name of the month.
@@ -6846,9 +6890,9 @@ func localMonthsNameTibetan(t time.Time, abbr int) string {
 	}
 	if abbr == 5 {
 		if t.Month() == 10 {
-			return "\u0f66"
+			return "\u0F66"
 		}
-		return "\u0f5f"
+		return "\u0F5F"
 	}
 	return monthNamesTibetan[int(t.Month())-1]
 }
