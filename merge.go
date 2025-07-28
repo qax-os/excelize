@@ -162,6 +162,28 @@ func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
 	return mergeCells, err
 }
 
+// GetMergedCellRefs provides a function to get all merged cells' range
+// references from a worksheet. It is a more performant alternative to
+// GetMergeCells when only the merged cell coordinates are needed without
+// their values.
+func (f *File) GetMergedCellRefs(sheet string) ([]string, error) {
+	var mergeCells []string
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return mergeCells, err
+	}
+	if ws.MergeCells != nil {
+		if err = f.mergeOverlapCells(ws); err != nil {
+			return mergeCells, err
+		}
+		for i := range ws.MergeCells.Cells {
+			ref := ws.MergeCells.Cells[i].Ref
+			mergeCells = append(mergeCells, ref)
+		}
+	}
+	return mergeCells, err
+}
+
 // overlapRange calculate overlap range of merged cells, and returns max
 // column and rows of the range.
 func overlapRange(ws *xlsxWorksheet) (row, col int, err error) {
