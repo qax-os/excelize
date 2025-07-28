@@ -1914,6 +1914,11 @@ func TestCalcCellValue(t *testing.T) {
 		"UNICODE(\"alpha\")": "97",
 		"UNICODE(\"?\")":     "63",
 		"UNICODE(\"3\")":     "51",
+		// UNIQUE
+		"TEXTJOIN(\",\", TRUE, UNIQUE(D2:D9))":               "Jan,Feb",
+		"TEXTJOIN(\",\", TRUE, UNIQUE(D2:D9, FALSE, FALSE))": "Jan,Feb",
+		"TEXTJOIN(\",\", TRUE, UNIQUE(E2:E9, FALSE, FALSE))": "North 1,North 2,South 1,South 2",
+		"TEXTJOIN(\",\", TRUE, UNIQUE(D2:D9, FALSE, TRUE))":  "",
 		// UPPER
 		"UPPER(\"test\")":     "TEST",
 		"UPPER(\"TEST\")":     "TEST",
@@ -5129,6 +5134,82 @@ func TestCalcCOVAR(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.Equal(t, expected[0], result, formula)
 		assert.EqualError(t, err, expected[1], formula)
+	}
+}
+
+func TestCalcUniqueExactlyOnce(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Customer name"},
+		{"Fife, Grant"},
+		{"Pruitt, Barbara"},
+		{"Horn, Frances"},
+		{"Barrett, Alicia"},
+		{"Barrett, Alicia"},
+		{"Larson, Lynn"},
+		{"Pruitt, Barbara"},
+		{"Snook, Anthony"},
+		{"Snook, Anthony"},
+		{"Horn, Frances"},
+		{"Brown, Charity"},
+	}
+	f := prepareCalcData(cellData)
+
+	formulaList := map[string]string{
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A12))":             "Fife, Grant:Pruitt, Barbara:Horn, Frances:Barrett, Alicia:Larson, Lynn:Snook, Anthony:Brown, Charity",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A12,FALSE,TRUE))":  "Fife, Grant:Larson, Lynn:Brown, Charity",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A12,FALSE,FALSE))": "Fife, Grant:Pruitt, Barbara:Horn, Frances:Barrett, Alicia:Larson, Lynn:Snook, Anthony:Brown, Charity",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcUniqueMultiColumn(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Player name", "Gender", "Nickname"},
+		{"Tom", "M", "Tom"},
+		{"Fred", "M", "Fred"},
+		{"Amy", "F", "Amy"},
+		{"John", "M", "John"},
+		{"Malicia", "F", "Malicia"},
+		{"Fred", "M", "Fred"},
+	}
+	f := prepareCalcData(cellData)
+
+	formulaList := map[string]string{
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:C7))":            "Tom:M:Tom:Fred:M:Fred:Amy:F:Amy:John:M:John:Malicia:F:Malicia",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:C7,TRUE))":       "Tom:M:Fred:M:Amy:F:John:M:Malicia:F:Fred:M",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:C7,TRUE, TRUE))": "M:M:F:M:F:M",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcUniqueErrors(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Player name", "Gender", "Nickname"},
+		{"Tom", "M", "Tom"},
+		{"Fred", "M", "Fred"},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"TEXTJOIN(\":\", TRUE, UNIQUE())":                       "#VALUE!",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(1, 2, 3, 4))":             "#VALUE!",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A3, \"Hello\"))":       "#VALUE!",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A3, TRUE, \"Hello\"))": "#VALUE!",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.Error(t, err, formula)
+		assert.Equal(t, expected, result, formula)
 	}
 }
 
