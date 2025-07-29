@@ -211,6 +211,17 @@ var (
 		criteriaL,
 		criteriaG,
 	}
+	// defines numbers text in the Thai used for the BAHTTEXT formula function.
+	th0      = "ศูนย์"
+	th1      = "หนึ่ง"
+	th2      = "สอง"
+	th3      = "สาม"
+	th4      = "สี่"
+	th5      = "ห้า"
+	th6      = "หก"
+	th7      = "เจ็ด"
+	th8      = "แปด"
+	th9      = "เก้า"
 )
 
 // calcContext defines the formula execution context.
@@ -384,6 +395,7 @@ type formulaFuncs struct {
 //	AVERAGEA
 //	AVERAGEIF
 //	AVERAGEIFS
+//	BAHTTEXT
 //	BASE
 //	BESSELI
 //	BESSELJ
@@ -1818,6 +1830,22 @@ func formulaCriteriaEval(val formulaArg, criteria *formulaCriteria) (result bool
 }
 
 // Engineering Functions
+
+// BAHTTEXT function converts a number into Thai text, with the suffix "Baht".
+// The syntax of the function is:
+//
+//	BAHTTEXT(number)
+func (fn *formulaFuncs) BAHTTEXT(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BAHTTEXT requires 1 numeric argument")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	number := token.ToNumber()
+	if number.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, number.Error)
+	}
+	return newStringFormulaArg(text)
+}
 
 // BESSELI function the modified Bessel function, which is equivalent to the
 // Bessel function evaluated for purely imaginary arguments. The syntax of
