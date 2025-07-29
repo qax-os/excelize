@@ -75,7 +75,7 @@ func (f *File) NewSheet(sheet string) (int, error) {
 	// Create new sheet /xl/worksheets/sheet%d.xml
 	f.setSheet(sheetID, sheet)
 	// Update workbook.xml.rels
-	rID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipWorkSheet, fmt.Sprintf("/xl/worksheets/sheet%d.xml", sheetID), "")
+	rID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipWorkSheet, fmt.Sprintf("worksheets/sheet%d.xml", sheetID), "")
 	// Update workbook.xml
 	f.setWorkbook(sheet, sheetID, rID)
 	return f.GetSheetIndex(sheet)
