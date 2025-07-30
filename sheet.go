@@ -2121,68 +2121,47 @@ func (f *File) SetSheetDimension(sheet, rangeRef string) error {
 
 // GetSheetDimension provides the method to get the used range of the worksheet.
 func (f *File) GetSheetDimension(sheet string) (string, error) {
-	var (
-		ref  string
-		name string
-		ok   bool
-	)
-
+	var ref string
 	if err := checkSheetName(sheet); err != nil {
 		return ref, err
 	}
-
-	if name, ok = f.getSheetXMLPath(sheet); !ok {
+	name, ok := f.getSheetXMLPath(sheet)
+	if !ok {
 		return ref, ErrSheetNotExist{sheet}
 	}
-
-	// Check if worksheet is already loaded in memory
-	if worksheet, loaded := f.Sheet.Load(name); loaded && worksheet != nil {
+	if worksheet, ok := f.Sheet.Load(name); ok && worksheet != nil {
 		ws := worksheet.(*xlsxWorksheet)
 		if ws.Dimension != nil {
 			ref = ws.Dimension.Ref
 		}
 		return ref, nil
 	}
-
-	// Try to read dimension from partial XML content first (performance optimization)
 	needClose, decoder, tempFile, err := f.xmlDecoder(name)
-	if err != nil {
-		return "", err
+	if needClose && err == nil {
+		defer func() {
+			err = tempFile.Close()
+		}()
 	}
-	defer func() {
-		if needClose && tempFile != nil {
-			tempFile.Close()
-		}
-	}()
-
-	// Parse XML tokens until we find the dimension element
 	for {
-		token, err := decoder.Token()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return "", err
+		token, _ := decoder.Token()
+		if token == nil {
+			break
 		}
-
-		switch t := token.(type) {
+		switch xmlElement := token.(type) {
 		case xml.StartElement:
-			if t.Name.Local == "dimension" {
-				// Found dimension element, extract ref attribute
-				for _, attr := range t.Attr {
+			if xmlElement.Name.Local == "dimension" {
+				for _, attr := range xmlElement.Attr {
 					if attr.Name.Local == "ref" {
-						return attr.Value, nil
+						return attr.Value, err
 					}
 				}
 			}
-			// If we encounter sheetData, we've gone too far
-			if t.Name.Local == "sheetData" {
-				return "", fmt.Errorf("dimension not found before sheetData")
+			if xmlElement.Name.Local == "sheetData" {
+				return ref, err
 			}
 		}
 	}
-
-	return "", fmt.Errorf("dimension element not found")
+	return ref, err
 }
 
 // AddIgnoredErrors provides the method to ignored error for a range of cells.
