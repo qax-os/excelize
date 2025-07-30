@@ -2121,15 +2121,68 @@ func (f *File) SetSheetDimension(sheet, rangeRef string) error {
 
 // GetSheetDimension provides the method to get the used range of the worksheet.
 func (f *File) GetSheetDimension(sheet string) (string, error) {
-	var ref string
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
+	var (
+		ref  string
+		name string
+		ok   bool
+	)
+
+	if err := checkSheetName(sheet); err != nil {
 		return ref, err
 	}
-	if ws.Dimension != nil {
-		ref = ws.Dimension.Ref
+
+	if name, ok = f.getSheetXMLPath(sheet); !ok {
+		return ref, ErrSheetNotExist{sheet}
 	}
-	return ref, err
+
+	// Check if worksheet is already loaded in memory
+	if worksheet, loaded := f.Sheet.Load(name); loaded && worksheet != nil {
+		ws := worksheet.(*xlsxWorksheet)
+		if ws.Dimension != nil {
+			ref = ws.Dimension.Ref
+		}
+		return ref, nil
+	}
+
+	// Try to read dimension from partial XML content first (performance optimization)
+	needClose, decoder, tempFile, err := f.xmlDecoder(name)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		if needClose && tempFile != nil {
+			tempFile.Close()
+		}
+	}()
+
+	// Parse XML tokens until we find the dimension element
+	for {
+		token, err := decoder.Token()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return "", err
+		}
+
+		switch t := token.(type) {
+		case xml.StartElement:
+			if t.Name.Local == "dimension" {
+				// Found dimension element, extract ref attribute
+				for _, attr := range t.Attr {
+					if attr.Name.Local == "ref" {
+						return attr.Value, nil
+					}
+				}
+			}
+			// If we encounter sheetData, we've gone too far
+			if t.Name.Local == "sheetData" {
+				return "", fmt.Errorf("dimension not found before sheetData")
+			}
+		}
+	}
+
+	return "", fmt.Errorf("dimension element not found")
 }
 
 // AddIgnoredErrors provides the method to ignored error for a range of cells.
