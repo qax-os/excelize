@@ -14,6 +14,7 @@ package excelize
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"image"
 	"io"
 	"os"
@@ -1017,4 +1018,156 @@ func (f *File) getDispImages(sheet, cell string) ([]Picture, error) {
 		}
 	}
 	return pics, err
+}
+
+// EmbeddedObjectOptions defines the format set of embedded object.
+type EmbeddedObjectOptions struct {
+	AltText     string
+	PrintObject *bool
+	Locked      *bool
+	ObjectType  string // Default is "Package"
+}
+
+// AddEmbeddedObject provides a method to embed a file as an object in a cell.
+// The embedded object will be accessible through Excel's EMBED formula.
+// Supported object types include "Package" for general files. For example:
+//
+//	package main
+//
+//	import (
+//	    "fmt"
+//	    "os"
+//
+//	    "github.com/xuri/excelize/v2"
+//	)
+//
+//	func main() {
+//	    f := excelize.NewFile()
+//	    defer func() {
+//	        if err := f.Close(); err != nil {
+//	            fmt.Println(err)
+//	        }
+//	    }()
+//
+//	    // Read file to embed
+//	    file, err := os.ReadFile("document.pdf")
+//	    if err != nil {
+//	        fmt.Println(err)
+//	        return
+//	    }
+//
+//	    // Add embedded object
+//	    if err := f.AddEmbeddedObject("Sheet1", "A1", "document.pdf", file, 
+//	        &excelize.EmbeddedObjectOptions{
+//	            ObjectType: "Package",
+//	            AltText:    "Embedded PDF Document",
+//	        }); err != nil {
+//	        fmt.Println(err)
+//	        return
+//	    }
+//
+//	    if err := f.SaveAs("Book1.xlsx"); err != nil {
+//	        fmt.Println(err)
+//	    }
+//	}
+func (f *File) AddEmbeddedObject(sheet, cell, filename string, file []byte, opts *EmbeddedObjectOptions) error {
+	if opts == nil {
+		opts = &EmbeddedObjectOptions{
+			ObjectType:  "Package",
+			PrintObject: boolPtr(true),
+			Locked:      boolPtr(true),
+		}
+	}
+	if opts.ObjectType == "" {
+		opts.ObjectType = "Package"
+	}
+	if opts.PrintObject == nil {
+		opts.PrintObject = boolPtr(true)
+	}
+	if opts.Locked == nil {
+		opts.Locked = boolPtr(true)
+	}
+
+	// Add embedded object to package
+	objPath := f.addEmbeddedObject(file, filename)
+	
+	// Add relationships
+	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
+	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
+	rID := f.addRels(sheetRels, SourceRelationshipOLEObject, "../"+objPath, "")
+	
+	// Set EMBED formula in cell
+	formula := fmt.Sprintf("EMBED(\"%s\",\"\")", opts.ObjectType)
+	if err := f.SetCellFormula(sheet, cell, formula); err != nil {
+		return err
+	}
+
+	// Add OLE object to worksheet
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+
+	if ws.OleObjects == nil {
+		ws.OleObjects = &xlsxInnerXML{}
+	}
+
+	// Create OLE object XML content
+	oleObjectXML := fmt.Sprintf(`<oleObject progId="Package" dvAspect="DVASPECT_ICON" link="false" oleUpdate="OLEUPDATE_ONCALL" autoLoad="false" shapeId="1025" r:id="rId%d"/>`, rID)
+	if ws.OleObjects.Content == "" {
+		ws.OleObjects.Content = oleObjectXML
+	} else {
+		ws.OleObjects.Content += oleObjectXML
+	}
+
+	// Add content type for embedded object
+	return f.addContentTypePartEmbeddedObject()
+}
+
+// addEmbeddedObject adds embedded object file to the package and returns the path.
+func (f *File) addEmbeddedObject(file []byte, filename string) string {
+	count := f.countEmbeddedObjects()
+	objPath := "embeddings/oleObject" + strconv.Itoa(count+1) + ".bin"
+	f.Pkg.Store("xl/"+objPath, file)
+	return objPath
+}
+
+// countEmbeddedObjects counts the number of embedded objects in the package.
+func (f *File) countEmbeddedObjects() int {
+	count := 0
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/embeddings/oleObject") {
+			count++
+		}
+		return true
+	})
+	return count
+}
+
+// addContentTypePartEmbeddedObject adds content type for embedded objects.
+func (f *File) addContentTypePartEmbeddedObject() error {
+	content, err := f.contentTypesReader()
+	if err != nil {
+		return err
+	}
+	content.mu.Lock()
+	defer content.mu.Unlock()
+
+	// Check if bin extension already exists
+	var binExists bool
+	for _, v := range content.Defaults {
+		if v.Extension == "bin" {
+			binExists = true
+			break
+		}
+	}
+
+	if !binExists {
+		content.Defaults = append(content.Defaults, xlsxDefault{
+			Extension:   "bin",
+			ContentType: ContentTypeOLEObject,
+		})
+	}
+
+	return nil
 }
