@@ -386,6 +386,8 @@ type cCharts struct {
 	SplitPos     *attrValInt    `xml:"splitPos"`
 	SerLines     *attrValString `xml:"serLines"`
 	DLbls        *cDLbls        `xml:"dLbls"`
+	HiLowLines   *cChartLines   `xml:"hiLowLines"`
+	UpDownBars   *cUpDownBars   `xml:"upDownBars"`
 	GapWidth     *attrValInt    `xml:"gapWidth"`
 	Shape        *attrValString `xml:"shape"`
 	HoleSize     *attrValInt    `xml:"holeSize"`
@@ -420,6 +422,15 @@ type cAxs struct {
 	TickLblSkip    *attrValInt    `xml:"tickLblSkip"`
 	TickMarkSkip   *attrValInt    `xml:"tickMarkSkip"`
 	NoMultiLvlLbl  *attrValBool   `xml:"noMultiLvlLbl"`
+}
+
+// cUpDownBars directly maps the upDownBars lement. This element specifies
+// the up and down bars.
+type cUpDownBars struct {
+	GapWidth *attrValString `xml:"gapWidth"`
+	UpBars   *cChartLines   `xml:"upBars"`
+	DownBars *cChartLines   `xml:"downBars"`
+	ExtLst   *xlsxExtLst    `xml:"extLst"`
 }
 
 // cChartLines directly maps the chart lines content model.
@@ -615,6 +626,13 @@ type ChartDimension struct {
 	Height uint
 }
 
+// ChartUpDownBar directly maps the format settings of the stock chart up bars
+// and down bars.
+type ChartUpDownBar struct {
+	Fill   Fill
+	Border ChartLine
+}
+
 // ChartPlotArea directly maps the format settings of the plot area.
 type ChartPlotArea struct {
 	SecondPlotValues  int
@@ -627,6 +645,8 @@ type ChartPlotArea struct {
 	ShowSerName       bool
 	ShowVal           bool
 	Fill              Fill
+	UpBars            ChartUpDownBar
+	DownBars          ChartUpDownBar
 	NumFmt            ChartNumFmt
 }
 

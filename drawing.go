@@ -159,8 +159,8 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		WireframeContour:            f.drawSurfaceChart,
 		Bubble:                      f.drawBubbleChart,
 		Bubble3D:                    f.drawBubbleChart,
-		HighLowCloseChart:           f.drawStockChart,
-		OpenHighLowCloseChart:       f.drawStockChart,
+		StockHighLowClose:           f.drawStockChart,
+		StockOpenHighLowClose:       f.drawStockChart,
 	}
 	xlsxChartSpace.Chart.drawChartLegend(opts)
 	xlsxChartSpace.Chart.PlotArea.SpPr = f.drawShapeFill(opts.PlotArea.Fill, xlsxChartSpace.Chart.PlotArea.SpPr)
