@@ -101,6 +101,33 @@ func TestTimeFromExcelTime_1904(t *testing.T) {
 	assert.Equal(t, timeFromExcelTime(62, true), time.Date(1904, time.March, 3, 0, 0, 0, 0, time.UTC))
 }
 
+func TestTimeFromExcelTime_Issue(t *testing.T) {
+	// Test case for the reported issue: timeFromExcelTime(2.0, false) should return 1900-01-02
+	result2 := timeFromExcelTime(2.0, false)
+	expected2 := time.Date(1900, time.January, 2, 0, 0, 0, 0, time.UTC)
+	
+	fmt.Printf("timeFromExcelTime(2.0, false) = %v\n", result2)
+	fmt.Printf("Expected: %v\n", expected2)
+	
+	// Also test 1.0 to see if there's a pattern
+	result1 := timeFromExcelTime(1.0, false)
+	expected1 := time.Date(1900, time.January, 1, 0, 0, 0, 0, time.UTC)
+	
+	fmt.Printf("timeFromExcelTime(1.0, false) = %v\n", result1)
+	fmt.Printf("Expected: %v\n", expected1)
+	
+	// Test a few more early dates
+	result3 := timeFromExcelTime(3.0, false)
+	expected3 := time.Date(1900, time.January, 3, 0, 0, 0, 0, time.UTC)
+	
+	fmt.Printf("timeFromExcelTime(3.0, false) = %v\n", result3)
+	fmt.Printf("Expected: %v\n", expected3)
+	
+	assert.Equal(t, expected1, result1, "timeFromExcelTime(1.0, false) should return 1900-01-01")
+	assert.Equal(t, expected2, result2, "timeFromExcelTime(2.0, false) should return 1900-01-02")
+	assert.Equal(t, expected3, result3, "timeFromExcelTime(3.0, false) should return 1900-01-03")
+}
+
 func TestExcelDateToTime(t *testing.T) {
 	// Check normal case
 	for i, test := range excelTimeInputList {
