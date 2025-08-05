@@ -101,31 +101,28 @@ func TestTimeFromExcelTime_1904(t *testing.T) {
 	assert.Equal(t, timeFromExcelTime(62, true), time.Date(1904, time.March, 3, 0, 0, 0, 0, time.UTC))
 }
 
-func TestTimeFromExcelTime_Issue(t *testing.T) {
-	// Test case for the reported issue: timeFromExcelTime(2.0, false) should return 1900-01-02
-	result2 := timeFromExcelTime(2.0, false)
-	expected2 := time.Date(1900, time.January, 2, 0, 0, 0, 0, time.UTC)
+func TestTimeFromExcelTime_Issue2192(t *testing.T) {
+	// Test case for issue #2192: timeFromExcelTime(2.0, false) should return 1900-01-02
+	// This test verifies that the off-by-one error in early Excel dates (1-59) is fixed
+	testCases := []struct {
+		excelTime float64
+		expected  time.Time
+		description string
+	}{
+		{0.0, time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC), "Day 0 (Excel epoch)"},
+		{1.0, time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC), "Day 1 (1900-01-01)"},
+		{2.0, time.Date(1900, 1, 2, 0, 0, 0, 0, time.UTC), "Day 2 (1900-01-02) - Original issue"},
+		{3.0, time.Date(1900, 1, 3, 0, 0, 0, 0, time.UTC), "Day 3 (1900-01-03)"},
+		{58.0, time.Date(1900, 2, 27, 0, 0, 0, 0, time.UTC), "Day 58 (1900-02-27) - Day before the Excel leap year bug"},
+		{59.0, time.Date(1900, 2, 28, 0, 0, 0, 0, time.UTC), "Day 59 (1900-02-28) - Last affected day"},
+		{60.0, time.Date(1900, 2, 28, 0, 0, 0, 0, time.UTC), "Day 60 (1900-02-28)"},
+		{61.0, time.Date(1900, 3, 1, 0, 0, 0, 0, time.UTC), "Day 61 (1900-03-01)"},
+	}
 	
-	fmt.Printf("timeFromExcelTime(2.0, false) = %v\n", result2)
-	fmt.Printf("Expected: %v\n", expected2)
-	
-	// Also test 1.0 to see if there's a pattern
-	result1 := timeFromExcelTime(1.0, false)
-	expected1 := time.Date(1900, time.January, 1, 0, 0, 0, 0, time.UTC)
-	
-	fmt.Printf("timeFromExcelTime(1.0, false) = %v\n", result1)
-	fmt.Printf("Expected: %v\n", expected1)
-	
-	// Test a few more early dates
-	result3 := timeFromExcelTime(3.0, false)
-	expected3 := time.Date(1900, time.January, 3, 0, 0, 0, 0, time.UTC)
-	
-	fmt.Printf("timeFromExcelTime(3.0, false) = %v\n", result3)
-	fmt.Printf("Expected: %v\n", expected3)
-	
-	assert.Equal(t, expected1, result1, "timeFromExcelTime(1.0, false) should return 1900-01-01")
-	assert.Equal(t, expected2, result2, "timeFromExcelTime(2.0, false) should return 1900-01-02")
-	assert.Equal(t, expected3, result3, "timeFromExcelTime(3.0, false) should return 1900-01-03")
+	for _, tc := range testCases {
+		result := timeFromExcelTime(tc.excelTime, false)
+		assert.Equal(t, tc.expected, result, "timeFromExcelTime(%.1f, false) failed: %s", tc.excelTime, tc.description)
+	}
 }
 
 func TestExcelDateToTime(t *testing.T) {
