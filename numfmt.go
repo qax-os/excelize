@@ -7425,10 +7425,17 @@ func localMonthsNameZulu(t time.Time, abbr int) string {
 
 // localMonthsName return months name by supported language ID.
 func (nf *numberFormat) localMonthsName(abbr int) string {
-	if languageInfo, ok := getSupportedLanguageInfo(nf.localCode); ok {
-		return languageInfo.localMonth(nf.t, abbr)
+	t := nf.t
+	if nf.number < 1 {
+		t = timeFromExcelTime(nf.number+2, nf.date1904)
 	}
-	return localMonthsNameEnglish(nf.t, abbr)
+	if 1 <= nf.number && nf.number < 60 {
+		t = timeFromExcelTime(nf.number+1, nf.date1904)
+	}
+	if languageInfo, ok := getSupportedLanguageInfo(nf.localCode); ok {
+		return languageInfo.localMonth(t, abbr)
+	}
+	return localMonthsNameEnglish(t, abbr)
 }
 
 // dateTimesHandler will be handling date and times types tokens for a number
@@ -7447,13 +7454,20 @@ func (nf *numberFormat) dateTimesHandler(i int, token nfp.Token) {
 		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "M") {
+		m := int(nf.t.Month())
+		if nf.number < 2 {
+			m = 1
+		}
+		if 60 <= nf.number && nf.number < 61 {
+			m = 2
+		}
 		l := len(token.TValue)
 		if l == 1 && nf.isMonthToken(i) {
-			nf.result += strconv.Itoa(int(nf.t.Month()))
+			nf.result += strconv.Itoa(int(m))
 			return
 		}
 		if l == 2 && nf.isMonthToken(i) {
-			nf.result += fmt.Sprintf("%02d", int(nf.t.Month()))
+			nf.result += fmt.Sprintf("%02d", int(m))
 			return
 		}
 		if l == 3 {
@@ -7528,8 +7542,12 @@ func (nf *numberFormat) japaneseYearHandler(token nfp.Token, langInfo languageIn
 
 // republicOfChinaYearHandler handling the Republic of China calendar years.
 func (nf *numberFormat) republicOfChinaYearHandler(token nfp.Token, langInfo languageInfo) {
+	year := nf.t.Year()
+	if nf.number < 2 {
+		year = 1900
+	}
 	if strings.Contains(strings.ToUpper(token.TValue), "G") {
-		year := nf.t.Year() - republicOfChinaYear.Year() + 1
+		year = year - republicOfChinaYear.Year() + 1
 		if year == 1 {
 			nf.useGannen = langInfo.useGannen
 		}
@@ -7543,7 +7561,7 @@ func (nf *numberFormat) republicOfChinaYearHandler(token nfp.Token, langInfo lan
 		nf.result += name
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "E") {
-		year := nf.t.Year() - republicOfChinaYear.Year() + 1
+		year = year - republicOfChinaYear.Year() + 1
 		if year < 0 {
 			year = republicOfChinaYear.Year() - nf.t.Year()
 		}
@@ -7561,8 +7579,11 @@ func (nf *numberFormat) republicOfChinaYearHandler(token nfp.Token, langInfo lan
 // number format expression.
 func (nf *numberFormat) yearsHandler(token nfp.Token) {
 	langInfo, _ := getSupportedLanguageInfo(nf.localCode)
+	year := nf.t.Year()
+	if nf.number < 2 {
+		year = 1900
+	}
 	if strings.Contains(strings.ToUpper(token.TValue), "Y") {
-		year := nf.t.Year()
 		if nf.opts != nil && nf.opts.CultureInfo == CultureNameKoKR {
 			year += 2333
 		}
@@ -7584,7 +7605,7 @@ func (nf *numberFormat) yearsHandler(token nfp.Token) {
 		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "E") {
-		nf.result += strconv.Itoa(nf.t.Year())
+		nf.result += strconv.Itoa(year)
 		return
 	}
 }
@@ -7611,11 +7632,21 @@ func (nf *numberFormat) daysHandler(token nfp.Token) {
 		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "D") {
+		d := nf.t.Day()
+		if nf.number < 1 {
+			d = 0
+		}
+		if 1 <= nf.number && nf.number < 60 {
+			d = timeFromExcelTime(nf.number+1, nf.date1904).Day()
+		}
+		if 60 <= nf.number && nf.number < 61 {
+			d = 29
+		}
 		switch l {
 		case 1:
-			nf.result += strconv.Itoa(nf.t.Day())
+			nf.result += strconv.Itoa(d)
 		case 2:
-			nf.result += fmt.Sprintf("%02d", nf.t.Day())
+			nf.result += fmt.Sprintf("%02d", d)
 		case 3:
 			nf.result += weekdayNamesAbbr[nf.t.Weekday()]
 		default:

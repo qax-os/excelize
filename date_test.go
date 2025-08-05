@@ -31,7 +31,7 @@ var trueExpectedDateList = []dateTest{
 var excelTimeInputList = []dateTest{
 	{0.0, time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)},
 	{60.0, time.Date(1900, 2, 28, 0, 0, 0, 0, time.UTC)},
-	{61.0, time.Date(1900, 3, 1, 0, 0, 0, 0, time.UTC)},
+	{61.0, time.Date(1900, 2, 29, 0, 0, 0, 0, time.UTC)},
 	{41275.0, time.Date(2013, 1, 1, 0, 0, 0, 0, time.UTC)},
 	{44450.3333333333, time.Date(2021, time.September, 11, 8, 0, 0, 0, time.UTC)},
 	{401769.0, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC)},
@@ -99,30 +99,6 @@ func TestTimeFromExcelTime_1904(t *testing.T) {
 	assert.Equal(t, julianFraction, 0.6)
 	assert.Equal(t, timeFromExcelTime(61, true), time.Date(1904, time.March, 2, 0, 0, 0, 0, time.UTC))
 	assert.Equal(t, timeFromExcelTime(62, true), time.Date(1904, time.March, 3, 0, 0, 0, 0, time.UTC))
-}
-
-func TestTimeFromExcelTime_Issue2192(t *testing.T) {
-	// Test case for issue #2192: timeFromExcelTime(2.0, false) should return 1900-01-02
-	// This test verifies that the off-by-one error in early Excel dates (1-59) is fixed
-	testCases := []struct {
-		excelTime float64
-		expected  time.Time
-		description string
-	}{
-		{0.0, time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC), "Day 0 (Excel epoch)"},
-		{1.0, time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC), "Day 1 (1900-01-01)"},
-		{2.0, time.Date(1900, 1, 2, 0, 0, 0, 0, time.UTC), "Day 2 (1900-01-02) - Original issue"},
-		{3.0, time.Date(1900, 1, 3, 0, 0, 0, 0, time.UTC), "Day 3 (1900-01-03)"},
-		{58.0, time.Date(1900, 2, 27, 0, 0, 0, 0, time.UTC), "Day 58 (1900-02-27) - Day before the Excel leap year bug"},
-		{59.0, time.Date(1900, 2, 28, 0, 0, 0, 0, time.UTC), "Day 59 (1900-02-28) - Last affected day"},
-		{60.0, time.Date(1900, 2, 28, 0, 0, 0, 0, time.UTC), "Day 60 (1900-02-28)"},
-		{61.0, time.Date(1900, 3, 1, 0, 0, 0, 0, time.UTC), "Day 61 (1900-03-01)"},
-	}
-	
-	for _, tc := range testCases {
-		result := timeFromExcelTime(tc.excelTime, false)
-		assert.Equal(t, tc.expected, result, "timeFromExcelTime(%.1f, false) failed: %s", tc.excelTime, tc.description)
-	}
 }
 
 func TestExcelDateToTime(t *testing.T) {

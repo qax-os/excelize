@@ -145,12 +145,7 @@ func timeFromExcelTime(excelTime float64, date1904 bool) time.Time {
 		if date1904 {
 			date = julianDateToGregorianTime(MJD0, excelTime+OFFSET1904)
 		} else {
-			// Fix for off-by-one error in days 1-59
-			offset := OFFSET1900
-			if wholeDaysPart >= 1 && wholeDaysPart <= 59 {
-				offset = OFFSET1900 + 1.0
-			}
-			date = julianDateToGregorianTime(MJD0, excelTime+offset)
+			date = julianDateToGregorianTime(MJD0, excelTime+OFFSET1900)
 		}
 		return date
 	}
