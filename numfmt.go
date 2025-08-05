@@ -7438,19 +7438,24 @@ func (nf *numberFormat) localMonthsName(abbr int) string {
 	return localMonthsNameEnglish(t, abbr)
 }
 
+// dateAmPmHandler will be handling am/pm types tokens for a number format.
+func (nf *numberFormat) dateAmPmHandler(i int, token nfp.Token) {
+	if nf.ap == "" {
+		nextHours := nf.hoursNext(i)
+		aps := strings.Split(nf.localAmPm(token.TValue), "/")
+		nf.ap = aps[0]
+		if nextHours >= 12 {
+			nf.ap = aps[1]
+		}
+	}
+	nf.result += nf.ap
+}
+
 // dateTimesHandler will be handling date and times types tokens for a number
 // format expression.
 func (nf *numberFormat) dateTimesHandler(i int, token nfp.Token) {
 	if idx := inStrSlice(nfp.AmPm, strings.ToUpper(token.TValue), false); idx != -1 {
-		if nf.ap == "" {
-			nextHours := nf.hoursNext(i)
-			aps := strings.Split(nf.localAmPm(token.TValue), "/")
-			nf.ap = aps[0]
-			if nextHours >= 12 {
-				nf.ap = aps[1]
-			}
-		}
-		nf.result += nf.ap
+		nf.dateAmPmHandler(i, token)
 		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "M") {

@@ -31,7 +31,7 @@ var trueExpectedDateList = []dateTest{
 var excelTimeInputList = []dateTest{
 	{0.0, time.Date(1899, 12, 30, 0, 0, 0, 0, time.UTC)},
 	{60.0, time.Date(1900, 2, 28, 0, 0, 0, 0, time.UTC)},
-	{61.0, time.Date(1900, 2, 29, 0, 0, 0, 0, time.UTC)},
+	{61.0, time.Date(1900, 3, 1, 0, 0, 0, 0, time.UTC)},
 	{41275.0, time.Date(2013, 1, 1, 0, 0, 0, 0, time.UTC)},
 	{44450.3333333333, time.Date(2021, time.September, 11, 8, 0, 0, 0, time.UTC)},
 	{401769.0, time.Date(3000, 1, 1, 0, 0, 0, 0, time.UTC)},
