@@ -198,6 +198,155 @@ func TestIterateColumnsEarlyTermination(t *testing.T) {
 	assert.Equal(t, []string{"A1", "B1"}, collectedCells)
 }
 
+func TestIterateColumnsWithFormula(t *testing.T) {
+	f := NewFile()
+
+	// Test with formula cell
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=1+2"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", "text"))
+
+	rows, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	defer rows.Close()
+
+	assert.True(t, rows.Next())
+
+	// Test normal mode
+	var normalCells []string
+	err = rows.IterateColumns(func(index int, cell string) error {
+		normalCells = append(normalCells, cell)
+		return nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(normalCells))
+	assert.Equal(t, "text", normalCells[1])
+
+	// Test with Options parameter coverage
+	rows2, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	defer rows2.Close()
+	assert.True(t, rows2.Next())
+
+	var rawCells []string
+	err = rows2.IterateColumns(func(index int, cell string) error {
+		rawCells = append(rawCells, cell)
+		return nil
+	}, Options{RawCellValue: true})
+	assert.NoError(t, err)
+	assert.True(t, len(rawCells) >= 1) // Just ensure we get some cells
+}
+
+func TestIterateColumnsErrorCases(t *testing.T) {
+	f := NewFile()
+
+	// Test with invalid shared strings
+	f.SharedStrings = nil
+	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+
+	rows, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	defer rows.Close()
+
+	// Test sharedStringsReader error path
+	err = rows.IterateColumns(func(index int, cell string) error {
+		return nil
+	})
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestIterateColumnsSkipRows(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "row1"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "A2", "row2"))
+
+	rows, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	defer rows.Close()
+
+	// Skip first row
+	assert.True(t, rows.Next())
+
+	// Move to second row
+	assert.True(t, rows.Next())
+
+	var cells []string
+	err = rows.IterateColumns(func(index int, cell string) error {
+		cells = append(cells, cell)
+		return nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"row2"}, cells)
+}
+
+func TestIterateColumnsEmptyCallback(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "")) // Empty cell
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", "B1"))
+
+	rows, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	defer rows.Close()
+
+	assert.True(t, rows.Next())
+
+	var cells []string
+	var indices []int
+	err = rows.IterateColumns(func(index int, cell string) error {
+		cells = append(cells, cell)
+		indices = append(indices, index)
+		// Test early termination in empty cell callback
+		if index == 0 && cell == "" {
+			return fmt.Errorf("empty cell error")
+		}
+		return nil
+	})
+	assert.EqualError(t, err, "empty cell error")
+	assert.Equal(t, []string{""}, cells)
+	assert.Equal(t, []int{0}, indices)
+}
+
+func TestIterateColumnsBoundaryConditions(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "A1"))
+
+	rows, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	defer rows.Close()
+
+	// Test curRow > seekRow condition
+	rows.curRow = 10
+	rows.seekRow = 5
+
+	err = rows.IterateColumns(func(index int, cell string) error {
+		t.Error("Should not be called")
+		return nil
+	})
+	assert.NoError(t, err) // Should return nil when curRow > seekRow
+}
+
+func TestIterateColumnsXMLStructure(t *testing.T) {
+	f := NewFile()
+
+	// Create test data to ensure XML structure coverage
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "test"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=SUM(1,2)"))
+
+	rows, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	defer rows.Close()
+
+	assert.True(t, rows.Next())
+
+	// This should exercise various XML parsing paths
+	var cellCount int
+	err = rows.IterateColumns(func(index int, cell string) error {
+		cellCount++
+		return nil
+	})
+	assert.NoError(t, err)
+	assert.True(t, cellCount >= 2)
+}
+
 func TestRowHeight(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
