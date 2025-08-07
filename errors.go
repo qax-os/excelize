@@ -60,10 +60,10 @@ var (
 	// family name overflow.
 	ErrFontLength = fmt.Errorf("the length of the font family name must be less than or equal to %d", MaxFontFamilyLength)
 	// ErrFontSize defined the error message on the size of the font is invalid.
-	ErrFontSize = fmt.Errorf("font size must be between %d and %d points", MinFontSize, MaxFontSize)
+	ErrFontSize = fmt.Errorf("font size must be an integer from %d to %d points", MinFontSize, MaxFontSize)
 	// ErrFormControlValue defined the error message for receiving a scroll
 	// value exceeds limit.
-	ErrFormControlValue = fmt.Errorf("scroll value must be between 0 and %d", MaxFormControlValue)
+	ErrFormControlValue = fmt.Errorf("scroll value must be an integer from 0 to %d", MaxFormControlValue)
 	// ErrGroupSheets defined the error message on group sheets.
 	ErrGroupSheets = errors.New("group worksheet must contain an active worksheet")
 	// ErrImgExt defined the error message on receive an unsupported image
@@ -91,7 +91,7 @@ var (
 	ErrOutlineLevel = errors.New("invalid outline level")
 	// ErrPageSetupAdjustTo defined the error message for receiving a page setup
 	// adjust to value exceeds limit.
-	ErrPageSetupAdjustTo = errors.New("adjust to value must be between 10 and 400")
+	ErrPageSetupAdjustTo = errors.New("adjust to value must be an integer from 0 to 400")
 	// ErrParameterInvalid defined the error message on receive the invalid
 	// parameter.
 	ErrParameterInvalid = errors.New("parameter is invalid")
@@ -132,10 +132,10 @@ var (
 	ErrSparklineRange = errors.New("parameter 'Range' is required")
 	// ErrSparklineStyle defined the error message on receive the invalid
 	// sparkline Style parameters.
-	ErrSparklineStyle = errors.New("parameter 'Style' must between 0-35")
+	ErrSparklineStyle = errors.New("parameter 'Style' value must be an integer from 0 to 35")
 	// ErrSparklineType defined the error message on receive the invalid
 	// sparkline Type parameters.
-	ErrSparklineType = errors.New("parameter 'Type' must be 'line', 'column' or 'win_loss'")
+	ErrSparklineType = errors.New("parameter 'Type' value must be one of 'line', 'column' or 'win_loss'")
 	// ErrStreamSetColStyle defined the error message on set column style in
 	// stream writing mode.
 	ErrStreamSetColStyle = errors.New("must call the SetColStyle function before the SetRow function")
@@ -148,6 +148,9 @@ var (
 	// ErrTotalSheetHyperlinks defined the error message on hyperlinks count
 	// overflow.
 	ErrTotalSheetHyperlinks = errors.New("over maximum limit hyperlinks in a worksheet")
+	// ErrTransparency defined the error message for receiving a transparency
+	// value exceeds limit.
+	ErrTransparency = errors.New("transparency value must be an integer from 0 to 100")
 	// ErrUnknownEncryptMechanism defined the error message on unsupported
 	// encryption mechanism.
 	ErrUnknownEncryptMechanism = errors.New("unknown encryption mechanism")
@@ -326,6 +329,12 @@ func newUnknownFilterTokenError(token string) error {
 // type are unsupported.
 func newUnsupportedChartType(chartType ChartType) error {
 	return fmt.Errorf("unsupported chart type %d", chartType)
+}
+
+// newUnsupportedPivotCacheSourceType defined the error message on receiving the
+// source type of pivot table cache.
+func newUnsupportedPivotCacheSourceType(sourceType string) error {
+	return fmt.Errorf("unsupported pivot table cache source type: %s", sourceType)
 }
 
 // newUnzipSizeLimitError defined the error message on unzip size exceeds the

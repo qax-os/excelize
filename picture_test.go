@@ -268,7 +268,7 @@ func TestGetPicture(t *testing.T) {
 	// Test get embedded cell pictures
 	f, err = OpenFile(filepath.Join("test", "TestGetPicture.xlsx"))
 	assert.NoError(t, err)
-	assert.NoError(t, f.SetCellFormula("Sheet1", "F21", "=_xlfn.DISPIMG(\"ID_********************************\",1)"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "F21", "_xlfn.DISPIMG(\"ID_********************************\",1)"))
 	f.Pkg.Store(defaultXMLPathCellImages, []byte(`<etc:cellImages xmlns:etc="http://www.wps.cn/officeDocument/2017/etCustomData"><etc:cellImage><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="1" name="ID_********************************" descr="CellImage1"/></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId1"/></xdr:blipFill></xdr:pic></etc:cellImage></etc:cellImages>`))
 	f.Pkg.Store(defaultXMLPathCellImagesRels, []byte(fmt.Sprintf(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="%s" Target="media/image1.jpeg"/></Relationships>`, SourceRelationshipImage)))
 	pics, err = f.GetPictures("Sheet1", "F21")
@@ -278,7 +278,7 @@ func TestGetPicture(t *testing.T) {
 	assert.Equal(t, PictureInsertTypeDISPIMG, pics[0].InsertType)
 
 	// Test get embedded cell pictures with invalid formula
-	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "=_xlfn.DISPIMG()"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "_xlfn.DISPIMG()"))
 	_, err = f.GetPictures("Sheet1", "A1")
 	assert.EqualError(t, err, "DISPIMG requires 2 numeric arguments")
 
@@ -458,13 +458,13 @@ func TestGetPictureCells(t *testing.T) {
 	// Test get embedded picture cells
 	f = NewFile()
 	assert.NoError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.png"), nil))
-	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "=_xlfn.DISPIMG(\"ID_********************************\",1)"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "_xlfn.DISPIMG(\"ID_********************************\",1)"))
 	cells, err = f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"A2", "A1"}, cells)
 
 	// Test get embedded cell pictures with invalid formula
-	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "=_xlfn.DISPIMG()"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "_xlfn.DISPIMG()"))
 	_, err = f.GetPictureCells("Sheet1")
 	assert.EqualError(t, err, "DISPIMG requires 2 numeric arguments")
 	assert.NoError(t, f.Close())

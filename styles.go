@@ -216,6 +216,11 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 //	 8     | darkUp          | 18    | gray0625
 //	 9     | darkGrid        |       |
 //
+// The 'Fill.Transparency' only use to set transparency for chart and shape, not
+// used for cell. The value of 'Fill.Transparency' should be a number from 0 to
+// 100, which represents 0% to 100%, The default value is 0, representing full
+// opaque (not transparent).
+//
 // The 'Alignment.Indent' is an integer value, where an increment of 1
 // represents 3 spaces. Indicates the number of spaces (of the normal style
 // font) of indentation for text in a cell. The number of spaces to indent is
@@ -1855,12 +1860,9 @@ func newFontColor(font *Font) *xlsxColor {
 // newFont provides a function to add font style by given cell format
 // settings.
 func (fnt *Font) newFont() *xlsxFont {
-	if fnt.Size < MinFontSize {
-		fnt.Size = 11
-	}
-	font := xlsxFont{
-		Sz:     &attrValFloat{Val: float64Ptr(fnt.Size)},
-		Family: &attrValInt{Val: intPtr(2)},
+	font := xlsxFont{Family: &attrValInt{Val: intPtr(2)}}
+	if fnt.Size >= MinFontSize {
+		font.Sz = &attrValFloat{Val: float64Ptr(fnt.Size)}
 	}
 	if fnt.Family != "" {
 		font.Name = &attrValString{Val: stringPtr(fnt.Family)}

@@ -80,7 +80,7 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 // unzipToTemp unzip the zip entity to the system temporary directory and
 // returned the unzipped file path.
 func (f *File) unzipToTemp(zipFile *zip.File) (string, error) {
-	tmp, err := os.CreateTemp("", "excelize-")
+	tmp, err := os.CreateTemp(f.options.TmpDir, "excelize-")
 	if err != nil {
 		return "", err
 	}
@@ -889,6 +889,19 @@ func assignFieldValue(field string, immutable, mutable reflect.Value) {
 		mutable.FieldByName(field).SetInt(immutable.Int())
 	default:
 		mutable.FieldByName(field).SetString(immutable.String())
+	}
+}
+
+// setPtrFields assigns the fields of the immutable struct to the mutable
+// struct. The fields name of the immutable struct must match the field names of
+// the mutable struct.
+func setPtrFields(immutable, mutable reflect.Value) {
+	for i := range immutable.NumField() {
+		srcField := immutable.Type().Field(i)
+		dstField := mutable.FieldByName(srcField.Name)
+		if dstField.IsValid() && dstField.CanSet() && dstField.Type() == immutable.Field(i).Type() {
+			dstField.Set(immutable.Field(i))
+		}
 	}
 }
 

@@ -86,6 +86,9 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 // should be less than or equal to UnzipSizeLimit, the default value is
 // 16MB.
 //
+// TmpDir specifies the temporary directory for creating temporary files, if the
+// value is empty, the system default temporary directory will be used.
+//
 // ShortDatePattern specifies the short date number format code. In the
 // spreadsheet applications, date formats display date and time serial numbers
 // as date values. Date formats that begin with an asterisk (*) respond to
@@ -106,6 +109,7 @@ type Options struct {
 	RawCellValue      bool
 	UnzipSizeLimit    int64
 	UnzipXMLSizeLimit int64
+	TmpDir            string
 	ShortDatePattern  string
 	LongDatePattern   string
 	LongTimePattern   string
@@ -421,7 +425,8 @@ func (f *File) setRels(rID, relPath, relType, target, targetMode string) int {
 // relationship type, target and target mode.
 func (f *File) addRels(relPath, relType, target, targetMode string) int {
 	uniqPart := map[string]string{
-		SourceRelationshipSharedStrings: "/xl/sharedStrings.xml",
+		SourceRelationshipCustomProperties: "/docProps/custom.xml",
+		SourceRelationshipSharedStrings:    "/xl/sharedStrings.xml",
 	}
 	rels, _ := f.relsReader(relPath)
 	if rels == nil {

@@ -80,12 +80,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 			BackWall: &cThicknessSpPr{
 				Thickness: &attrValInt{Val: intPtr(0)},
 			},
-			PlotArea: &cPlotArea{},
-			Legend: &cLegend{
-				LegendPos: &attrValString{Val: stringPtr(chartLegendPosition[opts.Legend.Position])},
-				Overlay:   &attrValBool{Val: boolPtr(false)},
-			},
-
+			PlotArea:         &cPlotArea{},
 			PlotVisOnly:      &attrValBool{Val: boolPtr(false)},
 			DispBlanksAs:     &attrValString{Val: stringPtr(opts.ShowBlanksAs)},
 			ShowDLblsOverMax: &attrValBool{Val: boolPtr(false)},
@@ -165,9 +160,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		Bubble:                      f.drawBubbleChart,
 		Bubble3D:                    f.drawBubbleChart,
 	}
-	if opts.Legend.Position == "none" {
-		xlsxChartSpace.Chart.Legend = nil
-	}
+	xlsxChartSpace.Chart.drawChartLegend(opts)
 	xlsxChartSpace.Chart.PlotArea.SpPr = f.drawShapeFill(opts.PlotArea.Fill, xlsxChartSpace.Chart.PlotArea.SpPr)
 	xlsxChartSpace.Chart.PlotArea.DTable = f.drawPlotAreaDTable(opts)
 	addChart := func(c, p *cPlotArea) {
@@ -795,7 +788,11 @@ func (f *File) drawShapeFill(fill Fill, spPr *cSpPr) *cSpPr {
 			spPr = &cSpPr{}
 		}
 		if len(fill.Color) == 1 {
-			spPr.SolidFill = &aSolidFill{SrgbClr: &attrValString{Val: stringPtr(strings.TrimPrefix(fill.Color[0], "#"))}}
+			spPr.SolidFill = &aSolidFill{SrgbClr: &aSrgbClr{Val: stringPtr(strings.TrimPrefix(fill.Color[0], "#"))}}
+			if fill.Transparency > 0 {
+				val := (100 - fill.Transparency) * 1000
+				spPr.SolidFill.SrgbClr.Alpha = &attrValInt{Val: &val}
+			}
 			return spPr
 		}
 		spPr.SolidFill = nil
@@ -815,6 +812,9 @@ func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 			Cap:       "rnd", // rnd, sq, flat
 			SolidFill: spPr.SolidFill,
 		},
+	}
+	if opts.Series[i].Line.Dash != ChartDashUnset {
+		solid.Ln.PrstDash = &attrValString{Val: stringPtr(chartDashTypes[opts.Series[i].Line.Dash])}
 	}
 	noLn := &cSpPr{Ln: &aLn{NoFill: &attrValString{}}}
 	if chartSeriesSpPr, ok := map[ChartType]map[ChartLineType]*cSpPr{
@@ -878,7 +878,8 @@ func (f *File) drawChartSeriesCat(v ChartSeries, opts *Chart) *cCat {
 func (f *File) drawChartSeriesVal(v ChartSeries, opts *Chart) *cVal {
 	val := &cVal{
 		NumRef: &cNumRef{
-			F: v.Values,
+			F:        v.Values,
+			NumCache: &cNumCache{},
 		},
 	}
 	chartSeriesVal := map[ChartType]*cVal{Scatter: nil, Bubble: nil, Bubble3D: nil}
@@ -903,23 +904,14 @@ func (f *File) drawChartSeriesMarker(i int, opts *Chart) *cMarker {
 		marker.Size = &attrValInt{Val: size}
 	}
 	if i < 6 {
-		marker.SpPr = &cSpPr{
-			SolidFill: &aSolidFill{
-				SchemeClr: &aSchemeClr{
-					Val: "accent" + strconv.Itoa(i+1),
-				},
-			},
-			Ln: &aLn{
-				W: 9252,
-				SolidFill: &aSolidFill{
-					SchemeClr: &aSchemeClr{
-						Val: "accent" + strconv.Itoa(i+1),
-					},
-				},
-			},
-		}
+		marker.SpPr = &cSpPr{SolidFill: &aSolidFill{
+			SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa(i+1)},
+		}, Ln: &aLn{W: 9252}}
 	}
 	marker.SpPr = f.drawShapeFill(opts.Series[i].Marker.Fill, marker.SpPr)
+	if marker.SpPr != nil && marker.SpPr.Ln != nil {
+		marker.SpPr.Ln = f.drawChartLn(&opts.Series[i].Marker.Border)
+	}
 	chartSeriesMarker := map[ChartType]*cMarker{Scatter: marker, Line: marker}
 	return chartSeriesMarker[opts.Type]
 }
@@ -941,7 +933,8 @@ func (f *File) drawChartSeriesXVal(v ChartSeries, opts *Chart) *cCat {
 func (f *File) drawChartSeriesYVal(v ChartSeries, opts *Chart) *cVal {
 	val := &cVal{
 		NumRef: &cNumRef{
-			F: v.Values,
+			F:        v.Values,
+			NumCache: &cNumCache{},
 		},
 	}
 	chartSeriesYVal := map[ChartType]*cVal{Scatter: val, Bubble: val, Bubble3D: val}
@@ -960,7 +953,8 @@ func (f *File) drawCharSeriesBubbleSize(v ChartSeries, opts *Chart) *cVal {
 	}
 	return &cVal{
 		NumRef: &cNumRef{
-			F: fVal,
+			F:        fVal,
+			NumCache: &cNumCache{},
 		},
 	}
 }
@@ -1196,7 +1190,7 @@ func drawChartFont(fnt *Font, r *aRPr) {
 			r.SolidFill = &aSolidFill{}
 		}
 		r.SolidFill.SchemeClr = nil
-		r.SolidFill.SrgbClr = &attrValString{Val: stringPtr(strings.ReplaceAll(strings.ToUpper(fnt.Color), "#", ""))}
+		r.SolidFill.SrgbClr = &aSrgbClr{Val: stringPtr(strings.ReplaceAll(strings.ToUpper(fnt.Color), "#", ""))}
 	}
 	if fnt.Family != "" {
 		if r.Latin == nil {
@@ -1322,25 +1316,60 @@ func (f *File) drawChartLn(opts *ChartLine) *aLn {
 		Cmpd: "sng",
 		Algn: "ctr",
 	}
+	if opts.Dash != ChartDashUnset {
+		ln.PrstDash = &attrValString{Val: stringPtr(chartDashTypes[opts.Dash])}
+	}
 	switch opts.Type {
 	case ChartLineSolid:
-		ln.SolidFill = &aSolidFill{
-			SchemeClr: &aSchemeClr{
-				Val: "tx1",
-				LumMod: &attrValInt{
-					Val: intPtr(15000),
-				},
-				LumOff: &attrValInt{
-					Val: intPtr(85000),
+		ln.SolidFill = f.drawShapeFill(opts.Fill, &cSpPr{
+			SolidFill: &aSolidFill{
+				SchemeClr: &aSchemeClr{
+					Val: "tx1",
+					LumMod: &attrValInt{
+						Val: intPtr(15000),
+					},
+					LumOff: &attrValInt{
+						Val: intPtr(85000),
+					},
 				},
 			},
-		}
+		}).SolidFill
 		return ln
 	case ChartLineNone:
 		ln.NoFill = &attrValString{}
 		return ln
 	default:
 		return nil
+	}
+}
+
+// drawChartLegend provides a function to draw the c:legend element.
+func (c *cChart) drawChartLegend(opts *Chart) {
+	if opts.Legend.Position == "none" {
+		c.Legend = nil
+		return
+	}
+	if c.Legend == nil {
+		c.Legend = &cLegend{
+			LegendPos: &attrValString{Val: stringPtr(chartLegendPosition[opts.Legend.Position])},
+			Overlay:   &attrValBool{Val: boolPtr(false)},
+		}
+	}
+	if opts.Legend.Font != nil {
+		c.Legend.TxPr = &cTxPr{P: aP{PPr: &aPPr{}}}
+		drawChartFont(opts.Legend.Font, &c.Legend.TxPr.P.PPr.DefRPr)
+	}
+	for k := range opts.Series {
+		font := opts.Series[k].Legend.Font
+		if font == nil {
+			continue
+		}
+		legendEntry := cLegendEntry{
+			IDx:  &attrValInt{Val: intPtr(k + opts.order)},
+			TxPr: &cTxPr{P: aP{PPr: &aPPr{}}},
+		}
+		drawChartFont(font, &legendEntry.TxPr.P.PPr.DefRPr)
+		c.Legend.LegendEntry = append(c.Legend.LegendEntry, legendEntry)
 	}
 }
 
