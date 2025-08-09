@@ -317,6 +317,10 @@ func TestAddChart(t *testing.T) {
 	assert.EqualError(t, f.AddChart("Sheet2", "BD32", &Chart{Type: Col, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}, nil), ErrParameterInvalid.Error())
 	// Test add combo chart with unsupported chart type
 	assert.EqualError(t, f.AddChart("Sheet2", "BD64", &Chart{Type: BarOfPie, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bar of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}, &Chart{Type: 0x37, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bar of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}), newUnsupportedChartType(0x37).Error())
+	// Test add chart with series transparency value exceeds limit
+	assert.Equal(t, ErrTransparency, f.AddChart("Sheet1", "BD64", &Chart{Type: Col, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30", Fill: Fill{Transparency: 110}}}}))
+	// Test add chart with transparency value exceeds limit
+	assert.Equal(t, ErrTransparency, f.AddChart("Sheet1", "BD64", &Chart{Type: Col, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"}}, Fill: Fill{Transparency: -1}}))
 	assert.NoError(t, f.Close())
 
 	// Test add chart with unsupported charset content types.
