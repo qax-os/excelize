@@ -78,6 +78,8 @@ const (
 	WireframeContour
 	Bubble
 	Bubble3D
+	StockHighLowClose
+	StockOpenHighLowClose
 )
 
 // ChartDashType is the type of supported chart dash types.
@@ -365,6 +367,8 @@ var (
 		WireframeContour:            "General",
 		Bubble:                      "General",
 		Bubble3D:                    "General",
+		StockHighLowClose:           "General",
+		StockOpenHighLowClose:       "General",
 	}
 	chartValAxCrossBetween = map[ChartType]string{
 		Area:                        "midCat",
@@ -422,6 +426,8 @@ var (
 		WireframeContour:            "midCat",
 		Bubble:                      "midCat",
 		Bubble3D:                    "midCat",
+		StockHighLowClose:           "between",
+		StockOpenHighLowClose:       "between",
 	}
 	plotAreaChartGrouping = map[ChartType]string{
 		Area:                        "standard",
@@ -768,6 +774,8 @@ func (opts *Chart) parseTitle() {
 //	 52 | WireframeContour            | wireframe contour chart
 //	 53 | Bubble                      | bubble chart
 //	 54 | Bubble3D                    | 3D bubble chart
+//	 55 | StockHighLowClose           | High-Low-Close stock chart
+//	 56 | StockOpenHighLowClose       | Open-High-Low-Close stock chart
 //
 // In Excel a chart series is a collection of information that defines which
 // data is plotted such as values, axis labels and formatting.
