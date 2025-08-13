@@ -811,6 +811,9 @@ var (
 		1164:  {tags: []string{"prs-AF"}, localMonth: localMonthsNameDariAfghanistan, apFmt: apFmtDari, weekdayNames: weekdayNamesDari, weekdayNamesAbbr: weekdayNamesDari},
 		101:   {tags: []string{"dv"}, localMonth: localMonthsNameDivehi, apFmt: apFmtDivehi, weekdayNames: weekdayNamesDivehi, weekdayNamesAbbr: weekdayNamesDivehi},
 		1125:  {tags: []string{"dv-MV"}, localMonth: localMonthsNameDivehi, apFmt: apFmtDivehi, weekdayNames: weekdayNamesDivehi, weekdayNamesAbbr: weekdayNamesDivehi},
+		19:    {tags: []string{"nl"}, localMonth: localMonthsNameDutch, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesDutch, weekdayNamesAbbr: weekdayNamesDutchAbbr},
+		2067:  {tags: []string{"nl-BE"}, localMonth: localMonthsNameDutch, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesDutch, weekdayNamesAbbr: weekdayNamesDutchAbbr},
+		1043:  {tags: []string{"nl-NL"}, localMonth: localMonthsNameDutch, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesDutch, weekdayNamesAbbr: weekdayNamesDutchAbbr},
 		3153:  {tags: []string{"dz-BT"}, localMonth: localMonthsNameDzongkha, apFmt: apFmtDzongkha, weekdayNames: weekdayNamesDzongkha, weekdayNamesAbbr: weekdayNamesDzongkhaAbbr},
 		9:     {tags: []string{"en"}, localMonth: localMonthsNameEnglish, apFmt: nfp.AmPm[0], weekdayNames: weekdayNamesEnglish, weekdayNamesAbbr: weekdayNamesEnglishAbbr},
 		4096: {tags: []string{
@@ -1696,6 +1699,10 @@ var (
 		"\u0782\u07AE\u0788\u07AC\u0789\u07B0\u0784\u07A6\u0783",
 		"\u0791\u07A8\u0790\u07AC\u0789\u07B0\u0784\u07A6\u0783",
 	}
+	// monthNamesDutch list the month names in the Dutch.
+	monthNamesDutch = []string{"januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"}
+	// monthNamesDutch lists the month name abbreviations in the Dutch.
+	monthNamesDutchAbbr = []string{"jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"}
 	// monthNamesDzongkha list the month names in the Dzongkha.
 	monthNamesDzongkha = []string{
 		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F51\u0F44\u0F54\u0F0B",
@@ -1711,7 +1718,8 @@ var (
 		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F56\u0F45\u0F74\u0F0B\u0F42\u0F45\u0F72\u0F42\u0F0B\u0F54\u0F0B",
 		"\u0F66\u0FA4\u0FB1\u0F72\u0F0B\u0F5F\u0FB3\u0F0B\u0F56\u0F45\u0F74\u0F0B\u0F42\u0F49\u0F72\u0F66\u0F0B\u0F54\u0F0B",
 	}
-	// monthNamesDzongkha lists the month name abbreviations in the Dzongkha.
+	// monthNamesDzongkhaAbbr lists the month name abbreviations in the
+	// Dzongkha.
 	monthNamesDzongkhaAbbr = []string{
 		"\u0F5F\u0FB3\u0F0B\u0F21",
 		"\u0F5F\u0FB3\u0F0B\u0F22",
@@ -3462,6 +3470,10 @@ var (
 		"\u0780\u07AA\u0786\u07AA\u0783\u07AA",
 		"\u0780\u07AE\u0782\u07A8\u0780\u07A8\u0783\u07AA",
 	}
+	// weekdayNamesDutch list the weekday name in the Dutch.
+	weekdayNamesDutch = []string{"zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"}
+	// weekdayNamesDutchAbbr list the weekday name abbreviations in the Dutch.
+	weekdayNamesDutchAbbr = []string{"zo", "ma", "di", "wo", "do", "vr", "za"}
 	// weekdayNamesDzongkha list the weekday name in the Dzongkha.
 	weekdayNamesDzongkha = []string{
 		"\u0F42\u0F5F\u0F60\u0F0B\u0F5F\u0FB3\u0F0B\u0F56\u0F0B",
@@ -6033,6 +6045,17 @@ func localMonthsNameDivehi(t time.Time, abbr int) string {
 	return string([]rune(monthNamesDivehi[int(t.Month())-1])[:1])
 }
 
+// localMonthsNameDutch returns the Dutch name of the month.
+func localMonthsNameDutch(t time.Time, abbr int) string {
+	if abbr == 3 {
+		return monthNamesDutchAbbr[int(t.Month())-1]
+	}
+	if abbr == 4 {
+		return monthNamesDutch[int(t.Month())-1]
+	}
+	return string([]rune(monthNamesDutch[int(t.Month())-1])[:1])
+}
+
 // localMonthsNameDzongkha returns the Dzongkha name of the month.
 func localMonthsNameDzongkha(t time.Time, abbr int) string {
 	if abbr == 3 {
@@ -7402,35 +7425,54 @@ func localMonthsNameZulu(t time.Time, abbr int) string {
 
 // localMonthsName return months name by supported language ID.
 func (nf *numberFormat) localMonthsName(abbr int) string {
-	if languageInfo, ok := getSupportedLanguageInfo(nf.localCode); ok {
-		return languageInfo.localMonth(nf.t, abbr)
+	t := nf.t
+	if nf.number < 1 {
+		t = timeFromExcelTime(nf.number+2, nf.date1904)
 	}
-	return localMonthsNameEnglish(nf.t, abbr)
+	if 1 <= nf.number && nf.number < 60 {
+		t = timeFromExcelTime(nf.number+1, nf.date1904)
+	}
+	if languageInfo, ok := getSupportedLanguageInfo(nf.localCode); ok {
+		return languageInfo.localMonth(t, abbr)
+	}
+	return localMonthsNameEnglish(t, abbr)
+}
+
+// dateAmPmHandler will be handling am/pm types tokens for a number format.
+func (nf *numberFormat) dateAmPmHandler(i int, token nfp.Token) {
+	if nf.ap == "" {
+		nextHours := nf.hoursNext(i)
+		aps := strings.Split(nf.localAmPm(token.TValue), "/")
+		nf.ap = aps[0]
+		if nextHours >= 12 {
+			nf.ap = aps[1]
+		}
+	}
+	nf.result += nf.ap
 }
 
 // dateTimesHandler will be handling date and times types tokens for a number
 // format expression.
 func (nf *numberFormat) dateTimesHandler(i int, token nfp.Token) {
 	if idx := inStrSlice(nfp.AmPm, strings.ToUpper(token.TValue), false); idx != -1 {
-		if nf.ap == "" {
-			nextHours := nf.hoursNext(i)
-			aps := strings.Split(nf.localAmPm(token.TValue), "/")
-			nf.ap = aps[0]
-			if nextHours >= 12 {
-				nf.ap = aps[1]
-			}
-		}
-		nf.result += nf.ap
+		nf.dateAmPmHandler(i, token)
 		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "M") {
+		m := int(nf.t.Month())
+		if nf.number < 2 {
+			m = 1
+		}
+		if 60 <= nf.number && nf.number < 61 {
+			m = 2
+		}
 		l := len(token.TValue)
 		if l == 1 && nf.isMonthToken(i) {
-			nf.result += strconv.Itoa(int(nf.t.Month()))
+			nf.result += strconv.Itoa(int(m))
 			return
 		}
 		if l == 2 && nf.isMonthToken(i) {
-			nf.result += fmt.Sprintf("%02d", int(nf.t.Month()))
+			nf.result += fmt.Sprintf("%02d", int(m))
 			return
 		}
 		if l == 3 {
@@ -7505,8 +7547,12 @@ func (nf *numberFormat) japaneseYearHandler(token nfp.Token, langInfo languageIn
 
 // republicOfChinaYearHandler handling the Republic of China calendar years.
 func (nf *numberFormat) republicOfChinaYearHandler(token nfp.Token, langInfo languageInfo) {
+	year := nf.t.Year()
+	if nf.number < 2 {
+		year = 1900
+	}
 	if strings.Contains(strings.ToUpper(token.TValue), "G") {
-		year := nf.t.Year() - republicOfChinaYear.Year() + 1
+		year = year - republicOfChinaYear.Year() + 1
 		if year == 1 {
 			nf.useGannen = langInfo.useGannen
 		}
@@ -7520,7 +7566,7 @@ func (nf *numberFormat) republicOfChinaYearHandler(token nfp.Token, langInfo lan
 		nf.result += name
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "E") {
-		year := nf.t.Year() - republicOfChinaYear.Year() + 1
+		year = year - republicOfChinaYear.Year() + 1
 		if year < 0 {
 			year = republicOfChinaYear.Year() - nf.t.Year()
 		}
@@ -7538,8 +7584,11 @@ func (nf *numberFormat) republicOfChinaYearHandler(token nfp.Token, langInfo lan
 // number format expression.
 func (nf *numberFormat) yearsHandler(token nfp.Token) {
 	langInfo, _ := getSupportedLanguageInfo(nf.localCode)
+	year := nf.t.Year()
+	if nf.number < 2 {
+		year = 1900
+	}
 	if strings.Contains(strings.ToUpper(token.TValue), "Y") {
-		year := nf.t.Year()
 		if nf.opts != nil && nf.opts.CultureInfo == CultureNameKoKR {
 			year += 2333
 		}
@@ -7561,7 +7610,7 @@ func (nf *numberFormat) yearsHandler(token nfp.Token) {
 		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "E") {
-		nf.result += strconv.Itoa(nf.t.Year())
+		nf.result += strconv.Itoa(year)
 		return
 	}
 }
@@ -7588,11 +7637,21 @@ func (nf *numberFormat) daysHandler(token nfp.Token) {
 		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "D") {
+		d := nf.t.Day()
+		if nf.number < 1 {
+			d = 0
+		}
+		if 1 <= nf.number && nf.number < 60 {
+			d = timeFromExcelTime(nf.number+1, nf.date1904).Day()
+		}
+		if 60 <= nf.number && nf.number < 61 {
+			d = 29
+		}
 		switch l {
 		case 1:
-			nf.result += strconv.Itoa(nf.t.Day())
+			nf.result += strconv.Itoa(d)
 		case 2:
-			nf.result += fmt.Sprintf("%02d", nf.t.Day())
+			nf.result += fmt.Sprintf("%02d", d)
 		case 3:
 			nf.result += weekdayNamesAbbr[nf.t.Weekday()]
 		default:

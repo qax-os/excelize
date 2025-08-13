@@ -2122,12 +2122,44 @@ func (f *File) SetSheetDimension(sheet, rangeRef string) error {
 // GetSheetDimension provides the method to get the used range of the worksheet.
 func (f *File) GetSheetDimension(sheet string) (string, error) {
 	var ref string
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
+	if err := checkSheetName(sheet); err != nil {
 		return ref, err
 	}
-	if ws.Dimension != nil {
-		ref = ws.Dimension.Ref
+	name, ok := f.getSheetXMLPath(sheet)
+	if !ok {
+		return ref, ErrSheetNotExist{sheet}
+	}
+	if worksheet, ok := f.Sheet.Load(name); ok && worksheet != nil {
+		ws := worksheet.(*xlsxWorksheet)
+		if ws.Dimension != nil {
+			ref = ws.Dimension.Ref
+		}
+		return ref, nil
+	}
+	needClose, decoder, tempFile, err := f.xmlDecoder(name)
+	if needClose && err == nil {
+		defer func() {
+			err = tempFile.Close()
+		}()
+	}
+	for {
+		token, _ := decoder.Token()
+		if token == nil {
+			break
+		}
+		switch xmlElement := token.(type) {
+		case xml.StartElement:
+			if xmlElement.Name.Local == "dimension" {
+				for _, attr := range xmlElement.Attr {
+					if attr.Name.Local == "ref" {
+						return attr.Value, err
+					}
+				}
+			}
+			if xmlElement.Name.Local == "sheetData" {
+				return ref, err
+			}
+		}
 	}
 	return ref, err
 }
