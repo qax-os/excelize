@@ -212,17 +212,29 @@ var (
 		criteriaG,
 	}
 	// defines numbers text in the Thai used for the BAHTTEXT formula function.
-	th0      = "ศูนย์"
-	th1      = "หนึ่ง"
-	th2      = "สอง"
-	th3      = "สาม"
-	th4      = "สี่"
-	th5      = "ห้า"
-	th6      = "หก"
-	th7      = "เจ็ด"
-	th8      = "แปด"
-	th9      = "เก้า"
-)
+	th0      = "\u0E28\u0E39\u0E19\u0E22\u0E4C"
+	th1      = "\u0E2B\u0E19\u0E36\u0E48\u0E07"
+	th2      = "\u0E2A\u0E2D\u0E07"
+	th3      = "\u0E2A\u0E32\u0E21"
+	th4      = "\u0E2A\u0E35\u0E48"
+	th5      = "\u0E2B\u0E49\u0E32"
+	th6      = "\u0E2B\u0E01"
+	th7      = "\u0E40\u0E08\u0E47\u0E14"
+	th8      = "\u0E41\u0E1B\u0E14"
+	th9      = "\u0E40\u0E01\u0E49\u0E32"
+	th10     = "\u0E2A\u0E34\u0E1A"
+	th11     = "\u0E40\u0E2D\u0E47\u0E14"
+	th20     = "\u0E22\u0E35\u0E48"
+	th1e2    = "\u0E23\u0E49\u0E2D\u0E22"
+	th1e3    = "\u0E1E\u0E31\u0E19"
+	th1e4    = "\u0E2B\u0E21\u0E37\u0E48\u0E19"
+	th1e5    = "\u0E41\u0E2A\u0E19"
+	th1e6    = "\u0E25\u0E49\u0E32\u0E19"
+	thDot0   = "\u0E16\u0E49\u0E27\u0E19"
+	thBaht   = "\u0E1A\u0E32\u0E17"
+	thSatang = "\u0E2A\u0E15\u0E32\u0E07\u0E04\u0E4C"
+	thMinus  = "\u0E25\u0E1A"
+ )
 
 // calcContext defines the formula execution context.
 type calcContext struct {
@@ -1830,22 +1842,6 @@ func formulaCriteriaEval(val formulaArg, criteria *formulaCriteria) (result bool
 }
 
 // Engineering Functions
-
-// BAHTTEXT function converts a number into Thai text, with the suffix "Baht".
-// The syntax of the function is:
-//
-//	BAHTTEXT(number)
-func (fn *formulaFuncs) BAHTTEXT(argsList *list.List) formulaArg {
-	if argsList.Len() != 1 {
-		return newErrorFormulaArg(formulaErrorVALUE, "BAHTTEXT requires 1 numeric argument")
-	}
-	token := argsList.Front().Value.(formulaArg)
-	number := token.ToNumber()
-	if number.Type != ArgNumber {
-		return newErrorFormulaArg(formulaErrorVALUE, number.Error)
-	}
-	return newStringFormulaArg(text)
-}
 
 // BESSELI function the modified Bessel function, which is equivalent to the
 // Bessel function evaluated for purely imaginary arguments. The syntax of
@@ -13558,6 +13554,123 @@ func (fn *formulaFuncs) ARRAYTOTEXT(argsList *list.List) formulaArg {
 		return newStringFormulaArg(fmt.Sprintf("{%s}", strings.Join(text, ";")))
 	}
 	return newStringFormulaArg(strings.Join(text, ", "))
+}
+
+// splitBlock function split baht and satang
+func splitBlock(val, size float64) (float64, int) {
+	integer, frac := math.Modf((val + 0.1) / size)
+	frac = frac*size + 0.1
+	return integer, int(frac)
+}
+
+
+// bahttextAppendDigit appends a digit to the passed string.
+func bahttextAppendDigit(text string, digit int) string {
+	if 0 <= digit && digit <= 9 {
+		return text + []string{th0, th1, th2, th3, th4, th5, th6, th7, th8, th9}[digit]
+	}
+	return text
+}
+
+// bahttextAppendPow10 appends a value raised to a power of 10: digit*10^pow10.
+func bahttextAppendPow10(text string, digit, pow10 int) string {
+	text = bahttextAppendDigit(text, digit)
+	switch pow10 {
+	case 2:
+		text += th1e2
+	case 3:
+		text += th1e3
+	case 4:
+		text += th1e4
+	case 5:
+		text += th1e5
+	}
+	return text
+}
+
+// bahttextAppendBlock appends a block of 6 digits to the passed string.
+func bahttextAppendBlock(text string, val int) string {
+	if val >= 100000 {
+		text = bahttextAppendPow10(text, val/100000, 5)
+		val %= 100000
+	}
+	if val >= 10000 {
+		text = bahttextAppendPow10(text, val/10000, 4)
+		val %= 10000
+	}
+	if val >= 1000 {
+		text = bahttextAppendPow10(text, val/1000, 3)
+		val %= 1000
+	}
+	if val >= 100 {
+		text = bahttextAppendPow10(text, val/100, 2)
+		val %= 100
+	}
+	if val > 0 {
+		n10 := val / 10
+		n1 := val % 10
+		if n10 >= 1 {
+			if n10 >= 3 {
+				text = bahttextAppendDigit(text, n10)
+			} else if n10 == 2 {
+				text += th20
+			}
+			text += th10
+		}
+		if n10 > 0 && n1 == 1 {
+			text += th11
+		} else if n1 > 0 {
+			text = bahttextAppendDigit(text, n1)
+		}
+	}
+	return text
+}
+
+// BAHTTEXT function converts a number into Thai text, with the suffix "Baht".
+// The syntax of the function is:
+//
+//	BAHTTEXT(number)
+func (fn *formulaFuncs) BAHTTEXT(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, "BAHTTEXT requires 1 numeric argument")
+	}
+	token := argsList.Front().Value.(formulaArg)
+	number := token.ToNumber()
+	if number.Type != ArgNumber {
+		return newErrorFormulaArg(formulaErrorVALUE, number.Error)
+	}
+	minus := number.Number < 0
+	num := math.Floor(math.Abs(number.Number)*100 + 0.5)
+	baht, satang := splitBlock(num, 100)
+	var text string
+	if baht == 0 {
+		if satang == 0 {
+			text += th0
+		}
+	} else {
+		for baht > 0 {
+			var block string
+			var nBlock int
+			baht, nBlock = splitBlock(baht, 1.0e6)
+			block = bahttextAppendBlock(block, nBlock)
+			if baht > 0 {
+				block = th1e6 + block
+			}
+			text = block + text
+		}
+	}
+	if len(text) > 0 {
+		text += thBaht
+	}
+	if satang == 0 {
+		text += thDot0
+	} else {
+		text += thSatang
+	}
+	if minus {
+		text = thMinus + text
+	}
+	return newStringFormulaArg(text)
 }
 
 // CHAR function returns the character relating to a supplied character set
