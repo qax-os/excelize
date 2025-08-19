@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/html/charset"
 )
 
 func TestOpenFile(t *testing.T) {
@@ -244,7 +245,7 @@ func TestSaveAsWrongPath(t *testing.T) {
 
 func TestCharsetTranscoder(t *testing.T) {
 	f := NewFile()
-	f.CharsetTranscoder(*new(charsetTranscoderFn))
+	f.CharsetTranscoder(charset.NewReaderLabel)
 }
 
 func TestOpenReader(t *testing.T) {
@@ -355,7 +356,7 @@ func TestOpenReader(t *testing.T) {
 
 func TestBrokenFile(t *testing.T) {
 	// Test write file with broken file struct
-	f := File{}
+	f := File{ZipWriter: func(w io.Writer) ZipWriter { return zip.NewWriter(w) }}
 
 	t.Run("SaveWithoutName", func(t *testing.T) {
 		assert.EqualError(t, f.Save(), "no path defined for file, consider File.WriteTo or File.Write")

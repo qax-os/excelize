@@ -12,12 +12,10 @@
 package excelize
 
 import (
-	"archive/zip"
 	"bytes"
 	"encoding/binary"
 	"encoding/xml"
 	"io"
-	"io/fs"
 	"math"
 	"os"
 	"path/filepath"
@@ -137,22 +135,8 @@ func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 // WriteToBuffer provides a function to get bytes.Buffer from the saved file,
 // and it allocates space in memory. Be careful when the file size is large.
 func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
-	return f.WriteToBufferCustomZIP(func(w io.Writer) ZipWriter { return zip.NewWriter(w) })
-}
-
-type ZipWriter interface {
-	Create(name string) (io.Writer, error)
-	AddFS(fsys fs.FS) error
-	Close() error
-}
-
-// WriteToBufferCustomZIP provides a function to write to a buffer using a custom ZIP writer
-// factory. This allows for custom ZIP compression implementations to be used when saving
-// the spreadsheet to memory. The factory function should return a zipWriter interface
-// that will be used to create the final ZIP archive.
-func (f *File) WriteToBufferCustomZIP(factory func(io.Writer) ZipWriter) (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
-	zw := factory(buf)
+	zw := f.ZipWriter(buf)
 
 	if err := f.writeToZip(zw); err != nil {
 		_ = zw.Close()
@@ -173,7 +157,7 @@ func (f *File) WriteToBufferCustomZIP(factory func(io.Writer) ZipWriter) (*bytes
 	return buf, nil
 }
 
-// writeToZip provides a function to write to zipWriter
+// writeToZip provides a function to write to ZipWriter.
 func (f *File) writeToZip(zw ZipWriter) error {
 	f.calcChainWriter()
 	f.commentsWriter()
