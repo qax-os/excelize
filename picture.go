@@ -31,8 +31,22 @@ type PictureInsertType byte
 const (
 	PictureInsertTypePlaceOverCells PictureInsertType = iota
 	PictureInsertTypePlaceInCell
-	PictureInsertTypeIMAGE
+	PictureInsertTypeIMAGE // created directly by formula (ex, =IMAGE), A type of PlaceInCell
 	PictureInsertTypeDISPIMG
+)
+
+// CalcOrigin: indicates how the rich value was created.
+const (
+	CalcOriginNone    = string(iota + '0')
+	CalcOriginFormula // RichValue created directly by formula (ex, =IMAGE)
+	CalcOriginComplexFormula
+	CalcOriginDotNotation
+	CalcOriginReference
+	CalcOriginStandalone           // Standalone RichValue directly stored in a cell without formula dependency (copy/paste as value or LocalImageValue)
+	CalcOriginStandaloneDecorative // Standalone RichValue created from the alt text pane after selecting "decorative"
+	CalcOriginNested
+	CalcOriginJSApi
+	CalcOriginPythonResult
 )
 
 // parseGraphicOptions provides a function to parse the format settings of
@@ -943,6 +957,33 @@ func (f *File) getImageCellRel(c *xlsxC, pic *Picture) (*xlsxRelationship, error
 		return r, err
 	}
 	rv := richValue.Rv[richValueIdx].V
+	rs := richValue.Rv[richValueIdx].S
+
+	richValueStructure, err := f.richValueStructureReader()
+	if err != nil {
+		return r, err
+	}
+	if rs < len(richValueStructure.S) {
+		pic.InsertType = PictureInsertTypePlaceInCell
+		for idx, key := range richValueStructure.S[rs].K {
+			if idx >= len(rv) {
+				break // invalid key
+			}
+			switch key.N {
+			case "_rvRel:LocalImageIdentifier", "WebImageIdentifier":
+				r, err = f.getRichDataRichValueRel(rv[idx])
+			case "Text":
+				pic.Format.AltText = rv[idx]
+			case "CalcOrigin":
+				// cell image inserted by IMAGE formula function
+				if rv[idx] == CalcOriginFormula {
+					pic.InsertType = PictureInsertTypeIMAGE
+				}
+			}
+		}
+		return r, err
+	}
+	// fallback, there is no valid struct definition
 	if len(rv) == 2 && rv[1] == "5" {
 		pic.InsertType = PictureInsertTypePlaceInCell
 		return f.getRichDataRichValueRel(rv[0])
