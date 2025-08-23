@@ -219,11 +219,11 @@ func TestSetPageLayout(t *testing.T) {
 	// Test set page layout on not exists worksheet
 	assert.EqualError(t, f.SetPageLayout("SheetN", nil), "sheet SheetN does not exist")
 	// Test set page layout with invalid sheet name
-	assert.EqualError(t, f.SetPageLayout("Sheet:1", nil), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.SetPageLayout("Sheet:1", nil))
 	// Test set page layout with invalid parameters
-	assert.EqualError(t, f.SetPageLayout("Sheet1", &PageLayoutOptions{
+	assert.Equal(t, ErrPageSetupAdjustTo, f.SetPageLayout("Sheet1", &PageLayoutOptions{
 		AdjustTo: uintPtr(5),
-	}), "adjust to value must be between 10 and 400")
+	}))
 	assert.EqualError(t, f.SetPageLayout("Sheet1", &PageLayoutOptions{
 		Orientation: stringPtr("x"),
 	}), "invalid Orientation value \"x\", acceptable value should be one of portrait, landscape")
@@ -826,6 +826,36 @@ func TestSheetDimension(t *testing.T) {
 	dimension, err = f.GetSheetDimension("SheetN")
 	assert.Empty(t, dimension)
 	assert.EqualError(t, err, "sheet SheetN does not exist")
+
+	// Test get the worksheet dimension with blank worksheet name
+	dimension, err = f.GetSheetDimension("")
+	assert.Empty(t, dimension)
+	assert.Equal(t, err, ErrSheetNameBlank)
+
+	// Test get the worksheet dimension with in mode
+	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipXMLSizeLimit: 128})
+	assert.NoError(t, err)
+	dimension, err = f.GetSheetDimension("Sheet1")
+	assert.Equal(t, "A19:D22", dimension)
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+
+	// Test get the worksheet dimension in stream mode without dimension element
+	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipXMLSizeLimit: 128})
+	assert.NoError(t, err)
+	tempFile, ok := f.tempFiles.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	assert.NoError(t, os.WriteFile(tempFile.(string), fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData/></worksheet>`, NameSpaceSpreadSheet.Value), 0o644))
+	dimension, err = f.GetSheetDimension("Sheet1")
+	assert.NoError(t, err)
+	assert.Empty(t, dimension)
+
+	// Test get the worksheet dimension in stream mode without sheetData element
+	assert.NoError(t, os.WriteFile(tempFile.(string), fmt.Appendf(nil, `<worksheet xmlns="%s"></worksheet>`, NameSpaceSpreadSheet.Value), 0o644))
+	dimension, err = f.GetSheetDimension("Sheet1")
+	assert.NoError(t, err)
+	assert.Empty(t, dimension)
+	assert.NoError(t, f.Close())
 }
 
 func TestAddIgnoredErrors(t *testing.T) {

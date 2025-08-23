@@ -140,9 +140,24 @@ func (f *File) UnmergeCell(sheet, topLeftCell, bottomRightCell string) error {
 }
 
 // GetMergeCells provides a function to get all merged cells from a specific
-// worksheet.
-func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
-	var mergeCells []MergeCell
+// worksheet. If the `withoutValues` parameter is set to true, it will not
+// return the cell values of merged cells, only the range reference will be
+// returned. For example get all merged cells on Sheet1:
+//
+//	mergeCells, err := f.GetMergeCells("Sheet1")
+//
+// If you want to get merged cells without cell values, you can use the
+// following code:
+//
+//	mergeCells, err := f.GetMergeCells("Sheet1", true)
+func (f *File) GetMergeCells(sheet string, withoutValues ...bool) ([]MergeCell, error) {
+	var (
+		mergeCells []MergeCell
+		withoutVal bool
+	)
+	if len(withoutValues) > 0 {
+		withoutVal = withoutValues[0]
+	}
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return mergeCells, err
@@ -153,9 +168,11 @@ func (f *File) GetMergeCells(sheet string) ([]MergeCell, error) {
 		}
 		mergeCells = make([]MergeCell, 0, len(ws.MergeCells.Cells))
 		for i := range ws.MergeCells.Cells {
-			ref := ws.MergeCells.Cells[i].Ref
-			cell := strings.Split(ref, ":")[0]
-			val, _ := f.GetCellValue(sheet, cell)
+			ref, val := ws.MergeCells.Cells[i].Ref, ""
+			if !withoutVal {
+				cell := strings.Split(ref, ":")[0]
+				val, _ = f.GetCellValue(sheet, cell)
+			}
 			mergeCells = append(mergeCells, []string{ref, val})
 		}
 	}

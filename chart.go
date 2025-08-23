@@ -593,6 +593,9 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 		opts.Legend.Position = defaultChartLegendPosition
 	}
 	opts.parseTitle()
+	if opts.Fill.Transparency < 0 || 100 < opts.Fill.Transparency {
+		return opts, ErrTransparency
+	}
 	if opts.VaryColors == nil {
 		opts.VaryColors = boolPtr(true)
 	}
@@ -602,7 +605,17 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 	if opts.ShowBlanksAs == "" {
 		opts.ShowBlanksAs = defaultChartShowBlanksAs
 	}
-	return opts, nil
+	return opts, opts.parseSeries()
+}
+
+// parseSeries check the series settings of the chart.
+func (opts *Chart) parseSeries() error {
+	for _, series := range opts.Series {
+		if series.Fill.Transparency < 0 || 100 < series.Fill.Transparency {
+			return ErrTransparency
+		}
+	}
+	return nil
 }
 
 // parseTitle parse the title settings of the chart with default value.

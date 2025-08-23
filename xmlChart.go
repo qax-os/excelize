@@ -119,12 +119,47 @@ type aPPr struct {
 	DefRPr aRPr `xml:"a:defRPr"`
 }
 
+// aSrgbClr (RGB Color Model - Hex Variant) specifies a color using the red,
+// green, blue RGB color model. Red, green, and blue is expressed as sequence of
+// hex digits, RRGGBB. A perceptual gamma of 2.2 is used.
+type aSrgbClr struct {
+	Val      *string     `xml:"val,attr"`
+	Tint     *attrValInt `xml:"a:tint"`
+	Shade    *attrValInt `xml:"a:shade"`
+	Comp     *attrValInt `xml:"a:comp"`
+	Inv      *attrValInt `xml:"a:inv"`
+	Gray     *attrValInt `xml:"a:gray"`
+	Alpha    *attrValInt `xml:"a:alpha"`
+	AlphaOff *attrValInt `xml:"a:alphaOff"`
+	AlphaMod *attrValInt `xml:"a:alphaMod"`
+	Hue      *attrValInt `xml:"a:hue"`
+	HueOff   *attrValInt `xml:"a:hueOff"`
+	HueMod   *attrValInt `xml:"a:hueMod"`
+	Sat      *attrValInt `xml:"a:sat"`
+	SatOff   *attrValInt `xml:"a:satOff"`
+	SatMod   *attrValInt `xml:"a:satMod"`
+	Lum      *attrValInt `xml:"a:lum"`
+	LumOff   *attrValInt `xml:"a:lumOff"`
+	LumMod   *attrValInt `xml:"a:lumMod"`
+	Red      *attrValInt `xml:"a:red"`
+	RedOff   *attrValInt `xml:"a:redOff"`
+	RedMod   *attrValInt `xml:"a:redMod"`
+	Green    *attrValInt `xml:"a:green"`
+	GreenOff *attrValInt `xml:"a:greenOff"`
+	GreenMod *attrValInt `xml:"a:greenMod"`
+	Blue     *attrValInt `xml:"a:blue"`
+	BlueOff  *attrValInt `xml:"a:blueOff"`
+	BlueMod  *attrValInt `xml:"a:blueMod"`
+	Gamma    *attrValInt `xml:"a:gamma"`
+	InvGamma *attrValInt `xml:"a:invGamma"`
+}
+
 // aSolidFill (Solid Fill) directly maps the solidFill element. This element
 // specifies a solid color fill. The shape is filled entirely with the specified
 // color.
 type aSolidFill struct {
-	SchemeClr *aSchemeClr    `xml:"a:schemeClr"`
-	SrgbClr   *attrValString `xml:"a:srgbClr"`
+	SchemeClr *aSchemeClr `xml:"a:schemeClr"`
+	SrgbClr   *aSrgbClr   `xml:"a:srgbClr"`
 }
 
 // aSchemeClr (Scheme Color) directly maps the a:schemeClr element. This
