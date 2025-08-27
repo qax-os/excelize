@@ -173,7 +173,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 				continue
 			}
 			fld := immutable.FieldByName(mutable.Type().Field(i).Name)
-			if field.Kind() == reflect.Slice && i < 16 { // All []*cCharts type fields
+			if field.Kind() == reflect.Slice && i < 17 { // All []*cCharts type fields
 				fld.Set(reflect.Append(fld, field.Index(0)))
 				continue
 			}
@@ -186,6 +186,10 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		comboCharts[idx].order = order
 		addChart(xlsxChartSpace.Chart.PlotArea, plotAreaFunc[comboCharts[idx].Type](xlsxChartSpace.Chart.PlotArea, comboCharts[idx]))
 		order += len(comboCharts[idx].Series)
+	}
+	// If the dateAx field exists, valAx field should be nil.
+	if xlsxChartSpace.Chart.PlotArea != nil && xlsxChartSpace.Chart.PlotArea.DateAx != nil {
+		xlsxChartSpace.Chart.PlotArea.CatAx = nil
 	}
 	chart, _ := xml.Marshal(xlsxChartSpace)
 	media := "xl/charts/chart" + strconv.Itoa(count+1) + ".xml"
@@ -691,6 +695,8 @@ func (f *File) drawBubbleChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	return plotArea
 }
 
+// drawStockChart provides a function to draw the c:stockChart element by
+// given format sets.
 func (f *File) drawStockChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	plotArea := &cPlotArea{
 		StockChart: []*cCharts{
@@ -705,6 +711,17 @@ func (f *File) drawStockChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		},
 		ValAx:  f.drawPlotAreaValAx(pa, opts),
 		DateAx: f.drawPlotAreaCatAx(pa, opts),
+	}
+	if opts.Type == StockHighLowClose {
+		plotArea.StockChart[0].HiLowLines = &cChartLines{}
+	}
+	if opts.Type == StockOpenHighLowClose {
+		plotArea.StockChart[0].HiLowLines = &cChartLines{}
+		plotArea.StockChart[0].UpDownBars = &cUpDownBars{
+			GapWidth: &attrValString{Val: stringPtr("150")},
+			UpBars:   &cChartLines{f.drawShapeFill(opts.PlotArea.UpBars.Fill, &cSpPr{Ln: f.drawChartLn(&opts.PlotArea.UpBars.Border)})},
+			DownBars: &cChartLines{f.drawShapeFill(opts.PlotArea.DownBars.Fill, &cSpPr{Ln: f.drawChartLn(&opts.PlotArea.UpBars.Border)})},
+		}
 	}
 	ser := *plotArea.StockChart[0].Ser
 	ser[0].Val.NumRef.NumCache = &cNumCache{}
@@ -840,8 +857,10 @@ func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 	}
 	noLn := &cSpPr{Ln: &aLn{NoFill: &attrValString{}}}
 	if chartSeriesSpPr, ok := map[ChartType]map[ChartLineType]*cSpPr{
-		Line:    {ChartLineUnset: solid, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: solid},
-		Scatter: {ChartLineUnset: noLn, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: noLn},
+		Line:                  {ChartLineUnset: solid, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: solid},
+		Scatter:               {ChartLineUnset: noLn, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: noLn},
+		StockHighLowClose:     {ChartLineUnset: noLn, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: noLn},
+		StockOpenHighLowClose: {ChartLineUnset: noLn, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: noLn},
 	}[opts.Type]; ok {
 		return chartSeriesSpPr[opts.Series[i].Line.Type]
 	}
@@ -914,7 +933,11 @@ func (f *File) drawChartSeriesVal(v ChartSeries, opts *Chart) *cVal {
 // drawChartSeriesMarker provides a function to draw the c:marker element by
 // given data index and format sets.
 func (f *File) drawChartSeriesMarker(i int, opts *Chart) *cMarker {
-	defaultSymbol := map[ChartType]*attrValString{Scatter: {Val: stringPtr("circle")}}
+	defaultSymbol := map[ChartType]*attrValString{
+		Scatter:               {Val: stringPtr("circle")},
+		StockHighLowClose:     {Val: stringPtr("dot")},
+		StockOpenHighLowClose: {Val: stringPtr("none")},
+	}
 	marker := &cMarker{
 		Symbol: defaultSymbol[opts.Type],
 		Size:   &attrValInt{Val: intPtr(5)},
@@ -934,7 +957,12 @@ func (f *File) drawChartSeriesMarker(i int, opts *Chart) *cMarker {
 	if marker.SpPr != nil && marker.SpPr.Ln != nil {
 		marker.SpPr.Ln = f.drawChartLn(&opts.Series[i].Marker.Border)
 	}
-	chartSeriesMarker := map[ChartType]*cMarker{Scatter: marker, Line: marker}
+	chartSeriesMarker := map[ChartType]*cMarker{
+		Scatter:               marker,
+		Line:                  marker,
+		StockHighLowClose:     marker,
+		StockOpenHighLowClose: marker,
+	}
 	return chartSeriesMarker[opts.Type]
 }
 
