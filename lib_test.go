@@ -390,3 +390,45 @@ func TestUnzipToTemp(t *testing.T) {
 	_, err = f.unzipToTemp(z.File[0])
 	assert.EqualError(t, err, "EOF")
 }
+
+func TestUTF16UnitCountInString(t *testing.T) {
+	cases := map[string]int{
+		"":    0,
+		"ABC": 3, // all Basic Multilingual Plane 1 unit each
+		"你好":  2, // Chinese Basic Multilingual Plane chars
+		"😀":   2, // single surrogate pair
+		"A😀B": 4, // 1 + 2 + 1
+		"😀𩸽":  4, // two surrogate pairs
+	}
+	for s, expected := range cases {
+		assert.Equal(t, expected, utf16UnitCountInString(s), s)
+	}
+}
+
+func TestTruncateUTF16Units(t *testing.T) {
+	// helper to assert
+	assertTrunc := func(s string, max int, expected string) {
+		assert.Equalf(t, expected, truncateUTF16Units(s, max), "src=%q max=%d", s, max)
+		// ensure result doesn't exceed max units
+		assert.LessOrEqual(t, utf16UnitCountInString(truncateUTF16Units(s, max)), max)
+	}
+
+	// No truncation
+	assertTrunc("ABC", 3, "ABC")
+	assertTrunc("A😀B", 4, "A😀B")
+
+	// Truncate cutting before BMP rune
+	assertTrunc("ABCDE", 3, "ABC")
+
+	// Truncate with surrogate pair boundary: keep pair intact
+	assertTrunc("A😀B", 3, "A😀") // 1 + 2 units
+	assertTrunc("A😀B", 2, "A")  // pair would overflow
+	assertTrunc("😀B", 1, "")    // first rune (2 units) exceeds limit
+	assertTrunc("😀B", 2, "😀")   // exact fit
+	assertTrunc("😀B", 3, "😀B")  // allow extra
+
+	// Multiple surrogate pairs
+	assertTrunc("😀😀B", 2, "😀")  // corrected expectation per logic
+	assertTrunc("😀😀B", 3, "😀")  // 2 units kept, next pair would exceed
+	assertTrunc("😀😀B", 4, "😀😀") // both pairs (4 units)
+}

@@ -14366,7 +14366,7 @@ func (fn *formulaFuncs) TEXTJOIN(argsList *list.List) formulaArg {
 		return ok
 	}
 	result := strings.Join(args, delimiter.Value())
-	if len(result) > TotalCellChars {
+	if utf16UnitCountInString(result) > TotalCellChars {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("TEXTJOIN function exceeds %d characters", TotalCellChars))
 	}
 	return newStringFormulaArg(result)

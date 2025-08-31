@@ -765,6 +765,7 @@ func TestCheckSheetName(t *testing.T) {
 	// Test valid sheet name
 	assert.NoError(t, checkSheetName("Sheet1"))
 	assert.NoError(t, checkSheetName("She'et1"))
+	assert.NoError(t, checkSheetName("Sheet😀😀😀😀😀😀😀😀😀😀😀😀😀")) // 5+13*2=31 UTF-16 units
 	// Test invalid sheet name, empty name
 	assert.EqualError(t, checkSheetName(""), ErrSheetNameBlank.Error())
 	// Test invalid sheet name, include :\/?*[]
@@ -778,6 +779,9 @@ func TestCheckSheetName(t *testing.T) {
 	// Test invalid sheet name, single quotes at the front or at the end
 	assert.EqualError(t, checkSheetName("'Sheet"), ErrSheetNameSingleQuote.Error())
 	assert.EqualError(t, checkSheetName("Sheet'"), ErrSheetNameSingleQuote.Error())
+	// Test invalid sheet name, exceed max length
+	assert.EqualError(t, checkSheetName("Sheet678901234567890123456789012"), ErrSheetNameLength.Error())
+	assert.EqualError(t, checkSheetName("Sheet😀😀😀😀😀😀😀😀😀😀😀😀😀😀"), ErrSheetNameLength.Error()) // 5+14*2=33 UTF-16 units
 }
 
 func TestSheetDimension(t *testing.T) {

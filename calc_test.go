@@ -3969,6 +3969,7 @@ func TestCalcCellValue(t *testing.T) {
 		"TEXTJOIN(\"\",TRUE,NA())": {"#N/A", "#N/A"},
 		"TEXTJOIN(\"\",TRUE," + strings.Repeat("0,", 250) + ",0)": {"#VALUE!", "TEXTJOIN accepts at most 252 arguments"},
 		"TEXTJOIN(\",\",FALSE,REPT(\"*\",32768))":                 {"#VALUE!", "TEXTJOIN function exceeds 32767 characters"},
+		"TEXTJOIN(\"\",FALSE,REPT(\"😀\",16384))":                  {"#VALUE!", "TEXTJOIN function exceeds 32767 characters"},
 		// TRIM
 		"TRIM()":    {"#VALUE!", "TRIM requires 1 argument"},
 		"TRIM(1,2)": {"#VALUE!", "TRIM requires 1 argument"},
