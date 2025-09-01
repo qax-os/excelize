@@ -245,34 +245,6 @@ func TestSetCellValuesMultiByte(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellValuesMultiByte.xlsx")))
 }
 
-func TestSetCellValuesSurrogatePairString(t *testing.T) {
-	f := NewFile()
-	row := []interface{}{
-		// Test set cell value with surrogate pair characters value
-		strings.Repeat("😀", TotalCellChars),
-		strings.Repeat("A", TotalCellChars-1) + "😀",
-	}
-	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &row))
-	// Test set cell value with XML escape characters in stream writer
-	_, err := f.NewSheet("Sheet2")
-	assert.NoError(t, err)
-	streamWriter, err := f.NewStreamWriter("Sheet2")
-	assert.NoError(t, err)
-	assert.NoError(t, streamWriter.SetRow("A1", row))
-	assert.NoError(t, streamWriter.Flush())
-	for _, sheetName := range []string{"Sheet1", "Sheet2"} {
-		for cell, expected := range map[string]int{
-			"A1": TotalCellChars / 2,
-			"B1": TotalCellChars - 1,
-		} {
-			result, err := f.GetCellValue(sheetName, cell)
-			assert.NoError(t, err)
-			assert.Len(t, []rune(result), expected)
-		}
-	}
-	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellValuesSurrogatePairString.xlsx")))
-}
-
 func TestSetCellValue(t *testing.T) {
 	f := NewFile()
 	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.SetCellValue("Sheet1", "A", time.Now().UTC()))

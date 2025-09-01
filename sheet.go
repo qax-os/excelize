@@ -1484,7 +1484,7 @@ func checkSheetName(name string) error {
 	if name == "" {
 		return ErrSheetNameBlank
 	}
-	if utf16UnitCountInString(name) > MaxSheetNameLength {
+	if len(utf16.Encode([]rune(name))) > MaxSheetNameLength {
 		return ErrSheetNameLength
 	}
 	if strings.HasPrefix(name, "'") || strings.HasSuffix(name, "'") {

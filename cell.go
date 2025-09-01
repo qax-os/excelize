@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf16"
 
 	"github.com/xuri/efp"
 )
@@ -446,7 +447,9 @@ func (f *File) SetCellStr(sheet, cell, value string) error {
 
 // setCellString provides a function to set string type to shared string table.
 func (f *File) setCellString(value string) (t, v string, err error) {
-	value = truncateUTF16Units(value, TotalCellChars)
+	if len(utf16.Encode([]rune(value))) > TotalCellChars {
+		value = truncateUTF16Units(value, TotalCellChars)
+	}
 	t = "s"
 	var si int
 	if si, err = f.setSharedString(value); err != nil {
@@ -507,7 +510,9 @@ func (f *File) setSharedString(val string) (int, error) {
 
 // trimCellValue provides a function to set string type to cell.
 func trimCellValue(value string, escape bool) (v string, ns xml.Attr) {
-	value = truncateUTF16Units(value, TotalCellChars)
+	if len(utf16.Encode([]rune(value))) > TotalCellChars {
+		value = truncateUTF16Units(value, TotalCellChars)
+	}
 	if value != "" {
 		prefix, suffix := value[0], value[len(value)-1]
 		for _, ascii := range []byte{9, 10, 13, 32} {
@@ -1206,7 +1211,7 @@ func setRichText(runs []RichTextRun) ([]xlsxR, error) {
 		totalCellChars int
 	)
 	for _, textRun := range runs {
-		totalCellChars += utf16UnitCountInString(textRun.Text)
+		totalCellChars += len(utf16.Encode([]rune(textRun.Text)))
 		if totalCellChars > TotalCellChars {
 			return textRuns, ErrCellCharsLength
 		}
