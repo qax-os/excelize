@@ -762,22 +762,28 @@ func TestSetSheetBackgroundFromBytes(t *testing.T) {
 }
 
 func TestCheckSheetName(t *testing.T) {
-	// Test valid sheet name
-	assert.NoError(t, checkSheetName("Sheet1"))
-	assert.NoError(t, checkSheetName("She'et1"))
-	// Test invalid sheet name, empty name
-	assert.EqualError(t, checkSheetName(""), ErrSheetNameBlank.Error())
-	// Test invalid sheet name, include :\/?*[]
-	assert.EqualError(t, checkSheetName("Sheet:"), ErrSheetNameInvalid.Error())
-	assert.EqualError(t, checkSheetName(`Sheet\`), ErrSheetNameInvalid.Error())
-	assert.EqualError(t, checkSheetName("Sheet/"), ErrSheetNameInvalid.Error())
-	assert.EqualError(t, checkSheetName("Sheet?"), ErrSheetNameInvalid.Error())
-	assert.EqualError(t, checkSheetName("Sheet*"), ErrSheetNameInvalid.Error())
-	assert.EqualError(t, checkSheetName("Sheet["), ErrSheetNameInvalid.Error())
-	assert.EqualError(t, checkSheetName("Sheet]"), ErrSheetNameInvalid.Error())
-	// Test invalid sheet name, single quotes at the front or at the end
-	assert.EqualError(t, checkSheetName("'Sheet"), ErrSheetNameSingleQuote.Error())
-	assert.EqualError(t, checkSheetName("Sheet'"), ErrSheetNameSingleQuote.Error())
+	for expected, name := range map[error]string{
+		// Test valid sheet name
+		nil: "Sheet1",
+		nil: "She'et1",
+		// Test invalid sheet name, empty name
+		ErrSheetNameBlank: "",
+		// Test invalid sheet name, include :\/?*[]
+		ErrSheetNameInvalid: "Sheet:",
+		ErrSheetNameInvalid: `Sheet\`,
+		ErrSheetNameInvalid: "Sheet/",
+		ErrSheetNameInvalid: "Sheet?",
+		ErrSheetNameInvalid: "Sheet*",
+		ErrSheetNameInvalid: "Sheet[",
+		ErrSheetNameInvalid: "Sheet]",
+		// Test invalid sheet name, single quotes at the front or at the end
+		ErrSheetNameSingleQuote: "'Sheet",
+		ErrSheetNameSingleQuote: "Sheet'",
+		// Test invalid sheet name, exceed max length
+		ErrSheetNameLength: "Sheet" + strings.Repeat("\U0001F600", 14),
+	} {
+		assert.Equal(t, expected, checkSheetName(name))
+	}
 }
 
 func TestSheetDimension(t *testing.T) {
