@@ -25,7 +25,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf16"
-	"unicode/utf8"
 
 	"github.com/tiendc/go-deepcopy"
 )
@@ -1485,7 +1484,7 @@ func checkSheetName(name string) error {
 	if name == "" {
 		return ErrSheetNameBlank
 	}
-	if utf8.RuneCountInString(name) > MaxSheetNameLength {
+	if len(utf16.Encode([]rune(name))) > MaxSheetNameLength {
 		return ErrSheetNameLength
 	}
 	if strings.HasPrefix(name, "'") || strings.HasSuffix(name, "'") {

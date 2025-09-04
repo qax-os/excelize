@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf16"
 )
 
 // ReadZipReader extract spreadsheet with given options.
@@ -938,6 +939,18 @@ func setPtrFieldsVal(fields []string, immutable, mutable reflect.Value) {
 		ptr.Elem().Set(immutableField)
 		mutable.FieldByName(field).Set(ptr)
 	}
+}
+
+// truncateUTF16Units truncates a string to a maximum number of UTF-16 code
+// units.
+func truncateUTF16Units(s string, length int) string {
+	var cnt int
+	for i, r := range s {
+		if cnt += utf16.RuneLen(r); cnt > length {
+			return s[:i]
+		}
+	}
+	return s
 }
 
 // Stack defined an abstract data type that serves as a collection of elements.

@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 	"unicode"
+	"unicode/utf16"
 	"unicode/utf8"
 	"unsafe"
 
@@ -14507,7 +14508,7 @@ func (fn *formulaFuncs) TEXTJOIN(argsList *list.List) formulaArg {
 		return ok
 	}
 	result := strings.Join(args, delimiter.Value())
-	if len(result) > TotalCellChars {
+	if len(utf16.Encode([]rune(result))) > TotalCellChars {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("TEXTJOIN function exceeds %d characters", TotalCellChars))
 	}
 	return newStringFormulaArg(result)
