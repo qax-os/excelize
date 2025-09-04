@@ -13557,14 +13557,6 @@ func (fn *formulaFuncs) ARRAYTOTEXT(argsList *list.List) formulaArg {
 	return newStringFormulaArg(strings.Join(text, ", "))
 }
 
-// splitBlock function split baht and satang
-func splitBlock(val, size float64) (float64, int) {
-	integer, frac := math.Modf((val + 0.1) / size)
-	frac = frac*size + 0.1
-	return integer, int(frac)
-}
-
-
 // bahttextAppendDigit appends a digit to the passed string.
 func bahttextAppendDigit(text string, digit int) string {
 	if 0 <= digit && digit <= 9 {
@@ -13642,6 +13634,12 @@ func (fn *formulaFuncs) BAHTTEXT(argsList *list.List) formulaArg {
 	}
 	minus := number.Number < 0
 	num := math.Floor(math.Abs(number.Number)*100 + 0.5)
+	// split baht and satang
+	splitBlock := func(val, size float64) (float64, int) {
+		integer, frac := math.Modf((val + 0.1) / size)
+		frac = frac*size + 0.1
+		return integer, int(frac)
+	}
 	baht, satang := splitBlock(num, 100)
 	var text string
 	if baht == 0 {
@@ -13653,7 +13651,9 @@ func (fn *formulaFuncs) BAHTTEXT(argsList *list.List) formulaArg {
 			var block string
 			var nBlock int
 			baht, nBlock = splitBlock(baht, 1.0e6)
-			block = bahttextAppendBlock(block, nBlock)
+			if nBlock > 0 {
+				block = bahttextAppendBlock(block, nBlock)
+			}
 			if baht > 0 {
 				block = th1e6 + block
 			}
@@ -13666,6 +13666,7 @@ func (fn *formulaFuncs) BAHTTEXT(argsList *list.List) formulaArg {
 	if satang == 0 {
 		text += thDot0
 	} else {
+		text = bahttextAppendBlock(text, satang)
 		text += thSatang
 	}
 	if minus {
