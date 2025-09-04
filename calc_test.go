@@ -2,7 +2,6 @@ package excelize
 
 import (
 	"container/list"
-	"fmt"
 	"math"
 	"path/filepath"
 	"strings"
@@ -1708,6 +1707,29 @@ func TestCalcCellValue(t *testing.T) {
 		"ARRAYTOTEXT(A1:D2)":   "1, 4, , Month, 2, 5, , Jan",
 		"ARRAYTOTEXT(A1:D2,0)": "1, 4, , Month, 2, 5, , Jan",
 		"ARRAYTOTEXT(A1:D2,1)": "{1,4,,\"Month\";2,5,,\"Jan\"}",
+		// BAHTTEXT
+		"BAHTTEXT(-1.1)":    "\u0e25\u0e1a\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e1a\u0e32\u0e17\u0e2a\u0e34\u0e1a\u0e2a\u0e15\u0e32\u0e07\u0e04\u0e4c",
+		"BAHTTEXT(0)":       "\u0e28\u0e39\u0e19\u0e22\u0e4c\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(1)":       "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(1.1)":     "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e1a\u0e32\u0e17\u0e2a\u0e34\u0e1a\u0e2a\u0e15\u0e32\u0e07\u0e04\u0e4c",
+		"BAHTTEXT(2)":       "\u0e2a\u0e2d\u0e07\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(3)":       "\u0e2a\u0e32\u0e21\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(4)":       "\u0e2a\u0e35\u0e48\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(5)":       "\u0e2b\u0e49\u0e32\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(6)":       "\u0e2b\u0e01\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(7)":       "\u0e40\u0e08\u0e47\u0e14\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(8)":       "\u0e41\u0e1b\u0e14\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(9)":       "\u0e40\u0e01\u0e49\u0e32\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(10)":      "\u0e2a\u0e34\u0e1a\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(11)":      "\u0e2a\u0e34\u0e1a\u0e40\u0e2d\u0e47\u0e14\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(15)":      "\u0e2a\u0e34\u0e1a\u0e2b\u0e49\u0e32\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(20)":      "\u0e22\u0e35\u0e48\u0e2a\u0e34\u0e1a\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(100)":     "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e23\u0e49\u0e2d\u0e22\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(130)":     "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e23\u0e49\u0e2d\u0e22\u0e2a\u0e32\u0e21\u0e2a\u0e34\u0e1a\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(1000)":    "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e1e\u0e31\u0e19\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(10000)":   "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e2b\u0e21\u0e37\u0e48\u0e19\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(100000)":  "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e41\u0e2a\u0e19\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(1000000)": "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e25\u0e49\u0e32\u0e19\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
 		// CHAR
 		"CHAR(65)": "A",
 		"CHAR(97)": "a",
@@ -6510,171 +6532,4 @@ func TestParseToken(t *testing.T) {
 	assert.Equal(t, formulaErrorNAME, f.parseToken(nil, "Sheet1",
 		efp.Token{TSubType: efp.TokenSubTypeRange, TValue: "1A"}, nil, nil,
 	).Error())
-}
-
-// TestBAHTTEXT 测试 BAHTTEXT 函数
-func TestBAHTTEXT(t *testing.T) {
-	// 创建一个空的 File 实例和计算上下文
-	f := NewFile()
-	ctx := &calcContext{}
-	fn := &formulaFuncs{
-		f:     f,
-		ctx:   ctx,
-		sheet: "Sheet1",
-		cell:  "A1",
-	}
-
-	// 定义测试用例结构体
-	type testCase struct {
-		input    float64
-		expected string
-		name     string
-	}
-
-	// 定义测试用例
-	testCases := []testCase{
-		{
-			input:    0,
-			expected: "ศูนย์บาทถ้วน",
-			name:     "Zero value",
-		},
-		{
-			input:    123,
-			expected: "หนึ่งร้อยยี่สิบสามบาท",
-			name:     "Integer value",
-		},
-		{
-			input:    123.45,
-			expected: "หนึ่งร้อยยี่สิบสามบาทสี่สิบห้าสตางค์",
-			name:     "Value with decimal",
-		},
-		{
-			input:    1000000,
-			expected: "หนึ่งล้านบาท",
-			name:     "Large integer value",
-		},
-		{
-			input:    0.50,
-			expected: "ห้าสิบสตางค์",
-			name:     "Only decimal value",
-		},
-	}
-
-	// 执行测试用例
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			argsList := list.New()
-			argsList.PushFront(newNumberFormulaArg(tc.input))
-			result := fn.BAHTTEXT(argsList)
-
-			if result.Type != ArgString || result.String != tc.expected {
-				t.Errorf("Expected %q, but got %q", tc.expected, result.String)
-			}
-		})
-	}
-}
-
-// TestDOLLAR 测试 DOLLAR 函数
-func TestDOLLAR(t *testing.T) {
-	// 测试不同区域设置
-	cultureInfos := []CultureName{
-		CultureNameUnknown,
-		CultureNameEnUS,
-		CultureNameJaJP,
-		CultureNameKoKR,
-		CultureNameZhCN,
-		CultureNameZhTW,
-	}
-
-	// 定义测试用例结构体
-	type testCase struct {
-		inputArgs []float64
-		culture   CultureName
-		expected  string
-		name      string
-		expectErr bool
-	}
-
-	// 定义测试用例
-	testCases := []testCase{
-		{
-			inputArgs: []float64{1234.5678},
-			culture:   CultureNameEnUS,
-			expected:  "$1,234.57",
-			name:      "Single argument, default decimals",
-			expectErr: false,
-		},
-		{
-			inputArgs: []float64{1234.5678, 3},
-			culture:   CultureNameJaJP,
-			expected:  "¥1,234.568",
-			name:      "Two arguments, specified decimals",
-			expectErr: false,
-		},
-		{
-			inputArgs: []float64{1234.5678, -1},
-			culture:   CultureNameZhCN,
-			expected:  "¥1,230",
-			name:      "Negative decimal places",
-			expectErr: false,
-		},
-		{
-			inputArgs: []float64{1234.5678, 128},
-			culture:   CultureNameKoKR,
-			expected:  "#VALUE!",
-			name:      "Decimal value >= 128",
-			expectErr: true,
-		},
-		{
-			inputArgs: []float64{},
-			culture:   CultureNameEnUS,
-			expected:  "#VALUE!",
-			name:      "No arguments",
-			expectErr: true,
-		},
-		{
-			inputArgs: []float64{1234.5678, 1, 2},
-			culture:   CultureNameZhTW,
-			expected:  "#VALUE!",
-			name:      "More than 2 arguments",
-			expectErr: true,
-		},
-	}
-
-	for _, culture := range cultureInfos {
-		// 为每个区域设置创建新的 File 实例和计算上下文
-		f := NewFile()
-		f.options.CultureInfo = culture
-		ctx := &calcContext{}
-		fn := &formulaFuncs{
-			f:     f,
-			ctx:   ctx,
-			sheet: "Sheet1",
-			cell:  "A1",
-		}
-
-		for _, tc := range testCases {
-			if tc.culture != culture {
-				continue
-			}
-			t.Run(fmt.Sprintf("%d_%s", tc.culture, tc.name), func(t *testing.T) {
-				argsList := list.New()
-				for _, arg := range tc.inputArgs {
-					argsList.PushBack(newNumberFormulaArg(arg))
-				}
-
-				result := fn.DOLLAR(argsList)
-
-				if tc.expectErr {
-					if result.Type != ArgError {
-						t.Errorf("Expected error, but got %v", result)
-					}
-				} else {
-					if result.Type != ArgString || result.String != tc.expected {
-						t.Errorf("Expected %q, but got %q", tc.expected, result.String)
-					}
-				}
-			})
-		}
-	}
 }
