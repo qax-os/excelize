@@ -3840,6 +3840,9 @@ func TestCalcCellValue(t *testing.T) {
 		"ARRAYTOTEXT(A1,0,0)":  {"#VALUE!", "ARRAYTOTEXT allows at most 2 arguments"},
 		"ARRAYTOTEXT(A1,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		"ARRAYTOTEXT(A1,2)":    {"#VALUE!", "#VALUE!"},
+		// BAHTTEXT
+		"BAHTTEXT()":     {"#VALUE!", "BAHTTEXT requires 1 numeric argument"},
+		"BAHTTEXT(\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		// CHAR
 		"CHAR()":     {"#VALUE!", "CHAR requires 1 argument"},
 		"CHAR(-1)":   {"#VALUE!", "#VALUE!"},
@@ -3970,6 +3973,7 @@ func TestCalcCellValue(t *testing.T) {
 		"TEXTJOIN(\"\",TRUE,NA())": {"#N/A", "#N/A"},
 		"TEXTJOIN(\"\",TRUE," + strings.Repeat("0,", 250) + ",0)": {"#VALUE!", "TEXTJOIN accepts at most 252 arguments"},
 		"TEXTJOIN(\",\",FALSE,REPT(\"*\",32768))":                 {"#VALUE!", "TEXTJOIN function exceeds 32767 characters"},
+		"TEXTJOIN(\"\",FALSE,REPT(\"\U0001F600\",16384))":         {"#VALUE!", "TEXTJOIN function exceeds 32767 characters"},
 		// TRIM
 		"TRIM()":    {"#VALUE!", "TRIM requires 1 argument"},
 		"TRIM(1,2)": {"#VALUE!", "TRIM requires 1 argument"},
@@ -6339,6 +6343,10 @@ func TestCalcRangeResolver(t *testing.T) {
 	cellRefs.PushBack(cellRef{Col: 1, Row: TotalRows + 1, Sheet: "SheetN"})
 	_, err = f.rangeResolver(&calcContext{}, cellRefs, cellRanges)
 	assert.Equal(t, ErrMaxRows, err)
+}
+
+func TestCalcBahttextAppendDigit(t *testing.T) {
+	assert.Empty(t, bahttextAppendDigit("", -1))
 }
 
 func TestNestedFunctionsWithOperators(t *testing.T) {

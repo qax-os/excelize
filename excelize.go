@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -41,7 +42,7 @@ type File struct {
 	tempFiles        sync.Map
 	xmlAttr          sync.Map
 	CalcChain        *xlsxCalcChain
-	CharsetReader    charsetTranscoderFn
+	CharsetReader    func(charset string, input io.Reader) (rdr io.Reader, err error)
 	Comments         map[string]*xlsxComments
 	ContentTypes     *xlsxTypes
 	DecodeVMLDrawing map[string]*decodeVmlDrawing
@@ -58,11 +59,17 @@ type File struct {
 	VMLDrawing       map[string]*vmlDrawing
 	VolatileDeps     *xlsxVolTypes
 	WorkBook         *xlsxWorkbook
+	ZipWriter        func(io.Writer) ZipWriter
 }
 
-// charsetTranscoderFn set user-defined codepage transcoder function for open
-// the spreadsheet from non-UTF-8 encoding.
-type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, err error)
+// ZipWriter defines an interface for writing files to a ZIP archive. It
+// provides methods to create new files within the archive, add files from a
+// filesystem, and close the archive when writing is complete.
+type ZipWriter interface {
+	Create(name string) (io.Writer, error)
+	AddFS(fsys fs.FS) error
+	Close() error
+}
 
 // Options define the options for opening and reading the spreadsheet.
 //
@@ -84,6 +91,9 @@ type charsetTranscoderFn func(charset string, input io.Reader) (rdr io.Reader, e
 // should be less than or equal to UnzipSizeLimit, the default value is
 // 16MB.
 //
+// TmpDir specifies the temporary directory for creating temporary files, if the
+// value is empty, the system default temporary directory will be used.
+//
 // ShortDatePattern specifies the short date number format code. In the
 // spreadsheet applications, date formats display date and time serial numbers
 // as date values. Date formats that begin with an asterisk (*) respond to
@@ -104,6 +114,7 @@ type Options struct {
 	RawCellValue      bool
 	UnzipSizeLimit    int64
 	UnzipXMLSizeLimit int64
+	TmpDir            string
 	ShortDatePattern  string
 	LongDatePattern   string
 	LongTimePattern   string
@@ -149,6 +160,7 @@ func newFile() *File {
 		VMLDrawing:       make(map[string]*vmlDrawing),
 		Relationships:    sync.Map{},
 		CharsetReader:    charset.NewReaderLabel,
+		ZipWriter:        func(w io.Writer) ZipWriter { return zip.NewWriter(w) },
 	}
 }
 
@@ -228,9 +240,15 @@ func (f *File) getOptions(opts ...Options) *Options {
 	return options
 }
 
-// CharsetTranscoder Set user defined codepage transcoder function for open
+// CharsetTranscoder set user defined codepage transcoder function for open
 // workbook from non UTF-8 encoding.
-func (f *File) CharsetTranscoder(fn charsetTranscoderFn) *File { f.CharsetReader = fn; return f }
+func (f *File) CharsetTranscoder(fn func(charset string, input io.Reader) (rdr io.Reader, err error)) *File {
+	f.CharsetReader = fn
+	return f
+}
+
+// SetZipWriter set user defined zip writer function for saving the workbook.
+func (f *File) SetZipWriter(fn func(io.Writer) ZipWriter) *File { f.ZipWriter = fn; return f }
 
 // Creates new XML decoder with charset reader.
 func (f *File) xmlNewDecoder(rdr io.Reader) (ret *xml.Decoder) {
@@ -419,7 +437,8 @@ func (f *File) setRels(rID, relPath, relType, target, targetMode string) int {
 // relationship type, target and target mode.
 func (f *File) addRels(relPath, relType, target, targetMode string) int {
 	uniqPart := map[string]string{
-		SourceRelationshipSharedStrings: "/xl/sharedStrings.xml",
+		SourceRelationshipCustomProperties: "/docProps/custom.xml",
+		SourceRelationshipSharedStrings:    "/xl/sharedStrings.xml",
 	}
 	rels, _ := f.relsReader(relPath)
 	if rels == nil {

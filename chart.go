@@ -78,6 +78,27 @@ const (
 	WireframeContour
 	Bubble
 	Bubble3D
+	StockHighLowClose
+	StockOpenHighLowClose
+)
+
+// ChartDashType is the type of supported chart dash types.
+type ChartDashType byte
+
+// This section defines the currently supported chart dash types enumeration.
+const (
+	ChartDashUnset ChartDashType = iota
+	ChartDashSolid
+	ChartDashDot
+	ChartDashDash
+	ChartDashLgDash
+	ChartDashSashDot
+	ChartDashLgDashDot
+	ChartDashLgDashDotDot
+	ChartDashSysDash
+	ChartDashSysDot
+	ChartDashSysDashDot
+	ChartDashSysDashDotDot
 )
 
 // ChartLineType is the type of supported chart line types.
@@ -346,6 +367,8 @@ var (
 		WireframeContour:            "General",
 		Bubble:                      "General",
 		Bubble3D:                    "General",
+		StockHighLowClose:           "General",
+		StockOpenHighLowClose:       "General",
 	}
 	chartValAxCrossBetween = map[ChartType]string{
 		Area:                        "midCat",
@@ -403,6 +426,8 @@ var (
 		WireframeContour:            "midCat",
 		Bubble:                      "midCat",
 		Bubble3D:                    "midCat",
+		StockHighLowClose:           "between",
+		StockOpenHighLowClose:       "between",
 	}
 	plotAreaChartGrouping = map[ChartType]string{
 		Area:                        "standard",
@@ -574,6 +599,9 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 		opts.Legend.Position = defaultChartLegendPosition
 	}
 	opts.parseTitle()
+	if opts.Fill.Transparency < 0 || 100 < opts.Fill.Transparency {
+		return opts, ErrTransparency
+	}
 	if opts.VaryColors == nil {
 		opts.VaryColors = boolPtr(true)
 	}
@@ -583,7 +611,17 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 	if opts.ShowBlanksAs == "" {
 		opts.ShowBlanksAs = defaultChartShowBlanksAs
 	}
-	return opts, nil
+	return opts, opts.parseSeries()
+}
+
+// parseSeries check the series settings of the chart.
+func (opts *Chart) parseSeries() error {
+	for _, series := range opts.Series {
+		if series.Fill.Transparency < 0 || 100 < series.Fill.Transparency {
+			return ErrTransparency
+		}
+	}
+	return nil
 }
 
 // parseTitle parse the title settings of the chart with default value.
@@ -736,6 +774,8 @@ func (opts *Chart) parseTitle() {
 //	 52 | WireframeContour            | wireframe contour chart
 //	 53 | Bubble                      | bubble chart
 //	 54 | Bubble3D                    | 3D bubble chart
+//	 55 | StockHighLowClose           | High-Low-Close stock chart
+//	 56 | StockOpenHighLowClose       | Open-High-Low-Close stock chart
 //
 // In Excel a chart series is a collection of information that defines which
 // data is plotted such as values, axis labels and formatting.
@@ -746,6 +786,7 @@ func (opts *Chart) parseTitle() {
 //	Categories
 //	Values
 //	Fill
+//	Legend
 //	Line
 //	Marker
 //	DataLabel
@@ -768,7 +809,10 @@ func (opts *Chart) parseTitle() {
 // optional and the default value was same with 'Values'.
 //
 // Fill: This set the format for the data series fill. The 'Fill' property is
-// optional
+// optional.
+//
+// Legend: This set the font of legend text for a data series. The 'Legend'
+// property is optional.
 //
 // Line: This sets the line format of the line chart. The 'Line' property is
 // optional and if it isn't supplied it will default style. The options that
@@ -800,6 +844,7 @@ func (opts *Chart) parseTitle() {
 //
 //	Position
 //	ShowLegendKey
+//	Font
 //
 // Position: Set the position of the chart legend. The default legend position
 // is bottom. The available positions are:
@@ -813,6 +858,11 @@ func (opts *Chart) parseTitle() {
 //
 // ShowLegendKey: Set the legend keys shall be shown in data labels. The default
 // value is false.
+//
+// Font: Set the font properties of the chart legend text. The properties that
+// can be set are the same as the font object that is used for cell formatting.
+// The font family, size, color, bold, italic, underline, and strike properties
+// can be set.
 //
 // Set properties of the chart title. The properties that can be set are:
 //
@@ -848,14 +898,16 @@ func (opts *Chart) parseTitle() {
 //	SecondPlotValues
 //	ShowBubbleSize
 //	ShowCatName
+//	ShowDataTable
+//	ShowDataTableKeys
 //	ShowLeaderLines
 //	ShowPercent
 //	ShowSerName
 //	ShowVal
 //	NumFmt
 //
-// SecondPlotValues: Specifies the values in second plot for the 'pieOfPie' and
-// 'barOfPie' chart.
+// SecondPlotValues: Specifies the values in second plot for the 'PieOfPie' and
+// 'BarOfPie' chart.
 //
 // ShowBubbleSize: Specifies the bubble size shall be shown in a data label. The
 // 'ShowBubbleSize' property is optional. The default value is false.
@@ -986,6 +1038,9 @@ func (opts *Chart) parseTitle() {
 //
 // Set chart size by 'Dimension' property. The 'Dimension' property is optional.
 // The default width is 480, and height is 260.
+//
+// Set chart legend for all data series by 'Legend' property. The 'Legend'
+// property is optional.
 //
 // Set the bubble size in all data series for the bubble chart or 3D bubble
 // chart by 'BubbleSizes' property. The 'BubbleSizes' property is optional. The

@@ -25,7 +25,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf16"
-	"unicode/utf8"
 
 	"github.com/tiendc/go-deepcopy"
 )
@@ -75,7 +74,7 @@ func (f *File) NewSheet(sheet string) (int, error) {
 	// Create new sheet /xl/worksheets/sheet%d.xml
 	f.setSheet(sheetID, sheet)
 	// Update workbook.xml.rels
-	rID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipWorkSheet, fmt.Sprintf("/xl/worksheets/sheet%d.xml", sheetID), "")
+	rID := f.addRels(f.getWorkbookRelsPath(), SourceRelationshipWorkSheet, fmt.Sprintf("worksheets/sheet%d.xml", sheetID), "")
 	// Update workbook.xml
 	f.setWorkbook(sheet, sheetID, rID)
 	return f.GetSheetIndex(sheet)
@@ -751,7 +750,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 //	    fmt.Println(err)
 //	    return
 //	}
-//	err := f.CopySheet(1, index)
+//	err = f.CopySheet(0, index)
 func (f *File) CopySheet(from, to int) error {
 	if from < 0 || to < 0 || from == to || f.GetSheetName(from) == "" || f.GetSheetName(to) == "" {
 		return ErrSheetIdx
@@ -1485,7 +1484,7 @@ func checkSheetName(name string) error {
 	if name == "" {
 		return ErrSheetNameBlank
 	}
-	if utf8.RuneCountInString(name) > MaxSheetNameLength {
+	if len(utf16.Encode([]rune(name))) > MaxSheetNameLength {
 		return ErrSheetNameLength
 	}
 	if strings.HasPrefix(name, "'") || strings.HasSuffix(name, "'") {
@@ -2122,12 +2121,44 @@ func (f *File) SetSheetDimension(sheet, rangeRef string) error {
 // GetSheetDimension provides the method to get the used range of the worksheet.
 func (f *File) GetSheetDimension(sheet string) (string, error) {
 	var ref string
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
+	if err := checkSheetName(sheet); err != nil {
 		return ref, err
 	}
-	if ws.Dimension != nil {
-		ref = ws.Dimension.Ref
+	name, ok := f.getSheetXMLPath(sheet)
+	if !ok {
+		return ref, ErrSheetNotExist{sheet}
+	}
+	if worksheet, ok := f.Sheet.Load(name); ok && worksheet != nil {
+		ws := worksheet.(*xlsxWorksheet)
+		if ws.Dimension != nil {
+			ref = ws.Dimension.Ref
+		}
+		return ref, nil
+	}
+	needClose, decoder, tempFile, err := f.xmlDecoder(name)
+	if needClose && err == nil {
+		defer func() {
+			err = tempFile.Close()
+		}()
+	}
+	for {
+		token, _ := decoder.Token()
+		if token == nil {
+			break
+		}
+		switch xmlElement := token.(type) {
+		case xml.StartElement:
+			if xmlElement.Name.Local == "dimension" {
+				for _, attr := range xmlElement.Attr {
+					if attr.Name.Local == "ref" {
+						return attr.Value, err
+					}
+				}
+			}
+			if xmlElement.Name.Local == "sheetData" {
+				return ref, err
+			}
+		}
 	}
 	return ref, err
 }

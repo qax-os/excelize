@@ -119,12 +119,47 @@ type aPPr struct {
 	DefRPr aRPr `xml:"a:defRPr"`
 }
 
+// aSrgbClr (RGB Color Model - Hex Variant) specifies a color using the red,
+// green, blue RGB color model. Red, green, and blue is expressed as sequence of
+// hex digits, RRGGBB. A perceptual gamma of 2.2 is used.
+type aSrgbClr struct {
+	Val      *string     `xml:"val,attr"`
+	Tint     *attrValInt `xml:"a:tint"`
+	Shade    *attrValInt `xml:"a:shade"`
+	Comp     *attrValInt `xml:"a:comp"`
+	Inv      *attrValInt `xml:"a:inv"`
+	Gray     *attrValInt `xml:"a:gray"`
+	Alpha    *attrValInt `xml:"a:alpha"`
+	AlphaOff *attrValInt `xml:"a:alphaOff"`
+	AlphaMod *attrValInt `xml:"a:alphaMod"`
+	Hue      *attrValInt `xml:"a:hue"`
+	HueOff   *attrValInt `xml:"a:hueOff"`
+	HueMod   *attrValInt `xml:"a:hueMod"`
+	Sat      *attrValInt `xml:"a:sat"`
+	SatOff   *attrValInt `xml:"a:satOff"`
+	SatMod   *attrValInt `xml:"a:satMod"`
+	Lum      *attrValInt `xml:"a:lum"`
+	LumOff   *attrValInt `xml:"a:lumOff"`
+	LumMod   *attrValInt `xml:"a:lumMod"`
+	Red      *attrValInt `xml:"a:red"`
+	RedOff   *attrValInt `xml:"a:redOff"`
+	RedMod   *attrValInt `xml:"a:redMod"`
+	Green    *attrValInt `xml:"a:green"`
+	GreenOff *attrValInt `xml:"a:greenOff"`
+	GreenMod *attrValInt `xml:"a:greenMod"`
+	Blue     *attrValInt `xml:"a:blue"`
+	BlueOff  *attrValInt `xml:"a:blueOff"`
+	BlueMod  *attrValInt `xml:"a:blueMod"`
+	Gamma    *attrValInt `xml:"a:gamma"`
+	InvGamma *attrValInt `xml:"a:invGamma"`
+}
+
 // aSolidFill (Solid Fill) directly maps the solidFill element. This element
 // specifies a solid color fill. The shape is filled entirely with the specified
 // color.
 type aSolidFill struct {
-	SchemeClr *aSchemeClr    `xml:"a:schemeClr"`
-	SrgbClr   *attrValString `xml:"a:srgbClr"`
+	SchemeClr *aSchemeClr `xml:"a:schemeClr"`
+	SrgbClr   *aSrgbClr   `xml:"a:srgbClr"`
 }
 
 // aSchemeClr (Scheme Color) directly maps the a:schemeClr element. This
@@ -266,6 +301,7 @@ type aLn struct {
 	NoFill    *attrValString `xml:"a:noFill"`
 	Round     string         `xml:"a:round,omitempty"`
 	SolidFill *aSolidFill    `xml:"a:solidFill"`
+	PrstDash  *attrValString `xml:"a:prstDash"`
 }
 
 // cTxPr (Text Properties) directly maps the txPr element. This element
@@ -320,6 +356,7 @@ type cPlotArea struct {
 	DoughnutChart  []*cCharts `xml:"doughnutChart"`
 	LineChart      []*cCharts `xml:"lineChart"`
 	Line3DChart    []*cCharts `xml:"line3DChart"`
+	StockChart     []*cCharts `xml:"stockChart"`
 	PieChart       []*cCharts `xml:"pieChart"`
 	Pie3DChart     []*cCharts `xml:"pie3DChart"`
 	OfPieChart     []*cCharts `xml:"ofPieChart"`
@@ -329,6 +366,7 @@ type cPlotArea struct {
 	SurfaceChart   []*cCharts `xml:"surfaceChart"`
 	CatAx          []*cAxs    `xml:"catAx"`
 	ValAx          []*cAxs    `xml:"valAx"`
+	DateAx         []*cAxs    `xml:"dateAx"`
 	SerAx          []*cAxs    `xml:"serAx"`
 	DTable         *cDTable   `xml:"dTable"`
 	SpPr           *cSpPr     `xml:"spPr"`
@@ -348,6 +386,8 @@ type cCharts struct {
 	SplitPos     *attrValInt    `xml:"splitPos"`
 	SerLines     *attrValString `xml:"serLines"`
 	DLbls        *cDLbls        `xml:"dLbls"`
+	HiLowLines   *cChartLines   `xml:"hiLowLines"`
+	UpDownBars   *cUpDownBars   `xml:"upDownBars"`
 	GapWidth     *attrValInt    `xml:"gapWidth"`
 	Shape        *attrValString `xml:"shape"`
 	HoleSize     *attrValInt    `xml:"holeSize"`
@@ -382,6 +422,15 @@ type cAxs struct {
 	TickLblSkip    *attrValInt    `xml:"tickLblSkip"`
 	TickMarkSkip   *attrValInt    `xml:"tickMarkSkip"`
 	NoMultiLvlLbl  *attrValBool   `xml:"noMultiLvlLbl"`
+}
+
+// cUpDownBars directly maps the upDownBars lement. This element specifies
+// the up and down bars.
+type cUpDownBars struct {
+	GapWidth *attrValString `xml:"gapWidth"`
+	UpBars   *cChartLines   `xml:"upBars"`
+	DownBars *cChartLines   `xml:"downBars"`
+	ExtLst   *xlsxExtLst    `xml:"extLst"`
 }
 
 // cChartLines directly maps the chart lines content model.
@@ -508,14 +557,22 @@ type cDLbls struct {
 	ShowLeaderLines *attrValBool   `xml:"showLeaderLines"`
 }
 
+// cLegendEntry (Legend Entry) directly maps the legendEntry element. This
+// element specifies the legend entry.
+type cLegendEntry struct {
+	IDx  *attrValInt `xml:"idx"`
+	TxPr *cTxPr      `xml:"txPr"`
+}
+
 // cLegend (Legend) directly maps the legend element. This element specifies
 // the legend.
 type cLegend struct {
-	Layout    *string        `xml:"layout"`
-	LegendPos *attrValString `xml:"legendPos"`
-	Overlay   *attrValBool   `xml:"overlay"`
-	SpPr      *cSpPr         `xml:"spPr"`
-	TxPr      *cTxPr         `xml:"txPr"`
+	Layout      *string        `xml:"layout"`
+	LegendPos   *attrValString `xml:"legendPos"`
+	LegendEntry []cLegendEntry `xml:"legendEntry"`
+	Overlay     *attrValBool   `xml:"overlay"`
+	SpPr        *cSpPr         `xml:"spPr"`
+	TxPr        *cTxPr         `xml:"txPr"`
 }
 
 // cPrintSettings directly maps the printSettings element. This element
@@ -569,6 +626,13 @@ type ChartDimension struct {
 	Height uint
 }
 
+// ChartUpDownBar directly maps the format settings of the stock chart up bars
+// and down bars.
+type ChartUpDownBar struct {
+	Fill   Fill
+	Border ChartLine
+}
+
 // ChartPlotArea directly maps the format settings of the plot area.
 type ChartPlotArea struct {
 	SecondPlotValues  int
@@ -581,6 +645,8 @@ type ChartPlotArea struct {
 	ShowSerName       bool
 	ShowVal           bool
 	Fill              Fill
+	UpBars            ChartUpDownBar
+	DownBars          ChartUpDownBar
 	NumFmt            ChartNumFmt
 }
 
@@ -610,10 +676,12 @@ type Chart struct {
 type ChartLegend struct {
 	Position      string
 	ShowLegendKey bool
+	Font          *Font
 }
 
 // ChartMarker directly maps the format settings of the chart marker.
 type ChartMarker struct {
+	Border ChartLine
 	Fill   Fill
 	Symbol string
 	Size   int
@@ -622,6 +690,8 @@ type ChartMarker struct {
 // ChartLine directly maps the format settings of the chart line.
 type ChartLine struct {
 	Type   ChartLineType
+	Dash   ChartDashType
+	Fill   Fill
 	Smooth bool
 	Width  float64
 }
@@ -640,6 +710,7 @@ type ChartSeries struct {
 	Values            string
 	Sizes             string
 	Fill              Fill
+	Legend            ChartLegend
 	Line              ChartLine
 	Marker            ChartMarker
 	DataLabel         ChartDataLabel

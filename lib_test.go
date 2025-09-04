@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"unicode/utf16"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -351,6 +352,28 @@ func TestBstrMarshal(t *testing.T) {
 	for bstr, expected := range bstrs {
 		assert.Equal(t, expected, bstrMarshal(bstr))
 	}
+}
+
+func TestTruncateUTF16Units(t *testing.T) {
+	assertTrunc := func(s string, max int, expected string) {
+		assert.Equal(t, expected, truncateUTF16Units(s, max), "src=%q max=%d", s, max)
+		assert.LessOrEqual(t, len(utf16.Encode([]rune(truncateUTF16Units(s, max)))), max)
+	}
+	// No truncation
+	assertTrunc("ABC", 3, "ABC")
+	assertTrunc("A\U0001F600B", 4, "A\U0001F600B")
+	// Truncate cutting before BMP rune
+	assertTrunc("ABCDE", 3, "ABC")
+	// Truncate with surrogate pair boundary: keep pair intact
+	assertTrunc("A\U0001F600B", 3, "A\U0001F600") // 1 + 2 units
+	assertTrunc("A\U0001F600B", 2, "A")           // pair would overflow
+	assertTrunc("\U0001F600B", 1, "")             // first rune (2 units) exceeds limit
+	assertTrunc("\U0001F600B", 2, "\U0001F600")   // exact fit
+	assertTrunc("\U0001F600B", 3, "\U0001F600B")  // allow extra
+	// Multiple surrogate pairs
+	assertTrunc("\U0001F600\U0001F600B", 2, "\U0001F600")           // corrected expectation per logic
+	assertTrunc("\U0001F600\U0001F600B", 3, "\U0001F600")           // 2 units kept, next pair would exceed
+	assertTrunc("\U0001F600\U0001F600B", 4, "\U0001F600\U0001F600") // both pairs (4 units)
 }
 
 func TestReadBytes(t *testing.T) {

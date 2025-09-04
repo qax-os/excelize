@@ -12,7 +12,6 @@
 package excelize
 
 import (
-	"archive/zip"
 	"bytes"
 	"encoding/binary"
 	"encoding/xml"
@@ -31,7 +30,7 @@ import (
 //	f := NewFile()
 func NewFile(opts ...Options) *File {
 	f := newFile()
-	f.Pkg.Store("_rels/.rels", []byte(xml.Header+templateRels))
+	f.Pkg.Store(defaultXMLPathRels, []byte(xml.Header+templateRels))
 	f.Pkg.Store(defaultXMLPathDocPropsApp, []byte(xml.Header+templateDocpropsApp))
 	f.Pkg.Store(defaultXMLPathDocPropsCore, []byte(xml.Header+templateDocpropsCore))
 	f.Pkg.Store(defaultXMLPathWorkbookRels, []byte(xml.Header+templateWorkbookRels))
@@ -137,7 +136,7 @@ func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 // and it allocates space in memory. Be careful when the file size is large.
 func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
-	zw := zip.NewWriter(buf)
+	zw := f.ZipWriter(buf)
 
 	if err := f.writeToZip(zw); err != nil {
 		_ = zw.Close()
@@ -158,8 +157,8 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	return buf, nil
 }
 
-// writeToZip provides a function to write to zip.Writer
-func (f *File) writeToZip(zw *zip.Writer) error {
+// writeToZip provides a function to write to ZipWriter.
+func (f *File) writeToZip(zw ZipWriter) error {
 	f.calcChainWriter()
 	f.commentsWriter()
 	f.contentTypesWriter()

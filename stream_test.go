@@ -97,7 +97,7 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, file.Close())
 
 	// Test close temporary file error
-	file = NewFile()
+	file = NewFile(Options{TmpDir: os.TempDir()})
 	streamWriter, err = file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	for rowID := 10; rowID <= 25600; rowID++ {

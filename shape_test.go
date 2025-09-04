@@ -62,7 +62,7 @@ func TestAddShape(t *testing.T) {
 			Cell: "A1",
 			Type: "ellipseRibbon",
 			Line: ShapeLine{Color: "4286F4", Width: &lineWidth},
-			Fill: Fill{Color: []string{"8EB9FF"}},
+			Fill: Fill{Color: []string{"8EB9FF"}, Transparency: 60},
 			Paragraph: []RichTextRun{
 				{
 					Font: &Font{
@@ -87,6 +87,8 @@ func TestAddShape(t *testing.T) {
 			{Text: "Shape", Font: &Font{Bold: true, Color: "2980B9"}},
 		},
 	}))
+	// Test add shape with transparency value exceeds limit
+	assert.Equal(t, ErrTransparency, f.AddShape("Sheet1", &Shape{Cell: "B30", Type: "rect", Fill: Fill{Color: []string{"8EB9FF"}, Transparency: 110}}))
 	// Test add shape with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)

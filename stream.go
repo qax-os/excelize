@@ -123,6 +123,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 		file:    f,
 		Sheet:   sheet,
 		SheetID: sheetID,
+		rawData: bufferedWriter{tmpDir: f.options.TmpDir},
 	}
 	var err error
 	sw.worksheet, err = f.workSheetReader(sheet)
@@ -737,8 +738,9 @@ func bulkAppendFields(w io.Writer, ws *xlsxWorksheet, from, to int) {
 // is written to the temp file with Sync, which may return an error.
 // Therefore, Sync should be periodically called and the error checked.
 type bufferedWriter struct {
-	tmp *os.File
-	buf bytes.Buffer
+	tmpDir string
+	tmp    *os.File
+	buf    bytes.Buffer
 }
 
 // Write to the in-memory buffer. The error is always nil.
@@ -775,7 +777,7 @@ func (bw *bufferedWriter) Sync() (err error) {
 		return nil
 	}
 	if bw.tmp == nil {
-		bw.tmp, err = os.CreateTemp("", "excelize-")
+		bw.tmp, err = os.CreateTemp(bw.tmpDir, "excelize-")
 		if err != nil {
 			// can not use local storage
 			return nil
