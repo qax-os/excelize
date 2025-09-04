@@ -235,7 +235,7 @@ var (
 	thBaht   = "\u0E1A\u0E32\u0E17"
 	thSatang = "\u0E2A\u0E15\u0E32\u0E07\u0E04\u0E4C"
 	thMinus  = "\u0E25\u0E1A"
- )
+)
 
 // calcContext defines the formula execution context.
 type calcContext struct {
