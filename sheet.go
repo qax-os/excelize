@@ -603,7 +603,7 @@ func (f *File) DeleteSheet(sheet string) error {
 		}
 		target := f.deleteSheetFromWorkbookRels(v.ID)
 		_ = f.removeContentTypesPart(ContentTypeSpreadSheetMLWorksheet, target)
-		_ = f.deleteCalcChain(f.getSheetID(sheet), "")
+		_ = f.deleteCalcChain(v.SheetID, "")
 		delete(f.sheetMap, v.Name)
 		f.Pkg.Delete(sheetXML)
 		f.Pkg.Delete(rels)
