@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"math"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -6501,4 +6502,114 @@ func TestParseToken(t *testing.T) {
 	assert.Equal(t, formulaErrorNAME, f.parseToken(nil, "Sheet1",
 		efp.Token{TSubType: efp.TokenSubTypeRange, TValue: "1A"}, nil, nil,
 	).Error())
+}
+
+func TestCalcCaseInsensitiveFunctions(t *testing.T) {
+	f := NewFile()
+	defer func() {
+		assert.NoError(t, f.Close())
+	}()
+
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 10))
+	assert.NoError(t, f.SetCellValue("Sheet1", "A2", 20))
+	assert.NoError(t, f.SetCellValue("Sheet1", "A3", 30))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", "Hello"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B2", "World"))
+
+	// Test cases for various functions with different cases
+	testCases := []struct {
+		formula  string
+		expected string
+		desc     string
+	}{
+		{"sum(A1:A3)", "60", "lowercase sum"},
+		{"Sum(A1:A3)", "60", "mixed case Sum"},
+		{"SUM(A1:A3)", "60", "uppercase SUM"},
+
+		{"if(A1>5,\"yes\",\"no\")", "yes", "lowercase if"},
+		{"If(A1>5,\"yes\",\"no\")", "yes", "mixed case If"},
+		{"IF(A1>5,\"yes\",\"no\")", "yes", "uppercase IF"},
+
+		{"or(A1>15,A2>15)", "TRUE", "lowercase or"},
+		{"Or(A1>15,A2>15)", "TRUE", "mixed case Or"},
+		{"OR(A1>15,A2>15)", "TRUE", "uppercase OR"},
+
+		{"and(A1>5,A2>15)", "TRUE", "lowercase and"},
+		{"And(A1>5,A2>15)", "TRUE", "mixed case And"},
+		{"AND(A1>5,A2>15)", "TRUE", "uppercase AND"},
+
+		{"max(A1:A3)", "30", "lowercase max"},
+		{"Max(A1:A3)", "30", "mixed case Max"},
+		{"MAX(A1:A3)", "30", "uppercase MAX"},
+
+		{"min(A1:A3)", "10", "lowercase min"},
+		{"Min(A1:A3)", "10", "mixed case Min"},
+		{"MIN(A1:A3)", "10", "uppercase MIN"},
+
+		{"average(A1:A3)", "20", "lowercase average"},
+		{"Average(A1:A3)", "20", "mixed case Average"},
+		{"AVERAGE(A1:A3)", "20", "uppercase AVERAGE"},
+
+		{"count(A1:A3)", "3", "lowercase count"},
+		{"Count(A1:A3)", "3", "mixed case Count"},
+		{"COUNT(A1:A3)", "3", "uppercase COUNT"},
+
+		{"len(B1)", "5", "lowercase len"},
+		{"Len(B1)", "5", "mixed case Len"},
+		{"LEN(B1)", "5", "uppercase LEN"},
+
+		{"abs(-10)", "10", "lowercase abs"},
+		{"Abs(-10)", "10", "mixed case Abs"},
+		{"ABS(-10)", "10", "uppercase ABS"},
+
+		{"round(3.14159,2)", "3.14", "lowercase round"},
+		{"Round(3.14159,2)", "3.14", "mixed case Round"},
+		{"ROUND(3.14159,2)", "3.14", "uppercase ROUND"},
+
+		{"if(or(A1>5,A2>25),sum(A1:A3),0)", "60", "lowercase nested if(or(sum))"},
+		{"If(Or(A1>5,A2>25),Sum(A1:A3),0)", "60", "mixed case nested If(Or(Sum))"},
+		{"IF(OR(A1>5,A2>25),SUM(A1:A3),0)", "60", "uppercase nested IF(OR(SUM))"},
+	}
+
+	for i, tc := range testCases {
+		cellRef := "C" + strconv.Itoa(i+1)
+
+		assert.NoError(t, f.SetCellFormula("Sheet1", cellRef, tc.formula), "Setting formula for %s", tc.desc)
+		result, err := f.CalcCellValue("Sheet1", cellRef)
+		assert.NoError(t, err, "Calculating %s", tc.desc)
+		assert.Equal(t, tc.expected, result, "Testing %s with formula: %s", tc.desc, tc.formula)
+	}
+}
+
+func TestCalcCaseInsensitiveXLFNFunctions(t *testing.T) {
+	f := NewFile()
+	defer func() {
+		assert.NoError(t, f.Close())
+	}()
+
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 15.25))
+
+	// Test cases for _xlfn prefixed functions
+	testCases := []struct {
+		formula  string
+		expected string
+		desc     string
+	}{
+		{"_xlfn.ceiling.math(A1)", "16", "lowercase _xlfn.ceiling.math"},
+		{"_xlfn.Ceiling.Math(A1)", "16", "mixed case _xlfn.Ceiling.Math"},
+		{"_xlfn.CEILING.MATH(A1)", "16", "uppercase _xlfn.CEILING.MATH"},
+
+		{"_xlfn.floor.math(A1)", "15", "lowercase _xlfn.floor.math"},
+		{"_xlfn.Floor.Math(A1)", "15", "mixed case _xlfn.Floor.Math"},
+		{"_xlfn.FLOOR.MATH(A1)", "15", "uppercase _xlfn.FLOOR.MATH"},
+	}
+
+	for i, tc := range testCases {
+		cellRef := "B" + strconv.Itoa(i+1)
+
+		assert.NoError(t, f.SetCellFormula("Sheet1", cellRef, tc.formula), "Setting formula for %s", tc.desc)
+		result, err := f.CalcCellValue("Sheet1", cellRef)
+		assert.NoError(t, err, "Calculating %s", tc.desc)
+		assert.Equal(t, tc.expected, result, "Testing %s with formula: %s", tc.desc, tc.formula)
+	}
 }
