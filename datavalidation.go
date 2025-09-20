@@ -18,7 +18,6 @@ import (
 	"math"
 	"slices"
 	"strings"
-	"unicode/utf16"
 )
 
 // DataValidationType defined the type of data validation.
@@ -150,7 +149,7 @@ func (dv *DataValidation) SetInput(title, msg string) {
 // for their cells.
 func (dv *DataValidation) SetDropList(keys []string) error {
 	formula := strings.Join(keys, ",")
-	if MaxFieldLength < len(utf16.Encode([]rune(formula))) {
+	if MaxFieldLength < countUTF16String(formula) {
 		return ErrDataValidationFormulaLength
 	}
 	dv.Type = dataValidationTypeMap[DataValidationTypeList]

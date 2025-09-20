@@ -11,7 +11,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"unicode/utf16"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -357,7 +356,7 @@ func TestBstrMarshal(t *testing.T) {
 func TestTruncateUTF16Units(t *testing.T) {
 	assertTrunc := func(s string, max int, expected string) {
 		assert.Equal(t, expected, truncateUTF16Units(s, max), "src=%q max=%d", s, max)
-		assert.LessOrEqual(t, len(utf16.Encode([]rune(truncateUTF16Units(s, max)))), max)
+		assert.LessOrEqual(t, countUTF16String(truncateUTF16Units(s, max)), max)
 	}
 	// No truncation
 	assertTrunc("ABC", 3, "ABC")
