@@ -24,7 +24,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"unicode/utf16"
 
 	"github.com/tiendc/go-deepcopy"
 )
@@ -1341,7 +1340,7 @@ func (f *File) SetHeaderFooter(sheet string, opts *HeaderFooterOptions) error {
 	// Check 6 string type fields: OddHeader, OddFooter, EvenHeader, EvenFooter,
 	// FirstFooter, FirstHeader
 	for i := 4; i < v.NumField()-1; i++ {
-		if len(utf16.Encode([]rune(v.Field(i).String()))) > MaxFieldLength {
+		if countUTF16String(v.Field(i).String()) > MaxFieldLength {
 			return newFieldLengthError(v.Type().Field(i).Name)
 		}
 	}
@@ -1484,7 +1483,7 @@ func checkSheetName(name string) error {
 	if name == "" {
 		return ErrSheetNameBlank
 	}
-	if len(utf16.Encode([]rune(name))) > MaxSheetNameLength {
+	if countUTF16String(name) > MaxSheetNameLength {
 		return ErrSheetNameLength
 	}
 	if strings.HasPrefix(name, "'") || strings.HasSuffix(name, "'") {

@@ -941,6 +941,15 @@ func setPtrFieldsVal(fields []string, immutable, mutable reflect.Value) {
 	}
 }
 
+// countUTF16String returns the number of UTF-16 code units in a string.
+func countUTF16String(s string) int {
+	var cnt int
+	for _, r := range s {
+		cnt += utf16.RuneLen(r)
+	}
+	return cnt
+}
+
 // truncateUTF16Units truncates a string to a maximum number of UTF-16 code
 // units.
 func truncateUTF16Units(s string, length int) string {

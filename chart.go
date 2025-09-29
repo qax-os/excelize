@@ -904,6 +904,9 @@ func (opts *Chart) parseTitle() {
 //	ShowPercent
 //	ShowSerName
 //	ShowVal
+//	Fill
+//	UpBars
+//	DownBars
 //	NumFmt
 //
 // SecondPlotValues: Specifies the values in second plot for the 'PieOfPie' and
@@ -934,6 +937,14 @@ func (opts *Chart) parseTitle() {
 //
 // ShowVal: Specifies that the value shall be shown in a data label.
 // The 'ShowVal' property is optional. The default value is false.
+//
+// Fill: Set fill color of the chart.
+//
+// UpBars: Specifies the format for stock chart up bars. The 'UpBars' property
+// is optional.
+//
+// DownBars: Specifies the format for stock chart down bars. The 'DownBars'
+// property is optional.
 //
 // NumFmt: Specifies that if linked to source and set custom number format code
 // for data labels. The 'NumFmt' property is optional. The default format code
