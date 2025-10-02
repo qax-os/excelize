@@ -5351,9 +5351,8 @@ func (nf *numberFormat) getNumberFmtConf() {
 	}
 }
 
-// handleDigitsLiteral apply hash and zero place holder tokens for the number
-// literal.
-func handleDigitsLiteral(text string, tokenValueLen, intPartLen, hashZeroPartLen int) (int, string) {
+// handleDigitsLiteral apply digit placeholder tokens for the number literal
+func handleDigitsLiteral(text string, tokenValueLen, intPartLen, hashZeroPartLen int, fill bool) (int, string) {
 	var result string
 	l := tokenValueLen
 	if intPartLen == 0 && len(text) > hashZeroPartLen {
@@ -5366,6 +5365,8 @@ func handleDigitsLiteral(text string, tokenValueLen, intPartLen, hashZeroPartLen
 		j := i + intPartLen
 		if 0 <= j && j < len([]rune(text)) {
 			result += string([]rune(text)[j])
+		} else if fill {
+			result += " "
 		}
 	}
 	return l, result
@@ -5382,12 +5383,28 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 	if nf.usePositive {
 		result += "-"
 	}
-	for _, token := range nf.section[nf.sectionIdx].Items {
-		if token.TType == nfp.TokenTypeHashPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder {
-			hashZeroPartLen += len(token.TValue)
+	lastNonFractionPartDigital := math.MaxInt
+	appearedFraction := false
+	numeratorPlaceHolder := 0
+	for idx := len(nf.section[nf.sectionIdx].Items) - 1; idx >= 0; idx-- {
+		token := nf.section[nf.sectionIdx].Items[idx]
+		if token.TType == nfp.TokenTypeFraction {
+			appearedFraction = true
+		} else if appearedFraction && (token.TType == nfp.TokenTypeHashPlaceHolder || token.TType == nfp.TokenTypeDigitalPlaceHolder) {
+			lastNonFractionPartDigital = idx - 1 // current idx belongs to the fraction part(numerator)
+			break
 		}
 	}
-	for _, token := range nf.section[nf.sectionIdx].Items {
+	for idx, token := range nf.section[nf.sectionIdx].Items {
+		if token.TType == nfp.TokenTypeHashPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder {
+			hashZeroPartLen += len(token.TValue)
+		} else if token.TType == nfp.TokenTypeDigitalPlaceHolder {
+			if lastNonFractionPartDigital >= 0 && idx < lastNonFractionPartDigital {
+				hashZeroPartLen += len(token.TValue)
+			}
+		}
+	}
+	for idx, token := range nf.section[nf.sectionIdx].Items {
 		if token.TType == nfp.TokenTypeCurrencyLanguage {
 			_, _ = nf.currencyLanguageHandler(token)
 			result += nf.currencyString
@@ -5395,8 +5412,14 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 		if token.TType == nfp.TokenTypeLiteral {
 			result += token.TValue
 		}
-		if token.TType == nfp.TokenTypeHashPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder || token.TType == nfp.TokenTypeDigitalPlaceHolder {
-			digits, str := handleDigitsLiteral(text, len(token.TValue), intPartLen, hashZeroPartLen)
+		if token.TType == nfp.TokenTypeDigitalPlaceHolder && idx > lastNonFractionPartDigital {
+			//If it is a fraction part, it will be filled in by the fractalHandler()
+			//If not, fill placeHolder in directly here
+			if !useFraction { // numerator part
+				numeratorPlaceHolder = len(token.TValue)
+			}
+		} else if token.TType == nfp.TokenTypeHashPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder || token.TType == nfp.TokenTypeDigitalPlaceHolder {
+			digits, str := handleDigitsLiteral(text, len(token.TValue), intPartLen, hashZeroPartLen, token.TType == nfp.TokenTypeDigitalPlaceHolder)
 			intPartLen += digits
 			result += str
 		}
@@ -5405,7 +5428,7 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 			frac, useFraction = math.Abs(frac), true
 		}
 		if useFraction {
-			result += nf.fractionHandler(frac, token)
+			result += nf.fractionHandler(frac, token, numeratorPlaceHolder)
 		}
 	}
 	return nf.printSwitchArgument(result)
@@ -5413,18 +5436,28 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 
 // fractionHandler handling fraction number format expression for positive and
 // negative numeric.
-func (nf *numberFormat) fractionHandler(frac float64, token nfp.Token) string {
+func (nf *numberFormat) fractionHandler(frac float64, token nfp.Token, numeratorPlaceHolder int) string {
 	var rat, result string
+	var lastRat *big.Rat
 	if token.TType == nfp.TokenTypeDigitalPlaceHolder {
-		fracPlaceHolder := len(token.TValue)
+		denominatorPlaceHolder := len(token.TValue)
 		for i := 0; i < 5000; i++ {
-			if r := newRat(frac, int64(i), 0); len(r.Denom().String()) <= fracPlaceHolder {
-				if rat = r.String(); strings.HasPrefix(rat, "0/") {
-					rat = strings.Repeat(" ", 3)
-				}
+			if r := newRat(frac, int64(i), 0); len(r.Denom().String()) <= denominatorPlaceHolder {
+				lastRat = r // record the last valid ratio, and delay conversion to string
 				continue
 			}
 			break
+		}
+		if lastRat != nil {
+			if lastRat.Num().Int64() == 0 {
+				rat = strings.Repeat(" ", numeratorPlaceHolder+denominatorPlaceHolder+1)
+			} else {
+				num := lastRat.Num().String()
+				den := lastRat.Denom().String()
+				numeratorPlaceHolder = max(numeratorPlaceHolder-len(num), 0)
+				denominatorPlaceHolder = max(denominatorPlaceHolder-len(den), 0)
+				rat = fmt.Sprintf("%s%s/%s%s", strings.Repeat(" ", numeratorPlaceHolder), num, den, strings.Repeat(" ", denominatorPlaceHolder))
+			}
 		}
 		result += rat
 	}
