@@ -5351,7 +5351,7 @@ func (nf *numberFormat) getNumberFmtConf() {
 	}
 }
 
-// handleDigitsLiteral apply digit placeholder tokens for the number literal
+// handleDigitsLiteral apply digit placeholder tokens for the number literal.
 func handleDigitsLiteral(text string, tokenValueLen, intPartLen, hashZeroPartLen int, fill bool) (int, string) {
 	var result string
 	l := tokenValueLen
@@ -5391,14 +5391,15 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 		if token.TType == nfp.TokenTypeFraction {
 			appearedFraction = true
 		} else if appearedFraction && (token.TType == nfp.TokenTypeHashPlaceHolder || token.TType == nfp.TokenTypeDigitalPlaceHolder) {
-			lastNonFractionPartDigital = idx - 1 // current idx belongs to the fraction part(numerator)
+			lastNonFractionPartDigital = idx - 1 // current idx belongs to the fraction part (numerator)
 			break
 		}
 	}
 	for idx, token := range nf.section[nf.sectionIdx].Items {
-		if token.TType == nfp.TokenTypeHashPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder {
+		switch token.TType {
+		case nfp.TokenTypeHashPlaceHolder, nfp.TokenTypeZeroPlaceHolder:
 			hashZeroPartLen += len(token.TValue)
-		} else if token.TType == nfp.TokenTypeDigitalPlaceHolder {
+		case nfp.TokenTypeDigitalPlaceHolder:
 			if lastNonFractionPartDigital >= 0 && idx < lastNonFractionPartDigital {
 				hashZeroPartLen += len(token.TValue)
 			}
@@ -5413,8 +5414,8 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 			result += token.TValue
 		}
 		if token.TType == nfp.TokenTypeDigitalPlaceHolder && idx > lastNonFractionPartDigital {
-			//If it is a fraction part, it will be filled in by the fractalHandler()
-			//If not, fill placeHolder in directly here
+			// If it is a fraction part, it will be filled in by the fractalHandler()
+			// If not, fill placeHolder in directly here
 			if !useFraction { // numerator part
 				numeratorPlaceHolder = len(token.TValue)
 			}
@@ -5441,7 +5442,7 @@ func (nf *numberFormat) fractionHandler(frac float64, token nfp.Token, numerator
 	var lastRat *big.Rat
 	if token.TType == nfp.TokenTypeDigitalPlaceHolder {
 		denominatorPlaceHolder := len(token.TValue)
-		for i := 0; i < 5000; i++ {
+		for i := range 5000 {
 			if r := newRat(frac, int64(i), 0); len(r.Denom().String()) <= denominatorPlaceHolder {
 				lastRat = r // record the last valid ratio, and delay conversion to string
 				continue
