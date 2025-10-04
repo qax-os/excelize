@@ -115,3 +115,25 @@ type xlsxWebImageSupportingRichData struct {
 	MoreImagesAddress xlsxExternalReference `xml:"moreImagesAddress"`
 	Blip              xlsxExternalReference `xml:"blip"`
 }
+
+// xlsxRichValueStructuresData directly maps the rvStructures element that specifies
+// rich value data.
+type xlsxRichValueStructuresData struct {
+	XMLName xml.Name                 `xml:"rvStructures"`
+	Count   string                   `xml:"count,attr"`
+	S       []xlsxRichValueStructure `xml:"s"`
+}
+
+// xlsxRichValueStructure directly maps the RichValueStructure element that specifies rich
+// value data.
+type xlsxRichValueStructure struct {
+	T string             `xml:"t,attr"`
+	K []xlsxRichValueKey `xml:"k"`
+}
+
+// xlsxRichValueKey directly maps the rich value key element that specifies rich value
+// data.
+type xlsxRichValueKey struct {
+	N string `xml:"n,attr"`
+	T string `xml:"t,attr"`
+}
