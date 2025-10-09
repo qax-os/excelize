@@ -5520,8 +5520,9 @@ func (nf *numberFormat) numberHandler() string {
 		intLen, fracLen = nf.getNumberPartLen()
 		result          string
 	)
-	if isNum, precision, decimal := isNumeric(nf.value); isNum {
-		if precision > 15 && intLen+fracLen > 15 && !nf.useScientificNotation {
+	if intLen+fracLen > 15 && !nf.useScientificNotation {
+		isNum, precision, decimal := isNumeric(nf.value)
+		if isNum && precision > 15 {
 			return nf.printNumberLiteral(nf.printBigNumber(decimal, fracLen))
 		}
 	}
