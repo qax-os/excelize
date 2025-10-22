@@ -983,7 +983,7 @@ func extractPivotTableField(data string, fld *xlsxPivotField) PivotTableField {
 		ShowAll:        fld.ShowAll,
 		InsertBlankRow: fld.InsertBlankRow,
 	}
-	setPtrFieldsVal([]string{"Compact", "Name", "Outline", "DefaultSubtotal"},
+	setPtrFieldsVal([]string{"Compact", "Outline", "DefaultSubtotal"},
 		reflect.ValueOf(*fld), reflect.ValueOf(&pivotTableField).Elem())
 	return pivotTableField
 }
