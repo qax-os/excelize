@@ -1637,7 +1637,7 @@ var (
 	monthNamesChineseAbbr = []string{"一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"}
 	// monthNamesChineseNum list the month number and character abbreviation in
 	// the Chinese.
-	monthNamesChineseNum = []string{"0月", "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月"}
+	monthNamesChineseNum = []string{"1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"}
 	// monthNamesCorsican list the month names in the Corsican.
 	monthNamesCorsican = []string{"ghjennaghju", "ferraghju", "marzu", "aprile", "maghju", "ghjunghju", "lugliu", "aostu", "settembre", "ottobre", "nuvembre", "dicembre"}
 	// monthNamesCorsican lists the month name abbreviations in the Corsican.
@@ -5966,7 +5966,7 @@ func localMonthsNameCherokee(t time.Time, abbr int) string {
 // localMonthsNameChinese1 returns the Chinese name of the month.
 func localMonthsNameChinese1(t time.Time, abbr int) string {
 	if abbr == 3 {
-		return monthNamesChineseNum[t.Month()]
+		return monthNamesChineseNum[t.Month()-1]
 	}
 	if abbr == 4 {
 		return monthNamesChinese[int(t.Month())-1]
@@ -5985,7 +5985,7 @@ func localMonthsNameChinese2(t time.Time, abbr int) string {
 // localMonthsNameChinese3 returns the Chinese name of the month.
 func localMonthsNameChinese3(t time.Time, abbr int) string {
 	if abbr == 3 || abbr == 4 {
-		return monthNamesChineseNum[t.Month()]
+		return monthNamesChineseNum[t.Month()-1]
 	}
 	return strconv.Itoa(int(t.Month()))
 }
