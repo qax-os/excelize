@@ -371,6 +371,7 @@ func (f *File) getActiveSheetID() int {
 // sheet name in the formula or reference associated with the cell. So there
 // may be problem formula error or reference missing.
 func (f *File) SetSheetName(source, target string) error {
+	f.clearCalcCache()
 	var err error
 	if err = checkSheetName(source); err != nil {
 		return err
@@ -570,6 +571,7 @@ func (f *File) setSheetBackground(sheet, extension string, file []byte) error {
 // value of the deleted worksheet, it will cause a file error when you open
 // it. This function will be invalid when only one worksheet is left.
 func (f *File) DeleteSheet(sheet string) error {
+	f.clearCalcCache()
 	if err := checkSheetName(sheet); err != nil {
 		return err
 	}
@@ -624,6 +626,7 @@ func (f *File) DeleteSheet(sheet string) error {
 //
 //	err := f.MoveSheet("Sheet2", "Sheet1")
 func (f *File) MoveSheet(source, target string) error {
+	f.clearCalcCache()
 	if strings.EqualFold(source, target) {
 		return nil
 	}
@@ -751,6 +754,7 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 //	}
 //	err = f.CopySheet(0, index)
 func (f *File) CopySheet(from, to int) error {
+	f.clearCalcCache()
 	if from < 0 || to < 0 || from == to || f.GetSheetName(from) == "" || f.GetSheetName(to) == "" {
 		return ErrSheetIdx
 	}
