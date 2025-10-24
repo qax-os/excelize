@@ -1,0 +1,15 @@
+{
+  "package": "Xlog",
+  "version": "1.0.0",
+  "author": "",
+  "email": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Aeraphe/xvba-cli.git"
+  },
+  "description": "Creating amazing XVBA packages",
+  "dependencies": {},
+  "dev_dependencies": {},
+  "homepage": "https://github.com/Aeraphe/xvba-cli"
+}

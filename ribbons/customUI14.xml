@@ -1,0 +1,15 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon startFromScratch="false">
+    <tabs>
+      <tab id="customTab" label="Xvba">
+        <group id="customGroup1" label="Default">
+          <button id="btn1" label="Custom-Image" image="home" size="normal" onAction="MyRibbon.btn1" />
+          <button id="btn2" label="Button-2" imageMso="RightArrow2" size="normal" onAction="MyRibbon.btn2" />
+        </group>
+        <group id="customGroup2" label="Second">
+          <button id="btn3" label="Button-3" imageMso="MasterDocumentShow" size="normal" onAction="MyRibbon.btn3" />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

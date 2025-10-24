@@ -1,0 +1,14 @@
+{
+    "app_name": "XVBA",
+    "description": "",
+    "author": "",
+    "email": "",
+    "create_ate": "Thu Oct 23 2025 20:49:23 GMT-0600 (Central Standard Time)",
+    "excel_file": "index.xlsb",
+    "vba_folder": "vba-files",
+    "ribbon_file": "customUI14",
+    "ribbon_folder": "ribbons",
+    "logs": "on",
+    "xvba_packages": {},
+    "xvba_dev_packages": {}
+}

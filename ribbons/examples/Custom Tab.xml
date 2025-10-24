@@ -1,0 +1,11 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+	<ribbon startFromScratch="false">
+		<tabs>
+			<tab id="customTab" label="Custom Tab">
+				<group id="customGroup" label="Custom Group">
+					<button id="customButton" label="Custom Button" imageMso="HappyFace" size="large" onAction="Callback" />
+				</group>
+			</tab>
+		</tabs>
+	</ribbon>
+</customUI>
