@@ -13,3 +13,5 @@ test/Test*.xlsm
 test/Test*.xlsx
 test/Test*.xltm
 test/Test*.xltx
+logs/xvba_debug.log
+logs/excel_server.log
