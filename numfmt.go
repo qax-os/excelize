@@ -5439,27 +5439,8 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 // negative numeric.
 func (nf *numberFormat) fractionHandler(frac float64, token nfp.Token, numeratorPlaceHolder int) string {
 	var rat, result string
-	var lastRat *big.Rat
 	if token.TType == nfp.TokenTypeDigitalPlaceHolder {
-		denominatorPlaceHolder := len(token.TValue)
-		for i := range 5000 {
-			if r := newRat(frac, int64(i), 0); len(r.Denom().String()) <= denominatorPlaceHolder {
-				lastRat = r // record the last valid ratio, and delay conversion to string
-				continue
-			}
-			break
-		}
-		if lastRat != nil {
-			if lastRat.Num().Int64() == 0 {
-				rat = strings.Repeat(" ", numeratorPlaceHolder+denominatorPlaceHolder+1)
-			} else {
-				num := lastRat.Num().String()
-				den := lastRat.Denom().String()
-				numeratorPlaceHolder = max(numeratorPlaceHolder-len(num), 0)
-				denominatorPlaceHolder = max(denominatorPlaceHolder-len(den), 0)
-				rat = fmt.Sprintf("%s%s/%s%s", strings.Repeat(" ", numeratorPlaceHolder), num, den, strings.Repeat(" ", denominatorPlaceHolder))
-			}
-		}
+		rat = floatToFraction(frac, numeratorPlaceHolder, len(token.TValue))
 		result += rat
 	}
 	if token.TType == nfp.TokenTypeDenominator {
@@ -5539,8 +5520,9 @@ func (nf *numberFormat) numberHandler() string {
 		intLen, fracLen = nf.getNumberPartLen()
 		result          string
 	)
-	if isNum, precision, decimal := isNumeric(nf.value); isNum {
-		if precision > 15 && intLen+fracLen > 15 && !nf.useScientificNotation {
+	if intLen+fracLen > 15 && !nf.useScientificNotation {
+		isNum, precision, decimal := isNumeric(nf.value)
+		if isNum && precision > 15 {
 			return nf.printNumberLiteral(nf.printBigNumber(decimal, fracLen))
 		}
 	}

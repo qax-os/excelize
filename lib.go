@@ -880,6 +880,54 @@ func continuedFraction(n float64, i int64, limit int64, prec float64) *big.Rat {
 	return res
 }
 
+func floatToFraction(x float64, numeratorPlaceHolder, denominatorPlaceHolder int) string {
+	if denominatorPlaceHolder <= 0 {
+		return ""
+	}
+	var rat string
+	num, den := floatToFracUseContinuedFraction(x, int64(math.Pow10(denominatorPlaceHolder)))
+	if num == 0 {
+		rat = strings.Repeat(" ", numeratorPlaceHolder+denominatorPlaceHolder+1)
+	} else {
+		numStr := strconv.FormatInt(num, 10)
+		denStr := strconv.FormatInt(den, 10)
+		numeratorPlaceHolder = max(numeratorPlaceHolder-len(numStr), 0)
+		denominatorPlaceHolder = max(denominatorPlaceHolder-len(denStr), 0)
+		rat = fmt.Sprintf("%s%s/%s%s", strings.Repeat(" ", numeratorPlaceHolder), numStr, denStr, strings.Repeat(" ", denominatorPlaceHolder))
+	}
+	return rat
+}
+
+// floatToFracUseContinuedFraction implement convert a floating-point decimal
+// to a fraction using continued fractions and recurrence relations.
+func floatToFracUseContinuedFraction(x float64, denominatorLimit int64) (num, den int64) {
+	p_1 := int64(1)
+	q_1 := int64(0)
+	p_2 := int64(0)
+	q_2 := int64(1)
+	var lasta, lastb int64
+	var curra, currb int64
+	for i := 0; i < 100; i++ {
+		a := int64(math.Floor(x))
+		curra, currb = a*p_1+p_2, a*q_1+q_2
+		p_2 = p_1
+		q_2 = q_1
+		p_1 = curra
+		q_1 = currb
+		frac := x - float64(a)
+		if q_1 >= denominatorLimit {
+			return lasta, lastb //big.NewRat(lasta, lastb)
+		}
+		if math.Abs(frac) < 1e-12 {
+			return curra, currb //big.NewRat(curra, currb)
+		}
+
+		lasta, lastb = curra, currb
+		x = 1.0 / frac
+	}
+	return lasta, lastb //big.NewRat(lasta, lastb)
+}
+
 // assignFieldValue assigns the value from an immutable reflect.Value to a
 // mutable reflect.Value based on the type of the immutable value.
 func assignFieldValue(field string, immutable, mutable reflect.Value) {
