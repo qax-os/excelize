@@ -160,7 +160,7 @@ func (f *File) workSheetWriter() {
 		if ws != nil {
 			sheet := ws.(*xlsxWorksheet)
 			if sheet.MergeCells != nil && len(sheet.MergeCells.Cells) > 0 {
-				_ = f.mergeOverlapCells(sheet)
+				_ = sheet.mergeOverlapCells()
 			}
 			if sheet.Cols != nil && len(sheet.Cols.Col) > 0 {
 				f.mergeExpandedCols(sheet)
@@ -197,12 +197,15 @@ func trimRow(sheetData *xlsxSheetData) []xlsxRow {
 		i   int
 	)
 
-	for k := range sheetData.Row {
+	for k := 0; k < len(sheetData.Row); k++ {
 		row = sheetData.Row[k]
 		if row = trimCell(row); len(row.C) != 0 || row.hasAttr() {
 			sheetData.Row[i] = row
+			i++
+			continue
 		}
-		i++
+		sheetData.Row = append(sheetData.Row[:k], sheetData.Row[k+1:]...)
+		k--
 	}
 	return sheetData.Row[:i]
 }

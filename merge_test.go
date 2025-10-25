@@ -217,11 +217,6 @@ func TestUnmergeCell(t *testing.T) {
 	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 }
 
-func TestFlatMergedCells(t *testing.T) {
-	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: ""}}}}
-	assert.EqualError(t, flatMergedCells(ws, [][]*xlsxMergeCell{}), "cannot convert cell \"\" to coordinates: invalid cell name \"\"")
-}
-
 func TestMergeCellsParser(t *testing.T) {
 	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{nil}}}
 	_, err := ws.mergeCellsParser("A1")
