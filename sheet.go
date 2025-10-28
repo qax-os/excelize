@@ -1733,7 +1733,6 @@ func (f *File) GetPageLayout(sheet string) (PageLayoutOptions, error) {
 //	    Name:     "Amount",
 //	    RefersTo: "Sheet1!$A$2:$D$5",
 //	    Comment:  "defined name comment",
-//	    Scope:    "Sheet2",
 //	})
 //
 // If you fill the RefersTo property with only one columns range without a
@@ -1753,6 +1752,14 @@ func (f *File) GetPageLayout(sheet string) (PageLayoutOptions, error) {
 //	    RefersTo: "Sheet1!$1:$1",
 //	    Scope:    "Sheet1",
 //	})
+//
+// You can also use the function in RefersTo. For example:
+//
+// 	err := f.SetDefinedName(&excelize.DefinedName{
+//     Name:     "CustomRange",
+//     RefersTo: "Sheet1!$A$2+Sheet1!$D$5",
+//     Scope:    "Sheet1",
+// 	})
 func (f *File) SetDefinedName(definedName *DefinedName) error {
 	if definedName.Name == "" || definedName.RefersTo == "" {
 		return ErrParameterInvalid
