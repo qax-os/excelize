@@ -4350,8 +4350,7 @@ func BenchmarkNumFmtPlaceHolder(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		for _, item := range items {
-			result := format(item[0], item[1], false, CellTypeNumber, nil)
-			_ = result
+			_ = format(item[0], item[1], false, CellTypeNumber, nil)
 		}
 	}
 }
