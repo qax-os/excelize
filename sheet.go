@@ -1755,11 +1755,11 @@ func (f *File) GetPageLayout(sheet string) (PageLayoutOptions, error) {
 //
 // You can also use the function in RefersTo. For example:
 //
-// 	err := f.SetDefinedName(&excelize.DefinedName{
-//     Name:     "CustomRange",
-//     RefersTo: "Sheet1!$A$2+Sheet1!$D$5",
-//     Scope:    "Sheet1",
-// 	})
+//	err := f.SetDefinedName(&excelize.DefinedName{
+//	    Name:     "CustomRange",
+//	    RefersTo: "Sheet1!$A$2+Sheet1!$D$5",
+//	    Scope:    "Sheet1",
+//	})
 func (f *File) SetDefinedName(definedName *DefinedName) error {
 	if definedName.Name == "" || definedName.RefersTo == "" {
 		return ErrParameterInvalid
