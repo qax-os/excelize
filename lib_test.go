@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -96,12 +95,12 @@ func TestColumnNumberToName_OK(t *testing.T) {
 func TestColumnNumberToName_Error(t *testing.T) {
 	out, err := ColumnNumberToName(-1)
 	if assert.Error(t, err) {
-		assert.Equal(t, "", out)
+		assert.Empty(t, out)
 	}
 
 	out, err = ColumnNumberToName(0)
 	if assert.Error(t, err) {
-		assert.Equal(t, "", out)
+		assert.Empty(t, out)
 	}
 
 	_, err = ColumnNumberToName(MaxColumns + 1)
@@ -289,6 +288,10 @@ func TestBytesReplace(t *testing.T) {
 
 func TestGetRootElement(t *testing.T) {
 	assert.Len(t, getRootElement(xml.NewDecoder(strings.NewReader(""))), 0)
+	// Test get workbook root element which all workbook XML namespace has prefix
+	f := NewFile()
+	d := f.xmlNewDecoder(bytes.NewReader([]byte(`<x:workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"></x:workbook>`)))
+	assert.Len(t, getRootElement(d), 3)
 }
 
 func TestSetIgnorableNameSpace(t *testing.T) {
@@ -350,6 +353,28 @@ func TestBstrMarshal(t *testing.T) {
 	}
 }
 
+func TestTruncateUTF16Units(t *testing.T) {
+	assertTrunc := func(s string, max int, expected string) {
+		assert.Equal(t, expected, truncateUTF16Units(s, max), "src=%q max=%d", s, max)
+		assert.LessOrEqual(t, countUTF16String(truncateUTF16Units(s, max)), max)
+	}
+	// No truncation
+	assertTrunc("ABC", 3, "ABC")
+	assertTrunc("A\U0001F600B", 4, "A\U0001F600B")
+	// Truncate cutting before BMP rune
+	assertTrunc("ABCDE", 3, "ABC")
+	// Truncate with surrogate pair boundary: keep pair intact
+	assertTrunc("A\U0001F600B", 3, "A\U0001F600") // 1 + 2 units
+	assertTrunc("A\U0001F600B", 2, "A")           // pair would overflow
+	assertTrunc("\U0001F600B", 1, "")             // first rune (2 units) exceeds limit
+	assertTrunc("\U0001F600B", 2, "\U0001F600")   // exact fit
+	assertTrunc("\U0001F600B", 3, "\U0001F600B")  // allow extra
+	// Multiple surrogate pairs
+	assertTrunc("\U0001F600\U0001F600B", 2, "\U0001F600")           // corrected expectation per logic
+	assertTrunc("\U0001F600\U0001F600B", 3, "\U0001F600")           // 2 units kept, next pair would exceed
+	assertTrunc("\U0001F600\U0001F600B", 4, "\U0001F600\U0001F600") // both pairs (4 units)
+}
+
 func TestReadBytes(t *testing.T) {
 	f := &File{tempFiles: sync.Map{}}
 	sheet := "xl/worksheets/sheet1.xml"
@@ -358,9 +383,6 @@ func TestReadBytes(t *testing.T) {
 }
 
 func TestUnzipToTemp(t *testing.T) {
-	if ver := runtime.Version(); strings.HasPrefix(ver, "go1.19") || strings.HasPrefix(ver, "go1.2") {
-		t.Skip()
-	}
 	os.Setenv("TMPDIR", "test")
 	defer os.Unsetenv("TMPDIR")
 	assert.NoError(t, os.Chmod(os.TempDir(), 0o444))
@@ -378,7 +400,7 @@ func TestUnzipToTemp(t *testing.T) {
 		"\x00\x00\x00\x00\x0000000000\x00\x00\x00\x00000" +
 		"00000000PK\x01\x0200000000" +
 		"0000000000000000\v\x00\x00\x00" +
-		"\x00\x0000PK\x05\x06000000\x05\x000000" +
+		"\x00\x0000PK\x05\x06000000\x05\x00\xfd\x00\x00\x00" +
 		"\v\x00\x00\x00\x00\x00")
 	z, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	assert.NoError(t, err)
