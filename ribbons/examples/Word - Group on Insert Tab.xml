@@ -1,0 +1,11 @@
+﻿<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+	<ribbon>
+		<tabs>
+			<tab idMso="TabInsert">
+				<group id="customGroup" label="Contoso" insertAfterMso="GroupIllustrations">
+					<button id="customButton" label="Document ID" size="large" imageMso="ListNumVal" onAction="insertDocID" />
+				</group>
+			</tab>
+		</tabs>
+	</ribbon>
+</customUI>

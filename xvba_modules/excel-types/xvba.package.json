@@ -1,0 +1,15 @@
+{
+  "package": "excel-types",
+  "version": "1.0.0",
+  "author": "Alberto Oliveira",
+  "email": "alberto.aeraph@gmail.comn",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Aeraphe/excel-types.git"
+  },
+  "description": "Creating amazing XVBA packages",
+  "dependencies": {},
+  "dev_dependencies": {},
+  "homepage": "https://github.com/Aeraphe/xvba-cli"
+}
