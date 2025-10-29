@@ -1745,3 +1745,72 @@ func BenchmarkOpenFile(b *testing.B) {
 		}
 	}
 }
+
+func TestEntityWriter(t *testing.T) {
+	jsonFile, err := os.Open("test/testEntity.json")
+	if err != nil {
+		assert.NoError(t, err)
+	}
+	defer jsonFile.Close()
+
+	byteValue, _ := io.ReadAll(jsonFile)
+
+	f := NewFile()
+	defer func() {
+		if err := f.Close(); err != nil {
+			assert.NoError(t, err)
+		}
+	}()
+
+	index, err := f.NewSheet("Sheet1")
+	if err != nil {
+		assert.NoError(t, err)
+		return
+	}
+	f.SetActiveSheet(index)
+
+	err = f.AddEntity("Sheet1", "A1", byteValue)
+	if err != nil {
+		assert.NoError(t, err)
+	}
+
+	if err := f.SaveAs("test/TestEntity.xlsx"); err != nil {
+		assert.NoError(t, err)
+	}
+
+}
+
+func TestEntityAndCellWriter(t *testing.T) {
+	jsonFile, err := os.Open("test/testEntity.json")
+	if err != nil {
+		assert.NoError(t, err)
+	}
+	defer jsonFile.Close()
+
+	byteValue, _ := io.ReadAll(jsonFile)
+
+	f := NewFile()
+	defer func() {
+		if err := f.Close(); err != nil {
+			assert.NoError(t, err)
+		}
+	}()
+
+	index, err := f.NewSheet("Sheet1")
+	if err != nil {
+		assert.NoError(t, err)
+		return
+	}
+	f.SetActiveSheet(index)
+
+	err = f.AddEntity("Sheet1", "A1", byteValue)
+	if err != nil {
+		assert.NoError(t, err)
+	}
+	f.SetCellValue("Sheet1", "A2", "Hello world.")
+
+	if err := f.SaveAs("test/TestEntity.xlsx"); err != nil {
+		assert.NoError(t, err)
+	}
+
+}
