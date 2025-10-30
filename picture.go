@@ -15,7 +15,9 @@ import (
 	"bytes"
 	"encoding/xml"
 	"image"
+	"image/color"
 	"io"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -236,9 +238,19 @@ func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 		return ErrParameterInvalid
 	}
 	options := parseGraphicOptions(pic.Format)
-	img, _, err := image.DecodeConfig(bytes.NewReader(pic.File))
-	if err != nil {
-		return err
+	var img image.Config
+	if ext == ".svg" {
+		cfg, err := svgDecodeConfig(pic.File)
+		if err != nil {
+			return err
+		}
+		img = cfg
+	} else {
+		cfg, _, err := image.DecodeConfig(bytes.NewReader(pic.File))
+		if err != nil {
+			return err
+		}
+		img = cfg
 	}
 	// Read sheet data
 	f.mu.Lock()
@@ -284,6 +296,109 @@ func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 	}
 	f.addSheetNameSpace(sheet, SourceRelationship)
 	return err
+}
+
+// --- SVG helpers ---
+
+type svgRoot struct {
+	Width   string `xml:"width,attr"`
+	Height  string `xml:"height,attr"`
+	ViewBox string `xml:"viewBox,attr"`
+}
+
+// svgUnitToPx converts a numeric string with an optional unit suffix
+// (e.g. "16px", "12pt", "1in") to pixels using a 96-DPI scale,
+// which is the standard DPI for Office/Excel.
+func svgUnitToPx(s string) (float64, bool) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0, false
+	}
+	i := len(s)
+	for i > 0 && (s[i-1] < '0' || s[i-1] > '9') && s[i-1] != '.' {
+		i--
+	}
+	num := strings.TrimSpace(s[:i])
+	unit := strings.ToLower(strings.TrimSpace(s[i:]))
+
+	v, err := strconv.ParseFloat(num, 64)
+	if err != nil {
+		return 0, false
+	}
+	switch unit {
+	case "", "px":
+		return v, true
+	case "pt":
+		return v * (96.0 / 72.0), true
+	case "in":
+		return v * 96.0, true
+	case "mm":
+		return v * (96.0 / 25.4), true
+	case "cm":
+		return v * (96.0 / 2.54), true
+	default:
+		return 0, false
+	}
+}
+
+// svgDecodeConfig extracts approximate image dimensions for SVG files
+// based on the <svg> element's width/height attributes or its viewBox.
+// Only the root <svg ...> element is parsed; the SVG content is not rendered.
+func svgDecodeConfig(b []byte) (image.Config, error) {
+	var root svgRoot
+	dec := xml.NewDecoder(bytes.NewReader(b))
+	dec.Strict = false
+	dec.AutoClose = xml.HTMLAutoClose
+	dec.Entity = xml.HTMLEntity
+
+	// Read only the root <svg> element and decode its attributes.
+	for {
+		tok, err := dec.Token()
+		if err != nil {
+			return image.Config{}, err
+		}
+		if se, ok := tok.(xml.StartElement); ok && strings.EqualFold(se.Name.Local, "svg") {
+			if err := dec.DecodeElement(&root, &se); err != nil && err != io.EOF {
+				return image.Config{}, err
+			}
+			break
+		}
+	}
+
+	// 1) Use width/height attributes if both are present and valid.
+	if wpx, okW := svgUnitToPx(root.Width); okW {
+		if hpx, okH := svgUnitToPx(root.Height); okH {
+			return image.Config{
+				ColorModel: color.RGBAModel,
+				Width:      int(math.Max(1, math.Round(wpx))),
+				Height:     int(math.Max(1, math.Round(hpx))),
+			}, nil
+		}
+	}
+
+	// 2) Otherwise, try to infer dimensions from the viewBox attribute:
+	//    "minX minY width height"
+	if root.ViewBox != "" {
+		parts := strings.Fields(root.ViewBox)
+		if len(parts) == 4 {
+			if vw, err1 := strconv.ParseFloat(parts[2], 64); err1 == nil && vw > 0 {
+				if vh, err2 := strconv.ParseFloat(parts[3], 64); err2 == nil && vh > 0 {
+					return image.Config{
+						ColorModel: color.RGBAModel,
+						Width:      int(math.Max(1, math.Round(vw))),
+						Height:     int(math.Max(1, math.Round(vh))),
+					}, nil
+				}
+			}
+		}
+	}
+
+	// 3) Fallback to a default icon-sized bounding box if nothing is specified.
+	return image.Config{
+		ColorModel: color.RGBAModel,
+		Width:      16,
+		Height:     16,
+	}, nil
 }
 
 // addSheetLegacyDrawing provides a function to add legacy drawing element to
