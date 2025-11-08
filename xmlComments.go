@@ -26,6 +26,7 @@ type xlsxComments struct {
 	XMLName     xml.Name        `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main comments"`
 	Authors     xlsxAuthor      `xml:"authors"`
 	CommentList xlsxCommentList `xml:"commentList"`
+	cells       []string
 }
 
 // xlsxAuthor directly maps the author element. This element holds a string

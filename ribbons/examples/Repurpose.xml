@@ -1,6 +1,0 @@
-<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
-	<commands>
-		<command idMso="Bold" enabled="false"/>
-		<command idMso="Save" onAction="MySave"/>
-	</commands>
-</customUI>
