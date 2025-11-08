@@ -193,6 +193,12 @@ func (err ErrSheetNotExist) Error() string {
 	return fmt.Sprintf("sheet %s does not exist", err.SheetName)
 }
 
+// newAddCommentError defined the error message on the comment already exist in
+// the cell.
+func newAddCommentError(cell string) error {
+	return fmt.Errorf("comment already exist on cell %s", cell)
+}
+
 // newCellNameToCoordinatesError defined the error message on converts
 // alphanumeric cell name to coordinates.
 func newCellNameToCoordinatesError(cell string, err error) error {

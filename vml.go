@@ -108,8 +108,9 @@ func (f *File) getSheetComments(sheetFile string) string {
 // AddComment provides the method to add comments in a sheet by giving the
 // worksheet name, cell reference, and format set (such as author and text).
 // Note that the maximum author name length is 255 and the max text length is
-// 32512. For example, add a rich-text comment with a specified comments box
-// size in Sheet1!A5:
+// 32512, and each cell can only have one comment, an error will return if
+// adding comment on a cell which already exist comment. For example, add a
+// rich-text comment with a specified comments box size in Sheet1!A5:
 //
 //	err := f.AddComment("Sheet1", excelize.Comment{
 //	    Cell:   "A5",
@@ -169,10 +170,17 @@ func (f *File) DeleteComment(sheet, cell string) error {
 					cmts.CommentList.Comment[:i],
 					cmts.CommentList.Comment[i+1:]...,
 				)
+				if idx := inStrSlice(cmts.cells, cell, true); idx != -1 {
+					cmts.cells = append(
+						cmts.cells[:idx],
+						cmts.cells[idx+1:]...,
+					)
+				}
 				i--
 				continue
 			}
 			cmts.CommentList.Comment = nil
+			cmts.cells = nil
 		}
 		f.Comments[commentsXML] = cmts
 	}
@@ -272,6 +280,9 @@ func (f *File) addComment(commentsXML string, opts vmlOptions) error {
 	if cmts == nil {
 		cmts = &xlsxComments{Authors: xlsxAuthor{Author: []string{opts.Author}}}
 	}
+	if inStrSlice(cmts.cells, opts.Comment.Cell, true) != -1 {
+		return newAddCommentError(opts.Comment.Cell)
+	}
 	if inStrSlice(cmts.Authors.Author, opts.Author, true) == -1 {
 		cmts.Authors.Author = append(cmts.Authors.Author, opts.Author)
 		authorID = len(cmts.Authors.Author) - 1
@@ -320,6 +331,7 @@ func (f *File) addComment(commentsXML string, opts vmlOptions) error {
 		cmt.Text.R = append(cmt.Text.R, r)
 	}
 	cmts.CommentList.Comment = append(cmts.CommentList.Comment, cmt)
+	cmts.cells = append(cmts.cells, cmt.Ref)
 	f.Comments[commentsXML] = cmts
 	return err
 }
@@ -354,6 +366,12 @@ func (f *File) commentsReader(path string) (*xlsxComments, error) {
 				return nil, err
 			}
 		}
+	}
+	if cmts := f.Comments[path]; cmts != nil && len(cmts.cells) == 0 {
+		for idx := 0; idx < len(cmts.CommentList.Comment); idx++ {
+			cmts.cells = append(cmts.cells, cmts.CommentList.Comment[idx].Ref)
+		}
+		f.Comments[path] = cmts
 	}
 	return f.Comments[path], nil
 }
