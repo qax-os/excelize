@@ -429,7 +429,7 @@ func oldFractionHandler(frac float64, fracPlaceHolder int) string {
 }
 
 func TestFloat2Frac(t *testing.T) {
-	valueList := []float64{0.19, 0.54, 0.9, 0.99, 0.999, 0.999}
+	valueList := []float64{0.19, 0.54, 0.9, 0.99, 0.999, 0.9999}
 	for _, v := range valueList {
 		for idx := 0; idx <= 10; idx++ {
 			res1 := strings.Trim(oldFractionHandler(v, idx), " ")
@@ -448,4 +448,5 @@ func TestFloat2Frac(t *testing.T) {
 			}
 		}
 	}
+	assert.Equal(t, "954888175898973913/351283728530932463", floatToFraction(math.E, 1, 18))
 }

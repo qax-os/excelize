@@ -900,32 +900,36 @@ func floatToFraction(x float64, numeratorPlaceHolder, denominatorPlaceHolder int
 
 // floatToFracUseContinuedFraction implement convert a floating-point decimal
 // to a fraction using continued fractions and recurrence relations.
-func floatToFracUseContinuedFraction(x float64, denominatorLimit int64) (num, den int64) {
-	p_1 := int64(1)
-	q_1 := int64(0)
-	p_2 := int64(0)
-	q_2 := int64(1)
+// Formula reference: https://en.wikipedia.org/wiki/Continued_fraction#Fundamental_recurrence_formulas
+// or https://oi-wiki.org/math/number-theory/continued-fraction/#%E9%80%92%E6%8E%A8%E5%85%B3%E7%B3%BB
+func floatToFracUseContinuedFraction(r float64, denominatorLimit int64) (num, den int64) {
+	p_1 := int64(1) // LaTex: p_{-1}
+	q_1 := int64(0) // LaTex: q_{-1}
+	p_2 := int64(0) // LaTex: p_{-2}
+	q_2 := int64(1) // LaTex: q_{-2}
 	var lasta, lastb int64
 	var curra, currb int64
-	for i := 0; i < 100; i++ {
-		a := int64(math.Floor(x))
+	for k := 0; ; k++ {
+		// a_{k} = \lfloor r_{k} \rfloor
+		a := int64(math.Floor(r))
+		// Fundamental recurrence formulas:  p_{k} = a_{k} \cdot p_{k-1} + p_{k-2}
 		curra, currb = a*p_1+p_2, a*q_1+q_2
 		p_2 = p_1
 		q_2 = q_1
 		p_1 = curra
 		q_1 = currb
-		frac := x - float64(a)
+		frac := r - float64(a)
 		if q_1 >= denominatorLimit {
-			return lasta, lastb //big.NewRat(lasta, lastb)
+			return lasta, lastb
 		}
 		if math.Abs(frac) < 1e-12 {
-			return curra, currb //big.NewRat(curra, currb)
+			// use safe floating-point number comparison. If the input(r) is a real number, here is 0.
+			return curra, currb
 		}
-
 		lasta, lastb = curra, currb
-		x = 1.0 / frac
+		// r_{k+1} = \frac{1}{r_{k} - a_{k}}
+		r = 1.0 / frac
 	}
-	return lasta, lastb //big.NewRat(lasta, lastb)
 }
 
 // assignFieldValue assigns the value from an immutable reflect.Value to a
