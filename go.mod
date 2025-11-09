@@ -4,14 +4,14 @@ go 1.24.0
 
 require (
 	github.com/richardlehane/mscfb v1.0.4
-	github.com/stretchr/testify v1.10.0
-	github.com/tiendc/go-deepcopy v1.6.1
+	github.com/stretchr/testify v1.11.1
+	github.com/tiendc/go-deepcopy v1.7.1
 	github.com/xuri/efp v0.0.1
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9
-	golang.org/x/crypto v0.42.0
+	golang.org/x/crypto v0.43.0
 	golang.org/x/image v0.25.0
-	golang.org/x/net v0.44.0
-	golang.org/x/text v0.29.0
+	golang.org/x/net v0.46.0
+	golang.org/x/text v0.30.0
 )
 
 require (

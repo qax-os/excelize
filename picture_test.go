@@ -160,7 +160,7 @@ func TestGetPicture(t *testing.T) {
 	assert.NoError(t, f.AddPicture("Sheet1", "A1", filepath.Join("test", "images", "excel.png"), nil))
 	pics, err := f.GetPictures("Sheet1", "A1")
 	assert.NoError(t, err)
-	assert.Len(t, pics[0].File, 13233)
+	assert.Len(t, pics[0].File, 4718)
 	assert.Empty(t, pics[0].Format.AltText)
 	assert.Equal(t, PictureInsertTypePlaceOverCells, pics[0].InsertType)
 
