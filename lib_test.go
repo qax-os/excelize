@@ -414,39 +414,9 @@ func TestUnzipToTemp(t *testing.T) {
 	assert.EqualError(t, err, "EOF")
 }
 
-func oldFractionHandler(frac float64, fracPlaceHolder int) string {
-	var rat string
-	for i := 0; i < 5000; i++ {
-		if r := newRat(frac, int64(i), 0); len(r.Denom().String()) <= fracPlaceHolder {
-			if rat = r.String(); strings.HasPrefix(rat, "0/") {
-				rat = strings.Repeat(" ", 3)
-			}
-			continue
-		}
-		break
-	}
-	return rat
-}
-
 func TestFloat2Frac(t *testing.T) {
-	valueList := []float64{0.19, 0.54, 0.9, 0.99, 0.999, 0.9999}
-	for _, v := range valueList {
-		for idx := 0; idx <= 10; idx++ {
-			res1 := strings.Trim(oldFractionHandler(v, idx), " ")
-			res2 := strings.Trim(floatToFraction(v, idx, idx), " ")
-			assert.Equal(t, res1, res2, "value %f, fracPlaceHolder %d", v, idx)
-		}
-	}
-	for k := range 10 {
-		val := math.Pi / math.Pow(10, float64(k))
-		for idx := 1; idx <= 5; idx++ {
-			res1 := strings.Trim(oldFractionHandler(val, idx), " ")
-			res2 := strings.Trim(floatToFraction(val, idx, idx), " ")
-			assert.Equal(t, res1, res2, "value %f, fracPlaceHolder %d", val, idx)
-			if res1 != "" {
-				t.Log(idx, val, res1, res2)
-			}
-		}
-	}
+	assert.Empty(t, floatToFraction(0.19, 0, 0))
+	assert.Equal(t, "1/5", floatToFraction(0.19, 1, 1))
+	assert.Equal(t, "9999/10000", strings.Trim(floatToFraction(0.9999, 10, 10), " "))
 	assert.Equal(t, "954888175898973913/351283728530932463", floatToFraction(math.E, 1, 18))
 }

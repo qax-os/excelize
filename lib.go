@@ -856,52 +856,25 @@ func bstrMarshal(s string) (result string) {
 	return result
 }
 
-// newRat converts decimals to rational fractions with the required precision.
-func newRat(n float64, iterations int64, prec float64) *big.Rat {
-	x := int64(math.Floor(n))
-	y := n - float64(x)
-	rat := continuedFraction(y, 1, iterations, prec)
-	return rat.Add(rat, new(big.Rat).SetInt64(x))
-}
-
-// continuedFraction returns rational from decimal with the continued fraction
-// algorithm.
-func continuedFraction(n float64, i int64, limit int64, prec float64) *big.Rat {
-	if i >= limit || n <= prec {
-		return big.NewRat(0, 1)
-	}
-	inverted := 1 / n
-	y := int64(math.Floor(inverted))
-	x := inverted - float64(y)
-	ratY := new(big.Rat).SetInt64(y)
-	ratNext := continuedFraction(x, i+1, limit, prec)
-	res := ratY.Add(ratY, ratNext)
-	res = res.Inv(res)
-	return res
-}
-
+// floatToFraction converts a float number to a fraction string representation
+// with specified placeholder widths for numerator and denominator.
 func floatToFraction(x float64, numeratorPlaceHolder, denominatorPlaceHolder int) string {
 	if denominatorPlaceHolder <= 0 {
 		return ""
 	}
-	var rat string
 	num, den := floatToFracUseContinuedFraction(x, int64(math.Pow10(denominatorPlaceHolder)))
 	if num == 0 {
-		rat = strings.Repeat(" ", numeratorPlaceHolder+denominatorPlaceHolder+1)
-	} else {
-		numStr := strconv.FormatInt(num, 10)
-		denStr := strconv.FormatInt(den, 10)
-		numeratorPlaceHolder = max(numeratorPlaceHolder-len(numStr), 0)
-		denominatorPlaceHolder = max(denominatorPlaceHolder-len(denStr), 0)
-		rat = fmt.Sprintf("%s%s/%s%s", strings.Repeat(" ", numeratorPlaceHolder), numStr, denStr, strings.Repeat(" ", denominatorPlaceHolder))
+		return strings.Repeat(" ", numeratorPlaceHolder+denominatorPlaceHolder+1)
 	}
-	return rat
+	numStr := strconv.FormatInt(num, 10)
+	denStr := strconv.FormatInt(den, 10)
+	numeratorPlaceHolder = max(numeratorPlaceHolder-len(numStr), 0)
+	denominatorPlaceHolder = max(denominatorPlaceHolder-len(denStr), 0)
+	return fmt.Sprintf("%s%s/%s%s", strings.Repeat(" ", numeratorPlaceHolder), numStr, denStr, strings.Repeat(" ", denominatorPlaceHolder))
 }
 
 // floatToFracUseContinuedFraction implement convert a floating-point decimal
 // to a fraction using continued fractions and recurrence relations.
-// Formula reference: https://en.wikipedia.org/wiki/Continued_fraction#Fundamental_recurrence_formulas
-// or https://oi-wiki.org/math/number-theory/continued-fraction/#%E9%80%92%E6%8E%A8%E5%85%B3%E7%B3%BB
 func floatToFracUseContinuedFraction(r float64, denominatorLimit int64) (num, den int64) {
 	p_1 := int64(1) // LaTex: p_{-1}
 	q_1 := int64(0) // LaTex: q_{-1}
