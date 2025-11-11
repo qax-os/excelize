@@ -413,7 +413,7 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 		if err != nil {
 			return err
 		}
-		c := xlsxC{R: ref, S: sw.worksheet.prepareCellStyle(col, row, options.StyleID)}
+		c := xlsxC{R: ref, S: sw.worksheet.prepareCellStyle(col+i, row, options.StyleID)}
 		var s int
 		if v, ok := val.(Cell); ok {
 			s, val = v.StyleID, v.Value
