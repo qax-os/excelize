@@ -1110,7 +1110,7 @@ func extractVMLFont(font []decodeVMLFont) []RichTextRun {
 
 // AddHeaderFooterImage provides a mechanism to set the graphics that can be
 // referenced in the header and footer definitions via &G, supported image
-// types: EMF, EMZ, GIF, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
+// types: EMF, EMZ, GIF, ICO, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
 //
 // The extension should be provided with a "." in front, e.g. ".png".
 // The width and height should have units in them, e.g. "100pt".

@@ -492,8 +492,9 @@ var supportedDefinedNameAfterStartCharCodeRange = []int{
 // supportedImageTypes defined supported image types.
 var supportedImageTypes = map[string]string{
 	".bmp": ".bmp", ".emf": ".emf", ".emz": ".emz", ".gif": ".gif",
-	".jpeg": ".jpeg", ".jpg": ".jpeg", ".png": ".png", ".svg": ".svg",
-	".tif": ".tiff", ".tiff": ".tiff", ".wmf": ".wmf", ".wmz": ".wmz",
+	".ico": ".ico", ".jpeg": ".jpeg", ".jpg": ".jpeg", ".png": ".png",
+	".svg": ".svg", ".tif": ".tiff", ".tiff": ".tiff", ".wmf": ".wmf",
+	".wmz": ".wmz",
 }
 
 // supportedCalcMode defined supported formula calculate mode.

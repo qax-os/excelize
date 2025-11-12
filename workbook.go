@@ -310,7 +310,7 @@ func (f *File) setContentTypePartRelsExtensions() error {
 // for relationship parts and the Main Document part.
 func (f *File) setContentTypePartImageExtensions() error {
 	imageTypes := map[string]string{
-		"bmp": "image/", "jpeg": "image/", "png": "image/", "gif": "image/",
+		"bmp": "image/", "ico": "image/x-", "jpeg": "image/", "png": "image/", "gif": "image/",
 		"svg": "image/", "tiff": "image/", "emf": "image/x-", "wmf": "image/x-",
 		"emz": "image/x-", "wmz": "image/x-",
 	}
