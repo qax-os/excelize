@@ -57,7 +57,8 @@ func TestEncrypt(t *testing.T) {
 
 	doc, err := mscfb.New(bytes.NewReader(raw))
 	assert.NoError(t, err)
-	encryptionInfoBuf, encryptedPackageBuf := extractPart(doc)
+	encryptionInfoBuf, encryptedPackageBuf, err := extractPart(doc)
+	assert.NoError(t, err)
 	binary.LittleEndian.PutUint64(encryptionInfoBuf[20:32], uint64(0))
 	_, err = standardDecrypt(encryptionInfoBuf, encryptedPackageBuf, &Options{Password: "password"})
 	assert.NoError(t, err)
@@ -73,6 +74,26 @@ func TestEncrypt(t *testing.T) {
 	assert.EqualError(t, err, "illegal base64 data at input byte 0")
 	_, err = createIV([]byte{0}, Encryption{KeyData: KeyData{SaltValue: "=="}})
 	assert.EqualError(t, err, "illegal base64 data at input byte 0")
+	// Test error handling for EncryptionInfo parse failure
+	compoundFile := &cfb{
+		paths:   []string{"Root Entry/"},
+		sectors: []sector{{name: "Root Entry", typeID: 5}},
+	}
+	compoundFile.put("EncryptionInfo", []byte{})
+	_, err = OpenReader(bytes.NewReader(compoundFile.write()))
+	assert.Equal(t, ErrWorkbookFileFormat, err)
+	// Test error handling for EncryptedPackage parse failure
+	compoundFile = &cfb{
+		paths:   []string{"Root Entry/"},
+		sectors: []sector{{name: "Root Entry", typeID: 5}},
+	}
+	encryptionInfo := make([]byte, 100)
+	binary.LittleEndian.PutUint16(encryptionInfo[:2], 4)
+	binary.LittleEndian.PutUint16(encryptionInfo[2:4], 4)
+	compoundFile.put("EncryptionInfo", encryptionInfo)
+	compoundFile.put("EncryptedPackage", []byte{})
+	_, err = OpenReader(bytes.NewReader(compoundFile.write()))
+	assert.Equal(t, ErrWorkbookFileFormat, err)
 }
 
 func TestEncryptionMechanism(t *testing.T) {
