@@ -13,6 +13,7 @@ package excelize
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
 	"os"
 	"path/filepath"
@@ -94,6 +95,101 @@ func TestEncrypt(t *testing.T) {
 	compoundFile.put("EncryptedPackage", []byte{})
 	_, err = OpenReader(bytes.NewReader(compoundFile.write()))
 	assert.Equal(t, ErrWorkbookFileFormat, err)
+	// Test createIV when iv length is less than block size
+	_, err = createIV(0, Encryption{
+		KeyData: KeyData{
+			HashAlgorithm: "md5",
+			BlockSize:     32,
+			SaltValue:     base64.StdEncoding.EncodeToString([]byte("")),
+		},
+	})
+	assert.NoError(t, err)
+	// Test decryptPackage error with padding
+	input := make([]byte, 18)
+	binary.LittleEndian.PutUint64(input[:8], 10)
+	for i := 8; i < 18; i++ {
+		input[i] = byte(i)
+	}
+	_, err = decryptPackage(make([]byte, 32), input, Encryption{
+		KeyData: KeyData{
+			HashAlgorithm: "sha256",
+			BlockSize:     16,
+			SaltValue:     base64.StdEncoding.EncodeToString([]byte("")),
+		},
+	})
+	assert.NoError(t, err)
+	// Test IV creation error with invalid salt
+	input = make([]byte, 4104)
+	binary.LittleEndian.PutUint64(input[:8], 4096)
+	_, err = decryptPackage(make([]byte, 32), input, Encryption{
+		KeyData: KeyData{
+			HashAlgorithm: "sha256",
+			BlockSize:     16,
+			SaltValue:     "==",
+		},
+	})
+	assert.Error(t, err)
+	// Test decrypt error with invalid key
+	_, err = decryptPackage([]byte{}, input, Encryption{
+		KeyData: KeyData{
+			HashAlgorithm: "sha256",
+			BlockSize:     16,
+			SaltValue:     base64.StdEncoding.EncodeToString([]byte("")),
+		},
+	})
+	assert.Error(t, err)
+	// Test put with path that is a prefix of name
+	compoundFile = &cfb{
+		paths:   []string{"Root Entry/"},
+		sectors: []sector{{name: "Root Entry", typeID: 5}},
+	}
+	compoundFile.put("Root Entry/Test", []byte(""))
+	compoundFile = &cfb{
+		paths:   []string{"Root"},
+		sectors: []sector{{name: "Root", typeID: 5}},
+	}
+	compoundFile.put("Test", []byte(""))
+	// Test compare function with different scenarios
+	compoundFile = &cfb{}
+	assert.Equal(t, -1, compoundFile.compare("Root/A", "Root/B"))
+	assert.Equal(t, 1, compoundFile.compare("Root/B", "Root/A"))
+	assert.Equal(t, -1, compoundFile.compare("Root", "Root/Child"))
+	// Test prepare with typeID == 0 sector
+	compoundFile = &cfb{
+		paths: []string{"Root Entry/", "Skip/", "Valid/"},
+		sectors: []sector{
+			{name: "Root Entry", typeID: 5},
+			{name: "Skip", typeID: 0},
+			{name: "Valid", typeID: 2},
+		},
+	}
+	compoundFile.prepare()
+	// Test locate with FATSectors incrementing but staying <= 109
+	compoundFile = &cfb{
+		paths:   []string{"Root Entry/"},
+		sectors: []sector{{name: "Root Entry", typeID: 5, content: []byte{}}},
+	}
+	numFiles := 1533
+	for i := range numFiles {
+		name := strings.Repeat("F", i%50+1)
+		compoundFile.paths = append(compoundFile.paths, name+"/")
+		compoundFile.sectors = append(compoundFile.sectors, sector{
+			name:    name,
+			typeID:  2,
+			content: make([]byte, 4096),
+		})
+	}
+	compoundFile.locate()
+	// Test writeDirectoryEntry with empty clsID
+	compoundFile = &cfb{
+		paths: []string{"Root Entry/", "File1/"},
+		sectors: []sector{
+			{name: "Root Entry", typeID: 5, content: []byte{}, clsID: headerCLSID},
+			{name: "File1", typeID: 2, content: []byte("test"), clsID: []byte{}},
+		},
+	}
+	compoundFile.stream = make([]byte, 10000)
+	compoundFile.writeDirectoryEntry([]int{1, 0, 1, 0, 1, 0, 0, 0})
 }
 
 func TestEncryptionMechanism(t *testing.T) {
