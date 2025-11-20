@@ -809,6 +809,7 @@ type formulaFuncs struct {
 //	TYPE
 //	UNICHAR
 //	UNICODE
+//	UNIQUE
 //	UPPER
 //	VALUE
 //	VALUETOTEXT
@@ -14579,6 +14580,151 @@ func (fn *formulaFuncs) UNICHAR(argsList *list.List) formulaArg {
 //	UNICODE(text)
 func (fn *formulaFuncs) UNICODE(argsList *list.List) formulaArg {
 	return fn.code("UNICODE", argsList)
+}
+
+// UNIQUE function returns a list of unique values in a list or range.
+// For syntax refer to
+// https://support.microsoft.com/en-us/office/unique-function-c5ab87fd-30a3-4ce9-9d1a-40204fb85e1e.
+func (fn *formulaFuncs) UNIQUE(argsList *list.List) formulaArg {
+	args, errArg := getFormulaUniqueArgs(argsList)
+	if errArg != nil {
+		return *errArg
+	}
+
+	if args.byColumn {
+		args.cellRange, args.cols, args.rows = transposeFormulaArgsList(args.cellRange, args.cols, args.rows)
+	}
+
+	counts := map[string]int{}
+
+	for i := 0; i < len(args.cellRange); i += args.cols {
+		key := concatValues(args.cellRange[i : i+args.cols])
+
+		if _, ok := counts[key]; !ok {
+			counts[key] = 0
+		}
+		counts[key]++
+	}
+
+	uniqueAxes := [][]formulaArg{}
+
+	for i := 0; i < len(args.cellRange); i += args.cols {
+		key := concatValues(args.cellRange[i : i+args.cols])
+
+		if (args.exactlyOnce && counts[key] == 1) || (!args.exactlyOnce && counts[key] >= 1) {
+			uniqueAxes = append(uniqueAxes, args.cellRange[i:i+args.cols])
+		}
+		delete(counts, key)
+	}
+
+	if args.byColumn {
+		uniqueAxes = transposeFormulaArgsMatrix(uniqueAxes)
+	}
+
+	return newMatrixFormulaArg(uniqueAxes)
+}
+
+func transposeFormulaArgsMatrix(args [][]formulaArg) [][]formulaArg {
+	if len(args) == 0 {
+		return args
+	}
+
+	transposedArgs := make([][]formulaArg, len(args[0]))
+
+	for i := 0; i < len(args[0]); i++ {
+		transposedArgs[i] = make([]formulaArg, len(args))
+	}
+
+	for i := 0; i < len(args); i++ {
+		for j := 0; j < len(args[i]); j++ {
+			transposedArgs[j][i] = args[i][j]
+		}
+	}
+
+	return transposedArgs
+}
+
+func transposeFormulaArgsList(args []formulaArg, cols, rows int) ([]formulaArg, int, int) {
+	transposedArgs := make([]formulaArg, len(args))
+
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			transposedArgs[j*rows+i] = args[i*cols+j]
+		}
+	}
+	return transposedArgs, rows, cols
+}
+
+func concatValues(args []formulaArg) string {
+	val := ""
+	for _, arg := range args {
+		// Call to Value is cheap.
+		val += arg.Value()
+	}
+	return val
+}
+
+type uniqueArgs struct {
+	cellRange   []formulaArg
+	cols        int
+	rows        int
+	byColumn    bool
+	exactlyOnce bool
+}
+
+func getFormulaUniqueArgs(argsList *list.List) (uniqueArgs, *formulaArg) {
+	res := uniqueArgs{}
+
+	argsLen := argsList.Len()
+	if argsLen == 0 {
+		errArg := newErrorFormulaArg(formulaErrorVALUE, "UNIQUE requires at least 1 argument")
+		return res, &errArg
+	}
+
+	if argsLen > 3 {
+		msg := fmt.Sprintf("UNIQUE takes at most 3 arguments, received %d arguments", argsLen)
+		errArg := newErrorFormulaArg(formulaErrorVALUE, msg)
+
+		return res, &errArg
+	}
+
+	firstArg := argsList.Front()
+	res.cellRange = firstArg.Value.(formulaArg).ToList()
+	if len(res.cellRange) == 0 {
+		errArg := newErrorFormulaArg(formulaErrorVALUE, "missing first argument to UNIQUE")
+		return res, &errArg
+	}
+	if res.cellRange[0].Type == ArgError {
+		return res, &res.cellRange[0]
+	}
+
+	rmin, rmax := calcColsRowsMinMax(false, argsList)
+	cmin, cmax := calcColsRowsMinMax(true, argsList)
+	res.cols, res.rows = cmax-cmin+1, rmax-rmin+1
+
+	secondArg := firstArg.Next()
+	if secondArg == nil {
+		return res, nil
+	}
+
+	argByColumn := secondArg.Value.(formulaArg).ToBool()
+	if argByColumn.Type == ArgError {
+		return res, &argByColumn
+	}
+	res.byColumn = (argByColumn.Value() == "TRUE")
+
+	thirdArg := secondArg.Next()
+	if thirdArg == nil {
+		return res, nil
+	}
+
+	argExactlyOnce := thirdArg.Value.(formulaArg).ToBool()
+	if argExactlyOnce.Type == ArgError {
+		return res, &argExactlyOnce
+	}
+	res.exactlyOnce = (argExactlyOnce.Value() == "TRUE")
+
+	return res, nil
 }
 
 // UPPER converts all characters in a supplied text string to upper case. The
