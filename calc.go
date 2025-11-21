@@ -14582,21 +14582,19 @@ func (fn *formulaFuncs) UNICODE(argsList *list.List) formulaArg {
 	return fn.code("UNICODE", argsList)
 }
 
-// UNIQUE function returns a list of unique values in a list or range.
-// For syntax refer to
-// https://support.microsoft.com/en-us/office/unique-function-c5ab87fd-30a3-4ce9-9d1a-40204fb85e1e.
+// UNIQUE function returns a list of unique values in a list or range. The
+// syntax of the function is:
+//
+//	UNIQUE(array,[by_col],[exactly_once])
 func (fn *formulaFuncs) UNIQUE(argsList *list.List) formulaArg {
 	args, errArg := getFormulaUniqueArgs(argsList)
 	if errArg != nil {
 		return *errArg
 	}
-
 	if args.byColumn {
 		args.cellRange, args.cols, args.rows = transposeFormulaArgsList(args.cellRange, args.cols, args.rows)
 	}
-
 	counts := map[string]int{}
-
 	for i := 0; i < len(args.cellRange); i += args.cols {
 		key := concatValues(args.cellRange[i : i+args.cols])
 
@@ -14605,9 +14603,7 @@ func (fn *formulaFuncs) UNIQUE(argsList *list.List) formulaArg {
 		}
 		counts[key]++
 	}
-
 	uniqueAxes := [][]formulaArg{}
-
 	for i := 0; i < len(args.cellRange); i += args.cols {
 		key := concatValues(args.cellRange[i : i+args.cols])
 
@@ -14616,37 +14612,33 @@ func (fn *formulaFuncs) UNIQUE(argsList *list.List) formulaArg {
 		}
 		delete(counts, key)
 	}
-
 	if args.byColumn {
 		uniqueAxes = transposeFormulaArgsMatrix(uniqueAxes)
 	}
-
 	return newMatrixFormulaArg(uniqueAxes)
 }
 
+// transposeFormulaArgsMatrix transposes a 2D slice of formulaArg.
 func transposeFormulaArgsMatrix(args [][]formulaArg) [][]formulaArg {
 	if len(args) == 0 {
 		return args
 	}
-
 	transposedArgs := make([][]formulaArg, len(args[0]))
-
 	for i := 0; i < len(args[0]); i++ {
 		transposedArgs[i] = make([]formulaArg, len(args))
 	}
-
 	for i := 0; i < len(args); i++ {
 		for j := 0; j < len(args[i]); j++ {
 			transposedArgs[j][i] = args[i][j]
 		}
 	}
-
 	return transposedArgs
 }
 
+// transposeFormulaArgsList transposes a flat slice of formulaArg given the
+// number of columns and rows.
 func transposeFormulaArgsList(args []formulaArg, cols, rows int) ([]formulaArg, int, int) {
 	transposedArgs := make([]formulaArg, len(args))
-
 	for i := 0; i < rows; i++ {
 		for j := 0; j < cols; j++ {
 			transposedArgs[j*rows+i] = args[i*cols+j]
@@ -14655,6 +14647,8 @@ func transposeFormulaArgsList(args []formulaArg, cols, rows int) ([]formulaArg, 
 	return transposedArgs, rows, cols
 }
 
+// concatValues concatenates the values of a slice of formulaArg into a single
+// string.
 func concatValues(args []formulaArg) string {
 	val := ""
 	for _, arg := range args {
@@ -14664,6 +14658,7 @@ func concatValues(args []formulaArg) string {
 	return val
 }
 
+// uniqueArgs holds the parsed arguments for the UNIQUE function.
 type uniqueArgs struct {
 	cellRange   []formulaArg
 	cols        int
@@ -14672,22 +14667,21 @@ type uniqueArgs struct {
 	exactlyOnce bool
 }
 
+// getFormulaUniqueArgs parses and validates the arguments for the UNIQUE
+// function.
 func getFormulaUniqueArgs(argsList *list.List) (uniqueArgs, *formulaArg) {
 	res := uniqueArgs{}
-
 	argsLen := argsList.Len()
 	if argsLen == 0 {
 		errArg := newErrorFormulaArg(formulaErrorVALUE, "UNIQUE requires at least 1 argument")
 		return res, &errArg
 	}
-
 	if argsLen > 3 {
 		msg := fmt.Sprintf("UNIQUE takes at most 3 arguments, received %d arguments", argsLen)
 		errArg := newErrorFormulaArg(formulaErrorVALUE, msg)
 
 		return res, &errArg
 	}
-
 	firstArg := argsList.Front()
 	res.cellRange = firstArg.Value.(formulaArg).ToList()
 	if len(res.cellRange) == 0 {
@@ -14697,33 +14691,27 @@ func getFormulaUniqueArgs(argsList *list.List) (uniqueArgs, *formulaArg) {
 	if res.cellRange[0].Type == ArgError {
 		return res, &res.cellRange[0]
 	}
-
 	rmin, rmax := calcColsRowsMinMax(false, argsList)
 	cmin, cmax := calcColsRowsMinMax(true, argsList)
 	res.cols, res.rows = cmax-cmin+1, rmax-rmin+1
-
 	secondArg := firstArg.Next()
 	if secondArg == nil {
 		return res, nil
 	}
-
 	argByColumn := secondArg.Value.(formulaArg).ToBool()
 	if argByColumn.Type == ArgError {
 		return res, &argByColumn
 	}
 	res.byColumn = (argByColumn.Value() == "TRUE")
-
 	thirdArg := secondArg.Next()
 	if thirdArg == nil {
 		return res, nil
 	}
-
 	argExactlyOnce := thirdArg.Value.(formulaArg).ToBool()
 	if argExactlyOnce.Type == ArgError {
 		return res, &argExactlyOnce
 	}
 	res.exactlyOnce = (argExactlyOnce.Value() == "TRUE")
-
 	return res, nil
 }
 

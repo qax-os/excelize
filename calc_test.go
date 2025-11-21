@@ -5240,6 +5240,24 @@ func TestCalcUniqueErrors(t *testing.T) {
 	}
 }
 
+func TestTransposeFormulaArgsMatrix(t *testing.T) {
+	assert.Empty(t, transposeFormulaArgsMatrix([][]formulaArg{}))
+}
+
+func TestGetFormulaUniqueArgs(t *testing.T) {
+	argsList := list.New()
+	emptyArg := newEmptyFormulaArg()
+	argsList.PushBack(emptyArg)
+
+	_, err := getFormulaUniqueArgs(argsList)
+	assert.Equal(t, "missing first argument to UNIQUE", err.Error)
+
+	argsList = list.New()
+	argsList.PushBack(newListFormulaArg([]formulaArg{newErrorFormulaArg(formulaErrorNAME, formulaErrorNAME)}))
+	_, err = getFormulaUniqueArgs(argsList)
+	assert.Equal(t, formulaErrorNAME, err.Error)
+}
+
 func TestCalcDatabase(t *testing.T) {
 	cellData := [][]interface{}{
 		{"Tree", "Height", "Age", "Yield", "Profit", "Height"},
