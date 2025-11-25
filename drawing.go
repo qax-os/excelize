@@ -895,7 +895,17 @@ func (f *File) drawChartSeriesDPt(i int, opts *Chart) []*cDPt {
 			},
 		},
 	}}
-	chartSeriesDPt := map[ChartType][]*cDPt{Pie: dpt, Pie3D: dpt}
+	if len(opts.Series[i].DataPoint) > 0 {
+		dpt = []*cDPt{}
+	}
+	for j := 0; j < len(opts.Series[i].DataPoint); j++ {
+		spPr := &cSpPr{}
+		dpt = append(dpt, &cDPt{
+			IDx:  &attrValInt{Val: intPtr(opts.Series[i].DataPoint[j].Index)},
+			SpPr: f.drawShapeFill(opts.Series[i].DataPoint[j].Fill, spPr),
+		})
+	}
+	chartSeriesDPt := map[ChartType][]*cDPt{Doughnut: dpt, Pie: dpt, Pie3D: dpt}
 	return chartSeriesDPt[opts.Type]
 }
 

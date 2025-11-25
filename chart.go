@@ -791,6 +791,7 @@ func (opts *Chart) parseTitle() {
 //	Marker
 //	DataLabel
 //	DataLabelPosition
+//	DataPoint
 //
 // Name: Set the name for the series. The name is displayed in the chart legend
 // and in the formula bar. The 'Name' property is optional and if it isn't
@@ -839,6 +840,9 @@ func (opts *Chart) parseTitle() {
 // DataLabel: This sets the format of the chart series data label.
 //
 // DataLabelPosition: This sets the position of the chart series data label.
+//
+// DataPoint: This sets the format for individual data points in a doughnut, pie
+// or 3D pie chart series. The 'DataPoint' property is optional.
 //
 // Set properties of the chart legend. The options that can be set are:
 //
