@@ -174,7 +174,7 @@ func TestAutoFilter(t *testing.T) {
 	assert.EqualError(t, f.AutoFilter("Sheet1", "D4:B1", nil), "XML syntax error on line 1: invalid UTF-8")
 	// Test add auto filter with empty local sheet ID
 	f = NewFile()
-	f.WorkBook = &xlsxWorkbook{DefinedNames: &xlsxDefinedNames{DefinedName: []xlsxDefinedName{{Name: builtInDefinedNames[2], Hidden: true}}}}
+	f.WorkBook = &xlsxWorkbook{DefinedNames: &xlsxDefinedNames{DefinedName: []xlsxDefinedName{{Name: builtInDefinedNames[3], Hidden: true}}}}
 	assert.NoError(t, f.AutoFilter("Sheet1", "A1:B1", nil))
 }
 

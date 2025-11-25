@@ -140,7 +140,7 @@ func TestGetColsError(t *testing.T) {
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="A"><c r="2" t="inlineStr"><is><t>B</t></is></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value)))
 	f.checked = sync.Map{}
 	_, err = f.GetCols("Sheet1")
-	assert.EqualError(t, err, `strconv.ParseInt: parsing "A": invalid syntax`)
+	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
 
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="2"><c r="A" t="inlineStr"><is><t>B</t></is></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value)))
 	_, err = f.GetCols("Sheet1")
@@ -396,7 +396,7 @@ func TestColWidth(t *testing.T) {
 	width, err = f.GetColWidth("Sheet1", "A")
 	assert.NoError(t, err)
 	assert.Equal(t, 10.0, width)
-	assert.Equal(t, 76, f.getColWidth("Sheet1", 1))
+	assert.Equal(t, 80, f.getColWidth("Sheet1", 1))
 
 	// Test set and get column width with illegal cell reference
 	width, err = f.GetColWidth("Sheet1", "*")
@@ -484,5 +484,5 @@ func TestRemoveCol(t *testing.T) {
 }
 
 func TestConvertColWidthToPixels(t *testing.T) {
-	assert.Equal(t, -11.0, convertColWidthToPixels(-1))
+	assert.Equal(t, -7.0, convertColWidthToPixels(-1))
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -239,7 +240,7 @@ func TestColumns(t *testing.T) {
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader([]byte(`<worksheet><sheetData><row r="1"><c r="A" t="s"><v>1</v></c></row></sheetData></worksheet>`)))
 	assert.True(t, rows.Next())
 	_, err = rows.Columns()
-	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), err)
 
 	// Test token is nil
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader(nil))
@@ -314,49 +315,52 @@ func TestRemoveRow(t *testing.T) {
 	assert.EqualError(t, f.RemoveRow(sheet1, 0), newInvalidRowNumberError(0).Error())
 
 	assert.NoError(t, f.RemoveRow(sheet1, 4))
-	if !assert.Len(t, r.SheetData.Row, rowCount-1) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount-1)
 
 	assert.NoError(t, f.MergeCell(sheet1, "B3", "B5"))
 
 	assert.NoError(t, f.RemoveRow(sheet1, 2))
-	if !assert.Len(t, r.SheetData.Row, rowCount-2) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount-2)
 
 	assert.NoError(t, f.RemoveRow(sheet1, 4))
-	if !assert.Len(t, r.SheetData.Row, rowCount-3) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount-3)
 
 	err = f.AutoFilter(sheet1, "A2:A2", []AutoFilterOptions{{Column: "A", Expression: "x != blanks"}})
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	assert.NoError(t, err)
 
 	assert.NoError(t, f.RemoveRow(sheet1, 1))
-	if !assert.Len(t, r.SheetData.Row, rowCount-4) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount-4)
 
 	assert.NoError(t, f.RemoveRow(sheet1, 2))
-	if !assert.Len(t, r.SheetData.Row, rowCount-5) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount-5)
 
 	assert.NoError(t, f.RemoveRow(sheet1, 1))
-	if !assert.Len(t, r.SheetData.Row, rowCount-6) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount-6)
 
 	assert.NoError(t, f.RemoveRow(sheet1, 10))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemoveRow.xlsx")))
+
+	f = NewFile()
+	assert.NoError(t, f.MergeCell("Sheet1", "A1", "C1"))
+	assert.NoError(t, f.MergeCell("Sheet1", "A2", "C2"))
+	assert.NoError(t, f.RemoveRow("Sheet1", 1))
+	mergedCells, err := f.GetMergeCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, "A1", mergedCells[0].GetStartAxis())
+	assert.Equal(t, "C1", mergedCells[0].GetEndAxis())
 
 	// Test remove row on not exist worksheet
 	assert.EqualError(t, f.RemoveRow("SheetN", 1), "sheet SheetN does not exist")
 	// Test remove row with invalid sheet name
 	assert.EqualError(t, f.RemoveRow("Sheet:1", 1), ErrSheetNameInvalid.Error())
+
+	f = NewFile()
+	formulaType, ref := STCellFormulaTypeShared, "C1:C5"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "A1+B1",
+		FormulaOpts{Ref: &ref, Type: &formulaType}))
+	f.CalcChain = nil
+	f.Pkg.Store(defaultXMLPathCalcChain, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.RemoveRow("Sheet1", 1), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestInsertRows(t *testing.T) {
@@ -373,19 +377,13 @@ func TestInsertRows(t *testing.T) {
 	assert.NoError(t, f.SetCellHyperLink(sheet1, "A5", "https://github.com/xuri/excelize", "External"))
 
 	assert.NoError(t, f.InsertRows(sheet1, 1, 1))
-	if !assert.Len(t, r.SheetData.Row, rowCount+1) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount+1)
 
 	assert.NoError(t, f.InsertRows(sheet1, 4, 1))
-	if !assert.Len(t, r.SheetData.Row, rowCount+2) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount+2)
 
 	assert.NoError(t, f.InsertRows(sheet1, 4, 2))
-	if !assert.Len(t, r.SheetData.Row, rowCount+4) {
-		t.FailNow()
-	}
+	assert.Len(t, r.SheetData.Row, rowCount+4)
 	// Test insert rows with invalid sheet name
 	assert.EqualError(t, f.InsertRows("Sheet:1", 1, 1), ErrSheetNameInvalid.Error())
 
@@ -576,16 +574,16 @@ func TestDuplicateRowZeroWithNoRows(t *testing.T) {
 
 		val, err := f.GetCellValue(sheet, "A1")
 		assert.NoError(t, err)
-		assert.Equal(t, "", val)
+		assert.Empty(t, val)
 		val, err = f.GetCellValue(sheet, "B1")
 		assert.NoError(t, err)
-		assert.Equal(t, "", val)
+		assert.Empty(t, val)
 		val, err = f.GetCellValue(sheet, "A2")
 		assert.NoError(t, err)
-		assert.Equal(t, "", val)
+		assert.Empty(t, val)
 		val, err = f.GetCellValue(sheet, "B2")
 		assert.NoError(t, err)
-		assert.Equal(t, "", val)
+		assert.Empty(t, val)
 
 		assert.NoError(t, err)
 		expect := map[string]string{
@@ -883,7 +881,7 @@ func TestDuplicateRow(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected := []ConditionalFormatOptions{
-		{Type: "cell", Criteria: "greater than", Format: format, Value: "0"},
+		{Type: "cell", Criteria: "greater than", Format: &format, Value: "0"},
 	}
 	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1", expected))
 
@@ -961,7 +959,7 @@ func TestGetValueFromInlineStr(t *testing.T) {
 	d := &xlsxSST{}
 	val, err := c.getValueFrom(f, d, false)
 	assert.NoError(t, err)
-	assert.Equal(t, "", val)
+	assert.Empty(t, val)
 }
 
 func TestGetValueFromNumber(t *testing.T) {
@@ -1146,6 +1144,66 @@ func TestNumberFormats(t *testing.T) {
 	result, err := f.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, "2019/3/19", result, "A1")
+}
+
+func TestCellXMLHandler(t *testing.T) {
+	var (
+		content      = []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="1"><c r="A1" t="s"><v>10</v></c><c r="B1"><is><t>String</t></is></c></row><row r="2"><c r="A2" s="4" t="str"><f>2*A1</f><v>0</v></c><c r="C2" s="1"><f>A3</f><v>2422.3000000000002</v></c><c r="D2" t="d"><v>2022-10-22T15:05:29Z</v></c><c r="F2"></c><c r="G2"></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
+		expected, ws xlsxWorksheet
+		row          *xlsxRow
+	)
+	assert.NoError(t, xml.Unmarshal(content, &expected))
+	decoder := xml.NewDecoder(bytes.NewReader(content))
+	rows := Rows{decoder: decoder}
+	for {
+		token, _ := decoder.Token()
+		if token == nil {
+			break
+		}
+		switch element := token.(type) {
+		case xml.StartElement:
+			if element.Name.Local == "row" {
+				r, err := strconv.Atoi(element.Attr[0].Value)
+				assert.NoError(t, err)
+				ws.SheetData.Row = append(ws.SheetData.Row, xlsxRow{R: r})
+				row = &ws.SheetData.Row[len(ws.SheetData.Row)-1]
+			}
+			if element.Name.Local == "c" {
+				colCell := xlsxC{}
+				assert.NoError(t, colCell.cellXMLHandler(rows.decoder, &element))
+				row.C = append(row.C, colCell)
+			}
+		}
+	}
+	assert.Equal(t, expected.SheetData.Row, ws.SheetData.Row)
+
+	for _, rowXML := range []string{
+		`<row spans="1:17" r="1"><c r="A1" t="s" s="A"><v>10</v></c></row></sheetData></worksheet>`, // s need number
+		`<row spans="1:17" r="1"><c r="A1"><v>10</v>    </row></sheetData></worksheet>`,             // missing </c>
+		`<row spans="1:17" r="1"><c r="B1"><is><t>`,                                                 // incorrect data
+	} {
+		ws := xlsxWorksheet{}
+		content := []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData>%s</sheetData></worksheet>`, NameSpaceSpreadSheet.Value, rowXML))
+		expected := xml.Unmarshal(content, &ws)
+		assert.Error(t, expected)
+		decoder := xml.NewDecoder(bytes.NewReader(content))
+		rows := Rows{decoder: decoder}
+		for {
+			token, _ := decoder.Token()
+			if token == nil {
+				break
+			}
+			switch element := token.(type) {
+			case xml.StartElement:
+				if element.Name.Local == "c" {
+					colCell := xlsxC{}
+					err := colCell.cellXMLHandler(rows.decoder, &element)
+					assert.Error(t, err)
+					assert.Equal(t, expected, err)
+				}
+			}
+		}
+	}
 }
 
 func BenchmarkRows(b *testing.B) {
