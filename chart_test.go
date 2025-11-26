@@ -189,7 +189,13 @@ func TestAddChart(t *testing.T) {
 		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Line: ChartLine{Dash: ChartDashDash, Width: 0.25}},
 	}
 	series3 := []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}
-	series4 := []ChartSeries{
+	series4 := []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37", DataPoint: []ChartDataPoint{
+		{Index: 0, Fill: Fill{Type: "pattern", Color: []string{"003F5C"}, Pattern: 1}},
+		{Index: 1, Fill: Fill{Type: "pattern", Color: []string{"58508D"}, Pattern: 1}},
+		{Index: 2, Fill: Fill{Type: "pattern", Color: []string{"BC5090"}, Pattern: 1}},
+		{Index: 3, Fill: Fill{Type: "pattern", Color: []string{"FF6361"}, Pattern: 1}},
+	}}}
+	series5 := []ChartSeries{
 		{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30", Sizes: "Sheet1!$B$30:$D$30", DataLabelPosition: ChartDataLabelsPositionAbove},
 		{Name: "Sheet1!$A$31", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$31:$D$31", Sizes: "Sheet1!$B$31:$D$31", DataLabelPosition: ChartDataLabelsPositionLeft},
 		{Name: "Sheet1!$A$32", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$32:$D$32", Sizes: "Sheet1!$B$32:$D$32", DataLabelPosition: ChartDataLabelsPositionBestFit},
@@ -248,7 +254,7 @@ func TestAddChart(t *testing.T) {
 		{sheetName: "Sheet2", cell: "P16", opts: &Chart{Type: Doughnut, Series: series3, Format: format, Legend: ChartLegend{Position: "right", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Doughnut Chart"}}, PlotArea: ChartPlotArea{ShowBubbleSize: false, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false}, ShowBlanksAs: "zero", HoleSize: 30}},
 		{sheetName: "Sheet2", cell: "X16", opts: &Chart{Type: Line, Series: series2, Format: format, Legend: ChartLegend{Position: "top", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Line Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1, TickLabelPosition: ChartTickLabelLow}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1}}},
 		{sheetName: "Sheet2", cell: "P32", opts: &Chart{Type: Pie3D, Series: series3, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "3D Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "X32", opts: &Chart{Type: Pie, Series: series3, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Pie Chart"}}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false, NumFmt: ChartNumFmt{CustomNumFmt: "0.00%;0;;"}}, ShowBlanksAs: "gap"}},
+		{sheetName: "Sheet2", cell: "X32", opts: &Chart{Type: Pie, Series: series4, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Pie Chart"}}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false, NumFmt: ChartNumFmt{CustomNumFmt: "0.00%;0;;"}}, ShowBlanksAs: "gap"}},
 		// bar series chart
 		{sheetName: "Sheet2", cell: "P48", opts: &Chart{Type: Bar, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Clustered Bar Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet2", cell: "X48", opts: &Chart{Type: BarStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Stacked Bar Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
@@ -280,8 +286,8 @@ func TestAddChart(t *testing.T) {
 		{sheetName: "Sheet2", cell: "AV32", opts: &Chart{Type: Contour, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Contour Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet2", cell: "BD1", opts: &Chart{Type: WireframeContour, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Wireframe Contour Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		// bubble chart
-		{sheetName: "Sheet2", cell: "BD16", opts: &Chart{Type: Bubble, Series: series4, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", BubbleSize: 75}},
-		{sheetName: "Sheet2", cell: "BD32", opts: &Chart{Type: Bubble3D, Series: series4, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble 3D Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
+		{sheetName: "Sheet2", cell: "BD16", opts: &Chart{Type: Bubble, Series: series5, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", BubbleSize: 75}},
+		{sheetName: "Sheet2", cell: "BD32", opts: &Chart{Type: Bubble3D, Series: series5, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble 3D Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
 		// pie of pie chart
 		{sheetName: "Sheet2", cell: "BD48", opts: &Chart{Type: PieOfPie, Series: series3, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Pie of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
 		// bar of pie chart
