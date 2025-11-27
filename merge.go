@@ -50,7 +50,6 @@ func (mc *xlsxMergeCell) Rect() ([]int, error) {
 //	|A8(x3,y4)      C8(x4,y4)|
 //	+------------------------+
 func (f *File) MergeCell(sheet, topLeftCell, bottomRightCell string) error {
-	f.clearCalcCache()
 	rect, err := rangeRefToCoordinates(topLeftCell + ":" + bottomRightCell)
 	if err != nil {
 		return err
@@ -67,6 +66,7 @@ func (f *File) MergeCell(sheet, topLeftCell, bottomRightCell string) error {
 	}
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
+	f.clearCalcCache()
 	for col := rect[0]; col <= rect[2]; col++ {
 		for row := rect[1]; row <= rect[3]; row++ {
 			if col == rect[0] && row == rect[1] {
@@ -95,7 +95,6 @@ func (f *File) MergeCell(sheet, topLeftCell, bottomRightCell string) error {
 //
 // Attention: overlapped range will also be unmerged.
 func (f *File) UnmergeCell(sheet, topLeftCell, bottomRightCell string) error {
-	f.clearCalcCache()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
 		return err
@@ -117,6 +116,7 @@ func (f *File) UnmergeCell(sheet, topLeftCell, bottomRightCell string) error {
 	if err = ws.mergeOverlapCells(); err != nil {
 		return err
 	}
+	f.clearCalcCache()
 	i := 0
 	for _, mergeCell := range ws.MergeCells.Cells {
 		if rect2, _ := rangeRefToCoordinates(mergeCell.Ref); isOverlap(rect1, rect2) {

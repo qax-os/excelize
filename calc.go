@@ -1335,6 +1335,13 @@ func calcDiv(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	return nil
 }
 
+// clearCalcCache clear all calculation cache.
+func (f *File) clearCalcCache() {
+	f.calcCacheMu.Lock()
+	f.calcCache.Clear()
+	f.calcCacheMu.Unlock()
+}
+
 // calculate evaluate basic arithmetic operations.
 func calculate(opdStack *Stack, opt efp.Token) error {
 	if opt.TValue == "-" && opt.TType == efp.TokenTypeOperatorPrefix {
@@ -19140,13 +19147,4 @@ func (fn *formulaFuncs) DISPIMG(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "DISPIMG requires 2 numeric arguments")
 	}
 	return argsList.Front().Value.(formulaArg)
-}
-
-func (f *File) clearCalcCache() {
-	f.calcCacheMu.Lock()
-	defer f.calcCacheMu.Unlock()
-	f.calcCache.Range(func(key, value interface{}) bool {
-		f.calcCache.Delete(key)
-		return true
-	})
 }

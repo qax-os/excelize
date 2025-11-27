@@ -374,7 +374,6 @@ func (f *File) getActiveSheetID() int {
 // sheet name in the formula or reference associated with the cell. So there
 // may be problem formula error or reference missing.
 func (f *File) SetSheetName(source, target string) error {
-	f.clearCalcCache()
 	var err error
 	if err = checkSheetName(source); err != nil {
 		return err
@@ -385,6 +384,7 @@ func (f *File) SetSheetName(source, target string) error {
 	if target == source {
 		return err
 	}
+	f.clearCalcCache()
 	wb, _ := f.workbookReader()
 	for k, v := range wb.Sheets.Sheet {
 		if v.Name == source {
@@ -574,14 +574,13 @@ func (f *File) setSheetBackground(sheet, extension string, file []byte) error {
 // value of the deleted worksheet, it will cause a file error when you open
 // it. This function will be invalid when only one worksheet is left.
 func (f *File) DeleteSheet(sheet string) error {
-	f.clearCalcCache()
 	if err := checkSheetName(sheet); err != nil {
 		return err
 	}
 	if idx, _ := f.GetSheetIndex(sheet); f.SheetCount == 1 || idx == -1 {
 		return nil
 	}
-
+	f.clearCalcCache()
 	wb, _ := f.workbookReader()
 	wbRels, _ := f.relsReader(f.getWorkbookRelsPath())
 	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
@@ -629,7 +628,6 @@ func (f *File) DeleteSheet(sheet string) error {
 //
 //	err := f.MoveSheet("Sheet2", "Sheet1")
 func (f *File) MoveSheet(source, target string) error {
-	f.clearCalcCache()
 	if strings.EqualFold(source, target) {
 		return nil
 	}
@@ -757,7 +755,6 @@ func (f *File) getSheetRelationshipsTargetByID(sheet, rID string) string {
 //	}
 //	err = f.CopySheet(0, index)
 func (f *File) CopySheet(from, to int) error {
-	f.clearCalcCache()
 	if from < 0 || to < 0 || from == to || f.GetSheetName(from) == "" || f.GetSheetName(to) == "" {
 		return ErrSheetIdx
 	}
@@ -772,6 +769,7 @@ func (f *File) copySheet(from, to int) error {
 	if err != nil {
 		return err
 	}
+	f.clearCalcCache()
 	worksheet := &xlsxWorksheet{}
 	deepcopy.Copy(worksheet, sheet)
 	toSheetID := strconv.Itoa(f.getSheetID(f.GetSheetName(to)))
@@ -1775,6 +1773,7 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 	if err != nil {
 		return err
 	}
+	f.clearCalcCache()
 	d := xlsxDefinedName{
 		Name:    definedName.Name,
 		Comment: definedName.Comment,
@@ -1817,6 +1816,7 @@ func (f *File) DeleteDefinedName(definedName *DefinedName) error {
 	if err != nil {
 		return err
 	}
+	f.clearCalcCache()
 	if wb.DefinedNames != nil {
 		for idx, dn := range wb.DefinedNames.DefinedName {
 			scope := "Workbook"
