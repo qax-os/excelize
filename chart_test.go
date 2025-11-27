@@ -42,7 +42,7 @@ func TestChartSize(t *testing.T) {
 	}
 
 	assert.NoError(t, f.AddChart("Sheet1", "E4", &Chart{
-		Type: "col3DClustered",
+		Type: Col3DClustered,
 		Dimension: ChartDimension{
 			Width:  640,
 			Height: 480,
@@ -52,7 +52,7 @@ func TestChartSize(t *testing.T) {
 			{Name: "Sheet1!$A$3", Categories: "Sheet1!$B$1:$D$1", Values: "Sheet1!$B$3:$D$3"},
 			{Name: "Sheet1!$A$4", Categories: "Sheet1!$B$1:$D$1", Values: "Sheet1!$B$4:$D$4"},
 		},
-		Title: ChartTitle{Name: "3D Clustered Column Chart"},
+		Title: []RichTextRun{{Text: "3D Clustered Column Chart"}},
 	}))
 
 	var buffer bytes.Buffer
@@ -70,7 +70,7 @@ func TestChartSize(t *testing.T) {
 
 	var (
 		workdir decodeWsDr
-		anchor  decodeTwoCellAnchor
+		anchor  decodeCellAnchor
 	)
 
 	content, ok := newFile.Pkg.Load("xl/drawings/drawing1.xml")
@@ -81,8 +81,8 @@ func TestChartSize(t *testing.T) {
 		t.FailNow()
 	}
 
-	err = xml.Unmarshal([]byte("<decodeTwoCellAnchor>"+
-		workdir.TwoCellAnchor[0].Content+"</decodeTwoCellAnchor>"), &anchor)
+	err = xml.Unmarshal([]byte("<decodeCellAnchor>"+
+		workdir.TwoCellAnchor[0].Content+"</decodeCellAnchor>"), &anchor)
 	if !assert.NoError(t, err) {
 		t.FailNow()
 	}
@@ -93,11 +93,8 @@ func TestChartSize(t *testing.T) {
 		t.FailNow()
 	}
 
-	if !assert.Equal(t, 14, anchor.To.Col, "Expected 'to' column 14") ||
-		!assert.Equal(t, 27, anchor.To.Row, "Expected 'to' row 27") {
-
-		t.FailNow()
-	}
+	assert.Equal(t, 14, anchor.To.Col, "Expected 'to' column 14")
+	assert.Equal(t, 29, anchor.To.Row, "Expected 'to' row 29")
 }
 
 func TestAddDrawingChart(t *testing.T) {
@@ -120,7 +117,20 @@ func TestDeleteDrawing(t *testing.T) {
 	f := NewFile()
 	path := "xl/drawings/drawing1.xml"
 	f.Pkg.Store(path, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.deleteDrawing(0, 0, path, "Chart"), "XML syntax error on line 1: invalid UTF-8")
+	_, err := f.deleteDrawing(0, 0, path, "Chart")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
+	f.Drawings.Store(path, &xlsxWsDr{OneCellAnchor: []*xdrCellAnchor{{
+		GraphicFrame: string(MacintoshCyrillicCharset),
+	}}})
+	_, err = f.deleteDrawing(0, 0, path, "Chart")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	f.Drawings.Store(path, &xlsxWsDr{TwoCellAnchor: []*xdrCellAnchor{{
+		GraphicFrame: string(MacintoshCyrillicCharset),
+	}}})
+	_, err = f.deleteDrawing(0, 0, path, "Chart")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestAddChart(t *testing.T) {
@@ -150,22 +160,54 @@ func TestAddChart(t *testing.T) {
 		{Name: "Sheet1!$A$34", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$34:$D$34"},
 		{Name: "Sheet1!$A$35", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$35:$D$35"},
 		{Name: "Sheet1!$A$36", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$36:$D$36"},
-		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37"},
+		{
+			Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37",
+			Marker: ChartMarker{
+				Fill: Fill{Type: "pattern", Color: []string{"FFFFFF"}, Pattern: 1},
+				Border: ChartLine{
+					Type:  ChartLineSolid,
+					Dash:  ChartDashDot,
+					Fill:  Fill{Type: "pattern", Color: []string{"#FFFF00"}, Pattern: 1},
+					Width: 1,
+				},
+			},
+			Legend: ChartLegend{Font: &Font{Family: "Arial", Size: 11, Strike: true, Color: "777777"}},
+		},
 	}
 	series2 := []ChartSeries{
-		{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30", Marker: ChartMarker{Symbol: "none", Size: 10}, Line: ChartLine{Color: "#000000"}},
+		{
+			Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30",
+			Fill:   Fill{Type: "pattern", Color: []string{"000000"}, Pattern: 1, Transparency: 60},
+			Marker: ChartMarker{Symbol: "none", Size: 10},
+		},
 		{Name: "Sheet1!$A$31", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$31:$D$31"},
 		{Name: "Sheet1!$A$32", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$32:$D$32"},
 		{Name: "Sheet1!$A$33", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$33:$D$33"},
 		{Name: "Sheet1!$A$34", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$34:$D$34"},
 		{Name: "Sheet1!$A$35", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$35:$D$35"},
 		{Name: "Sheet1!$A$36", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$36:$D$36"},
-		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Line: ChartLine{Width: 0.25}},
+		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Line: ChartLine{Dash: ChartDashDash, Width: 0.25}},
 	}
 	series3 := []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}
+	series4 := []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37", DataPoint: []ChartDataPoint{
+		{Index: 0, Fill: Fill{Type: "pattern", Color: []string{"003F5C"}, Pattern: 1}},
+		{Index: 1, Fill: Fill{Type: "pattern", Color: []string{"58508D"}, Pattern: 1}},
+		{Index: 2, Fill: Fill{Type: "pattern", Color: []string{"BC5090"}, Pattern: 1}},
+		{Index: 3, Fill: Fill{Type: "pattern", Color: []string{"FF6361"}, Pattern: 1}},
+	}}}
+	series5 := []ChartSeries{
+		{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30", Sizes: "Sheet1!$B$30:$D$30", DataLabelPosition: ChartDataLabelsPositionAbove},
+		{Name: "Sheet1!$A$31", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$31:$D$31", Sizes: "Sheet1!$B$31:$D$31", DataLabelPosition: ChartDataLabelsPositionLeft},
+		{Name: "Sheet1!$A$32", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$32:$D$32", Sizes: "Sheet1!$B$32:$D$32", DataLabelPosition: ChartDataLabelsPositionBestFit},
+		{Name: "Sheet1!$A$33", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$33:$D$33", Sizes: "Sheet1!$B$33:$D$33", DataLabelPosition: ChartDataLabelsPositionCenter},
+		{Name: "Sheet1!$A$34", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$34:$D$34", Sizes: "Sheet1!$B$34:$D$34", DataLabelPosition: ChartDataLabelsPositionInsideBase},
+		{Name: "Sheet1!$A$35", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$35:$D$35", Sizes: "Sheet1!$B$35:$D$35", DataLabelPosition: ChartDataLabelsPositionInsideEnd},
+		{Name: "Sheet1!$A$36", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$36:$D$36", Sizes: "Sheet1!$B$36:$D$36", DataLabelPosition: ChartDataLabelsPositionOutsideEnd},
+		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Sizes: "Sheet1!$B$37:$D$37", DataLabelPosition: ChartDataLabelsPositionRight},
+	}
 	format := GraphicOptions{
-		ScaleX:          defaultPictureScale,
-		ScaleY:          defaultPictureScale,
+		ScaleX:          defaultDrawingScale,
+		ScaleY:          defaultDrawingScale,
 		OffsetX:         15,
 		OffsetY:         10,
 		PrintObject:     boolPtr(true),
@@ -174,121 +216,230 @@ func TestAddChart(t *testing.T) {
 	}
 	legend := ChartLegend{Position: "left", ShowLegendKey: false}
 	plotArea := ChartPlotArea{
-		ShowBubbleSize:  true,
-		ShowCatName:     true,
-		ShowLeaderLines: false,
-		ShowPercent:     true,
-		ShowSerName:     true,
-		ShowVal:         true,
+		SecondPlotValues: 3,
+		ShowBubbleSize:   true,
+		ShowCatName:      true,
+		ShowLeaderLines:  false,
+		ShowPercent:      true,
+		ShowSerName:      true,
+		ShowVal:          true,
+		Fill:             Fill{Type: "pattern", Pattern: 1},
 	}
 	for _, c := range []struct {
 		sheetName, cell string
 		opts            *Chart
 	}{
-		{sheetName: "Sheet1", cell: "P1", opts: &Chart{Type: "col", Series: series, Format: format, Legend: ChartLegend{Position: "none", ShowLegendKey: true}, Title: ChartTitle{Name: "2D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{Font: Font{Bold: true, Italic: true, Underline: "dbl", Color: "#000000"}}, YAxis: ChartAxis{Font: Font{Bold: false, Italic: false, Underline: "sng", Color: "#777777"}}}},
-		{sheetName: "Sheet1", cell: "X1", opts: &Chart{Type: "colStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Stacked Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "P16", opts: &Chart{Type: "colPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "100% Stacked Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "X16", opts: &Chart{Type: "col3DClustered", Series: series, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: ChartTitle{Name: "3D Clustered Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "P30", opts: &Chart{Type: "col3DStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Stacked Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "X30", opts: &Chart{Type: "col3DPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D 100% Stacked Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "X45", opts: &Chart{Type: "radar", Series: series, Format: format, Legend: ChartLegend{Position: "top_right", ShowLegendKey: false}, Title: ChartTitle{Name: "Radar Chart"}, PlotArea: plotArea, ShowBlanksAs: "span"}},
-		{sheetName: "Sheet1", cell: "AF1", opts: &Chart{Type: "col3DConeStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cone Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "AF16", opts: &Chart{Type: "col3DConeClustered", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cone Clustered Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "AF30", opts: &Chart{Type: "col3DConePercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cone Percent Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "AF45", opts: &Chart{Type: "col3DCone", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cone Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "AN1", opts: &Chart{Type: "col3DPyramidStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Pyramid Percent Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "AN16", opts: &Chart{Type: "col3DPyramidClustered", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Pyramid Clustered Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "AN30", opts: &Chart{Type: "col3DPyramidPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Pyramid Percent Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "AN45", opts: &Chart{Type: "col3DPyramid", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Pyramid Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "AV1", opts: &Chart{Type: "col3DCylinderStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cylinder Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "AV16", opts: &Chart{Type: "col3DCylinderClustered", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cylinder Clustered Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "AV30", opts: &Chart{Type: "col3DCylinderPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cylinder Percent Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "AV45", opts: &Chart{Type: "col3DCylinder", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Cylinder Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet1", cell: "P45", opts: &Chart{Type: "col3D", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "P1", opts: &Chart{Type: "line3D", Series: series2, Format: format, Legend: ChartLegend{Position: "top", ShowLegendKey: false}, Title: ChartTitle{Name: "3D Line Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1}}},
-		{sheetName: "Sheet2", cell: "X1", opts: &Chart{Type: "scatter", Series: series, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: ChartTitle{Name: "Scatter Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "P16", opts: &Chart{Type: "doughnut", Series: series3, Format: format, Legend: ChartLegend{Position: "right", ShowLegendKey: false}, Title: ChartTitle{Name: "Doughnut Chart"}, PlotArea: ChartPlotArea{ShowBubbleSize: false, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false}, ShowBlanksAs: "zero", HoleSize: 30}},
-		{sheetName: "Sheet2", cell: "X16", opts: &Chart{Type: "line", Series: series2, Format: format, Legend: ChartLegend{Position: "top", ShowLegendKey: false}, Title: ChartTitle{Name: "Line Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1}}},
-		{sheetName: "Sheet2", cell: "P32", opts: &Chart{Type: "pie3D", Series: series3, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: ChartTitle{Name: "3D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "X32", opts: &Chart{Type: "pie", Series: series3, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: ChartTitle{Name: "Pie Chart"}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false}, ShowBlanksAs: "gap"}},
+		{sheetName: "Sheet1", cell: "P1", opts: &Chart{Type: Col, Series: series, Format: format, Legend: ChartLegend{Position: "none", ShowLegendKey: true}, Title: []RichTextRun{{Text: "2D Column Chart", Font: &Font{Size: 11, Family: "Calibri"}}}, PlotArea: plotArea, Border: ChartLine{Type: ChartLineNone}, ShowBlanksAs: "zero", XAxis: ChartAxis{Font: Font{Bold: true, Italic: true, Underline: "dbl", Family: "Times New Roman", Size: 15, Strike: true, Color: "000000"}, Title: []RichTextRun{{Text: "Primary Horizontal Axis Title"}}}, YAxis: ChartAxis{Font: Font{Bold: false, Italic: false, Underline: "sng", Color: "777777"}, Title: []RichTextRun{{Text: "Primary Vertical Axis Title", Font: &Font{Color: "777777", Bold: true, Italic: true, Size: 12}}}}}},
+		{sheetName: "Sheet1", cell: "X1", opts: &Chart{Type: ColStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Stacked Column Chart"}}, PlotArea: plotArea, Fill: Fill{Type: "pattern", Pattern: 1}, Border: ChartLine{Type: ChartLineAutomatic}, ShowBlanksAs: "zero", GapWidth: uintPtr(10), Overlap: intPtr(100)}},
+		{sheetName: "Sheet1", cell: "P16", opts: &Chart{Type: ColPercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "100% Stacked Column Chart"}}, PlotArea: plotArea, Fill: Fill{Type: "pattern", Color: []string{"EEEEEE"}, Pattern: 1}, Border: ChartLine{Type: ChartLineSolid, Width: 2}, ShowBlanksAs: "zero", XAxis: ChartAxis{Alignment: Alignment{Vertical: "wordArtVertRtl", TextRotation: 0}}}},
+		{sheetName: "Sheet1", cell: "X16", opts: &Chart{Type: Col3DClustered, Series: series, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false, Font: &Font{Size: 10}}, Title: []RichTextRun{{Text: "3D Clustered Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "P30", opts: &Chart{Type: Col3DStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Stacked Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{Alignment: Alignment{Vertical: "vert", TextRotation: 0}}}},
+		{sheetName: "Sheet1", cell: "X30", opts: &Chart{Type: Col3DPercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D 100% Stacked Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "X45", opts: &Chart{Type: Radar, Series: series, Format: format, Legend: ChartLegend{Position: "top_right", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Radar Chart"}}, PlotArea: plotArea, ShowBlanksAs: "span"}},
+		{sheetName: "Sheet1", cell: "AF1", opts: &Chart{Type: Col3DConeStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Cone Stacked Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "AF16", opts: &Chart{Type: Col3DConeClustered, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Cone Clustered Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "AF30", opts: &Chart{Type: Col3DConePercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Cone Percent Stacked Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "AF45", opts: &Chart{Type: Col3DCone, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Cone Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "AN1", opts: &Chart{Type: Col3DPyramidStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Pyramid Percent Stacked Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "AN16", opts: &Chart{Type: Col3DPyramidClustered, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Pyramid Clustered Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "AN30", opts: &Chart{Type: Col3DPyramidPercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Pyramid Percent Stacked Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "AN45", opts: &Chart{Type: Col3DPyramid, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Pyramid Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "AV1", opts: &Chart{Type: Col3DCylinderStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Cylinder Stacked Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "AV16", opts: &Chart{Type: Col3DCylinderClustered, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Cylinder Clustered Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "AV30", opts: &Chart{Type: Col3DCylinderPercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Cylinder Percent Stacked Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "AV45", opts: &Chart{Type: Col3DCylinder, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Cylinder Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet1", cell: "P45", opts: &Chart{Type: Col3D, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{Alignment: Alignment{Vertical: "vert270", TextRotation: 0}}}},
+		{sheetName: "Sheet2", cell: "P1", opts: &Chart{Type: Line3D, Series: series2, Format: format, Legend: ChartLegend{Position: "top", ShowLegendKey: false}, Title: []RichTextRun{{Text: "3D Line Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1, NumFmt: ChartNumFmt{CustomNumFmt: "General"}}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1, NumFmt: ChartNumFmt{CustomNumFmt: "General"}}}},
+		{sheetName: "Sheet2", cell: "X1", opts: &Chart{Type: Scatter, Series: series, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Scatter Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "P16", opts: &Chart{Type: Doughnut, Series: series3, Format: format, Legend: ChartLegend{Position: "right", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Doughnut Chart"}}, PlotArea: ChartPlotArea{ShowBubbleSize: false, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false}, ShowBlanksAs: "zero", HoleSize: 30}},
+		{sheetName: "Sheet2", cell: "X16", opts: &Chart{Type: Line, Series: series2, Format: format, Legend: ChartLegend{Position: "top", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Line Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1, TickLabelPosition: ChartTickLabelLow}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1}}},
+		{sheetName: "Sheet2", cell: "P32", opts: &Chart{Type: Pie3D, Series: series3, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "3D Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "X32", opts: &Chart{Type: Pie, Series: series4, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Pie Chart"}}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false, NumFmt: ChartNumFmt{CustomNumFmt: "0.00%;0;;"}}, ShowBlanksAs: "gap"}},
 		// bar series chart
-		{sheetName: "Sheet2", cell: "P48", opts: &Chart{Type: "bar", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Clustered Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "X48", opts: &Chart{Type: "barStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Stacked Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "P64", opts: &Chart{Type: "barPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Stacked 100% Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "X64", opts: &Chart{Type: "bar3DClustered", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Clustered Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "P80", opts: &Chart{Type: "bar3DStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Stacked Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", YAxis: ChartAxis{Maximum: &maximum, Minimum: &minimum}}},
-		{sheetName: "Sheet2", cell: "X80", opts: &Chart{Type: "bar3DPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D 100% Stacked Bar Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{ReverseOrder: true, Minimum: &zero}, YAxis: ChartAxis{ReverseOrder: true, Minimum: &zero}}},
+		{sheetName: "Sheet2", cell: "P48", opts: &Chart{Type: Bar, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Clustered Bar Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "X48", opts: &Chart{Type: BarStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Stacked Bar Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "P64", opts: &Chart{Type: BarPercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Stacked 100% Bar Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "X64", opts: &Chart{Type: Bar3DClustered, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Clustered Bar Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "P80", opts: &Chart{Type: Bar3DStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Stacked Bar Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", YAxis: ChartAxis{Maximum: &maximum, Minimum: &minimum}}},
+		{sheetName: "Sheet2", cell: "X80", opts: &Chart{Type: Bar3DPercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D 100% Stacked Bar Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{ReverseOrder: true, Secondary: true, Minimum: &zero}, YAxis: ChartAxis{ReverseOrder: true, Minimum: &zero}}},
 		// area series chart
-		{sheetName: "Sheet2", cell: "AF1", opts: &Chart{Type: "area", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Area Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "AN1", opts: &Chart{Type: "areaStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Stacked Area Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "AF16", opts: &Chart{Type: "areaPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D 100% Stacked Area Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "AN16", opts: &Chart{Type: "area3D", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Area Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "AF32", opts: &Chart{Type: "area3DStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Stacked Area Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "AN32", opts: &Chart{Type: "area3DPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D 100% Stacked Area Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AF1", opts: &Chart{Type: Area, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Area Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AN1", opts: &Chart{Type: AreaStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Stacked Area Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AF16", opts: &Chart{Type: AreaPercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D 100% Stacked Area Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AN16", opts: &Chart{Type: Area3D, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Area Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AF32", opts: &Chart{Type: Area3DStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Stacked Area Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AN32", opts: &Chart{Type: Area3DPercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D 100% Stacked Area Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		// cylinder series chart
-		{sheetName: "Sheet2", cell: "AF48", opts: &Chart{Type: "bar3DCylinderStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Bar Cylinder Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "AF64", opts: &Chart{Type: "bar3DCylinderClustered", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Bar Cylinder Clustered Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "AF80", opts: &Chart{Type: "bar3DCylinderPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Bar Cylinder Percent Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AF48", opts: &Chart{Type: Bar3DCylinderStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Bar Cylinder Stacked Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AF64", opts: &Chart{Type: Bar3DCylinderClustered, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Bar Cylinder Clustered Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AF80", opts: &Chart{Type: Bar3DCylinderPercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Bar Cylinder Percent Stacked Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		// cone series chart
-		{sheetName: "Sheet2", cell: "AN48", opts: &Chart{Type: "bar3DConeStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Bar Cone Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "AN64", opts: &Chart{Type: "bar3DConeClustered", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Bar Cone Clustered Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "AN80", opts: &Chart{Type: "bar3DConePercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Bar Cone Percent Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "AV48", opts: &Chart{Type: "bar3DPyramidStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Bar Pyramid Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "AV64", opts: &Chart{Type: "bar3DPyramidClustered", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Bar Pyramid Clustered Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "AV80", opts: &Chart{Type: "bar3DPyramidPercentStacked", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Bar Pyramid Percent Stacked Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AN48", opts: &Chart{Type: Bar3DConeStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Bar Cone Stacked Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AN64", opts: &Chart{Type: Bar3DConeClustered, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Bar Cone Clustered Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AN80", opts: &Chart{Type: Bar3DConePercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Bar Cone Percent Stacked Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AV48", opts: &Chart{Type: Bar3DPyramidStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Bar Pyramid Stacked Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AV64", opts: &Chart{Type: Bar3DPyramidClustered, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Bar Pyramid Clustered Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AV80", opts: &Chart{Type: Bar3DPyramidPercentStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Bar Pyramid Percent Stacked Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		// surface series chart
-		{sheetName: "Sheet2", cell: "AV1", opts: &Chart{Type: "surface3D", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Surface Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", YAxis: ChartAxis{MajorGridLines: true}}},
-		{sheetName: "Sheet2", cell: "AV16", opts: &Chart{Type: "wireframeSurface3D", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "3D Wireframe Surface Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", YAxis: ChartAxis{MajorGridLines: true}}},
-		{sheetName: "Sheet2", cell: "AV32", opts: &Chart{Type: "contour", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "Contour Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "BD1", opts: &Chart{Type: "wireframeContour", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "Wireframe Contour Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "AV1", opts: &Chart{Type: Surface3D, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Surface Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", YAxis: ChartAxis{MajorGridLines: true}}},
+		{sheetName: "Sheet2", cell: "AV16", opts: &Chart{Type: WireframeSurface3D, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "3D Wireframe Surface Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", YAxis: ChartAxis{MajorGridLines: true}}},
+		{sheetName: "Sheet2", cell: "AV32", opts: &Chart{Type: Contour, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Contour Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
+		{sheetName: "Sheet2", cell: "BD1", opts: &Chart{Type: WireframeContour, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Wireframe Contour Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		// bubble chart
-		{sheetName: "Sheet2", cell: "BD16", opts: &Chart{Type: "bubble", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "Bubble Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "BD32", opts: &Chart{Type: "bubble3D", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "Bubble 3D Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
+		{sheetName: "Sheet2", cell: "BD16", opts: &Chart{Type: Bubble, Series: series5, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", BubbleSize: 75}},
+		{sheetName: "Sheet2", cell: "BD32", opts: &Chart{Type: Bubble3D, Series: series5, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble 3D Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
 		// pie of pie chart
-		{sheetName: "Sheet2", cell: "BD48", opts: &Chart{Type: "pieOfPie", Series: series3, Format: format, Legend: legend, Title: ChartTitle{Name: "Pie of Pie Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
+		{sheetName: "Sheet2", cell: "BD48", opts: &Chart{Type: PieOfPie, Series: series3, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Pie of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
 		// bar of pie chart
-		{sheetName: "Sheet2", cell: "BD64", opts: &Chart{Type: "barOfPie", Series: series3, Format: format, Legend: legend, Title: ChartTitle{Name: "Bar of Pie Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
+		{sheetName: "Sheet2", cell: "BD64", opts: &Chart{Type: BarOfPie, Series: series3, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bar of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
 	} {
 		assert.NoError(t, f.AddChart(c.sheetName, c.cell, c.opts))
 	}
 	// combo chart
 	_, err = f.NewSheet("Combo Charts")
 	assert.NoError(t, err)
-	clusteredColumnCombo := [][]string{
-		{"A1", "line", "Clustered Column - Line Chart"},
-		{"I1", "bubble", "Clustered Column - Bubble Chart"},
-		{"Q1", "bubble3D", "Clustered Column - Bubble 3D Chart"},
-		{"Y1", "doughnut", "Clustered Column - Doughnut Chart"},
+	clusteredColumnCombo := [][]interface{}{
+		{"A1", Line, "Clustered Column - Line Chart"},
+		{"I1", Doughnut, "Clustered Column - Doughnut Chart"},
 	}
 	for _, props := range clusteredColumnCombo {
-		assert.NoError(t, f.AddChart("Combo Charts", props[0], &Chart{Type: "col", Series: series[:4], Format: format, Legend: legend, Title: ChartTitle{Name: props[2]}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}}, &Chart{Type: props[1], Series: series[4:], Format: format, Legend: legend, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}}))
+		assert.NoError(t, f.AddChart("Combo Charts", props[0].(string), &Chart{Type: Col, Series: series[:4], Format: format, Legend: legend, Title: []RichTextRun{{Text: props[2].(string)}}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowDataTable: true, ShowDataTableKeys: true, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}}, &Chart{Type: props[1].(ChartType), Series: series[4:], Format: format, Legend: legend, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}, YAxis: ChartAxis{Secondary: true}}))
 	}
-	stackedAreaCombo := map[string][]string{
-		"A16": {"line", "Stacked Area - Line Chart"},
-		"I16": {"bubble", "Stacked Area - Bubble Chart"},
-		"Q16": {"bubble3D", "Stacked Area - Bubble 3D Chart"},
-		"Y16": {"doughnut", "Stacked Area - Doughnut Chart"},
+	stackedAreaCombo := map[string][]interface{}{
+		"A16": {Line, "Stacked Area - Line Chart"},
+		"I16": {Doughnut, "Stacked Area - Doughnut Chart"},
 	}
 	for axis, props := range stackedAreaCombo {
-		assert.NoError(t, f.AddChart("Combo Charts", axis, &Chart{Type: "areaStacked", Series: series[:4], Format: format, Legend: legend, Title: ChartTitle{Name: props[1]}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}}, &Chart{Type: props[0], Series: series[4:], Format: format, Legend: legend, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}}))
+		assert.NoError(t, f.AddChart("Combo Charts", axis, &Chart{Type: AreaStacked, Series: series[:4], Format: format, Legend: legend, Title: []RichTextRun{{Text: props[1].(string)}}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}}, &Chart{Type: props[0].(ChartType), Series: series[4:], Format: format, Legend: legend, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: true, ShowVal: true}}))
 	}
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddChart.xlsx")))
 	// Test with invalid sheet name
-	assert.EqualError(t, f.AddChart("Sheet:1", "A1", &Chart{Type: "col", Series: series[:1]}), ErrSheetNameInvalid.Error())
+	assert.EqualError(t, f.AddChart("Sheet:1", "A1", &Chart{Type: Col, Series: series[:1]}), ErrSheetNameInvalid.Error())
 	// Test with illegal cell reference
-	assert.EqualError(t, f.AddChart("Sheet2", "A", &Chart{Type: "col", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+	assert.EqualError(t, f.AddChart("Sheet2", "A", &Chart{Type: Col, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	// Test with unsupported chart type
-	assert.EqualError(t, f.AddChart("Sheet2", "BD32", &Chart{Type: "unknown", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "Bubble 3D Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}), "unsupported chart type unknown")
+	assert.EqualError(t, f.AddChart("Sheet2", "BD32", &Chart{Type: 0x39, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble 3D Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}), newUnsupportedChartType(0x39).Error())
 	// Test add combo chart with invalid format set
-	assert.EqualError(t, f.AddChart("Sheet2", "BD32", &Chart{Type: "col", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}, nil), ErrParameterInvalid.Error())
+	assert.EqualError(t, f.AddChart("Sheet2", "BD32", &Chart{Type: Col, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}, nil), ErrParameterInvalid.Error())
 	// Test add combo chart with unsupported chart type
-	assert.EqualError(t, f.AddChart("Sheet2", "BD64", &Chart{Type: "barOfPie", Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}, Format: format, Legend: legend, Title: ChartTitle{Name: "Bar of Pie Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}, &Chart{Type: "unknown", Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}, Format: format, Legend: legend, Title: ChartTitle{Name: "Bar of Pie Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}), "unsupported chart type unknown")
+	assert.EqualError(t, f.AddChart("Sheet2", "BD64", &Chart{Type: BarOfPie, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bar of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}, &Chart{Type: 0x39, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bar of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}), newUnsupportedChartType(0x39).Error())
+	// Test add chart with series transparency value exceeds limit
+	assert.Equal(t, ErrTransparency, f.AddChart("Sheet1", "BD64", &Chart{Type: Col, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30", Fill: Fill{Transparency: 110}}}}))
+	// Test add chart with transparency value exceeds limit
+	assert.Equal(t, ErrTransparency, f.AddChart("Sheet1", "BD64", &Chart{Type: Col, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"}}, Fill: Fill{Transparency: -1}}))
 	assert.NoError(t, f.Close())
 
 	// Test add chart with unsupported charset content types.
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.AddChart("Sheet1", "P1", &Chart{Type: "col", Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"}}, Title: ChartTitle{Name: "2D Column Chart"}}), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.AddChart("Sheet1", "P1", &Chart{Type: Col, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"}}, Title: []RichTextRun{{Text: "2D Column Chart"}}}), "XML syntax error on line 1: invalid UTF-8")
+
+	t.Run("for_create_stock_chart", func(t *testing.T) {
+		f := NewFile()
+		for i, row := range [][]interface{}{
+			{"Date", "Volume", "Open", "High", "Low", "Close"},
+			{45593, 14864000, 431.66, 431.94, 426.3, 426.59},
+			{45590, 16899100, 426.76, 432.52, 426.57, 428.15},
+			{45589, 13581600, 425.33, 425.98, 422.4, 424.73},
+			{45588, 19654400, 430.86, 431.08, 422.53, 424.6},
+			{45587, 25482200, 418.49, 430.58, 418.04, 427.51},
+			{45586, 14206100, 416.12, 418.96, 413.75, 418.78},
+			{45583, 17145300, 417.14, 419.65, 416.26, 418.16},
+			{45582, 14820000, 422.36, 422.5, 415.59, 416.72},
+			{45581, 15508900, 415.17, 416.36, 410.48, 416.12},
+			{45580, 18900200, 422.18, 422.48, 415.26, 418.74},
+			{45579, 16653100, 417.77, 424.04, 417.52, 419.14},
+			{45576, 14144900, 416.14, 417.13, 413.25, 416.32},
+			{45575, 13848400, 415.23, 417.35, 413.15, 415.84},
+			{45574, 14974300, 415.86, 420.38, 414.3, 417.46},
+			{45573, 19229300, 410.9, 415.66, 408.17, 414.71},
+			{45572, 20919800, 416, 417.11, 409, 409.54},
+			{45569, 19169700, 418.24, 419.75, 414.97, 416.06},
+			{45568, 13686400, 417.63, 419.55, 414.29, 416.54},
+			{45567, 16582300, 422.58, 422.82, 416.71, 417.13},
+			{45566, 19092900, 428.45, 428.48, 418.81, 420.69},
+			{45565, 16807300, 428.21, 430.42, 425.37, 430.3},
+		} {
+			cell, err := CoordinatesToCellName(1, i+1)
+			assert.NoError(t, err)
+			assert.NoError(t, f.SetSheetRow("Sheet1", cell, &row))
+		}
+		style, err := f.NewStyle(&Style{NumFmt: 15})
+		assert.NoError(t, err)
+		assert.NoError(t, f.SetColStyle("Sheet1", "A", style))
+
+		assert.NoError(t, f.AddChart("Sheet1", "G1", &Chart{
+			Type: StockHighLowClose,
+			Series: []ChartSeries{
+				{Name: "Sheet1!$D$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$D$2:$D$22"},
+				{Name: "Sheet1!$E$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$E$2:$E$22"},
+				{Name: "Sheet1!$F$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$F$2:$F$22"},
+			},
+			Legend: ChartLegend{Position: "none"},
+			Title:  []RichTextRun{{Text: "High-Low-Close Stock Chart"}},
+			XAxis:  ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "d-mmm-yy"}},
+		}))
+		assert.NoError(t, f.AddChart("Sheet1", "G16", &Chart{
+			Type: StockOpenHighLowClose,
+			Series: []ChartSeries{
+				{Name: "Sheet1!$C$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$C$2:$C$22"},
+				{Name: "Sheet1!$D$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$D$2:$D$22"},
+				{Name: "Sheet1!$E$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$E$2:$E$22"},
+				{Name: "Sheet1!$F$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$F$2:$F$22"},
+			},
+			Legend: ChartLegend{Position: "none"},
+			Title:  []RichTextRun{{Text: "Open-High-Low-Close Stock Chart"}},
+			XAxis:  ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "d-mmm-yy"}},
+			PlotArea: ChartPlotArea{
+				UpBars: ChartUpDownBar{
+					Border: ChartLine{Type: ChartLineNone},
+					Fill:   Fill{Type: "pattern", Color: []string{"00B050"}, Pattern: 1},
+				},
+				DownBars: ChartUpDownBar{
+					Border: ChartLine{Type: ChartLineNone},
+					Fill:   Fill{Type: "pattern", Color: []string{"FF0000"}, Pattern: 1},
+				},
+			},
+		}))
+		assert.NoError(t, f.AddChart("Sheet1", "O1", &Chart{
+			Type: Col,
+			Series: []ChartSeries{
+				{Name: "Sheet1!$B$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$B$2:$B$22"},
+			},
+			VaryColors: boolPtr(false),
+			XAxis:      ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "d-mmm-yy"}},
+			YAxis:      ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "#,##0"}},
+			Title:      []RichTextRun{{Text: "Volume-High-Low-Close Stock Chart"}},
+		}, &Chart{
+			Type: StockHighLowClose,
+			Series: []ChartSeries{
+				{Name: "Sheet1!$D$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$D$2:$D$22"},
+				{Name: "Sheet1!$E$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$E$2:$E$22"},
+				{Name: "Sheet1!$F$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$F$2:$F$22"},
+			},
+			YAxis: ChartAxis{Secondary: true},
+		}))
+		assert.NoError(t, f.AddChart("Sheet1", "O16", &Chart{
+			Type: Col,
+			Series: []ChartSeries{
+				{Name: "Sheet1!$B$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$B$2:$B$22"},
+			},
+			VaryColors: boolPtr(false),
+			XAxis:      ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "d-mmm-yy"}},
+			YAxis:      ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "#,##0"}},
+			Title:      []RichTextRun{{Text: "Volume-Open-High-Low-Close Stock Chart"}},
+		}, &Chart{
+			Type: StockOpenHighLowClose,
+			Series: []ChartSeries{
+				{Name: "Sheet1!$C$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$C$2:$C$22"},
+				{Name: "Sheet1!$D$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$D$2:$D$22"},
+				{Name: "Sheet1!$E$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$E$2:$E$22"},
+				{Name: "Sheet1!$F$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$F$2:$F$22"},
+			},
+			YAxis: ChartAxis{Secondary: true},
+		}))
+		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddChartStock.xlsx")))
+	})
 }
 
 func TestAddChartSheet(t *testing.T) {
@@ -306,7 +457,7 @@ func TestAddChartSheet(t *testing.T) {
 		{Name: "Sheet1!$A$3", Categories: "Sheet1!$B$1:$D$1", Values: "Sheet1!$B$3:$D$3"},
 		{Name: "Sheet1!$A$4", Categories: "Sheet1!$B$1:$D$1", Values: "Sheet1!$B$4:$D$4"},
 	}
-	assert.NoError(t, f.AddChartSheet("Chart1", &Chart{Type: "col3DClustered", Series: series, Title: ChartTitle{Name: "Fruit 3D Clustered Column Chart"}}))
+	assert.NoError(t, f.AddChartSheet("Chart1", &Chart{Type: Col3DClustered, Series: series, Title: []RichTextRun{{Text: "Fruit 3D Clustered Column Chart"}}}))
 	// Test set the chartsheet as active sheet
 	var sheetIdx int
 	for idx, sheetName := range f.GetSheetList() {
@@ -321,11 +472,11 @@ func TestAddChartSheet(t *testing.T) {
 	assert.EqualError(t, f.SetCellValue("Chart1", "A1", true), "sheet Chart1 is not a worksheet")
 	// Test add chartsheet on already existing name sheet
 
-	assert.EqualError(t, f.AddChartSheet("Sheet1", &Chart{Type: "col3DClustered", Series: series, Title: ChartTitle{Name: "Fruit 3D Clustered Column Chart"}}), ErrExistsSheet.Error())
+	assert.EqualError(t, f.AddChartSheet("Sheet1", &Chart{Type: Col3DClustered, Series: series, Title: []RichTextRun{{Text: "Fruit 3D Clustered Column Chart"}}}), ErrExistsSheet.Error())
 	// Test add chartsheet with invalid sheet name
-	assert.EqualError(t, f.AddChartSheet("Sheet:1", nil, &Chart{Type: "col3DClustered", Series: series, Title: ChartTitle{Name: "Fruit 3D Clustered Column Chart"}}), ErrSheetNameInvalid.Error())
+	assert.EqualError(t, f.AddChartSheet("Sheet:1", nil, &Chart{Type: Col3DClustered, Series: series, Title: []RichTextRun{{Text: "Fruit 3D Clustered Column Chart"}}}), ErrSheetNameInvalid.Error())
 	// Test with unsupported chart type
-	assert.EqualError(t, f.AddChartSheet("Chart2", &Chart{Type: "unknown", Series: series, Title: ChartTitle{Name: "Fruit 3D Clustered Column Chart"}}), "unsupported chart type unknown")
+	assert.EqualError(t, f.AddChartSheet("Chart2", &Chart{Type: 0x39, Series: series, Title: []RichTextRun{{Text: "Fruit 3D Clustered Column Chart"}}}), newUnsupportedChartType(0x39).Error())
 
 	assert.NoError(t, f.UpdateLinkedValue())
 
@@ -334,7 +485,7 @@ func TestAddChartSheet(t *testing.T) {
 	f = NewFile()
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
-	assert.EqualError(t, f.AddChartSheet("Chart4", &Chart{Type: "col", Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"}}, Title: ChartTitle{Name: "2D Column Chart"}}), "XML syntax error on line 1: invalid UTF-8")
+	assert.EqualError(t, f.AddChartSheet("Chart4", &Chart{Type: Col, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"}}, Title: []RichTextRun{{Text: "2D Column Chart"}}}), "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestDeleteChart(t *testing.T) {
@@ -352,8 +503,8 @@ func TestDeleteChart(t *testing.T) {
 		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37"},
 	}
 	format := GraphicOptions{
-		ScaleX:          defaultPictureScale,
-		ScaleY:          defaultPictureScale,
+		ScaleX:          defaultDrawingScale,
+		ScaleY:          defaultDrawingScale,
 		OffsetX:         15,
 		OffsetY:         10,
 		PrintObject:     boolPtr(true),
@@ -369,7 +520,7 @@ func TestDeleteChart(t *testing.T) {
 		ShowSerName:     true,
 		ShowVal:         true,
 	}
-	assert.NoError(t, f.AddChart("Sheet1", "P1", &Chart{Type: "col", Series: series, Format: format, Legend: legend, Title: ChartTitle{Name: "2D Column Chart"}, PlotArea: plotArea, ShowBlanksAs: "zero"}))
+	assert.NoError(t, f.AddChart("Sheet1", "P1", &Chart{Type: Col, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}))
 	assert.NoError(t, f.DeleteChart("Sheet1", "P1"))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestDeleteChart.xlsx")))
 	// Test delete chart with invalid sheet name
@@ -384,7 +535,7 @@ func TestDeleteChart(t *testing.T) {
 }
 
 func TestChartWithLogarithmicBase(t *testing.T) {
-	// Create test XLSX file with data
+	// Create test workbook with data
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
 	categories := map[string]float64{
@@ -418,25 +569,25 @@ func TestChartWithLogarithmicBase(t *testing.T) {
 		cell string
 		opts *Chart
 	}{
-		{cell: "C1", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: dimension[0], Height: dimension[1]}, Series: series, Title: ChartTitle{Name: "Line chart without log scaling"}}},
-		{cell: "M1", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: dimension[0], Height: dimension[1]}, Series: series, Title: ChartTitle{Name: "Line chart with log 10.5 scaling"}, YAxis: ChartAxis{LogBase: 10.5}}},
-		{cell: "A25", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: dimension[2], Height: dimension[3]}, Series: series, Title: ChartTitle{Name: "Line chart with log 1.9 scaling"}, YAxis: ChartAxis{LogBase: 1.9}}},
-		{cell: "F25", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: dimension[2], Height: dimension[3]}, Series: series, Title: ChartTitle{Name: "Line chart with log 2 scaling"}, YAxis: ChartAxis{LogBase: 2}}},
-		{cell: "K25", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: dimension[2], Height: dimension[3]}, Series: series, Title: ChartTitle{Name: "Line chart with log 1000.1 scaling"}, YAxis: ChartAxis{LogBase: 1000.1}}},
-		{cell: "P25", opts: &Chart{Type: "line", Dimension: ChartDimension{Width: dimension[2], Height: dimension[3]}, Series: series, Title: ChartTitle{Name: "Line chart with log 1000 scaling"}, YAxis: ChartAxis{LogBase: 1000}}},
+		{cell: "C1", opts: &Chart{Type: Line, Dimension: ChartDimension{Width: dimension[0], Height: dimension[1]}, Series: series, Title: []RichTextRun{{Text: "Line chart without log scaling"}}}},
+		{cell: "M1", opts: &Chart{Type: Line, Dimension: ChartDimension{Width: dimension[0], Height: dimension[1]}, Series: series, Title: []RichTextRun{{Text: "Line chart with log 10.5 scaling"}}, YAxis: ChartAxis{LogBase: 10.5}}},
+		{cell: "A25", opts: &Chart{Type: Line, Dimension: ChartDimension{Width: dimension[2], Height: dimension[3]}, Series: series, Title: []RichTextRun{{Text: "Line chart with log 1.9 scaling"}}, YAxis: ChartAxis{LogBase: 1.9}}},
+		{cell: "F25", opts: &Chart{Type: Line, Dimension: ChartDimension{Width: dimension[2], Height: dimension[3]}, Series: series, Title: []RichTextRun{{Text: "Line chart with log 2 scaling"}}, YAxis: ChartAxis{LogBase: 2}}},
+		{cell: "K25", opts: &Chart{Type: Line, Dimension: ChartDimension{Width: dimension[2], Height: dimension[3]}, Series: series, Title: []RichTextRun{{Text: "Line chart with log 1000.1 scaling"}}, YAxis: ChartAxis{LogBase: 1000.1}}},
+		{cell: "P25", opts: &Chart{Type: Line, Dimension: ChartDimension{Width: dimension[2], Height: dimension[3]}, Series: series, Title: []RichTextRun{{Text: "Line chart with log 1000 scaling"}}, YAxis: ChartAxis{LogBase: 1000}}},
 	} {
 		// Add two chart, one without and one with log scaling
 		assert.NoError(t, f.AddChart(sheet1, c.cell, c.opts))
 	}
 
-	// Export XLSX file for human confirmation
+	// Export workbook for human confirmation
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestChartWithLogarithmicBase10.xlsx")))
 
-	// Write the XLSX file to a buffer
+	// Write the workbook to a buffer
 	var buffer bytes.Buffer
 	assert.NoError(t, f.Write(&buffer))
 
-	// Read back the XLSX file from the buffer
+	// Read back the workbook from the buffer
 	newFile, err := OpenReader(&buffer)
 	assert.NoError(t, err)
 
