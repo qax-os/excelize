@@ -1707,6 +1707,29 @@ func TestCalcCellValue(t *testing.T) {
 		"ARRAYTOTEXT(A1:D2)":   "1, 4, , Month, 2, 5, , Jan",
 		"ARRAYTOTEXT(A1:D2,0)": "1, 4, , Month, 2, 5, , Jan",
 		"ARRAYTOTEXT(A1:D2,1)": "{1,4,,\"Month\";2,5,,\"Jan\"}",
+		// BAHTTEXT
+		"BAHTTEXT(-1.1)":    "\u0e25\u0e1a\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e1a\u0e32\u0e17\u0e2a\u0e34\u0e1a\u0e2a\u0e15\u0e32\u0e07\u0e04\u0e4c",
+		"BAHTTEXT(0)":       "\u0e28\u0e39\u0e19\u0e22\u0e4c\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(1)":       "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(1.1)":     "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e1a\u0e32\u0e17\u0e2a\u0e34\u0e1a\u0e2a\u0e15\u0e32\u0e07\u0e04\u0e4c",
+		"BAHTTEXT(2)":       "\u0e2a\u0e2d\u0e07\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(3)":       "\u0e2a\u0e32\u0e21\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(4)":       "\u0e2a\u0e35\u0e48\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(5)":       "\u0e2b\u0e49\u0e32\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(6)":       "\u0e2b\u0e01\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(7)":       "\u0e40\u0e08\u0e47\u0e14\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(8)":       "\u0e41\u0e1b\u0e14\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(9)":       "\u0e40\u0e01\u0e49\u0e32\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(10)":      "\u0e2a\u0e34\u0e1a\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(11)":      "\u0e2a\u0e34\u0e1a\u0e40\u0e2d\u0e47\u0e14\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(15)":      "\u0e2a\u0e34\u0e1a\u0e2b\u0e49\u0e32\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(20)":      "\u0e22\u0e35\u0e48\u0e2a\u0e34\u0e1a\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(100)":     "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e23\u0e49\u0e2d\u0e22\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(130)":     "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e23\u0e49\u0e2d\u0e22\u0e2a\u0e32\u0e21\u0e2a\u0e34\u0e1a\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(1000)":    "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e1e\u0e31\u0e19\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(10000)":   "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e2b\u0e21\u0e37\u0e48\u0e19\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(100000)":  "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e41\u0e2a\u0e19\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
+		"BAHTTEXT(1000000)": "\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e25\u0e49\u0e32\u0e19\u0e1a\u0e32\u0e17\u0e16\u0e49\u0e27\u0e19",
 		// CHAR
 		"CHAR(65)": "A",
 		"CHAR(97)": "a",
@@ -1914,6 +1937,11 @@ func TestCalcCellValue(t *testing.T) {
 		"UNICODE(\"alpha\")": "97",
 		"UNICODE(\"?\")":     "63",
 		"UNICODE(\"3\")":     "51",
+		// UNIQUE
+		"TEXTJOIN(\",\", TRUE, UNIQUE(D2:D9))":               "Jan,Feb",
+		"TEXTJOIN(\",\", TRUE, UNIQUE(D2:D9, FALSE, FALSE))": "Jan,Feb",
+		"TEXTJOIN(\",\", TRUE, UNIQUE(E2:E9, FALSE, FALSE))": "North 1,North 2,South 1,South 2",
+		"TEXTJOIN(\",\", TRUE, UNIQUE(D2:D9, FALSE, TRUE))":  "",
 		// UPPER
 		"UPPER(\"test\")":     "TEST",
 		"UPPER(\"TEST\")":     "TEST",
@@ -3839,6 +3867,9 @@ func TestCalcCellValue(t *testing.T) {
 		"ARRAYTOTEXT(A1,0,0)":  {"#VALUE!", "ARRAYTOTEXT allows at most 2 arguments"},
 		"ARRAYTOTEXT(A1,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		"ARRAYTOTEXT(A1,2)":    {"#VALUE!", "#VALUE!"},
+		// BAHTTEXT
+		"BAHTTEXT()":     {"#VALUE!", "BAHTTEXT requires 1 numeric argument"},
+		"BAHTTEXT(\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		// CHAR
 		"CHAR()":     {"#VALUE!", "CHAR requires 1 argument"},
 		"CHAR(-1)":   {"#VALUE!", "#VALUE!"},
@@ -3969,6 +4000,7 @@ func TestCalcCellValue(t *testing.T) {
 		"TEXTJOIN(\"\",TRUE,NA())": {"#N/A", "#N/A"},
 		"TEXTJOIN(\"\",TRUE," + strings.Repeat("0,", 250) + ",0)": {"#VALUE!", "TEXTJOIN accepts at most 252 arguments"},
 		"TEXTJOIN(\",\",FALSE,REPT(\"*\",32768))":                 {"#VALUE!", "TEXTJOIN function exceeds 32767 characters"},
+		"TEXTJOIN(\"\",FALSE,REPT(\"\U0001F600\",16384))":         {"#VALUE!", "TEXTJOIN function exceeds 32767 characters"},
 		// TRIM
 		"TRIM()":    {"#VALUE!", "TRIM requires 1 argument"},
 		"TRIM(1,2)": {"#VALUE!", "TRIM requires 1 argument"},
@@ -5130,6 +5162,100 @@ func TestCalcCOVAR(t *testing.T) {
 		assert.Equal(t, expected[0], result, formula)
 		assert.EqualError(t, err, expected[1], formula)
 	}
+}
+
+func TestCalcUniqueExactlyOnce(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Customer name"},
+		{"Fife, Grant"},
+		{"Pruitt, Barbara"},
+		{"Horn, Frances"},
+		{"Barrett, Alicia"},
+		{"Barrett, Alicia"},
+		{"Larson, Lynn"},
+		{"Pruitt, Barbara"},
+		{"Snook, Anthony"},
+		{"Snook, Anthony"},
+		{"Horn, Frances"},
+		{"Brown, Charity"},
+	}
+	f := prepareCalcData(cellData)
+
+	formulaList := map[string]string{
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A12))":             "Fife, Grant:Pruitt, Barbara:Horn, Frances:Barrett, Alicia:Larson, Lynn:Snook, Anthony:Brown, Charity",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A12,FALSE,TRUE))":  "Fife, Grant:Larson, Lynn:Brown, Charity",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A12,FALSE,FALSE))": "Fife, Grant:Pruitt, Barbara:Horn, Frances:Barrett, Alicia:Larson, Lynn:Snook, Anthony:Brown, Charity",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcUniqueMultiColumn(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Player name", "Gender", "Nickname"},
+		{"Tom", "M", "Tom"},
+		{"Fred", "M", "Fred"},
+		{"Amy", "F", "Amy"},
+		{"John", "M", "John"},
+		{"Malicia", "F", "Malicia"},
+		{"Fred", "M", "Fred"},
+	}
+	f := prepareCalcData(cellData)
+
+	formulaList := map[string]string{
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:C7))":            "Tom:M:Tom:Fred:M:Fred:Amy:F:Amy:John:M:John:Malicia:F:Malicia",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:C7,TRUE))":       "Tom:M:Fred:M:Amy:F:John:M:Malicia:F:Fred:M",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:C7,TRUE, TRUE))": "M:M:F:M:F:M",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcUniqueErrors(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Player name", "Gender", "Nickname"},
+		{"Tom", "M", "Tom"},
+		{"Fred", "M", "Fred"},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"TEXTJOIN(\":\", TRUE, UNIQUE())":                       "#VALUE!",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(1, 2, 3, 4))":             "#VALUE!",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A3, \"Hello\"))":       "#VALUE!",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A3, TRUE, \"Hello\"))": "#VALUE!",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.Error(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestTransposeFormulaArgsMatrix(t *testing.T) {
+	assert.Empty(t, transposeFormulaArgsMatrix([][]formulaArg{}))
+}
+
+func TestGetFormulaUniqueArgs(t *testing.T) {
+	argsList := list.New()
+	emptyArg := newEmptyFormulaArg()
+	argsList.PushBack(emptyArg)
+
+	_, err := getFormulaUniqueArgs(argsList)
+	assert.Equal(t, "missing first argument to UNIQUE", err.Error)
+
+	argsList = list.New()
+	argsList.PushBack(newListFormulaArg([]formulaArg{newErrorFormulaArg(formulaErrorNAME, formulaErrorNAME)}))
+	_, err = getFormulaUniqueArgs(argsList)
+	assert.Equal(t, formulaErrorNAME, err.Error)
 }
 
 func TestCalcDatabase(t *testing.T) {
@@ -6338,6 +6464,10 @@ func TestCalcRangeResolver(t *testing.T) {
 	cellRefs.PushBack(cellRef{Col: 1, Row: TotalRows + 1, Sheet: "SheetN"})
 	_, err = f.rangeResolver(&calcContext{}, cellRefs, cellRanges)
 	assert.Equal(t, ErrMaxRows, err)
+}
+
+func TestCalcBahttextAppendDigit(t *testing.T) {
+	assert.Empty(t, bahttextAppendDigit("", -1))
 }
 
 func TestNestedFunctionsWithOperators(t *testing.T) {
