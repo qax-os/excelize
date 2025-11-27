@@ -384,7 +384,7 @@ func (f *File) SetSheetName(source, target string) error {
 	if target == source {
 		return err
 	}
-	f.clearCalcCache()
+	f.calcCache.Clear()
 	wb, _ := f.workbookReader()
 	for k, v := range wb.Sheets.Sheet {
 		if v.Name == source {
@@ -580,7 +580,7 @@ func (f *File) DeleteSheet(sheet string) error {
 	if idx, _ := f.GetSheetIndex(sheet); f.SheetCount == 1 || idx == -1 {
 		return nil
 	}
-	f.clearCalcCache()
+	f.calcCache.Clear()
 	wb, _ := f.workbookReader()
 	wbRels, _ := f.relsReader(f.getWorkbookRelsPath())
 	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
@@ -769,7 +769,7 @@ func (f *File) copySheet(from, to int) error {
 	if err != nil {
 		return err
 	}
-	f.clearCalcCache()
+	f.calcCache.Clear()
 	worksheet := &xlsxWorksheet{}
 	deepcopy.Copy(worksheet, sheet)
 	toSheetID := strconv.Itoa(f.getSheetID(f.GetSheetName(to)))
@@ -1773,7 +1773,7 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 	if err != nil {
 		return err
 	}
-	f.clearCalcCache()
+	f.calcCache.Clear()
 	d := xlsxDefinedName{
 		Name:    definedName.Name,
 		Comment: definedName.Comment,
@@ -1816,7 +1816,7 @@ func (f *File) DeleteDefinedName(definedName *DefinedName) error {
 	if err != nil {
 		return err
 	}
-	f.clearCalcCache()
+	f.calcCache.Clear()
 	if wb.DefinedNames != nil {
 		for idx, dn := range wb.DefinedNames.DefinedName {
 			scope := "Workbook"
