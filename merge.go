@@ -66,7 +66,6 @@ func (f *File) MergeCell(sheet, topLeftCell, bottomRightCell string) error {
 	}
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
-	f.clearCalcCache()
 	for col := rect[0]; col <= rect[2]; col++ {
 		for row := rect[1]; row <= rect[3]; row++ {
 			if col == rect[0] && row == rect[1] {

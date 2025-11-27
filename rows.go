@@ -634,7 +634,6 @@ func (f *File) GetRowOutlineLevel(sheet string, row int) (uint8, error) {
 // worksheet, it will cause a file error when you open it. The excelize only
 // partially updates these references currently.
 func (f *File) RemoveRow(sheet string, row int) error {
-	f.clearCalcCache()
 	if row < 1 {
 		return newInvalidRowNumberError(row)
 	}
