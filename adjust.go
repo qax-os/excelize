@@ -75,6 +75,7 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	if err != nil {
 		return err
 	}
+	f.clearCalcCache()
 	sheetID := f.getSheetID(sheet)
 	if dir == rows {
 		err = f.adjustRowDimensions(sheet, ws, num, offset)

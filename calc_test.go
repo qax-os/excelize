@@ -6632,3 +6632,105 @@ func TestParseToken(t *testing.T) {
 		efp.Token{TSubType: efp.TokenSubTypeRange, TValue: "1A"}, nil, nil,
 	).Error())
 }
+
+func TestCalcCellValueCache(t *testing.T) {
+	t.Run("for_calc_call_value_with_cache", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 40))
+		assert.NoError(t, f.SetCellValue("Sheet1", "A2", 50))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "A1+A2"))
+
+		result1, err := f.CalcCellValue("Sheet1", "A3")
+		assert.NoError(t, err)
+		assert.Equal(t, "90", result1)
+
+		result2, err := f.CalcCellValue("Sheet1", "A3")
+		assert.NoError(t, err)
+		assert.Equal(t, result1, result2, "cached result should be consistent")
+
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 60))
+
+		result3, err := f.CalcCellValue("Sheet1", "A3")
+		assert.NoError(t, err)
+		assert.Equal(t, "110", result3)
+		assert.NotEqual(t, result1, result3, "result should be updated after cache clear")
+	})
+	t.Run("for_calc_call_value_with_multiple_dependent_cells", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 10))
+		assert.NoError(t, f.SetCellValue("Sheet1", "A2", 10))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "A1+A2"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A4", "A3*3"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A5", "A3+A4"))
+
+		result3, err := f.CalcCellValue("Sheet1", "A3")
+		assert.NoError(t, err)
+		assert.Equal(t, "20", result3)
+
+		result4, err := f.CalcCellValue("Sheet1", "A4")
+		assert.NoError(t, err)
+		assert.Equal(t, "60", result4)
+
+		result5, err := f.CalcCellValue("Sheet1", "A5")
+		assert.NoError(t, err)
+		assert.Equal(t, "80", result5)
+
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 20))
+
+		newResult3, err := f.CalcCellValue("Sheet1", "A3")
+		assert.NoError(t, err)
+		assert.Equal(t, "30", newResult3)
+		assert.NotEqual(t, result3, newResult3, "A3 should be updated")
+
+		newResult5, err := f.CalcCellValue("Sheet1", "A5")
+		assert.NoError(t, err)
+		assert.Equal(t, "120", newResult5)
+		assert.NotEqual(t, result5, newResult5, "A5 should be updated")
+	})
+	t.Run("for_clear_calculation_cache", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 10))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "A1*2"))
+
+		result1, err := f.CalcCellValue("Sheet1", "A2")
+		assert.NoError(t, err)
+		assert.Equal(t, "20", result1)
+
+		result2, err := f.CalcCellValue("Sheet1", "A2")
+		assert.NoError(t, err)
+		assert.Equal(t, result1, result2, "results should be consistent from cache")
+
+		cases := []struct {
+			name string
+			fn   func() error
+		}{
+			{"SetCellValue", func() error { return f.SetCellValue("Sheet1", "B1", 100) }},
+			{"SetCellInt", func() error { return f.SetCellInt("Sheet1", "B2", 200) }},
+			{"SetCellUint", func() error { return f.SetCellUint("Sheet1", "B3", 300) }},
+			{"SetCellFloat", func() error { return f.SetCellFloat("Sheet1", "B4", 3.14, 2, 64) }},
+			{"SetCellStr", func() error { return f.SetCellStr("Sheet1", "B5", "test") }},
+			{"SetCellBool", func() error { return f.SetCellBool("Sheet1", "B6", true) }},
+			{"SetCellDefault", func() error { return f.SetCellDefault("Sheet1", "B7", "default") }},
+			{"SetCellFormula", func() error { return f.SetCellFormula("Sheet1", "B8", "=1+1") }},
+			{"SetCellHyperLink", func() error {
+				return f.SetCellHyperLink("Sheet1", "B9", "https://github.com/xuri/excelize", "External")
+			}},
+			{"SetCellRichText", func() error {
+				runs := []RichTextRun{{Text: "Rich", Font: &Font{Bold: true}}}
+				return f.SetCellRichText("Sheet1", "B10", runs)
+			}},
+			{"SetSheetRow", func() error { return f.SetSheetRow("Sheet1", "C1", &[]interface{}{1, 2, 3}) }},
+			{"SetSheetCol", func() error { return f.SetSheetCol("Sheet1", "D1", &[]interface{}{4, 5, 6}) }},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				_, err := f.CalcCellValue("Sheet1", "A2")
+				assert.NoError(t, err)
+				assert.NoError(t, tc.fn())
+				result, err := f.CalcCellValue("Sheet1", "A2")
+				assert.NoError(t, err)
+				assert.Equal(t, "20", result, "calculation should still work after cache clear")
+			})
+		}
+	})
+}
