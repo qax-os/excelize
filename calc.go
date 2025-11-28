@@ -840,13 +840,9 @@ type formulaFuncs struct {
 //	ZTEST
 func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string, err error) {
 	cacheKey := fmt.Sprintf("%s!%s", sheet, cell)
-	f.calcCacheMu.RLock()
 	if cachedResult, found := f.calcCache.Load(cacheKey); found {
-		f.calcCacheMu.RUnlock()
 		return cachedResult.(string), nil
 	}
-	f.calcCacheMu.RUnlock()
-
 	options := f.getOptions(opts...)
 	var (
 		rawCellValue = options.RawCellValue
@@ -870,9 +866,7 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 		if precision > 15 {
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'G', 15, 64))}, rawCellValue, CellTypeNumber)
 			if err == nil {
-				f.calcCacheMu.Lock()
 				f.calcCache.Store(cacheKey, result)
-				f.calcCacheMu.Unlock()
 			}
 			return
 		}
@@ -880,17 +874,13 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'f', -1, 64))}, rawCellValue, CellTypeNumber)
 		}
 		if err == nil {
-			f.calcCacheMu.Lock()
 			f.calcCache.Store(cacheKey, result)
-			f.calcCacheMu.Unlock()
 		}
 		return
 	}
 	result, err = f.formattedValue(&xlsxC{S: styleIdx, V: token.Value()}, rawCellValue, CellTypeInlineString)
 	if err == nil {
-		f.calcCacheMu.Lock()
 		f.calcCache.Store(cacheKey, result)
-		f.calcCacheMu.Unlock()
 	}
 	return
 }
@@ -1333,13 +1323,6 @@ func calcDiv(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	}
 	opdStack.Push(newNumberFormulaArg(lOpdVal.Number / rOpdVal.Number))
 	return nil
-}
-
-// clearCalcCache clear all calculation cache.
-func (f *File) clearCalcCache() {
-	f.calcCacheMu.Lock()
-	f.calcCache.Clear()
-	f.calcCacheMu.Unlock()
 }
 
 // calculate evaluate basic arithmetic operations.

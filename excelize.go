@@ -42,7 +42,6 @@ type File struct {
 	tempFiles        sync.Map
 	xmlAttr          sync.Map
 	calcCache        sync.Map
-	calcCacheMu      sync.RWMutex
 	CalcChain        *xlsxCalcChain
 	CharsetReader    func(charset string, input io.Reader) (rdr io.Reader, err error)
 	Comments         map[string]*xlsxComments

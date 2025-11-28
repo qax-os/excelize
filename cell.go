@@ -182,7 +182,7 @@ func (c *xlsxC) hasValue() bool {
 
 // removeFormula delete formula for the cell.
 func (f *File) removeFormula(c *xlsxC, ws *xlsxWorksheet, sheet string) error {
-	f.clearCalcCache()
+	f.calcCache.Clear()
 	if c.F != nil && c.Vm == nil {
 		sheetID := f.getSheetID(sheet)
 		if err := f.deleteCalcChain(sheetID, c.R); err != nil {
@@ -795,7 +795,7 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 	if err != nil {
 		return err
 	}
-	f.clearCalcCache()
+	f.calcCache.Clear()
 	if formula == "" {
 		ws.deleteSharedFormula(c)
 		c.F = nil
@@ -1371,7 +1371,7 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	if si.R, err = setRichText(runs); err != nil {
 		return err
 	}
-	f.clearCalcCache()
+	f.calcCache.Clear()
 	for idx, strItem := range sst.SI {
 		if reflect.DeepEqual(strItem, si) {
 			c.T, c.V = "s", strconv.Itoa(idx)
