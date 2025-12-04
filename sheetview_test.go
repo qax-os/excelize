@@ -1,128 +1,50 @@
-package excelize_test
+package excelize
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/stretchr/testify/assert"
 )
 
-var _ = []excelize.SheetViewOption{
-	excelize.DefaultGridColor(true),
-	excelize.RightToLeft(false),
-	excelize.ShowFormulas(false),
-	excelize.ShowGridLines(true),
-	excelize.ShowRowColHeaders(true),
-	// SheetViewOptionPtr are also SheetViewOption
-	new(excelize.DefaultGridColor),
-	new(excelize.RightToLeft),
-	new(excelize.ShowFormulas),
-	new(excelize.ShowGridLines),
-	new(excelize.ShowRowColHeaders),
+func TestSetView(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetSheetView("Sheet1", -1, nil))
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetViews = nil
+	expected := ViewOptions{
+		DefaultGridColor:  boolPtr(false),
+		RightToLeft:       boolPtr(false),
+		ShowFormulas:      boolPtr(false),
+		ShowGridLines:     boolPtr(false),
+		ShowRowColHeaders: boolPtr(false),
+		ShowRuler:         boolPtr(false),
+		ShowZeros:         boolPtr(false),
+		TopLeftCell:       stringPtr("A1"),
+		View:              stringPtr("normal"),
+		ZoomScale:         float64Ptr(120),
+	}
+	assert.NoError(t, f.SetSheetView("Sheet1", 0, &expected))
+	opts, err := f.GetSheetView("Sheet1", 0)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, opts)
+	// Test set sheet view options with invalid view index
+	assert.EqualError(t, f.SetSheetView("Sheet1", 1, nil), "view index 1 out of range")
+	assert.EqualError(t, f.SetSheetView("Sheet1", -2, nil), "view index -2 out of range")
+	// Test set sheet view options on not exists worksheet
+	assert.EqualError(t, f.SetSheetView("SheetN", 0, nil), "sheet SheetN does not exist")
 }
 
-var _ = []excelize.SheetViewOptionPtr{
-	(*excelize.DefaultGridColor)(nil),
-	(*excelize.RightToLeft)(nil),
-	(*excelize.ShowFormulas)(nil),
-	(*excelize.ShowGridLines)(nil),
-	(*excelize.ShowRowColHeaders)(nil),
-}
-
-func ExampleFile_SetSheetViewOptions() {
-	xl := excelize.NewFile()
-	const sheet = "Sheet1"
-
-	if err := xl.SetSheetViewOptions(sheet, 0,
-		excelize.DefaultGridColor(false),
-		excelize.RightToLeft(false),
-		excelize.ShowFormulas(true),
-		excelize.ShowGridLines(true),
-		excelize.ShowRowColHeaders(true),
-	); err != nil {
-		panic(err)
-	}
-	// Output:
-}
-
-func ExampleFile_GetSheetViewOptions() {
-	xl := excelize.NewFile()
-	const sheet = "Sheet1"
-
-	var (
-		defaultGridColor  excelize.DefaultGridColor
-		rightToLeft       excelize.RightToLeft
-		showFormulas      excelize.ShowFormulas
-		showGridLines     excelize.ShowGridLines
-		showRowColHeaders excelize.ShowRowColHeaders
-	)
-
-	if err := xl.GetSheetViewOptions(sheet, 0,
-		&defaultGridColor,
-		&rightToLeft,
-		&showFormulas,
-		&showGridLines,
-		&showRowColHeaders,
-	); err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Default:")
-	fmt.Println("- defaultGridColor:", defaultGridColor)
-	fmt.Println("- rightToLeft:", rightToLeft)
-	fmt.Println("- showFormulas:", showFormulas)
-	fmt.Println("- showGridLines:", showGridLines)
-	fmt.Println("- showRowColHeaders:", showRowColHeaders)
-
-	if err := xl.SetSheetViewOptions(sheet, 0, excelize.ShowGridLines(false)); err != nil {
-		panic(err)
-	}
-
-	if err := xl.GetSheetViewOptions(sheet, 0, &showGridLines); err != nil {
-		panic(err)
-	}
-
-	fmt.Println("After change:")
-	fmt.Println("- showGridLines:", showGridLines)
-
-	// Output:
-	// Default:
-	// - defaultGridColor: true
-	// - rightToLeft: false
-	// - showFormulas: false
-	// - showGridLines: true
-	// - showRowColHeaders: true
-	// After change:
-	// - showGridLines: false
-}
-
-func TestSheetViewOptionsErrors(t *testing.T) {
-	xl := excelize.NewFile()
-	const sheet = "Sheet1"
-
-	if err := xl.GetSheetViewOptions(sheet, 0); err != nil {
-		t.Errorf("Unexpected error: %s", err)
-	}
-	if err := xl.GetSheetViewOptions(sheet, -1); err != nil {
-		t.Errorf("Unexpected error: %s", err)
-	}
-	if err := xl.GetSheetViewOptions(sheet, 1); err == nil {
-		t.Error("Error expected but got nil")
-	}
-	if err := xl.GetSheetViewOptions(sheet, -2); err == nil {
-		t.Error("Error expected but got nil")
-	}
-
-	if err := xl.SetSheetViewOptions(sheet, 0); err != nil {
-		t.Errorf("Unexpected error: %s", err)
-	}
-	if err := xl.SetSheetViewOptions(sheet, -1); err != nil {
-		t.Errorf("Unexpected error: %s", err)
-	}
-	if err := xl.SetSheetViewOptions(sheet, 1); err == nil {
-		t.Error("Error expected but got nil")
-	}
-	if err := xl.SetSheetViewOptions(sheet, -2); err == nil {
-		t.Error("Error expected but got nil")
-	}
+func TestGetView(t *testing.T) {
+	f := NewFile()
+	_, err := f.getSheetView("SheetN", 0)
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test get sheet view options with invalid view index
+	_, err = f.GetSheetView("Sheet1", 1)
+	assert.EqualError(t, err, "view index 1 out of range")
+	_, err = f.GetSheetView("Sheet1", -2)
+	assert.EqualError(t, err, "view index -2 out of range")
+	// Test get sheet view options on not exists worksheet
+	_, err = f.GetSheetView("SheetN", 0)
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 }

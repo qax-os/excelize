@@ -1,153 +1,102 @@
-package excelize_test
+package excelize
 
 import (
-	"fmt"
-	"reflect"
 	"testing"
 
-	"github.com/360EntSecGroup-Skylar/excelize"
-	"github.com/mohae/deepcopy"
+	"github.com/stretchr/testify/assert"
 )
 
-var _ = []excelize.SheetPrOption{
-	excelize.CodeName("hello"),
-	excelize.EnableFormatConditionsCalculation(false),
-	excelize.Published(false),
-	excelize.FitToPage(true),
-	excelize.AutoPageBreaks(true),
-}
-
-var _ = []excelize.SheetPrOptionPtr{
-	(*excelize.CodeName)(nil),
-	(*excelize.EnableFormatConditionsCalculation)(nil),
-	(*excelize.Published)(nil),
-	(*excelize.FitToPage)(nil),
-	(*excelize.AutoPageBreaks)(nil),
-}
-
-func ExampleFile_SetSheetPrOptions() {
-	xl := excelize.NewFile()
-	const sheet = "Sheet1"
-
-	if err := xl.SetSheetPrOptions(sheet,
-		excelize.CodeName("code"),
-		excelize.EnableFormatConditionsCalculation(false),
-		excelize.Published(false),
-		excelize.FitToPage(true),
-		excelize.AutoPageBreaks(true),
-	); err != nil {
-		panic(err)
+func TestSetPageMargins(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetPageMargins("Sheet1", nil))
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).PageMargins = nil
+	ws.(*xlsxWorksheet).PrintOptions = nil
+	expected := PageLayoutMarginsOptions{
+		Bottom:       float64Ptr(1.0),
+		Footer:       float64Ptr(1.0),
+		Header:       float64Ptr(1.0),
+		Left:         float64Ptr(1.0),
+		Right:        float64Ptr(1.0),
+		Top:          float64Ptr(1.0),
+		Horizontally: boolPtr(true),
+		Vertically:   boolPtr(true),
 	}
-	// Output:
+	assert.NoError(t, f.SetPageMargins("Sheet1", &expected))
+	opts, err := f.GetPageMargins("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, opts)
+	// Test set page margins on not exists worksheet
+	assert.EqualError(t, f.SetPageMargins("SheetN", nil), "sheet SheetN does not exist")
+	// Test set page margins with invalid sheet name
+	assert.Equal(t, ErrSheetNameInvalid, f.SetPageMargins("Sheet:1", nil))
 }
 
-func ExampleFile_GetSheetPrOptions() {
-	xl := excelize.NewFile()
-	const sheet = "Sheet1"
-
-	var (
-		codeName                          excelize.CodeName
-		enableFormatConditionsCalculation excelize.EnableFormatConditionsCalculation
-		published                         excelize.Published
-		fitToPage                         excelize.FitToPage
-		autoPageBreaks                    excelize.AutoPageBreaks
-	)
-
-	if err := xl.GetSheetPrOptions(sheet,
-		&codeName,
-		&enableFormatConditionsCalculation,
-		&published,
-		&fitToPage,
-		&autoPageBreaks,
-	); err != nil {
-		panic(err)
-	}
-	fmt.Println("Defaults:")
-	fmt.Printf("- codeName: %q\n", codeName)
-	fmt.Println("- enableFormatConditionsCalculation:", enableFormatConditionsCalculation)
-	fmt.Println("- published:", published)
-	fmt.Println("- fitToPage:", fitToPage)
-	fmt.Println("- autoPageBreaks:", autoPageBreaks)
-	// Output:
-	// Defaults:
-	// - codeName: ""
-	// - enableFormatConditionsCalculation: true
-	// - published: true
-	// - fitToPage: false
-	// - autoPageBreaks: false
+func TestGetPageMargins(t *testing.T) {
+	f := NewFile()
+	// Test get page margins on not exists worksheet
+	_, err := f.GetPageMargins("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test get page margins with invalid sheet name
+	_, err = f.GetPageMargins("Sheet:1")
+	assert.Equal(t, ErrSheetNameInvalid, err)
 }
 
-func TestSheetPrOptions(t *testing.T) {
-	const sheet = "Sheet1"
-	for _, test := range []struct {
-		container  excelize.SheetPrOptionPtr
-		nonDefault excelize.SheetPrOption
-	}{
-		{new(excelize.CodeName), excelize.CodeName("xx")},
-		{new(excelize.EnableFormatConditionsCalculation), excelize.EnableFormatConditionsCalculation(false)},
-		{new(excelize.Published), excelize.Published(false)},
-		{new(excelize.FitToPage), excelize.FitToPage(true)},
-		{new(excelize.AutoPageBreaks), excelize.AutoPageBreaks(true)},
-	} {
-		opt := test.nonDefault
-		t.Logf("option %T", opt)
-
-		def := deepcopy.Copy(test.container).(excelize.SheetPrOptionPtr)
-		val1 := deepcopy.Copy(def).(excelize.SheetPrOptionPtr)
-		val2 := deepcopy.Copy(def).(excelize.SheetPrOptionPtr)
-
-		xl := excelize.NewFile()
-		// Get the default value
-		if err := xl.GetSheetPrOptions(sheet, def); err != nil {
-			t.Fatalf("%T: %s", opt, err)
-		}
-		// Get again and check
-		if err := xl.GetSheetPrOptions(sheet, val1); err != nil {
-			t.Fatalf("%T: %s", opt, err)
-		}
-		if !reflect.DeepEqual(val1, def) {
-			t.Fatalf("%T: value should not have changed", opt)
-		}
-		// Set the same value
-		if err := xl.SetSheetPrOptions(sheet, val1); err != nil {
-			t.Fatalf("%T: %s", opt, err)
-		}
-		// Get again and check
-		if err := xl.GetSheetPrOptions(sheet, val1); err != nil {
-			t.Fatalf("%T: %s", opt, err)
-		}
-		if !reflect.DeepEqual(val1, def) {
-			t.Fatalf("%T: value should not have changed", opt)
-		}
-
-		// Set a different value
-		if err := xl.SetSheetPrOptions(sheet, test.nonDefault); err != nil {
-			t.Fatalf("%T: %s", opt, err)
-		}
-		if err := xl.GetSheetPrOptions(sheet, val1); err != nil {
-			t.Fatalf("%T: %s", opt, err)
-		}
-		// Get again and compare
-		if err := xl.GetSheetPrOptions(sheet, val2); err != nil {
-			t.Fatalf("%T: %s", opt, err)
-		}
-		if !reflect.DeepEqual(val2, val1) {
-			t.Fatalf("%T: value should not have changed", opt)
-		}
-		// Value should not be the same as the default
-		if reflect.DeepEqual(val1, def) {
-			t.Fatalf("%T: value should have changed from default", opt)
-		}
-
-		// Restore the default value
-		if err := xl.SetSheetPrOptions(sheet, def); err != nil {
-			t.Fatalf("%T: %s", opt, err)
-		}
-		if err := xl.GetSheetPrOptions(sheet, val1); err != nil {
-			t.Fatalf("%T: %s", opt, err)
-		}
-		if !reflect.DeepEqual(val1, def) {
-			t.Fatalf("%T: value should now be the same as default", opt)
-		}
+func TestSetSheetProps(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetSheetProps("Sheet1", nil))
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetPr = nil
+	ws.(*xlsxWorksheet).SheetFormatPr = nil
+	baseColWidth, enable := uint8(8), boolPtr(true)
+	expected := SheetPropsOptions{
+		CodeName:                          stringPtr("code"),
+		EnableFormatConditionsCalculation: enable,
+		Published:                         enable,
+		AutoPageBreaks:                    enable,
+		FitToPage:                         enable,
+		TabColorIndexed:                   intPtr(1),
+		TabColorRGB:                       stringPtr("FFFF00"),
+		TabColorTheme:                     intPtr(1),
+		TabColorTint:                      float64Ptr(1),
+		OutlineSummaryBelow:               enable,
+		OutlineSummaryRight:               enable,
+		BaseColWidth:                      &baseColWidth,
+		DefaultColWidth:                   float64Ptr(10),
+		DefaultRowHeight:                  float64Ptr(10),
+		CustomHeight:                      enable,
+		ZeroHeight:                        enable,
+		ThickTop:                          enable,
+		ThickBottom:                       enable,
 	}
+	assert.NoError(t, f.SetSheetProps("Sheet1", &expected))
+	opts, err := f.GetSheetProps("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, opts)
+
+	ws.(*xlsxWorksheet).SheetPr = nil
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{FitToPage: enable}))
+	ws.(*xlsxWorksheet).SheetPr = nil
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{TabColorRGB: stringPtr("FFFF00")}))
+	ws.(*xlsxWorksheet).SheetPr = nil
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{TabColorTheme: intPtr(1)}))
+	ws.(*xlsxWorksheet).SheetPr = nil
+	assert.NoError(t, f.SetSheetProps("Sheet1", &SheetPropsOptions{TabColorTint: float64Ptr(1)}))
+
+	// Test set worksheet properties on not exists worksheet
+	assert.EqualError(t, f.SetSheetProps("SheetN", nil), "sheet SheetN does not exist")
+	// Test set worksheet properties with invalid sheet name
+	assert.Equal(t, ErrSheetNameInvalid, f.SetSheetProps("Sheet:1", nil))
+}
+
+func TestGetSheetProps(t *testing.T) {
+	f := NewFile()
+	// Test get worksheet properties on not exists worksheet
+	_, err := f.GetSheetProps("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test get worksheet properties with invalid sheet name
+	_, err = f.GetSheetProps("Sheet:1")
+	assert.Equal(t, ErrSheetNameInvalid, err)
 }
