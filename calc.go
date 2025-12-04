@@ -15287,6 +15287,56 @@ func (fn *formulaFuncs) HYPERLINK(argsList *list.List) formulaArg {
 
 // calcMatch returns the position of the value by given match type, criteria
 // and lookup array for the formula function MATCH.
+// matchType only contains -1, and 1.
+func calcMatchMatrix(vertical bool, matchType int, criteria *formulaCriteria, lookupArray [][]formulaArg) formulaArg {
+	idx := -1
+	var calc = func(i int, arg formulaArg) bool {
+		switch matchType {
+		case -1:
+			if ok, _ := formulaCriteriaEval(arg, &formulaCriteria{
+				Type: criteriaGe, Condition: criteria.Condition,
+			}); ok {
+				idx = i
+				return false
+			}
+			if criteria.Condition.Type == ArgNumber {
+				return true
+			}
+		case 1:
+			if ok, _ := formulaCriteriaEval(arg, &formulaCriteria{
+				Type: criteriaLe, Condition: criteria.Condition,
+			}); ok {
+				idx = i
+				return false
+			}
+			if criteria.Condition.Type == ArgNumber {
+				return true
+			}
+		}
+		return false
+	}
+
+	if vertical {
+		for i, row := range lookupArray {
+			if ok := calc(i, row[0]); ok {
+				break
+			}
+		}
+	} else {
+		for i, cell := range lookupArray[0] {
+			if ok := calc(i, cell); ok {
+				break
+			}
+		}
+	}
+	if idx == -1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newNumberFormulaArg(float64(idx + 1))
+}
+
+// calcMatch returns the position of the value by given match type, criteria
+// and lookup array for the formula function MATCH.
 func calcMatch(matchType int, criteria *formulaCriteria, lookupArray []formulaArg) formulaArg {
 	idx := -1
 	switch matchType {
@@ -15399,18 +15449,8 @@ func (fn *formulaFuncs) TRANSPOSE(argsList *list.List) formulaArg {
 // lookupLinearSearch sequentially checks each look value of the lookup array until
 // a match is found or the whole list has been searched.
 func lookupLinearSearch(vertical bool, lookupValue, lookupArray, matchMode, searchMode formulaArg) (int, bool) {
-	var tableArray []formulaArg
-	if vertical {
-		for _, row := range lookupArray.Matrix {
-			tableArray = append(tableArray, row[0])
-		}
-	} else {
-		tableArray = lookupArray.Matrix[0]
-	}
 	matchIdx, wasExact := -1, false
-start:
-	for i, cell := range tableArray {
-		lhs := cell
+	var linearSearch = func(i int, cell, lhs formulaArg) bool {
 		if lookupValue.Type == ArgNumber {
 			if lhs = cell.ToNumber(); lhs.Type == ArgError {
 				lhs = cell
@@ -15424,12 +15464,28 @@ start:
 			matchIdx = i
 			wasExact = true
 			if searchMode.Number == searchModeLinear {
-				break start
+				return true
 			}
 		}
 		if matchMode.Number == matchModeMinGreater || matchMode.Number == matchModeMaxLess {
-			matchIdx = int(calcMatch(int(matchMode.Number), formulaCriteriaParser(lookupValue), tableArray).Number)
-			continue
+			matchIdx = int(calcMatchMatrix(vertical, int(matchMode.Number), formulaCriteriaParser(lookupValue), lookupArray.Matrix).Number)
+			return false
+		}
+		return false
+	}
+
+	if vertical {
+		for i, row := range lookupArray.Matrix {
+			lhs := row[0]
+			if linearSearch(i, lhs, lhs) {
+				break
+			}
+		}
+	} else {
+		for i, lhs := range lookupArray.Matrix[0] {
+			if linearSearch(i, lhs, lhs) {
+				break
+			}
 		}
 	}
 	return matchIdx, wasExact
