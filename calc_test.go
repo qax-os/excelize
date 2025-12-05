@@ -2266,6 +2266,7 @@ func TestCalcCellValue(t *testing.T) {
 		"VDB(10000,1000,5,0,1)":           "4000",
 		"VDB(10000,1000,5,1,3)":           "3840",
 		"VDB(10000,1000,5,3,5)":           "1160",
+		"VDB(10000,1000,5,3.5,5,2)":       "709.6",
 		"VDB(10000,1000,5,3,5,0.2,FALSE)": "3600",
 		"VDB(10000,1000,5,3,5,0.2,TRUE)":  "693.633024",
 		"VDB(24000,3000,10,0,0.875,2)":    "4200",
@@ -5045,6 +5046,13 @@ func TestCalcVLOOKUP(t *testing.T) {
 		assert.Equal(t, expected[0], result, formula)
 		assert.EqualError(t, err, expected[1], formula)
 	}
+	argsList := list.New()
+	argsList.PushBack(newStringFormulaArg(""))
+	argsList.PushBack(newMatrixFormulaArg([][]formulaArg{{newNumberFormulaArg(1)}}))
+	argsList.PushBack(newNumberFormulaArg(1))
+	argsList.PushBack(newStringFormulaArg(""))
+	_, _, _, _, err := checkHVLookupArgs("VLOOKUP", argsList)
+	assert.Equal(t, ArgError, err.Type)
 }
 
 func TestCalcBoolean(t *testing.T) {
@@ -5322,6 +5330,7 @@ func TestCalcDatabase(t *testing.T) {
 		"DCOUNTA(A4:E4,,A1:F2)":              {"#VALUE!", "#VALUE!"},
 		"DCOUNTA(A4:E10,\"x\",A2:F3)":        {"#VALUE!", "#VALUE!"},
 		"DGET()":                             {"#VALUE!", "DGET requires 3 arguments"},
+		"DGET(A1,\"Profit\",A1)":             {"#VALUE!", "#VALUE!"},
 		"DGET(A4:E5,\"Profit\",A1:F3)":       {"#VALUE!", "#VALUE!"},
 		"DGET(A4:E10,\"Profit\",A1:F3)":      {"#NUM!", "#NUM!"},
 		"DMAX()":                             {"#VALUE!", "DMAX requires 3 arguments"},
@@ -5475,6 +5484,7 @@ func TestCalcHLOOKUP(t *testing.T) {
 	}
 	calcError := map[string][]string{
 		"HLOOKUP(INT(1),A3:A3,1,FALSE)": {"#N/A", "HLOOKUP no result found"},
+		"HLOOKUP(4,A1:E1048576,2,TRUE)": {"#N/A", "HLOOKUP no result found"},
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "B10", formula))
@@ -6733,4 +6743,67 @@ func TestCalcCellValueCache(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestCalcLookupCol(t *testing.T) {
+	result := lookupCol(formulaArg{
+		Type: ArgMatrix,
+		Matrix: [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2)},
+			{},
+			{newNumberFormulaArg(3), newNumberFormulaArg(4)},
+		},
+	}, 0)
+	assert.Equal(t, 3, len(result))
+	assert.Equal(t, "1", result[0].Value())
+	assert.Equal(t, "", result[1].Value())
+	assert.Equal(t, "3", result[2].Value())
+}
+
+func TestCalcLookupLinearSearch(t *testing.T) {
+	lookupValue := newStringFormulaArg("test")
+	lookupArray := formulaArg{
+		Type: ArgString,
+		Matrix: [][]formulaArg{
+			{newStringFormulaArg("test")},
+		},
+	}
+	matchMode := newNumberFormulaArg(0)
+	searchMode := newNumberFormulaArg(1)
+	idx, wasExact := lookupLinearSearch(false, lookupValue, lookupArray, matchMode, searchMode)
+	assert.Equal(t, 0, idx)
+	assert.True(t, wasExact)
+}
+
+func TestCalcMatchMatrix(t *testing.T) {
+	assert.Equal(t, formulaArg{Type: ArgNumber, Number: 2},
+		calcMatchMatrix(true, 1, &formulaCriteria{
+			Type:      criteriaEq,
+			Condition: newStringFormulaArg("B"),
+		}, [][]formulaArg{
+			{newStringFormulaArg("A")},
+			{newStringFormulaArg("B")},
+			{newStringFormulaArg("C")},
+		}),
+	)
+}
+
+func TestCalcTrendGrowthMultipleRegressionPart2(t *testing.T) {
+	calcTrendGrowthMultipleRegressionPart2(true, false,
+		[][]float64{{1}, {2}, {3}},
+		[][]float64{},
+		[][]float64{},
+		[][]float64{{0}},
+		2.0, 0, 0, 3)
+	calcTrendGrowthMultipleRegressionPart2(true, false,
+		[][]float64{{1}, {2}, {3}},
+		[][]float64{{0}, {0}, {0}},
+		[][]float64{},
+		[][]float64{{0}},
+		2.0, 0, 1, 3)
+}
+
+func TestCalcTrendGrowthRegression(t *testing.T) {
+	mtx := [][]float64{}
+	calcTrendGrowthRegression(false, false, 0, 0, 0, 0, 0, mtx, mtx, mtx, mtx)
 }

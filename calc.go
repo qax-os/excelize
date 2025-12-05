@@ -15290,7 +15290,7 @@ func (fn *formulaFuncs) HYPERLINK(argsList *list.List) formulaArg {
 // matchType only contains -1, and 1.
 func calcMatchMatrix(vertical bool, matchType int, criteria *formulaCriteria, lookupArray [][]formulaArg) formulaArg {
 	idx := -1
-	var calc = func(i int, arg formulaArg) bool {
+	calc := func(i int, arg formulaArg) bool {
 		switch matchType {
 		case -1:
 			if ok, _ := formulaCriteriaEval(arg, &formulaCriteria{
@@ -15450,7 +15450,7 @@ func (fn *formulaFuncs) TRANSPOSE(argsList *list.List) formulaArg {
 // a match is found or the whole list has been searched.
 func lookupLinearSearch(vertical bool, lookupValue, lookupArray, matchMode, searchMode formulaArg) (int, bool) {
 	matchIdx, wasExact := -1, false
-	var linearSearch = func(i int, cell, lhs formulaArg) bool {
+	linearSearch := func(i int, cell, lhs formulaArg) bool {
 		if lookupValue.Type == ArgNumber {
 			if lhs = cell.ToNumber(); lhs.Type == ArgError {
 				lhs = cell
@@ -18522,7 +18522,7 @@ func (fn *formulaFuncs) vdb(cost, salvage, life, life1, period, factor formulaAr
 			ddbArgs.PushBack(factor)
 			ddb = fn.DDB(ddbArgs).Number
 			sln = cs / (life1.Number - i + 1)
-			if sln > ddb {
+			if sln > ddb && i != endInt {
 				term = sln
 				nowSln = true
 			} else {
@@ -18580,13 +18580,7 @@ func (fn *formulaFuncs) VDB(argsList *list.List) formulaArg {
 		}
 		return vdb
 	}
-	life1, part := life, 0.0
-	if startPeriod.Number != math.Floor(startPeriod.Number) && factor.Number > 1.0 && startPeriod.Number >= life.Number/2.0 {
-		part = startPeriod.Number - life.Number/2.0
-		startPeriod.Number = life.Number / 2.0
-		endPeriod.Number -= part
-	}
-	cost.Number -= fn.vdb(cost, salvage, life, life1, startPeriod, factor).Number
+	cost.Number -= fn.vdb(cost, salvage, life, life, startPeriod, factor).Number
 	return fn.vdb(cost, salvage, life, newNumberFormulaArg(life.Number-startPeriod.Number), newNumberFormulaArg(endPeriod.Number-startPeriod.Number), factor)
 }
 
