@@ -182,7 +182,10 @@ func (c *xlsxC) hasValue() bool {
 
 // removeFormula delete formula for the cell.
 func (f *File) removeFormula(c *xlsxC, ws *xlsxWorksheet, sheet string) error {
+	// When removing formula due to SetCellValue, clear entire calcCache and rangeCache
+	// to ensure all dependent formulas are recalculated
 	f.calcCache.Clear()
+	f.rangeCache.Clear()
 	if c.F != nil && c.Vm == nil {
 		sheetID := f.getSheetID(sheet)
 		if err := f.deleteCalcChain(sheetID, c.R); err != nil {
@@ -795,7 +798,8 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 	if err != nil {
 		return err
 	}
-	f.calcCache.Clear()
+	// Use fine-grained cache clearing for single cell formula changes
+	f.clearCellCache(sheet, cell)
 	if formula == "" {
 		ws.deleteSharedFormula(c)
 		c.F = nil
@@ -1371,7 +1375,8 @@ func (f *File) SetCellRichText(sheet, cell string, runs []RichTextRun) error {
 	if si.R, err = setRichText(runs); err != nil {
 		return err
 	}
-	f.calcCache.Clear()
+	// Use fine-grained cache clearing for single cell rich text changes
+	f.clearCellCache(sheet, cell)
 	for idx, strItem := range sst.SI {
 		if reflect.DeepEqual(strItem, si) {
 			c.T, c.V = "s", strconv.Itoa(idx)
