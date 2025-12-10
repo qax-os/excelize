@@ -1735,6 +1735,38 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 			return
 		}
 
+		// 优化：检测整列/整行引用，限制到实际数据范围
+		// 当 valueRange[1] == TotalRows 时，说明是整列引用（如 $C:$C）
+		// 当 valueRange[3] == MaxColumns 时，说明是整行引用（如 $1:$1）
+		if valueRange[1] == TotalRows {
+			// 整列引用：查找实际最大行号
+			actualMaxRow := 0
+			for _, rowData := range ws.SheetData.Row {
+				if rowData.R > actualMaxRow {
+					actualMaxRow = rowData.R
+				}
+			}
+			// 限制到实际最大行，避免处理空行
+			if actualMaxRow > 0 && actualMaxRow < TotalRows {
+				valueRange[1] = actualMaxRow
+			}
+		}
+		if valueRange[3] == MaxColumns {
+			// 整行引用：查找实际最大列号
+			actualMaxCol := 0
+			for _, rowData := range ws.SheetData.Row {
+				for _, cell := range rowData.C {
+					col, _, err := CellNameToCoordinates(cell.R)
+					if err == nil && col > actualMaxCol {
+						actualMaxCol = col
+					}
+				}
+			}
+			if actualMaxCol > 0 && actualMaxCol < MaxColumns {
+				valueRange[3] = actualMaxCol
+			}
+		}
+
 		for row := valueRange[0]; row <= valueRange[1]; row++ {
 			colMax := 0
 			if row <= len(ws.SheetData.Row) {
