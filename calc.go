@@ -101,7 +101,7 @@ const (
 )
 
 var (
-	// 优化：预创建 Replacer，避免每次调用时创建新实例
+	// prebuild functionNameReplacer to avoid creating a new instance every time
 	functionNameReplacer = strings.NewReplacer("_xlfn.", "", ".", "dot")
 
 	// tokenPriority defined basic arithmetic operator priority
@@ -889,8 +889,8 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 	return
 }
 
-// clearCalcCache 清除所有计算相关的缓存
-// 优化：同时清除 calcCache 和 formulaArgCache，确保缓存一致性
+// clearCalcCache clear all calculation related caches
+// optimized: clear both calcCache and formulaArgCache to ensure cache consistency
 func (f *File) clearCalcCache() {
 	f.calcCache.Clear()
 	f.formulaArgCache.Clear()
@@ -1117,7 +1117,6 @@ func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nex
 	}
 	prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack)
 	// call formula function to evaluate
-	// 优化：使用预创建的 Replacer，避免每次调用创建新实例
 	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet, cell: cell, ctx: ctx},
 		functionNameReplacer.Replace(opfStack.Peek().(efp.Token).TValue),
 		[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
@@ -1663,10 +1662,10 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 		value string
 		err   error
 	)
-	// 优化：使用字符串拼接代替 fmt.Sprintf
+	// optimized: use string concatenation instead of fmt.Sprintf
 	ref := sheet + "!" + cell
 
-	// 优化：首先检查 formulaArg 缓存，避免重复计算
+	// optimized: check formulaArg cache to avoid duplicate calculation
 	if cached, found := f.formulaArgCache.Load(ref); found {
 		return cached.(formulaArg), nil
 	}
@@ -1679,7 +1678,7 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 				ctx.mu.Unlock()
 				arg, _ = f.calcCellValue(ctx, sheet, cell)
 				ctx.iterationsCache[ref] = arg
-				// 优化：缓存 formulaArg 结果
+				// optimized: cache formulaArg result
 				f.formulaArgCache.Store(ref, arg)
 				return arg, nil
 			}
@@ -1720,7 +1719,7 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 		arg = newErrorFormulaArg(value, value)
 	}
 
-	// 优化：缓存非公式单元格的结果
+	// optimized: cache non-formula cell result
 	f.formulaArgCache.Store(ref, arg)
 	return arg, err
 }
@@ -1761,24 +1760,24 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 			return
 		}
 
-		// 优化：检测整列/整行引用，限制到实际数据范围
-		// 当 valueRange[1] == TotalRows 时，说明是整列引用（如 $C:$C）
-		// 当 valueRange[3] == MaxColumns 时，说明是整行引用（如 $1:$1）
+		// optimized: detect whole column/row reference, limit to actual data range
+		// when valueRange[1] == TotalRows, it means whole column reference (like $C:$C)
+		// when valueRange[3] == MaxColumns, it means whole row reference (like $1:$1)
 		if valueRange[1] == TotalRows {
-			// 整列引用：查找实际最大行号
+			// whole column reference: find actual maximum row number
 			actualMaxRow := 0
 			for _, rowData := range ws.SheetData.Row {
 				if rowData.R > actualMaxRow {
 					actualMaxRow = rowData.R
 				}
 			}
-			// 限制到实际最大行，避免处理空行
+			// limit to actual maximum row to avoid processing empty rows
 			if actualMaxRow > 0 && actualMaxRow < TotalRows {
 				valueRange[1] = actualMaxRow
 			}
 		}
 		if valueRange[3] == MaxColumns {
-			// 整行引用：查找实际最大列号
+			// whole row reference: find actual maximum column number
 			actualMaxCol := 0
 			for _, rowData := range ws.SheetData.Row {
 				for _, cell := range rowData.C {
