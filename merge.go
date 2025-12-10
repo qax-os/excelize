@@ -116,6 +116,7 @@ func (f *File) UnmergeCell(sheet, topLeftCell, bottomRightCell string) error {
 		return err
 	}
 	f.calcCache.Clear()
+	f.rangeCache.Clear()
 	i := 0
 	for _, mergeCell := range ws.MergeCells.Cells {
 		if rect2, _ := rangeRefToCoordinates(mergeCell.Ref); isOverlap(rect1, rect2) {

@@ -76,6 +76,7 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 		return err
 	}
 	f.calcCache.Clear()
+	f.rangeCache.Clear()
 	sheetID := f.getSheetID(sheet)
 	if dir == rows {
 		err = f.adjustRowDimensions(sheet, ws, num, offset)

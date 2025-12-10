@@ -119,6 +119,7 @@ func (f *File) AddTable(sheet string, table *Table) error {
 	}
 	f.addSheetNameSpace(sheet, SourceRelationship)
 	f.calcCache.Clear()
+	f.rangeCache.Clear()
 	if err = f.addTable(sheet, tableXML, coordinates[0], coordinates[1], coordinates[2], coordinates[3], tableID, options); err != nil {
 		return err
 	}
@@ -179,6 +180,7 @@ func (f *File) DeleteTable(name string) error {
 		return err
 	}
 	f.calcCache.Clear()
+	f.rangeCache.Clear()
 	for sheet, tables := range tbls {
 		for _, table := range tables {
 			if table.Name != name {

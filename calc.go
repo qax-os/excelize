@@ -1720,9 +1720,14 @@ func (f *File) optimizeValueRange(sheet string, valueRange []int) []int {
 	if valueRange[1] == TotalRows {
 		ws, err := f.workSheetReader(sheet)
 		if err == nil && len(ws.SheetData.Row) > 0 {
-			// Get actual max row from worksheet data
-			maxRow := len(ws.SheetData.Row)
-			// Add small buffer to account for potential data beyond SheetData length
+			// Get actual max row number (not array length!)
+			// ws.SheetData.Row may be sparse (e.g., [Row1, Row5, Row100])
+			maxRow := 0
+			for _, row := range ws.SheetData.Row {
+				if row.R > maxRow {
+					maxRow = row.R
+				}
+			}
 			if maxRow > 0 && maxRow < TotalRows {
 				valueRange[1] = maxRow
 			}
@@ -15577,13 +15582,32 @@ func lookupLinearSearch(vertical bool, lookupValue, lookupArray, matchMode, sear
 // lookupHashSearch uses a hash map for O(1) exact match lookups.
 // This is particularly efficient for large datasets with exact match mode.
 func lookupHashSearch(vertical bool, lookupValue, lookupArray formulaArg) (int, bool) {
-	// Build hash index
+	// Build hash index with type-aware keys
+	// We need to handle numbers and strings separately to match Excel behavior
 	hashIndex := make(map[string]int)
+
+	// Determine lookup value type for proper comparison
+	lookupIsNumber := lookupValue.Type == ArgNumber
 
 	if vertical {
 		for i, row := range lookupArray.Matrix {
 			if len(row) > 0 {
-				key := row[0].Value()
+				cell := row[0]
+				// Create type-aware key: prefix with type to avoid collision
+				// between number 100 and string "100"
+				var key string
+				if lookupIsNumber {
+					// Convert cell to number for comparison
+					if numCell := cell.ToNumber(); numCell.Type == ArgNumber {
+						key = "N:" + numCell.Value()  // Number key
+					} else {
+						continue  // Skip non-numeric cells when looking for numbers
+					}
+				} else {
+					// Use string comparison
+					key = "S:" + cell.Value()  // String key
+				}
+
 				if _, exists := hashIndex[key]; !exists {
 					hashIndex[key] = i
 				}
@@ -15591,15 +15615,31 @@ func lookupHashSearch(vertical bool, lookupValue, lookupArray formulaArg) (int, 
 		}
 	} else {
 		for i, cell := range lookupArray.Matrix[0] {
-			key := cell.Value()
+			var key string
+			if lookupIsNumber {
+				if numCell := cell.ToNumber(); numCell.Type == ArgNumber {
+					key = "N:" + numCell.Value()
+				} else {
+					continue
+				}
+			} else {
+				key = "S:" + cell.Value()
+			}
+
 			if _, exists := hashIndex[key]; !exists {
 				hashIndex[key] = i
 			}
 		}
 	}
 
-	// Perform hash lookup
-	lookupKey := lookupValue.Value()
+	// Perform hash lookup with type-aware key
+	var lookupKey string
+	if lookupIsNumber {
+		lookupKey = "N:" + lookupValue.Value()
+	} else {
+		lookupKey = "S:" + lookupValue.Value()
+	}
+
 	if idx, found := hashIndex[lookupKey]; found {
 		return idx, true
 	}

@@ -164,6 +164,7 @@ func (f *File) AddPivotTable(opts *PivotTableOptions) error {
 		return err
 	}
 	f.calcCache.Clear()
+	f.rangeCache.Clear()
 	pivotTableID := f.countPivotTables() + 1
 	pivotCacheID := f.countPivotCache() + 1
 
@@ -1063,6 +1064,7 @@ func (f *File) DeletePivotTable(sheet, name string) error {
 		return err
 	}
 	f.calcCache.Clear()
+	f.rangeCache.Clear()
 	pivotTableCaches := map[string]int{}
 	pivotTables, _ := f.getPivotTables()
 	for _, sheetPivotTables := range pivotTables {
