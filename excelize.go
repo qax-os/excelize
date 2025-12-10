@@ -42,6 +42,7 @@ type File struct {
 	tempFiles        sync.Map
 	xmlAttr          sync.Map
 	calcCache        sync.Map
+	formulaArgCache  sync.Map // 缓存 formulaArg 中间计算结果，提升性能
 	CalcChain        *xlsxCalcChain
 	CharsetReader    func(charset string, input io.Reader) (rdr io.Reader, err error)
 	Comments         map[string]*xlsxComments
