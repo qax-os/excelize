@@ -2203,3 +2203,39 @@ func (f *File) AddIgnoredErrors(sheet, rangeRef string, ignoredErrorsType Ignore
 	ws.IgnoredErrors.IgnoredError = append(ws.IgnoredErrors.IgnoredError, ie)
 	return err
 }
+
+// GetRowsAndColsCount provides the method which returns the maximum number of rows and columns.
+func (f *File) GetRowsAndColsCount(sheet string) (rowsCount, colsCount int, err error) {
+	sheetDimension, err := f.GetSheetDimension(sheet)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	parts := strings.Split(sheetDimension, ":")
+	ref := parts[len(parts)-1]
+
+	var colPart, rowPart string
+	for _, ch := range ref {
+		if ch >= 'A' && ch <= 'Z' {
+			colPart += string(ch)
+		} else if ch >= '0' && ch <= '9' {
+			rowPart += string(ch)
+		}
+	}
+
+	if colPart != "" {
+		colsCount, err = ColumnNameToNumber(colPart)
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+
+	if rowPart != "" {
+		rowsCount, err = strconv.Atoi(rowPart)
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+
+	return rowsCount, colsCount, nil
+}
