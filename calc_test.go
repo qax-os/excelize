@@ -6474,6 +6474,20 @@ func TestCalcRangeResolver(t *testing.T) {
 	cellRefs.PushBack(cellRef{Col: 1, Row: TotalRows + 1, Sheet: "SheetN"})
 	_, err = f.rangeResolver(&calcContext{}, cellRefs, cellRanges)
 	assert.Equal(t, ErrMaxRows, err)
+	t.Run("for_range_resolver_error", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", "test"))
+		cellRefs := list.New()
+		cellRanges := list.New()
+		cellRanges.PushBack(cellRange{
+			From: cellRef{Col: 1, Row: 1, Sheet: "Sheet1"},
+			To:   cellRef{Col: 1, Row: 1, Sheet: "Sheet1"},
+		})
+		f.SharedStrings = nil
+		f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+		_, err := f.rangeResolver(&calcContext{}, cellRefs, cellRanges)
+		assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	})
 }
 
 func TestCalcBahttextAppendDigit(t *testing.T) {

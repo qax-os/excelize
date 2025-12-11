@@ -101,9 +101,6 @@ const (
 )
 
 var (
-	// prebuild functionNameReplacer to avoid creating a new instance every time
-	functionNameReplacer = strings.NewReplacer("_xlfn.", "", ".", "dot")
-
 	// tokenPriority defined basic arithmetic operator priority
 	tokenPriority = map[string]int{
 		"^":  5,
@@ -196,7 +193,8 @@ var (
 			return fmt.Sprintf("R[%d]C[%d]", row, col), nil
 		},
 	}
-	formulaFormats = []*regexp.Regexp{
+	formulaFnNameReplacer = strings.NewReplacer("_xlfn.", "", ".", "dot")
+	formulaFormats        = []*regexp.Regexp{
 		regexp.MustCompile(`^(\d+)$`),
 		regexp.MustCompile(`^=(.*)$`),
 		regexp.MustCompile(`^<>(.*)$`),
@@ -842,9 +840,8 @@ type formulaFuncs struct {
 //	Z.TEST
 //	ZTEST
 func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string, err error) {
-	// 优化：使用字符串拼接代替 fmt.Sprintf，性能提升 3-5 倍
-	cacheKey := sheet + "!" + cell
-	if cachedResult, found := f.calcCache.Load(cacheKey); found {
+	entry := sheet + "!" + cell
+	if cachedResult, ok := f.calcCache.Load(entry); ok {
 		return cachedResult.(string), nil
 	}
 	options := f.getOptions(opts...)
@@ -854,7 +851,7 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 		token        formulaArg
 	)
 	if token, err = f.calcCellValue(&calcContext{
-		entry:             sheet + "!" + cell, // 优化：字符串拼接
+		entry:             entry,
 		maxCalcIterations: options.MaxCalcIterations,
 		iterations:        make(map[string]uint),
 		iterationsCache:   make(map[string]formulaArg),
@@ -870,7 +867,7 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 		if precision > 15 {
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'G', 15, 64))}, rawCellValue, CellTypeNumber)
 			if err == nil {
-				f.calcCache.Store(cacheKey, result)
+				f.calcCache.Store(entry, result)
 			}
 			return
 		}
@@ -878,19 +875,18 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'f', -1, 64))}, rawCellValue, CellTypeNumber)
 		}
 		if err == nil {
-			f.calcCache.Store(cacheKey, result)
+			f.calcCache.Store(entry, result)
 		}
 		return
 	}
 	result, err = f.formattedValue(&xlsxC{S: styleIdx, V: token.Value()}, rawCellValue, CellTypeInlineString)
 	if err == nil {
-		f.calcCache.Store(cacheKey, result)
+		f.calcCache.Store(entry, result)
 	}
 	return
 }
 
-// clearCalcCache clear all calculation related caches
-// optimized: clear both calcCache and formulaArgCache to ensure cache consistency
+// clearCalcCache clear all calculation related caches.
 func (f *File) clearCalcCache() {
 	f.calcCache.Clear()
 	f.formulaArgCache.Clear()
@@ -1118,7 +1114,7 @@ func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nex
 	prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack)
 	// call formula function to evaluate
 	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet, cell: cell, ctx: ctx},
-		functionNameReplacer.Replace(opfStack.Peek().(efp.Token).TValue),
+		formulaFnNameReplacer.Replace(opfStack.Peek().(efp.Token).TValue),
 		[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
 	if arg.Type == ArgError && opfStack.Len() == 1 {
 		return arg
@@ -1662,12 +1658,9 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 		value string
 		err   error
 	)
-	// optimized: use string concatenation instead of fmt.Sprintf
 	ref := sheet + "!" + cell
-
-	// optimized: check formulaArg cache to avoid duplicate calculation
-	if cached, found := f.formulaArgCache.Load(ref); found {
-		return cached.(formulaArg), nil
+	if cached, ok := f.formulaArgCache.Load(ref); ok {
+		return cached.(formulaArg), err
 	}
 
 	if formula, _ := f.getCellFormula(sheet, cell, true); len(formula) != 0 {
@@ -1678,7 +1671,6 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 				ctx.mu.Unlock()
 				arg, _ = f.calcCellValue(ctx, sheet, cell)
 				ctx.iterationsCache[ref] = arg
-				// optimized: cache formulaArg result
 				f.formulaArgCache.Store(ref, arg)
 				return arg, nil
 			}
@@ -1702,11 +1694,8 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 			arg = arg.ToNumber()
 		}
 	case CellTypeInlineString, CellTypeSharedString:
-		// arg 保持不变
 	case CellTypeFormula:
-		if value != "" {
-			// arg 保持不变
-		} else {
+		if value == "" {
 			arg = newEmptyFormulaArg()
 		}
 	case CellTypeDate:
@@ -1718,8 +1707,6 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 	default:
 		arg = newErrorFormulaArg(value, value)
 	}
-
-	// optimized: cache non-formula cell result
 	f.formulaArgCache.Store(ref, arg)
 	return arg, err
 }
@@ -1760,24 +1747,19 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 			return
 		}
 
-		// optimized: detect whole column/row reference, limit to actual data range
-		// when valueRange[1] == TotalRows, it means whole column reference (like $C:$C)
-		// when valueRange[3] == MaxColumns, it means whole row reference (like $1:$1)
+		// Detect whole column/row reference, limit to actual data range
 		if valueRange[1] == TotalRows {
-			// whole column reference: find actual maximum row number
 			actualMaxRow := 0
 			for _, rowData := range ws.SheetData.Row {
 				if rowData.R > actualMaxRow {
 					actualMaxRow = rowData.R
 				}
 			}
-			// limit to actual maximum row to avoid processing empty rows
 			if actualMaxRow > 0 && actualMaxRow < TotalRows {
 				valueRange[1] = actualMaxRow
 			}
 		}
 		if valueRange[3] == MaxColumns {
-			// whole row reference: find actual maximum column number
 			actualMaxCol := 0
 			for _, rowData := range ws.SheetData.Row {
 				for _, cell := range rowData.C {
@@ -1798,7 +1780,6 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 				rowData := &ws.SheetData.Row[row-1]
 				colMax = min(valueRange[3], len(rowData.C))
 			}
-
 			var matrixRow []formulaArg
 			for col := valueRange[2]; col <= valueRange[3]; col++ {
 				value := newEmptyFormulaArg()
