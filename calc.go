@@ -15428,7 +15428,48 @@ func calcMatchMatrix(vertical bool, matchType int, criteria *formulaCriteria, lo
 func calcMatch(matchType int, criteria *formulaCriteria, lookupArray []formulaArg) formulaArg {
 	idx := -1
 	switch matchType {
-	case 0:
+	case 0: // Exact match
+		// Use hash index for large datasets (>100 elements)
+		// Hash lookup is O(1) vs O(n) for linear search
+		if len(lookupArray) > 100 && criteria.Type == criteriaEq {
+			// Build hash index with type-aware keys
+			hashIndex := make(map[string]int)
+			lookupIsNumber := criteria.Condition.Type == ArgNumber
+
+			for i, arg := range lookupArray {
+				var key string
+				if lookupIsNumber {
+					// Convert to number for comparison
+					if numArg := arg.ToNumber(); numArg.Type == ArgNumber {
+						key = "N:" + numArg.Value()
+					} else {
+						continue // Skip non-numeric cells when looking for numbers
+					}
+				} else {
+					// Use string comparison
+					key = "S:" + arg.Value()
+				}
+
+				if _, exists := hashIndex[key]; !exists {
+					hashIndex[key] = i
+				}
+			}
+
+			// Perform hash lookup with type-aware key
+			var lookupKey string
+			if lookupIsNumber {
+				lookupKey = "N:" + criteria.Condition.Value()
+			} else {
+				lookupKey = "S:" + criteria.Condition.Value()
+			}
+
+			if foundIdx, found := hashIndex[lookupKey]; found {
+				return newNumberFormulaArg(float64(foundIdx + 1))
+			}
+			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		}
+
+		// Small datasets use linear search
 		for i, arg := range lookupArray {
 			if ok, _ := formulaCriteriaEval(arg, criteria); ok {
 				return newNumberFormulaArg(float64(i + 1))
@@ -15931,7 +15972,15 @@ func (fn *formulaFuncs) XLOOKUP(argsList *list.List) formulaArg {
 	var matchIdx int
 	switch searchMode.Number {
 	case searchModeLinear, searchModeReverseLinear:
-		matchIdx, _ = lookupLinearSearch(verticalLookup, lookupValue, lookupArray, matchMode, searchMode)
+		// Use hash index for exact match mode with large datasets (>100 rows/cols)
+		// Hash lookup is O(1) vs O(n) for linear search
+		if matchMode.Number == matchModeExact &&
+		   searchMode.Number == searchModeLinear &&
+		   len(lookupArray.Matrix) > 100 {
+			matchIdx, _ = lookupHashSearch(verticalLookup, lookupValue, lookupArray)
+		} else {
+			matchIdx, _ = lookupLinearSearch(verticalLookup, lookupValue, lookupArray, matchMode, searchMode)
+		}
 	default:
 		matchIdx, _ = lookupBinarySearch(verticalLookup, lookupValue, lookupArray, matchMode, searchMode)
 	}
