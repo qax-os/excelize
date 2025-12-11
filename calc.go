@@ -330,6 +330,9 @@ func (fa formulaArg) ToNumber() formulaArg {
 		if args := fa.ToList(); len(args) > 0 {
 			return args[0].ToNumber()
 		}
+	case ArgError:
+		// Preserve error type instead of converting to 0
+		return fa
 	}
 	return newNumberFormulaArg(n)
 }
@@ -15640,13 +15643,13 @@ func lookupHashSearch(vertical bool, lookupValue, lookupArray formulaArg) (int, 
 				if lookupIsNumber {
 					// Convert cell to number for comparison
 					if numCell := cell.ToNumber(); numCell.Type == ArgNumber {
-						key = "N:" + numCell.Value()  // Number key
+						key = "N:" + numCell.Value() // Number key
 					} else {
-						continue  // Skip non-numeric cells when looking for numbers
+						continue // Skip non-numeric cells when looking for numbers
 					}
 				} else {
 					// Use string comparison
-					key = "S:" + cell.Value()  // String key
+					key = "S:" + cell.Value() // String key
 				}
 
 				if _, exists := hashIndex[key]; !exists {
@@ -15975,8 +15978,8 @@ func (fn *formulaFuncs) XLOOKUP(argsList *list.List) formulaArg {
 		// Use hash index for exact match mode with large datasets (>100 rows/cols)
 		// Hash lookup is O(1) vs O(n) for linear search
 		if matchMode.Number == matchModeExact &&
-		   searchMode.Number == searchModeLinear &&
-		   len(lookupArray.Matrix) > 100 {
+			searchMode.Number == searchModeLinear &&
+			len(lookupArray.Matrix) > 100 {
 			matchIdx, _ = lookupHashSearch(verticalLookup, lookupValue, lookupArray)
 		} else {
 			matchIdx, _ = lookupLinearSearch(verticalLookup, lookupValue, lookupArray, matchMode, searchMode)
