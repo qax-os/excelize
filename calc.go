@@ -193,7 +193,8 @@ var (
 			return fmt.Sprintf("R[%d]C[%d]", row, col), nil
 		},
 	}
-	formulaFormats = []*regexp.Regexp{
+	formulaFnNameReplacer = strings.NewReplacer("_xlfn.", "", ".", "dot")
+	formulaFormats        = []*regexp.Regexp{
 		regexp.MustCompile(`^(\d+)$`),
 		regexp.MustCompile(`^=(.*)$`),
 		regexp.MustCompile(`^<>(.*)$`),
@@ -839,8 +840,8 @@ type formulaFuncs struct {
 //	Z.TEST
 //	ZTEST
 func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string, err error) {
-	cacheKey := fmt.Sprintf("%s!%s", sheet, cell)
-	if cachedResult, found := f.calcCache.Load(cacheKey); found {
+	entry := sheet + "!" + cell
+	if cachedResult, ok := f.calcCache.Load(entry); ok {
 		return cachedResult.(string), nil
 	}
 	options := f.getOptions(opts...)
@@ -850,7 +851,7 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 		token        formulaArg
 	)
 	if token, err = f.calcCellValue(&calcContext{
-		entry:             fmt.Sprintf("%s!%s", sheet, cell),
+		entry:             entry,
 		maxCalcIterations: options.MaxCalcIterations,
 		iterations:        make(map[string]uint),
 		iterationsCache:   make(map[string]formulaArg),
@@ -866,7 +867,7 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 		if precision > 15 {
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'G', 15, 64))}, rawCellValue, CellTypeNumber)
 			if err == nil {
-				f.calcCache.Store(cacheKey, result)
+				f.calcCache.Store(entry, result)
 			}
 			return
 		}
@@ -874,15 +875,21 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'f', -1, 64))}, rawCellValue, CellTypeNumber)
 		}
 		if err == nil {
-			f.calcCache.Store(cacheKey, result)
+			f.calcCache.Store(entry, result)
 		}
 		return
 	}
 	result, err = f.formattedValue(&xlsxC{S: styleIdx, V: token.Value()}, rawCellValue, CellTypeInlineString)
 	if err == nil {
-		f.calcCache.Store(cacheKey, result)
+		f.calcCache.Store(entry, result)
 	}
 	return
+}
+
+// clearCalcCache clear all calculation related caches.
+func (f *File) clearCalcCache() {
+	f.calcCache.Clear()
+	f.formulaArgCache.Clear()
 }
 
 // calcCellValue calculate cell value by given context, worksheet name and cell
@@ -1106,8 +1113,8 @@ func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nex
 	}
 	prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack)
 	// call formula function to evaluate
-	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet, cell: cell, ctx: ctx}, strings.NewReplacer(
-		"_xlfn.", "", ".", "dot").Replace(opfStack.Peek().(efp.Token).TValue),
+	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet, cell: cell, ctx: ctx},
+		formulaFnNameReplacer.Replace(opfStack.Peek().(efp.Token).TValue),
 		[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
 	if arg.Type == ArgError && opfStack.Len() == 1 {
 		return arg
@@ -1651,7 +1658,11 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 		value string
 		err   error
 	)
-	ref := fmt.Sprintf("%s!%s", sheet, cell)
+	ref := sheet + "!" + cell
+	if cached, ok := f.formulaArgCache.Load(ref); ok {
+		return cached.(formulaArg), err
+	}
+
 	if formula, _ := f.getCellFormula(sheet, cell, true); len(formula) != 0 {
 		ctx.mu.Lock()
 		if ctx.entry != ref {
@@ -1660,6 +1671,7 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 				ctx.mu.Unlock()
 				arg, _ = f.calcCellValue(ctx, sheet, cell)
 				ctx.iterationsCache[ref] = arg
+				f.formulaArgCache.Store(ref, arg)
 				return arg, nil
 			}
 			ctx.mu.Unlock()
@@ -1674,29 +1686,29 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 	cellType, _ := f.GetCellType(sheet, cell)
 	switch cellType {
 	case CellTypeBool:
-		return arg.ToBool(), err
+		arg = arg.ToBool()
 	case CellTypeNumber, CellTypeUnset:
 		if arg.Value() == "" {
-			return newEmptyFormulaArg(), err
+			arg = newEmptyFormulaArg()
+		} else {
+			arg = arg.ToNumber()
 		}
-		return arg.ToNumber(), err
 	case CellTypeInlineString, CellTypeSharedString:
-		return arg, err
 	case CellTypeFormula:
-		if value != "" {
-			return arg, err
+		if value == "" {
+			arg = newEmptyFormulaArg()
 		}
-		return newEmptyFormulaArg(), err
 	case CellTypeDate:
 		if value, err = f.GetCellValue(sheet, cell); err == nil {
 			if num := newStringFormulaArg(value).ToNumber(); num.Type == ArgNumber {
-				return num, err
+				arg = num
 			}
 		}
-		return arg, err
 	default:
-		return newErrorFormulaArg(value, value), err
+		arg = newErrorFormulaArg(value, value)
 	}
+	f.formulaArgCache.Store(ref, arg)
+	return arg, err
 }
 
 // rangeResolver extract value as string from given reference and range list.
@@ -1735,13 +1747,39 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 			return
 		}
 
+		// Detect whole column/row reference, limit to actual data range
+		if valueRange[1] == TotalRows {
+			actualMaxRow := 0
+			for _, rowData := range ws.SheetData.Row {
+				if rowData.R > actualMaxRow {
+					actualMaxRow = rowData.R
+				}
+			}
+			if actualMaxRow > 0 && actualMaxRow < TotalRows {
+				valueRange[1] = actualMaxRow
+			}
+		}
+		if valueRange[3] == MaxColumns {
+			actualMaxCol := 0
+			for _, rowData := range ws.SheetData.Row {
+				for _, cell := range rowData.C {
+					col, _, err := CellNameToCoordinates(cell.R)
+					if err == nil && col > actualMaxCol {
+						actualMaxCol = col
+					}
+				}
+			}
+			if actualMaxCol > 0 && actualMaxCol < MaxColumns {
+				valueRange[3] = actualMaxCol
+			}
+		}
+
 		for row := valueRange[0]; row <= valueRange[1]; row++ {
 			colMax := 0
 			if row <= len(ws.SheetData.Row) {
 				rowData := &ws.SheetData.Row[row-1]
 				colMax = min(valueRange[3], len(rowData.C))
 			}
-
 			var matrixRow []formulaArg
 			for col := valueRange[2]; col <= valueRange[3]; col++ {
 				value := newEmptyFormulaArg()
