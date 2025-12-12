@@ -757,6 +757,7 @@ type formulaFuncs struct {
 //	SLN
 //	SLOPE
 //	SMALL
+//	SORTBY
 //	SQRT
 //	SQRTPI
 //	STANDARDIZE
