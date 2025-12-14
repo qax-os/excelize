@@ -6917,6 +6917,9 @@ func TestCalcSORTBY(t *testing.T) {
 	nextByArray, errArg := parseSortOrderArg(argsList.Front(), &sortbyKey{}, 0, 3)
 	assert.Equal(t, "strconv.ParseFloat: parsing \"text\": invalid syntax", errArg.Error)
 	assert.NotNil(t, nextByArray)
+	nextByArray, errArg = parseSortOrderArg(argsList.Front(), &sortbyKey{}, 0, 1)
+	assert.Nil(t, errArg)
+	assert.NotNil(t, nextByArray)
 }
 
 func TestCalcTrendGrowthMultipleRegressionPart2(t *testing.T) {
