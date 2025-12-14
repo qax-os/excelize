@@ -19246,88 +19246,72 @@ type rowWithKeys struct {
 // SORTBY function sorts the contents of a range or array based on the values
 // in a corresponding range or array. The syntax of the function is:
 //
-//	SORTBY(array, by_array1, [sort_order1], [by_array2, sort_order2], [by_array3, sort_order3])
+//	SORTBY(array,by_array1,[sort_order1],[by_array2,sort_order2],[by_array3, sort_order3])
 func (fn *formulaFuncs) SORTBY(argsList *list.List) formulaArg {
-	args, errArg := getSortbyArgs(argsList)
+	args, errArg := prepareSortbyArgs(argsList)
 	if errArg != nil {
 		return *errArg
 	}
-
-	// Build composite sort keys for each row
 	rowsWithKeys := make([]rowWithKeys, args.rows)
 	for i := 0; i < args.rows; i++ {
 		rowsWithKeys[i].rowData = args.array[i*args.cols : (i+1)*args.cols]
 		rowsWithKeys[i].sortKeys = make([][]formulaArg, len(args.sortKeys))
-
 		for keyIdx, sortKey := range args.sortKeys {
 			rowsWithKeys[i].sortKeys[keyIdx] = sortKey.byArray[i*sortKey.cols : (i+1)*sortKey.cols]
 		}
 	}
-
-	// Sort using multi-key comparison
 	sort.Slice(rowsWithKeys, func(i, j int) bool {
 		return compareRowsForSortby(rowsWithKeys[i], rowsWithKeys[j], args.sortKeys)
 	})
-
-	// Build result matrix
 	result := make([][]formulaArg, args.rows)
 	for i, row := range rowsWithKeys {
 		result[i] = row.rowData
 	}
-
 	return newMatrixFormulaArg(result)
 }
 
-// getSortbyArgs parses and validates the arguments for the SORTBY function.
-// Syntax: SORTBY(array, by_array1, [sort_order1], [by_array2, sort_order2], [by_array3, sort_order3])
-func getSortbyArgs(argsList *list.List) (sortbyArgs, *formulaArg) {
-	res := sortbyArgs{}
+// checkSortbyArgs checking arguments for the formula function SORTBY.
+func checkSortbyArgs(argsList *list.List) formulaArg {
 	argsLen := argsList.Len()
-
-	// Validate argument count: 2, 3, 5, or 7 arguments
 	if argsLen < 2 {
-		errArg := newErrorFormulaArg(formulaErrorVALUE, "SORTBY requires at least 2 arguments")
-		return res, &errArg
+		return newErrorFormulaArg(formulaErrorVALUE, "SORTBY requires at least 2 arguments")
 	}
 	if argsLen > 7 {
-		msg := fmt.Sprintf("SORTBY takes at most 7 arguments, received %d", argsLen)
-		errArg := newErrorFormulaArg(formulaErrorVALUE, msg)
-		return res, &errArg
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("SORTBY takes at most 7 arguments, received %d", argsLen))
 	}
-	// Validate argument pattern: must be 2, 3, 5, or 7
 	if argsLen != 2 && argsLen != 3 && argsLen != 5 && argsLen != 7 {
-		msg := fmt.Sprintf("SORTBY requires 2, 3, 5, or 7 arguments, received %d", argsLen)
-		errArg := newErrorFormulaArg(formulaErrorVALUE, msg)
-		return res, &errArg
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("SORTBY requires 2, 3, 5, or 7 arguments, received %d", argsLen))
 	}
+	arrArg := argsList.Front().Value.(formulaArg).ToList()
+	if len(arrArg) == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "missing first argument to SORTBY")
+	}
+	if arrArg[0].Type == ArgError {
+		return arrArg[0]
+	}
+	return newListFormulaArg(arrArg)
+}
 
-	// Parse first argument (array to sort)
-	firstArg := argsList.Front()
-	res.array = firstArg.Value.(formulaArg).ToList()
-	if len(res.array) == 0 {
-		errArg := newErrorFormulaArg(formulaErrorVALUE, "missing first argument to SORTBY")
-		return res, &errArg
+// prepareSortbyArgs prepare arguments for the formula function SORTBY.
+func prepareSortbyArgs(argsList *list.List) (sortbyArgs, *formulaArg) {
+	res := sortbyArgs{}
+	args := checkSortbyArgs(argsList)
+	if args.Type != ArgList {
+		return res, &args
 	}
-	if res.array[0].Type == ArgError {
-		return res, &res.array[0]
-	}
-
-	// Calculate dimensions of main array
+	res.array = args.List
+	argsLen := argsList.Len()
+	array := argsList.Front()
 	tempList := list.New()
-	tempList.PushBack(firstArg.Value)
+	tempList.PushBack(array.Value)
 	rmin, rmax := calcColsRowsMinMax(false, tempList)
 	cmin, cmax := calcColsRowsMinMax(true, tempList)
 	res.cols, res.rows = cmax-cmin+1, rmax-rmin+1
-
-	// Parse sort keys (up to 3)
-	currentArg := firstArg.Next()
+	byArray := array.Next()
 	keyCount := 0
-
-	for currentArg != nil && keyCount < 3 {
+	for byArray != nil && keyCount < 3 {
 		var key sortbyKey
-
-		// Parse by_array
-		key.byArray = currentArg.Value.(formulaArg).ToList()
+		key.byArray = byArray.Value.(formulaArg).ToList()
 		if len(key.byArray) == 0 {
 			errArg := newErrorFormulaArg(formulaErrorVALUE, "missing by_array argument to SORTBY")
 			return res, &errArg
@@ -19335,159 +19319,77 @@ func getSortbyArgs(argsList *list.List) (sortbyArgs, *formulaArg) {
 		if key.byArray[0].Type == ArgError {
 			return res, &key.byArray[0]
 		}
-
-		// Calculate dimensions of by_array
 		tempList := list.New()
-		tempList.PushBack(currentArg.Value)
+		tempList.PushBack(byArray.Value)
 		rmin, rmax := calcColsRowsMinMax(false, tempList)
 		cmin, cmax := calcColsRowsMinMax(true, tempList)
 		key.cols, key.rows = cmax-cmin+1, rmax-rmin+1
-
-		// Validate dimensions match
 		if key.rows != res.rows {
-			msg := fmt.Sprintf("by_array dimensions (%d rows) do not match array dimensions (%d rows)",
-				key.rows, res.rows)
-			errArg := newErrorFormulaArg(formulaErrorVALUE, msg)
+			errArg := newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("by_array dimensions (%d rows) do not match array dimensions (%d rows)",
+				key.rows, res.rows))
 			return res, &errArg
 		}
-
-		// Parse optional sort_order (default to ascending)
 		key.ascending = true
-		currentArg = currentArg.Next()
-
-		// Check if next argument exists and could be sort_order
-		if currentArg != nil {
-			// Try to parse as number
-			sortOrderArg := currentArg.Value.(formulaArg).ToNumber()
-
-			// Determine if this should be a sort_order based on argument count and position
-			expectedSortOrder := false
-			if keyCount == 0 && (argsLen == 3 || argsLen == 5 || argsLen == 7) {
-				expectedSortOrder = true
-			} else if keyCount == 1 && (argsLen == 5 || argsLen == 7) {
-				expectedSortOrder = true
-			} else if keyCount == 2 && argsLen == 7 {
-				expectedSortOrder = true
-			}
-
-			if sortOrderArg.Type == ArgError {
-				// Not a valid number
-				if expectedSortOrder {
-					// We expected a sort_order but got an error
-					return res, &sortOrderArg
-				}
-				// Otherwise, this might be the next by_array, don't consume it
-			} else {
-				// Valid number - check if it's 1 or -1
-				if sortOrderArg.Number == -1 {
-					key.ascending = false
-					currentArg = currentArg.Next()
-				} else if sortOrderArg.Number == 1 {
-					key.ascending = true
-					currentArg = currentArg.Next()
-				} else {
-					msg := fmt.Sprintf("sort_order must be 1 or -1, received %v", sortOrderArg.Number)
-					errArg := newErrorFormulaArg(formulaErrorVALUE, msg)
-					return res, &errArg
-				}
-			}
+		nextByArray, errArg := parseSortOrderArg(byArray.Next(), &key, keyCount, argsLen)
+		if errArg != nil {
+			return res, errArg
 		}
-
+		byArray = nextByArray
 		res.sortKeys = append(res.sortKeys, key)
 		keyCount++
 	}
-
 	return res, nil
+}
+
+// parseSortOrderArg processes the optional sort_order argument for a SORTBY
+// key. It updates the key's ascending field and returns the next element in the
+// list. Returns an error if the sort_order value is invalid.
+func parseSortOrderArg(byArray *list.Element, key *sortbyKey, keyCount, argsLen int) (*list.Element, *formulaArg) {
+	if byArray == nil {
+		return nil, nil
+	}
+	sortOrderArg := byArray.Value.(formulaArg).ToNumber()
+	expectedSortOrder := false
+	if keyCount == 0 && (argsLen == 3 || argsLen == 5 || argsLen == 7) {
+		expectedSortOrder = true
+	} else if keyCount == 1 && (argsLen == 5 || argsLen == 7) {
+		expectedSortOrder = true
+	} else if keyCount == 2 && argsLen == 7 {
+		expectedSortOrder = true
+	}
+	if sortOrderArg.Type == ArgError {
+		if expectedSortOrder {
+			return byArray, &sortOrderArg
+		}
+		return byArray, nil
+	}
+	switch sortOrderArg.Number {
+	case -1:
+		key.ascending = false
+		return byArray.Next(), nil
+	case 1:
+		key.ascending = true
+		return byArray.Next(), nil
+	}
+	errArg := newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("sort_order must be 1 or -1, received %v", sortOrderArg.Number))
+	return byArray, &errArg
 }
 
 // compareRowsForSortby compares two rows using multiple sort keys.
 // Returns true if row i should come before row j.
 func compareRowsForSortby(i, j rowWithKeys, sortKeys []sortbyKey) bool {
-	// Compare using each sort key in order
-	for keyIdx, sortKey := range sortKeys {
-		iKeys := i.sortKeys[keyIdx]
-		jKeys := j.sortKeys[keyIdx]
-
-		// Compare row keys column by column
-		for colIdx := 0; colIdx < len(iKeys) && colIdx < len(jKeys); colIdx++ {
-			comparison := compareSortbyValues(iKeys[colIdx], jKeys[colIdx])
-
-			if comparison == 0 {
-				// Equal, continue to next column
+	for idx, sortKey := range sortKeys {
+		lhs, rhs := i.sortKeys[idx], j.sortKeys[idx]
+		for colIdx := 0; colIdx < len(lhs) && colIdx < len(rhs); colIdx++ {
+			criteria := compareFormulaArg(lhs[colIdx], rhs[colIdx], newNumberFormulaArg(matchModeMaxLess), false)
+			if criteria == criteriaEq {
 				continue
 			}
-
-			// Apply sort order
 			if sortKey.ascending {
-				return comparison < 0
+				return criteria == criteriaL
 			}
-			return comparison > 0
+			return criteria == criteriaG
 		}
-
-		// All columns in this key are equal, check next key
 	}
-
-	// All keys are equal, maintain original order (stable sort)
 	return false
-}
-
-// compareSortbyValues compares two formulaArg values according to Excel sort rules:
-// Numbers < Strings < Errors < Blanks (for ascending order)
-// Returns: -1 if a < b, 0 if a == b, 1 if a > b
-func compareSortbyValues(a, b formulaArg) int {
-	// Define type priority for sorting
-	getTypePriority := func(arg formulaArg) int {
-		switch arg.Type {
-		case ArgNumber:
-			return 1
-		case ArgString:
-			return 2
-		case ArgError:
-			return 3
-		case ArgEmpty:
-			return 4
-		default:
-			return 5
-		}
-	}
-
-	aPriority := getTypePriority(a)
-	bPriority := getTypePriority(b)
-
-	// Different types: compare by type priority
-	if aPriority != bPriority {
-		if aPriority < bPriority {
-			return -1
-		}
-		return 1
-	}
-
-	// Same type: compare values
-	switch a.Type {
-	case ArgNumber:
-		if a.Number < b.Number {
-			return -1
-		}
-		if a.Number > b.Number {
-			return 1
-		}
-		return 0
-
-	case ArgString:
-		// Case-insensitive comparison
-		aStr := strings.ToLower(a.Value())
-		bStr := strings.ToLower(b.Value())
-		return strings.Compare(aStr, bStr)
-
-	case ArgError:
-		// Errors are compared by their string representation
-		return strings.Compare(a.Error, b.Error)
-
-	case ArgEmpty:
-		// All empty values are equal
-		return 0
-
-	default:
-		return 0
-	}
 }
