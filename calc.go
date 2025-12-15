@@ -757,6 +757,7 @@ type formulaFuncs struct {
 //	SLN
 //	SLOPE
 //	SMALL
+//	SORTBY
 //	SQRT
 //	SQRTPI
 //	STANDARDIZE
@@ -19218,4 +19219,177 @@ func (fn *formulaFuncs) DISPIMG(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "DISPIMG requires 2 numeric arguments")
 	}
 	return argsList.Front().Value.(formulaArg)
+}
+
+// sortbyArgs holds the parsed arguments for the SORTBY function.
+type sortbyArgs struct {
+	array    []formulaArg
+	cols     int
+	rows     int
+	sortKeys []sortbyKey
+}
+
+// sortbyKey represents a single sort key with its associated array and order.
+type sortbyKey struct {
+	byArray   []formulaArg
+	cols      int
+	rows      int
+	ascending bool // true = ascending (1 or omitted), false = descending (-1)
+}
+
+// rowWithKeys pairs a data row with its corresponding sort key values.
+type rowWithKeys struct {
+	rowData  []formulaArg
+	sortKeys [][]formulaArg // up to 3 sets of sort keys
+}
+
+// SORTBY function sorts the contents of a range or array based on the values
+// in a corresponding range or array. The syntax of the function is:
+//
+//	SORTBY(array,by_array1,[sort_order1],[by_array2,sort_order2],[by_array3, sort_order3])
+func (fn *formulaFuncs) SORTBY(argsList *list.List) formulaArg {
+	args, errArg := prepareSortbyArgs(argsList)
+	if errArg != nil {
+		return *errArg
+	}
+	rowsWithKeys := make([]rowWithKeys, args.rows)
+	for i := 0; i < args.rows; i++ {
+		rowsWithKeys[i].rowData = args.array[i*args.cols : (i+1)*args.cols]
+		rowsWithKeys[i].sortKeys = make([][]formulaArg, len(args.sortKeys))
+		for keyIdx, sortKey := range args.sortKeys {
+			rowsWithKeys[i].sortKeys[keyIdx] = sortKey.byArray[i*sortKey.cols : (i+1)*sortKey.cols]
+		}
+	}
+	sort.Slice(rowsWithKeys, func(i, j int) bool {
+		return compareRowsForSortby(rowsWithKeys[i], rowsWithKeys[j], args.sortKeys)
+	})
+	result := make([][]formulaArg, args.rows)
+	for i, row := range rowsWithKeys {
+		result[i] = row.rowData
+	}
+	return newMatrixFormulaArg(result)
+}
+
+// checkSortbyArgs checking arguments for the formula function SORTBY.
+func checkSortbyArgs(argsList *list.List) formulaArg {
+	argsLen := argsList.Len()
+	if argsLen < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SORTBY requires at least 2 arguments")
+	}
+	if argsLen > 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("SORTBY takes at most 7 arguments, received %d", argsLen))
+	}
+	if argsLen != 2 && argsLen != 3 && argsLen != 5 && argsLen != 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("SORTBY requires 2, 3, 5, or 7 arguments, received %d", argsLen))
+	}
+	arrArg := argsList.Front().Value.(formulaArg).ToList()
+	if len(arrArg) == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "missing first argument to SORTBY")
+	}
+	if arrArg[0].Type == ArgError {
+		return arrArg[0]
+	}
+	return newListFormulaArg(arrArg)
+}
+
+// prepareSortbyArgs prepare arguments for the formula function SORTBY.
+func prepareSortbyArgs(argsList *list.List) (sortbyArgs, *formulaArg) {
+	res := sortbyArgs{}
+	args := checkSortbyArgs(argsList)
+	if args.Type != ArgList {
+		return res, &args
+	}
+	res.array = args.List
+	argsLen := argsList.Len()
+	array := argsList.Front()
+	tempList := list.New()
+	tempList.PushBack(array.Value)
+	rmin, rmax := calcColsRowsMinMax(false, tempList)
+	cmin, cmax := calcColsRowsMinMax(true, tempList)
+	res.cols, res.rows = cmax-cmin+1, rmax-rmin+1
+	byArray := array.Next()
+	keyCount := 0
+	for byArray != nil && keyCount < 3 {
+		var key sortbyKey
+		key.byArray = byArray.Value.(formulaArg).ToList()
+		if len(key.byArray) == 0 {
+			errArg := newErrorFormulaArg(formulaErrorVALUE, "missing by_array argument to SORTBY")
+			return res, &errArg
+		}
+		if key.byArray[0].Type == ArgError {
+			return res, &key.byArray[0]
+		}
+		tempList := list.New()
+		tempList.PushBack(byArray.Value)
+		rmin, rmax := calcColsRowsMinMax(false, tempList)
+		cmin, cmax := calcColsRowsMinMax(true, tempList)
+		key.cols, key.rows = cmax-cmin+1, rmax-rmin+1
+		if key.rows != res.rows {
+			errArg := newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("by_array dimensions (%d rows) do not match array dimensions (%d rows)",
+				key.rows, res.rows))
+			return res, &errArg
+		}
+		key.ascending = true
+		nextByArray, errArg := parseSortOrderArg(byArray.Next(), &key, keyCount, argsLen)
+		if errArg != nil {
+			return res, errArg
+		}
+		byArray = nextByArray
+		res.sortKeys = append(res.sortKeys, key)
+		keyCount++
+	}
+	return res, nil
+}
+
+// parseSortOrderArg processes the optional sort_order argument for a SORTBY
+// key. It updates the key's ascending field and returns the next element in the
+// list. Returns an error if the sort_order value is invalid.
+func parseSortOrderArg(byArray *list.Element, key *sortbyKey, keyCount, argsLen int) (*list.Element, *formulaArg) {
+	if byArray == nil {
+		return nil, nil
+	}
+	sortOrderArg := byArray.Value.(formulaArg).ToNumber()
+	expectedSortOrder := false
+	if keyCount == 0 && (argsLen == 3 || argsLen == 5 || argsLen == 7) {
+		expectedSortOrder = true
+	} else if keyCount == 1 && (argsLen == 5 || argsLen == 7) {
+		expectedSortOrder = true
+	} else if keyCount == 2 && argsLen == 7 {
+		expectedSortOrder = true
+	}
+	if sortOrderArg.Type == ArgError {
+		if expectedSortOrder {
+			return byArray, &sortOrderArg
+		}
+		return byArray, nil
+	}
+	switch sortOrderArg.Number {
+	case -1:
+		key.ascending = false
+		return byArray.Next(), nil
+	case 1:
+		key.ascending = true
+		return byArray.Next(), nil
+	}
+	errArg := newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("sort_order must be 1 or -1, received %v", sortOrderArg.Number))
+	return byArray, &errArg
+}
+
+// compareRowsForSortby compares two rows using multiple sort keys.
+// Returns true if row i should come before row j.
+func compareRowsForSortby(i, j rowWithKeys, sortKeys []sortbyKey) bool {
+	for idx, sortKey := range sortKeys {
+		lhs, rhs := i.sortKeys[idx], j.sortKeys[idx]
+		for colIdx := 0; colIdx < len(lhs) && colIdx < len(rhs); colIdx++ {
+			criteria := compareFormulaArg(lhs[colIdx], rhs[colIdx], newNumberFormulaArg(matchModeMaxLess), false)
+			if criteria == criteriaEq {
+				continue
+			}
+			if sortKey.ascending {
+				return criteria == criteriaL
+			}
+			return criteria == criteriaG
+		}
+	}
+	return false
 }
