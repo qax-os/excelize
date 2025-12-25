@@ -118,11 +118,27 @@ type decodeWsDr struct {
 // information that does not affect the appearance of the picture to be
 // stored.
 type decodeCNvPr struct {
-	XMLName xml.Name `xml:"cNvPr"`
-	ID      int      `xml:"id,attr"`
-	Name    string   `xml:"name,attr"`
-	Descr   string   `xml:"descr,attr"`
-	Title   string   `xml:"title,attr,omitempty"`
+	XMLName    xml.Name          `xml:"cNvPr"`
+	ID         int               `xml:"id,attr"`
+	Name       string            `xml:"name,attr"`
+	Descr      string            `xml:"descr,attr"`
+	Title      string            `xml:"title,attr,omitempty"`
+	HlinkClick *decodeHlinkClick `xml:"hlinkClick,omitempty"`
+}
+
+// decodeHlinkClick directly maps the hlinkClick (Hyperlink Click).This element
+// specifies the on-click hyperlink information to be applied to a run of text.
+// When the hyperlink text is clicked the link is fetched.
+// clicked the link is fetched.
+type decodeHlinkClick struct {
+	RID            string `xml:"id,attr,omitempty"`
+	InvalidURL     string `xml:"invalidUrl,attr,omitempty"`
+	Action         string `xml:"action,attr,omitempty"`
+	TgtFrame       string `xml:"tgtFrame,attr,omitempty"`
+	Tooltip        string `xml:"tooltip,attr,omitempty"`
+	History        bool   `xml:"history,attr,omitempty"`
+	HighlightClick bool   `xml:"highlightClick,attr,omitempty"`
+	EndSnd         bool   `xml:"endSnd,attr,omitempty"`
 }
 
 // decodePicLocks directly maps the picLocks (Picture Locks). This element
