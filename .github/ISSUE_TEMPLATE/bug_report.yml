@@ -1,0 +1,81 @@
+name: Bug report
+description: Create a report to help us improve
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If you are reporting a new issue, make sure that we do not have any duplicates already open. You can ensure this by searching the issue list for this repository. If there is a duplicate, please close your issue and add a comment to the existing issue instead.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Briefly describe the problem you are having in a few paragraphs.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to reproduce the issue
+      description: Explain how to cause the issue in the provided reproduction.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: received
+    attributes:
+      label: Describe the results you received
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Describe the results you expected
+    validations:
+      required: true
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+      description: |
+        Output of `go version`:
+      placeholder: e.g. 1.23.4
+    validations:
+      required: true
+
+  - type: input
+    id: excelize-version
+    attributes:
+      label: Excelize version or commit ID
+      description: |
+        Which version of Excelize are you using?
+      placeholder: e.g. 2.9.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Environment details (OS, Microsoft Excel&trade; version, physical, etc.)
+      render: shell
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: Validations
+      description: Before submitting the issue, please make sure you do the following
+      options:
+        - label: Check that there isn't already an issue that reports the same bug to avoid creating a duplicate.
+          required: true
+        - label: The provided reproduction is a minimal reproducible example of the bug.
+          required: true

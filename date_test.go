@@ -68,22 +68,22 @@ func TestTimeFromExcelTime(t *testing.T) {
 		})
 	}
 	for hour := 0; hour < 24; hour++ {
-		for min := 0; min < 60; min++ {
+		for minVal := 0; minVal < 60; minVal++ {
 			for sec := 0; sec < 60; sec++ {
-				date := time.Date(2021, time.December, 30, hour, min, sec, 0, time.UTC)
+				date := time.Date(2021, time.December, 30, hour, minVal, sec, 0, time.UTC)
 				// Test use 1900 date system
 				excel1900Time, err := timeToExcelTime(date, false)
 				assert.NoError(t, err)
 				date1900Out := timeFromExcelTime(excel1900Time, false)
 				assert.EqualValues(t, hour, date1900Out.Hour())
-				assert.EqualValues(t, min, date1900Out.Minute())
+				assert.EqualValues(t, minVal, date1900Out.Minute())
 				assert.EqualValues(t, sec, date1900Out.Second())
 				// Test use 1904 date system
 				excel1904Time, err := timeToExcelTime(date, true)
 				assert.NoError(t, err)
 				date1904Out := timeFromExcelTime(excel1904Time, true)
 				assert.EqualValues(t, hour, date1904Out.Hour())
-				assert.EqualValues(t, min, date1904Out.Minute())
+				assert.EqualValues(t, minVal, date1904Out.Minute())
 				assert.EqualValues(t, sec, date1904Out.Second())
 			}
 		}

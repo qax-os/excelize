@@ -47,11 +47,11 @@ func TestAddTable(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddTable.xlsx")))
 
 	// Test add table with invalid sheet name
-	assert.EqualError(t, f.AddTable("Sheet:1", &Table{Range: "B26:A21"}), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.AddTable("Sheet:1", &Table{Range: "B26:A21"}))
 	// Test addTable with illegal cell reference
 	f = NewFile()
-	assert.EqualError(t, f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil), "invalid cell reference [0, 0]")
-	assert.EqualError(t, f.addTable("sheet1", "", 1, 1, 0, 0, 0, nil), "invalid cell reference [0, 0]")
+	assert.Equal(t, newCoordinatesToCellNameError(0, 0), f.addTable("sheet1", "", 0, 0, 0, 0, 0, nil))
+	assert.Equal(t, newCoordinatesToCellNameError(0, 0), f.addTable("sheet1", "", 1, 1, 0, 0, 0, nil))
 	// Test set defined name and add table with invalid name
 	for _, cases := range []struct {
 		name string
@@ -66,18 +66,27 @@ func TestAddTable(t *testing.T) {
 		{name: "\u0f5f\u0fb3\u0f0b\u0f21", err: newInvalidNameError("\u0f5f\u0fb3\u0f0b\u0f21")},
 		{name: strings.Repeat("c", MaxFieldLength+1), err: ErrNameLength},
 	} {
-		assert.EqualError(t, f.AddTable("Sheet1", &Table{
+		assert.Equal(t, cases.err, f.AddTable("Sheet1", &Table{
 			Range: "A1:B2",
 			Name:  cases.name,
-		}), cases.err.Error())
-		assert.EqualError(t, f.SetDefinedName(&DefinedName{
+		}))
+		assert.Equal(t, cases.err, f.SetDefinedName(&DefinedName{
 			Name: cases.name, RefersTo: "Sheet1!$A$2:$D$5",
-		}), cases.err.Error())
+		}))
 	}
 	// Test check duplicate table name with unsupported charset table parts
 	f = NewFile()
 	f.Pkg.Store("xl/tables/table1.xml", MacintoshCyrillicCharset)
 	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B2"}))
+	assert.NoError(t, f.Close())
+	f = NewFile()
+	// Test add table with workbook with single cells parts
+	f.Pkg.Store("xl/tables/tableSingleCells1.xml", []byte("<singleXmlCells><singleXmlCell id=\"2\" r=\"A1\" connectionId=\"2\" /></singleXmlCells>"))
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B2"}))
+	// Test add table with workbook with unsupported charset single cells parts
+	f.Pkg.Store("xl/tables/tableSingleCells1.xml", MacintoshCyrillicCharset)
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B2"}))
+	assert.NoError(t, f.Close())
 }
 
 func TestGetTables(t *testing.T) {
@@ -171,24 +180,31 @@ func TestDeleteTable(t *testing.T) {
 	assert.NoError(t, f.DeleteTable("Table2"))
 	assert.NoError(t, f.DeleteTable("Table1"))
 	// Test delete table with invalid table name
-	assert.EqualError(t, f.DeleteTable("Table 1"), newInvalidNameError("Table 1").Error())
+	assert.Equal(t, newInvalidNameError("Table 1"), f.DeleteTable("Table 1"))
 	// Test delete table with no exist table name
-	assert.EqualError(t, f.DeleteTable("Table"), newNoExistTableError("Table").Error())
+	assert.Equal(t, newNoExistTableError("Table"), f.DeleteTable("Table"))
 	// Test delete table with unsupported charset
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.DeleteTable("Table1"), "XML syntax error on line 1: invalid UTF-8")
-	// Test delete table with invalid table range
+	// Test delete table without deleting table header
 	f = NewFile()
-	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B4", Name: "Table1"}))
-	f.Pkg.Store("xl/tables/table1.xml", []byte("<table name=\"Table1\" ref=\"-\" />"))
-	assert.EqualError(t, f.DeleteTable("Table1"), ErrParameterInvalid.Error())
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "Date"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", "Values"))
+	assert.NoError(t, f.UpdateLinkedValue())
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B2", Name: "Table1"}))
+	assert.NoError(t, f.DeleteTable("Table1"))
+	val, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Date", val)
+	val, err = f.GetCellValue("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Values", val)
 }
 
-func TestSetTableHeader(t *testing.T) {
+func TestSetTableColumns(t *testing.T) {
 	f := NewFile()
-	_, err := f.setTableHeader("Sheet1", true, 1, 0, 1)
-	assert.EqualError(t, err, "invalid cell reference [1, 0]")
+	assert.Equal(t, newCoordinatesToCellNameError(1, 0), f.setTableColumns("Sheet1", true, 1, 0, 1, nil))
 }
 
 func TestAutoFilter(t *testing.T) {
@@ -213,14 +229,18 @@ func TestAutoFilter(t *testing.T) {
 	}
 
 	// Test add auto filter with invalid sheet name
-	assert.EqualError(t, f.AutoFilter("Sheet:1", "A1:B1", nil), ErrSheetNameInvalid.Error())
+	assert.Equal(t, ErrSheetNameInvalid, f.AutoFilter("Sheet:1", "A1:B1", nil))
 	// Test add auto filter with illegal cell reference
-	assert.EqualError(t, f.AutoFilter("Sheet1", "A:B1", nil), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-	assert.EqualError(t, f.AutoFilter("Sheet1", "A1:B", nil), newCellNameToCoordinatesError("B", newInvalidCellNameError("B")).Error())
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.AutoFilter("Sheet1", "A:B1", nil))
+	assert.Equal(t, newCellNameToCoordinatesError("B", newInvalidCellNameError("B")), f.AutoFilter("Sheet1", "A1:B", nil))
 	// Test add auto filter with unsupported charset workbook
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.AutoFilter("Sheet1", "D4:B1", nil), "XML syntax error on line 1: invalid UTF-8")
+	// Test add auto filter with empty local sheet ID
+	f = NewFile()
+	f.WorkBook = &xlsxWorkbook{DefinedNames: &xlsxDefinedNames{DefinedName: []xlsxDefinedName{{Name: builtInDefinedNames[3], Hidden: true}}}}
+	assert.NoError(t, f.AutoFilter("Sheet1", "A1:B1", nil))
 }
 
 func TestAutoFilterError(t *testing.T) {
@@ -242,22 +262,22 @@ func TestAutoFilterError(t *testing.T) {
 		})
 	}
 
-	assert.EqualError(t, f.autoFilter("SheetN", "A1", 1, 1, []AutoFilterOptions{{
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.autoFilter("SheetN", "A1", 1, 1, []AutoFilterOptions{{
 		Column:     "A",
 		Expression: "",
-	}}), "sheet SheetN does not exist")
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, []AutoFilterOptions{{
+	}}))
+	assert.Equal(t, newInvalidColumnNameError("-"), f.autoFilter("Sheet1", "A1", 1, 1, []AutoFilterOptions{{
 		Column:     "-",
 		Expression: "-",
-	}}), newInvalidColumnNameError("-").Error())
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 100, []AutoFilterOptions{{
+	}}))
+	assert.Equal(t, newInvalidAutoFilterColumnError("A"), f.autoFilter("Sheet1", "A1", 1, 100, []AutoFilterOptions{{
 		Column:     "A",
 		Expression: "-",
-	}}), `incorrect index of column 'A'`)
-	assert.EqualError(t, f.autoFilter("Sheet1", "A1", 1, 1, []AutoFilterOptions{{
+	}}))
+	assert.Equal(t, newInvalidAutoFilterExpError("-"), f.autoFilter("Sheet1", "A1", 1, 1, []AutoFilterOptions{{
 		Column:     "A",
 		Expression: "-",
-	}}), `incorrect number of tokens in criteria '-'`)
+	}}))
 }
 
 func TestParseFilterTokens(t *testing.T) {
@@ -267,5 +287,5 @@ func TestParseFilterTokens(t *testing.T) {
 	assert.EqualError(t, err, "unknown operator: !")
 	// Test invalid operator in context
 	_, _, err = f.parseFilterTokens("", []string{"", "<", "x != blanks"})
-	assert.EqualError(t, err, "the operator '<' in expression '' is not valid in relation to Blanks/NonBlanks'")
+	assert.Equal(t, newInvalidAutoFilterOperatorError("<", ""), err)
 }

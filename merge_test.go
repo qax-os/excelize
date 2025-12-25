@@ -35,7 +35,7 @@ func TestMergeCell(t *testing.T) {
 	assert.NoError(t, err)
 	// Merged cell ref is single coordinate
 	value, err = f.GetCellValue("Sheet2", "A6")
-	assert.Equal(t, "", value)
+	assert.Empty(t, value)
 	assert.NoError(t, err)
 	value, err = f.GetCellFormula("Sheet1", "G12")
 	assert.Equal(t, "SUM(Sheet1!B19,Sheet1!C19)", value)
@@ -104,7 +104,7 @@ func TestMergeCellOverlap(t *testing.T) {
 	assert.Len(t, mc, 1)
 	assert.Equal(t, "A1", mc[0].GetStartAxis())
 	assert.Equal(t, "D3", mc[0].GetEndAxis())
-	assert.Equal(t, "", mc[0].GetCellValue())
+	assert.Empty(t, mc[0].GetCellValue())
 	assert.NoError(t, f.Close())
 }
 
@@ -138,16 +138,24 @@ func TestGetMergeCells(t *testing.T) {
 	sheet1 := f.GetSheetName(0)
 
 	mergeCells, err := f.GetMergeCells(sheet1)
-	if !assert.Len(t, mergeCells, len(wants)) {
-		t.FailNow()
-	}
 	assert.NoError(t, err)
+	assert.Len(t, mergeCells, len(wants))
 
 	for i, m := range mergeCells {
 		assert.Equal(t, wants[i].value, m.GetCellValue())
 		assert.Equal(t, wants[i].start, m.GetStartAxis())
 		assert.Equal(t, wants[i].end, m.GetEndAxis())
 	}
+	// Test get merged cells without cell values
+	mergeCells, err = f.GetMergeCells(sheet1, true)
+	assert.NoError(t, err)
+	assert.Len(t, mergeCells, len(wants))
+	for i, m := range mergeCells {
+		assert.Empty(t, m.GetCellValue())
+		assert.Equal(t, wants[i].start, m.GetStartAxis())
+		assert.Equal(t, wants[i].end, m.GetEndAxis())
+	}
+
 	// Test get merged cells with invalid sheet name
 	_, err = f.GetMergeCells("Sheet:1")
 	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
@@ -207,11 +215,6 @@ func TestUnmergeCell(t *testing.T) {
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).MergeCells = &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: "A:A"}}}
 	assert.EqualError(t, f.UnmergeCell("Sheet1", "A2", "B3"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
-}
-
-func TestFlatMergedCells(t *testing.T) {
-	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: ""}}}}
-	assert.EqualError(t, flatMergedCells(ws, [][]*xlsxMergeCell{}), "cannot convert cell \"\" to coordinates: invalid cell name \"\"")
 }
 
 func TestMergeCellsParser(t *testing.T) {
