@@ -16,6 +16,7 @@ import (
 	"encoding/xml"
 	"image"
 	"io"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -151,10 +152,14 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 // object with the cell, the default value of that is 0.
 //
 // The optional parameter "ScaleX" specifies the horizontal scale of graph
-// object, the default value of that is 1.0 which presents 100%.
+// object. The value of ScaleY must be a floating-point number greater than 0
+// with a precision of two decimal places. The default value of that is 1.0
+// which presents 100%.
 //
-// The optional parameter "ScaleY" specifies the vertical scale of graph object,
-// the default value of that is 1.0 which presents 100%.
+// The optional parameter "ScaleY" specifies the vertical scale of graph object.
+// The value of ScaleY must be a floating-point number greater than 0 with a
+// precision of two decimal places. The default value of that is 1.0 which
+// presents 100%.
 //
 // The optional parameter "Hyperlink" specifies the hyperlink of the graph
 // object.
@@ -488,8 +493,8 @@ func (f *File) addMedia(file []byte, ext string) string {
 // returns the image contents as []byte data types. This function is
 // concurrency safe. Note that this function currently does not support
 // retrieving all properties from the image's Format property, and the value of
-// the ScaleX and ScaleY property may be an approximate precision value in some
-// cases. For example:
+// the ScaleX and ScaleY property is a floating-point number greater than 0 with 
+// a precision of two decimal places. For example:
 //
 //	f, err := excelize.OpenFile("Book1.xlsx")
 //	if err != nil {
@@ -707,8 +712,8 @@ func (f *File) calculatePictureScale(pic *Picture, cx, cy int) {
 	if err != nil || imgCfg.Width <= 0 || imgCfg.Height <= 0 || cx <= 0 || cy <= 0 {
 		return
 	}
-	pic.Format.ScaleX = float64(cx) / float64(EMU) / float64(imgCfg.Width)
-	pic.Format.ScaleY = float64(cy) / float64(EMU) / float64(imgCfg.Height)
+	pic.Format.ScaleX = math.Round(float64(cx)/float64(EMU)/float64(imgCfg.Width)*100) / 100
+	pic.Format.ScaleY = math.Round(float64(cy)/float64(EMU)/float64(imgCfg.Height)*100) / 100
 }
 
 // extractPictureFromDecodeAnchor extracts picture data from a decoded cell
