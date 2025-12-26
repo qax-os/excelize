@@ -356,6 +356,13 @@ func TestPivotTable(t *testing.T) {
 	_, err = f.getPivotTables()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
+	// Test get pivot table with unsupported pivot table cache source type
+	f, err = OpenFile(filepath.Join("test", "TestAddPivotTable1.xlsx"))
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/pivotCache/pivotCacheDefinition1.xml", fmt.Appendf(nil, `<pivotCacheDefinition  xmlns="%s"><cacheSource type="external" connectionId="1"/></pivotCacheDefinition>`, NameSpaceSpreadSheet.Value))
+	_, err = f.GetPivotTables("Sheet1")
+	assert.Equal(t, err, newUnsupportedPivotCacheSourceType("external"))
+	assert.NoError(t, f.Close())
 }
 
 func TestPivotTableDataRange(t *testing.T) {
