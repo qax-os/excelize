@@ -416,6 +416,8 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 		}
 	}
 	pic.SpPr.PrstGeom.Prst = "rect"
+	pic.SpPr.Xfrm.Ext.Cx = width * EMU
+	pic.SpPr.Xfrm.Ext.Cy = height * EMU
 
 	if opts.Positioning == "oneCell" {
 		cx := x2 * EMU
@@ -484,7 +486,10 @@ func (f *File) addMedia(file []byte, ext string) string {
 // GetPictures provides a function to get picture meta info and raw content
 // embed in spreadsheet by given worksheet and cell name. This function
 // returns the image contents as []byte data types. This function is
-// concurrency safe. For example:
+// concurrency safe. Note that this function currently does not support
+// retrieving all properties from the image's Format property, and the value of
+// the ScaleX and ScaleY property may be an approximate precision value in some
+// cases. For example:
 //
 //	f, err := excelize.OpenFile("Book1.xlsx")
 //	if err != nil {
@@ -634,27 +639,14 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	defer wsDr.mu.Unlock()
 	cond := func(from *xlsxFrom) bool { return from.Col == col && from.Row == row }
 	cond2 := func(from *decodeFrom) bool { return from.Col == col && from.Row == row }
-	cb := func(a *xdrCellAnchor, r *xlsxRelationship) {
-		pic := Picture{Extension: filepath.Ext(r.Target), Format: &GraphicOptions{}, InsertType: PictureInsertTypePlaceOverCells}
-		if buffer, _ := f.Pkg.Load(filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))); buffer != nil {
-			pic.File = buffer.([]byte)
-			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
-			pics = append(pics, pic)
+	cb := func(a *xdrCellAnchor, r *xlsxRelationship, drawingRelationships string) {
+		if pic := f.extractPictureFromAnchor(drawingRelationships, a, r); pic != nil {
+			pics = append(pics, *pic)
 		}
 	}
-	cb2 := func(a *decodeCellAnchor, r *xlsxRelationship) {
-		var target string
-		if strings.HasPrefix(r.Target, "/") {
-			target = strings.TrimPrefix(r.Target, "/")
-		} else {
-			target = filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))
-		}
-
-		pic := Picture{Extension: filepath.Ext(target), Format: &GraphicOptions{}, InsertType: PictureInsertTypePlaceOverCells}
-		if buffer, _ := f.Pkg.Load(target); buffer != nil {
-			pic.File = buffer.([]byte)
-			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
-			pics = append(pics, pic)
+	cb2 := func(a *decodeCellAnchor, r *xlsxRelationship, drawingRelationships string) {
+		if pic := f.extractPictureFromDecodeAnchor(drawingRelationships, a, r); pic != nil {
+			pics = append(pics, *pic)
 		}
 	}
 	for _, anchor := range wsDr.TwoCellAnchor {
@@ -666,12 +658,116 @@ func (f *File) getPicture(row, col int, drawingXML, drawingRelationships string)
 	return
 }
 
+// extractPictureFromAnchor extracts picture data from a cell anchor and
+// relationship.
+func (f *File) extractPictureFromAnchor(drawingRelationships string, a *xdrCellAnchor, r *xlsxRelationship) *Picture {
+	var (
+		cx, cy int
+		pic    *Picture
+	)
+	if buffer, _ := f.Pkg.Load(filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))); buffer != nil {
+		pic = &Picture{
+			Extension: filepath.Ext(r.Target),
+			File:      buffer.([]byte),
+			Format:    &GraphicOptions{ScaleX: defaultDrawingScale, ScaleY: defaultDrawingScale},
+		}
+		if a.ClientData != nil {
+			pic.Format.Locked = &a.ClientData.FLocksWithSheet
+			pic.Format.PrintObject = &a.ClientData.FPrintsWithSheet
+		}
+		if a.To == nil {
+			pic.Format.Positioning = "oneCell"
+		}
+		if a.Pic != nil {
+			cx, cy = a.Pic.SpPr.Xfrm.Ext.Cx, a.Pic.SpPr.Xfrm.Ext.Cy
+			if a.From != nil {
+				pic.Format.OffsetX = int(a.From.ColOff / EMU)
+				pic.Format.OffsetY = int(a.From.RowOff / EMU)
+			}
+			pic.Format.LockAspectRatio = a.Pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect
+			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
+			if a.Pic.NvPicPr.CNvPr.HlinkClick != nil {
+				if drawRel := f.getDrawingRelationships(drawingRelationships, a.Pic.NvPicPr.CNvPr.HlinkClick.RID); drawRel != nil {
+					pic.Format.Hyperlink = drawRel.Target
+					pic.Format.HyperlinkType = "Location"
+					if drawRel.TargetMode == "External" {
+						pic.Format.HyperlinkType = "External"
+					}
+				}
+			}
+		}
+		f.calculatePictureScale(pic, cx, cy)
+	}
+	return pic
+}
+
+// calculatePictureScale calculates and sets the scale factors for a picture.
+func (f *File) calculatePictureScale(pic *Picture, cx, cy int) {
+	imgCfg, _, err := image.DecodeConfig(bytes.NewReader(pic.File))
+	if err != nil || imgCfg.Width <= 0 || imgCfg.Height <= 0 || cx <= 0 || cy <= 0 {
+		return
+	}
+	pic.Format.ScaleX = float64(cx) / float64(EMU) / float64(imgCfg.Width)
+	pic.Format.ScaleY = float64(cy) / float64(EMU) / float64(imgCfg.Height)
+}
+
+// extractPictureFromDecodeAnchor extracts picture data from a decoded cell
+// anchor and relationship.
+func (f *File) extractPictureFromDecodeAnchor(drawingRelationships string, a *decodeCellAnchor, r *xlsxRelationship) *Picture {
+	var (
+		cx, cy int
+		pic    *Picture
+		target string
+	)
+	if strings.HasPrefix(r.Target, "/") {
+		target = strings.TrimPrefix(r.Target, "/")
+	} else {
+		target = filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))
+	}
+	if buffer, _ := f.Pkg.Load(target); buffer != nil {
+		pic = &Picture{
+			Extension: filepath.Ext(target),
+			File:      buffer.([]byte),
+			Format:    &GraphicOptions{ScaleX: defaultDrawingScale, ScaleY: defaultDrawingScale},
+		}
+		if a.ClientData != nil {
+			pic.Format.Locked = &a.ClientData.FLocksWithSheet
+			pic.Format.PrintObject = &a.ClientData.FPrintsWithSheet
+		}
+		if a.To == nil {
+			pic.Format.Positioning = "oneCell"
+		}
+		if a.Pic != nil {
+			cx, cy = a.Pic.SpPr.Xfrm.Ext.Cx, a.Pic.SpPr.Xfrm.Ext.Cy
+			if a.From != nil {
+				pic.Format.OffsetX = int(a.From.ColOff / EMU)
+				pic.Format.OffsetY = int(a.From.RowOff / EMU)
+			}
+			pic.Format.LockAspectRatio = a.Pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect
+			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
+			if a.Pic.NvPicPr.CNvPr.HlinkClick != nil {
+				if drawRel := f.getDrawingRelationships(drawingRelationships, a.Pic.NvPicPr.CNvPr.HlinkClick.RID); drawRel != nil {
+					pic.Format.Hyperlink = drawRel.Target
+					pic.Format.HyperlinkType = "Location"
+					if drawRel.TargetMode == "External" {
+						pic.Format.HyperlinkType = "External"
+					}
+				}
+			}
+		}
+		f.calculatePictureScale(pic, cx, cy)
+	}
+	return pic
+}
+
 // extractCellAnchor extract drawing object from cell anchor by giving drawing
 // cell anchor, drawing relationships part path, conditional and callback
 // function.
 func (f *File) extractCellAnchor(anchor *xdrCellAnchor, drawingRelationships string,
-	cond func(from *xlsxFrom) bool, cb func(anchor *xdrCellAnchor, rels *xlsxRelationship),
-	cond2 func(from *decodeFrom) bool, cb2 func(anchor *decodeCellAnchor, rels *xlsxRelationship),
+	cond func(from *xlsxFrom) bool,
+	cb func(anchor *xdrCellAnchor, rels *xlsxRelationship, drawingRelationships string),
+	cond2 func(from *decodeFrom) bool,
+	cb2 func(anchor *decodeCellAnchor, rels *xlsxRelationship, drawingRelationships string),
 ) {
 	var drawRel *xlsxRelationship
 	if anchor.GraphicFrame == "" {
@@ -680,7 +776,7 @@ func (f *File) extractCellAnchor(anchor *xdrCellAnchor, drawingRelationships str
 				if drawRel = f.getDrawingRelationships(drawingRelationships,
 					anchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
 					if _, ok := supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
-						cb(anchor, drawRel)
+						cb(anchor, drawRel, drawingRelationships)
 					}
 				}
 			}
@@ -694,7 +790,7 @@ func (f *File) extractCellAnchor(anchor *xdrCellAnchor, drawingRelationships str
 // decoded drawing cell anchor, drawing relationships part path, conditional and
 // callback function.
 func (f *File) extractDecodeCellAnchor(anchor *xdrCellAnchor, drawingRelationships string,
-	cond func(from *decodeFrom) bool, cb func(anchor *decodeCellAnchor, rels *xlsxRelationship),
+	cond func(from *decodeFrom) bool, cb func(anchor *decodeCellAnchor, rels *xlsxRelationship, drawingRelationships string),
 ) {
 	var (
 		drawRel      *xlsxRelationship
@@ -705,7 +801,7 @@ func (f *File) extractDecodeCellAnchor(anchor *xdrCellAnchor, drawingRelationshi
 		if cond(deCellAnchor.From) {
 			if drawRel = f.getDrawingRelationships(drawingRelationships, deCellAnchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
 				if _, ok := supportedImageTypes[strings.ToLower(filepath.Ext(drawRel.Target))]; ok {
-					cb(deCellAnchor, drawRel)
+					cb(deCellAnchor, drawRel, drawingRelationships)
 				}
 			}
 		}
@@ -800,14 +896,14 @@ func (f *File) getPictureCells(drawingXML, drawingRelationships string) ([]strin
 	defer wsDr.mu.Unlock()
 	cond := func(from *xlsxFrom) bool { return true }
 	cond2 := func(from *decodeFrom) bool { return true }
-	cb := func(a *xdrCellAnchor, r *xlsxRelationship) {
+	cb := func(a *xdrCellAnchor, r *xlsxRelationship, drawingRelationships string) {
 		if _, ok := f.Pkg.Load(filepath.ToSlash(filepath.Clean("xl/drawings/" + r.Target))); ok {
 			if cell, err := CoordinatesToCellName(a.From.Col+1, a.From.Row+1); err == nil && inStrSlice(cells, cell, true) == -1 {
 				cells = append(cells, cell)
 			}
 		}
 	}
-	cb2 := func(a *decodeCellAnchor, r *xlsxRelationship) {
+	cb2 := func(a *decodeCellAnchor, r *xlsxRelationship, drawingRelationships string) {
 		var target string
 		if strings.HasPrefix(r.Target, "/") {
 			target = strings.TrimPrefix(r.Target, "/")
