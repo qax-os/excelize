@@ -39,7 +39,7 @@ func TestAddPicture(t *testing.T) {
 	opts := []GraphicOptions{
 		{Hyperlink: "#Sheet2!D8", HyperlinkType: "Location"},
 		{OffsetX: 10, OffsetY: 10, ScaleX: 0.5, ScaleY: 0.5, Hyperlink: "https://github.com/xuri/excelize", HyperlinkType: "External", Positioning: "oneCell"},
-		{OffsetX: 10, OffsetY: 10, ScaleX: 1.5, ScaleY: 1.5, Hyperlink: "https://github.com/xuri/excelize", HyperlinkType: "External"},
+		{OffsetX: 10, OffsetY: 10, ScaleX: 0.88, ScaleY: 0.88, Hyperlink: "https://github.com/xuri/excelize", HyperlinkType: "External"},
 		{PrintObject: boolPtr(true), Locked: boolPtr(true), OffsetX: 200, ScaleX: 1, ScaleY: 1, Positioning: "oneCell"},
 		{PrintObject: boolPtr(true), Locked: boolPtr(true), AltText: "Excel Logo", LockAspectRatio: true, ScaleX: 1, ScaleY: 1},
 	}

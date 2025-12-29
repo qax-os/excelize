@@ -669,8 +669,13 @@ func (f *File) getColWidth(sheet string, col int) int {
 			return int(convertColWidthToPixels(width))
 		}
 	}
-	if ws.SheetFormatPr != nil && ws.SheetFormatPr.DefaultColWidth > 0 {
-		return int(convertColWidthToPixels(ws.SheetFormatPr.DefaultColWidth))
+	if ws.SheetFormatPr != nil {
+		if ws.SheetFormatPr.DefaultColWidth > 0 {
+			return int(convertColWidthToPixels(ws.SheetFormatPr.DefaultColWidth))
+		}
+		if ws.SheetFormatPr.BaseColWidth > 0 {
+			return int(convertColWidthToPixels(float64(ws.SheetFormatPr.BaseColWidth))) + 5
+		}
 	}
 	// Optimization for when the column widths haven't changed.
 	return int(defaultColWidthPixels)
@@ -730,8 +735,13 @@ func (f *File) GetColWidth(sheet, col string) (float64, error) {
 			return width, err
 		}
 	}
-	if ws.SheetFormatPr != nil && ws.SheetFormatPr.DefaultColWidth > 0 {
-		return ws.SheetFormatPr.DefaultColWidth, err
+	if ws.SheetFormatPr != nil {
+		if ws.SheetFormatPr.DefaultColWidth > 0 {
+			return ws.SheetFormatPr.DefaultColWidth, err
+		}
+		if ws.SheetFormatPr.BaseColWidth > 0 {
+			return float64(ws.SheetFormatPr.BaseColWidth), err
+		}
 	}
 	// Optimization for when the column widths haven't changed.
 	return defaultColWidth, err
