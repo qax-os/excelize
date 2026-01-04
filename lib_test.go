@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -95,12 +96,12 @@ func TestColumnNumberToName_OK(t *testing.T) {
 func TestColumnNumberToName_Error(t *testing.T) {
 	out, err := ColumnNumberToName(-1)
 	if assert.Error(t, err) {
-		assert.Equal(t, "", out)
+		assert.Empty(t, out)
 	}
 
 	out, err = ColumnNumberToName(0)
 	if assert.Error(t, err) {
-		assert.Equal(t, "", out)
+		assert.Empty(t, out)
 	}
 
 	_, err = ColumnNumberToName(MaxColumns + 1)
@@ -353,6 +354,28 @@ func TestBstrMarshal(t *testing.T) {
 	}
 }
 
+func TestTruncateUTF16Units(t *testing.T) {
+	assertTrunc := func(s string, max int, expected string) {
+		assert.Equal(t, expected, truncateUTF16Units(s, max), "src=%q max=%d", s, max)
+		assert.LessOrEqual(t, countUTF16String(truncateUTF16Units(s, max)), max)
+	}
+	// No truncation
+	assertTrunc("ABC", 3, "ABC")
+	assertTrunc("A\U0001F600B", 4, "A\U0001F600B")
+	// Truncate cutting before BMP rune
+	assertTrunc("ABCDE", 3, "ABC")
+	// Truncate with surrogate pair boundary: keep pair intact
+	assertTrunc("A\U0001F600B", 3, "A\U0001F600") // 1 + 2 units
+	assertTrunc("A\U0001F600B", 2, "A")           // pair would overflow
+	assertTrunc("\U0001F600B", 1, "")             // first rune (2 units) exceeds limit
+	assertTrunc("\U0001F600B", 2, "\U0001F600")   // exact fit
+	assertTrunc("\U0001F600B", 3, "\U0001F600B")  // allow extra
+	// Multiple surrogate pairs
+	assertTrunc("\U0001F600\U0001F600B", 2, "\U0001F600")           // corrected expectation per logic
+	assertTrunc("\U0001F600\U0001F600B", 3, "\U0001F600")           // 2 units kept, next pair would exceed
+	assertTrunc("\U0001F600\U0001F600B", 4, "\U0001F600\U0001F600") // both pairs (4 units)
+}
+
 func TestReadBytes(t *testing.T) {
 	f := &File{tempFiles: sync.Map{}}
 	sheet := "xl/worksheets/sheet1.xml"
@@ -389,4 +412,11 @@ func TestUnzipToTemp(t *testing.T) {
 
 	_, err = f.unzipToTemp(z.File[0])
 	assert.EqualError(t, err, "EOF")
+}
+
+func TestFloat2Frac(t *testing.T) {
+	assert.Empty(t, floatToFraction(0.19, 0, 0))
+	assert.Equal(t, "1/5", floatToFraction(0.19, 1, 1))
+	assert.Equal(t, "9999/10000", strings.Trim(floatToFraction(0.9999, 10, 10), " "))
+	assert.Equal(t, "954888175898973913/351283728530932463", floatToFraction(math.E, 1, 18))
 }

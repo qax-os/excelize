@@ -563,7 +563,7 @@ func TestGetValueFrom(t *testing.T) {
 	assert.NoError(t, err)
 	value, err := c.getValueFrom(f, sst, false)
 	assert.NoError(t, err)
-	assert.Equal(t, "", value)
+	assert.Empty(t, value)
 
 	c = xlsxC{T: "s", V: " 1 "}
 	value, err = c.getValueFrom(f, &xlsxSST{Count: 1, SI: []xlsxSI{{}, {T: &xlsxT{Val: "s"}}}}, false)
@@ -591,13 +591,19 @@ func TestGetCellFormula(t *testing.T) {
 	sheetData := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1"><v>1</v></c><c r="B1"><f>2*A1</f></c></row><row r="2"><c r="A2"><v>2</v></c><c r="B2"><f t="shared" ref="B2:B7" si="0">%s</f></c></row><row r="3"><c r="A3"><v>3</v></c><c r="B3"><f t="shared" si="0"/></c></row><row r="4"><c r="A4"><v>4</v></c><c r="B4"><f t="shared" si="0"/></c></row><row r="5"><c r="A5"><v>5</v></c><c r="B5"><f t="shared" si="0"/></c></row><row r="6"><c r="A6"><v>6</v></c><c r="B6"><f t="shared" si="0"/></c></row><row r="7"><c r="A7"><v>7</v></c><c r="B7"><f t="shared" si="0"/></c></row></sheetData></worksheet>`
 
 	for sharedFormula, expected := range map[string]string{
-		`2*A2`:           `2*A3`,
-		`2*A1A`:          `2*A2A`,
-		`2*$A$2+LEN("")`: `2*$A$2+LEN("")`,
+		`2*A2`:                 `2*A3`,
+		`2*A1A`:                `2*A1A`,
+		`2*$A$2+LEN("")`:       `2*$A$2+LEN("")`,
+		`SUMIF(A:A,$B11, 5:5)`: `SUMIF(A:A,$B12,6:6)`,
+		`SUMIF(A:A,B$11, 5:5)`: `SUMIF(A:A,B$11,6:6)`,
 	} {
 		f.Sheet.Delete("xl/worksheets/sheet1.xml")
 		f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, sharedFormula)))
 		formula, err := f.GetCellFormula("Sheet1", "B3")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, formula)
+		// Test get shared formula form cache
+		formula, err = f.GetCellFormula("Sheet1", "B3")
 		assert.NoError(t, err)
 		assert.Equal(t, expected, formula)
 	}
@@ -606,7 +612,7 @@ func TestGetCellFormula(t *testing.T) {
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="2"><c r="B2"><f t="shared" si="0"></f></c></row></sheetData></worksheet>`))
 	formula, err := f.GetCellFormula("Sheet1", "B2")
 	assert.NoError(t, err)
-	assert.Equal(t, "", formula)
+	assert.Empty(t, formula)
 
 	// Test get array formula with invalid cell range reference
 	f = NewFile()
@@ -626,6 +632,81 @@ func TestGetCellFormula(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.Pkg.Store("xl/worksheets/sheet1.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.setArrayFormulaCells(), "XML syntax error on line 1: invalid UTF-8")
+
+	// Test get shared formula after updated refer cell formula, the shared
+	// formula cell reference range covered the previous.
+	f = NewFile()
+	formulaType, ref = STCellFormulaTypeShared, "C2:C6"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	formula, err = f.GetCellFormula("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2+B2", formula)
+	formula, err = f.GetCellFormula("Sheet1", "C6")
+	assert.NoError(t, err)
+	assert.Equal(t, "A6+B6", formula)
+
+	formulaType, ref = STCellFormulaTypeShared, "C2:C8"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	formula, err = f.GetCellFormula("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2*B2", formula)
+	formula, err = f.GetCellFormula("Sheet1", "C8")
+	assert.NoError(t, err)
+	assert.Equal(t, "A8*B8", formula)
+	assert.NoError(t, f.Close())
+
+	// Test get shared formula after updated refer cell formula, the shared
+	// formula cell reference range not over the previous.
+	f = NewFile()
+	formulaType, ref = STCellFormulaTypeShared, "C2:C6"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	formula, err = f.GetCellFormula("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2+B2", formula)
+	formula, err = f.GetCellFormula("Sheet1", "C6")
+	assert.NoError(t, err)
+	assert.Equal(t, "A6+B6", formula)
+
+	formulaType, ref = STCellFormulaTypeShared, "C2:C4"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	formula, err = f.GetCellFormula("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2*B2", formula)
+	formula, err = f.GetCellFormula("Sheet1", "C6")
+	assert.NoError(t, err)
+	assert.Empty(t, formula)
+
+	// Test get shared formula after remove refer cell formula
+	f = NewFile()
+	formulaType, ref = STCellFormulaTypeShared, "C2:C6"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "A2+B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", ""))
+
+	formula, err = f.GetCellFormula("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Empty(t, formula)
+	formula, err = f.GetCellFormula("Sheet1", "C6")
+	assert.NoError(t, err)
+	assert.Empty(t, formula)
+
+	formulaType, ref = STCellFormulaTypeShared, "C2:C8"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "A2*B2", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	formula, err = f.GetCellFormula("Sheet1", "C2")
+	assert.NoError(t, err)
+	assert.Equal(t, "A2*B2", formula)
+	formula, err = f.GetCellFormula("Sheet1", "C8")
+	assert.NoError(t, err)
+	assert.Equal(t, "A8*B8", formula)
+	assert.NoError(t, f.Close())
+}
+
+func TestConvertSharedFormula(t *testing.T) {
+	c := xlsxC{R: "A"}
+	_, err := c.convertSharedFormula("A")
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), err)
+	_, err = c.convertSharedFormula("A1")
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), err)
 }
 
 func ExampleFile_SetCellFloat() {
@@ -710,16 +791,16 @@ func TestSetCellFormula(t *testing.T) {
 		assert.NoError(t, f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", r), &[]interface{}{r, r + 1}))
 	}
 	formulaType, ref := STCellFormulaTypeShared, "C1:C5"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=A1+B1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "A1+B1", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	sharedFormulaSpreadsheet := filepath.Join("test", "TestSetCellFormula4.xlsx")
 	assert.NoError(t, f.SaveAs(sharedFormulaSpreadsheet))
 
 	f, err = OpenFile(sharedFormulaSpreadsheet)
 	assert.NoError(t, err)
 	ref = "D1:D5"
-	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	ref = ""
-	assert.Equal(t, ErrParameterInvalid, f.SetCellFormula("Sheet1", "D1", "=A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+	assert.Equal(t, ErrParameterInvalid, f.SetCellFormula("Sheet1", "D1", "A1+C1", FormulaOpts{Ref: &ref, Type: &formulaType}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula5.xlsx")))
 
 	// Test set table formula for the cells
@@ -729,7 +810,7 @@ func TestSetCellFormula(t *testing.T) {
 	}
 	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:C2", Name: "Table1", StyleName: "TableStyleMedium2"}))
 	formulaType = STCellFormulaTypeDataTable
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "=SUM(Table1[[A]:[B]])", FormulaOpts{Type: &formulaType}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C2", "SUM(Table1[[A]:[B]])", FormulaOpts{Type: &formulaType}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetCellFormula6.xlsx")))
 
 	// Test set array formula with invalid cell range reference
@@ -930,6 +1011,7 @@ func TestSetCellRichText(t *testing.T) {
 	}
 	assert.NoError(t, f.SetCellRichText("Sheet1", "A1", richTextRun))
 	assert.NoError(t, f.SetCellRichText("Sheet1", "A2", richTextRun))
+	assert.NoError(t, f.SetCellRichText("Sheet1", "A3", []RichTextRun{{Text: strings.Repeat("\u4e00", TotalCellChars)}}))
 	style, err := f.NewStyle(&Style{
 		Alignment: &Alignment{
 			WrapText: true,
@@ -1097,6 +1179,9 @@ func TestSharedStringsError(t *testing.T) {
 	assert.True(t, ok)
 	f.tempFiles.Store(defaultXMLPathSharedStrings, "")
 	assert.Equal(t, "1", f.getFromStringItem(1))
+	// Test get from string item with invalid offset range
+	f.sharedStringItem = [][]uint{{0}}
+	assert.Equal(t, "0", f.getFromStringItem(0))
 	// Cleanup undelete temporary files
 	assert.NoError(t, os.Remove(tempFile.(string)))
 	// Test reload the file error on set cell value and rich text. The error message was different between macOS and Windows
@@ -1183,4 +1268,15 @@ func TestSetCellIntFunc(t *testing.T) {
 
 func TestSIString(t *testing.T) {
 	assert.Empty(t, xlsxSI{}.String())
+}
+
+func TestGetCellStringFunc(t *testing.T) {
+	f := NewFile()
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetData.Row = []xlsxRow{{R: 2}}
+	val, err := f.GetCellValue("Sheet1", "A1")
+	assert.Empty(t, val)
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
 }
