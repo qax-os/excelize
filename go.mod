@@ -3,7 +3,7 @@ module github.com/xuri/excelize/v2
 go 1.24.0
 
 require (
-	github.com/richardlehane/mscfb v1.0.4
+	github.com/richardlehane/mscfb v1.0.5
 	github.com/stretchr/testify v1.11.1
 	github.com/tiendc/go-deepcopy v1.7.2
 	github.com/xuri/efp v0.0.1

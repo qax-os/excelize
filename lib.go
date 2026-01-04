@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -876,23 +876,23 @@ func floatToFraction(x float64, numeratorPlaceHolder, denominatorPlaceHolder int
 // floatToFracUseContinuedFraction implement convert a floating-point decimal
 // to a fraction using continued fractions and recurrence relations.
 func floatToFracUseContinuedFraction(r float64, denominatorLimit int64) (num, den int64) {
-	p_1 := int64(1) // LaTex: p_{-1}
-	q_1 := int64(0) // LaTex: q_{-1}
-	p_2 := int64(0) // LaTex: p_{-2}
-	q_2 := int64(1) // LaTex: q_{-2}
+	p1 := int64(1) // LaTex: p_{-1}
+	q1 := int64(0) // LaTex: q_{-1}
+	p2 := int64(0) // LaTex: p_{-2}
+	q2 := int64(1) // LaTex: q_{-2}
 	var lasta, lastb int64
 	var curra, currb int64
 	for k := 0; ; k++ {
 		// a_{k} = \lfloor r_{k} \rfloor
 		a := int64(math.Floor(r))
 		// Fundamental recurrence formulas:  p_{k} = a_{k} \cdot p_{k-1} + p_{k-2}
-		curra, currb = a*p_1+p_2, a*q_1+q_2
-		p_2 = p_1
-		q_2 = q_1
-		p_1 = curra
-		q_1 = currb
+		curra, currb = a*p1+p2, a*q1+q2
+		p2 = p1
+		q2 = q1
+		p1 = curra
+		q1 = currb
 		frac := r - float64(a)
-		if q_1 >= denominatorLimit {
+		if q1 >= denominatorLimit {
 			return lasta, lastb
 		}
 		if math.Abs(frac) < 1e-12 {

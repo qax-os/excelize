@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -435,6 +435,31 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 	return sw.rawData.Sync()
 }
 
+// SetColVisible provides a function set the visibility of a single column or
+// multiple columns for the StreamWriter. Note that you must call the
+// 'SetColVisible' function before the 'SetRow' function.
+//
+// For example hide column D on Sheet1:
+//
+//	err := sw.SetColVisible(4, 4, false)
+//
+// Hide the columns from D to F (included):
+//
+//	err := sw.SetColVisible(4, 6, false)
+func (sw *StreamWriter) SetColVisible(minVal, maxVal int, visible bool) error {
+	if sw.sheetWritten {
+		return ErrStreamSetColVisible
+	}
+	if minVal < MinColumns || minVal > MaxColumns || maxVal < MinColumns || maxVal > MaxColumns {
+		return ErrColumnNumber
+	}
+	if minVal > maxVal {
+		minVal, maxVal = maxVal, minVal
+	}
+	sw.worksheet.setColVisible(minVal, maxVal, visible)
+	return nil
+}
+
 // SetColStyle provides a function to set the style of a single column or
 // multiple columns for the StreamWriter. Note that you must call
 // the 'SetColStyle' function before the 'SetRow' function. For example set
@@ -681,6 +706,9 @@ func (sw *StreamWriter) writeSheetData() {
 					sw.rawData.WriteString(` style="`)
 					sw.rawData.WriteString(strconv.Itoa(col.Style))
 					sw.rawData.WriteString(`"`)
+				}
+				if col.Hidden {
+					sw.rawData.WriteString(` hidden="true"`)
 				}
 				sw.rawData.WriteString(`/>`)
 			}

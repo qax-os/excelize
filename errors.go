@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -136,6 +136,9 @@ var (
 	// ErrSparklineType defined the error message on receive the invalid
 	// sparkline Type parameters.
 	ErrSparklineType = errors.New("parameter 'Type' value must be one of 'line', 'column' or 'win_loss'")
+	// ErrStreamSetColVisible defined the error message on set columns
+	// visibility in stream writing mode.
+	ErrStreamSetColVisible = errors.New("must call the SetColVisible function before the SetRow function")
 	// ErrStreamSetColStyle defined the error message on set column style in
 	// stream writing mode.
 	ErrStreamSetColStyle = errors.New("must call the SetColStyle function before the SetRow function")
