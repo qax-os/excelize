@@ -708,7 +708,7 @@ func (sw *StreamWriter) writeSheetData() {
 					sw.rawData.WriteString(`"`)
 				}
 				if col.Hidden {
-					sw.rawData.WriteString(` hidden="true"`)
+					sw.rawData.WriteString(` hidden="1"`)
 				}
 				sw.rawData.WriteString(`/>`)
 			}
