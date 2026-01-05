@@ -189,7 +189,13 @@ func TestAddChart(t *testing.T) {
 		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Line: ChartLine{Dash: ChartDashDash, Width: 0.25}},
 	}
 	series3 := []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}
-	series4 := []ChartSeries{
+	series4 := []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37", DataPoint: []ChartDataPoint{
+		{Index: 0, Fill: Fill{Type: "pattern", Color: []string{"003F5C"}, Pattern: 1}},
+		{Index: 1, Fill: Fill{Type: "pattern", Color: []string{"58508D"}, Pattern: 1}},
+		{Index: 2, Fill: Fill{Type: "pattern", Color: []string{"BC5090"}, Pattern: 1}},
+		{Index: 3, Fill: Fill{Type: "pattern", Color: []string{"FF6361"}, Pattern: 1}},
+	}}}
+	series5 := []ChartSeries{
 		{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30", Sizes: "Sheet1!$B$30:$D$30", DataLabelPosition: ChartDataLabelsPositionAbove},
 		{Name: "Sheet1!$A$31", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$31:$D$31", Sizes: "Sheet1!$B$31:$D$31", DataLabelPosition: ChartDataLabelsPositionLeft},
 		{Name: "Sheet1!$A$32", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$32:$D$32", Sizes: "Sheet1!$B$32:$D$32", DataLabelPosition: ChartDataLabelsPositionBestFit},
@@ -248,7 +254,7 @@ func TestAddChart(t *testing.T) {
 		{sheetName: "Sheet2", cell: "P16", opts: &Chart{Type: Doughnut, Series: series3, Format: format, Legend: ChartLegend{Position: "right", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Doughnut Chart"}}, PlotArea: ChartPlotArea{ShowBubbleSize: false, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false}, ShowBlanksAs: "zero", HoleSize: 30}},
 		{sheetName: "Sheet2", cell: "X16", opts: &Chart{Type: Line, Series: series2, Format: format, Legend: ChartLegend{Position: "top", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Line Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, TickLabelSkip: 1, TickLabelPosition: ChartTickLabelLow}, YAxis: ChartAxis{MajorGridLines: true, MinorGridLines: true, MajorUnit: 1}}},
 		{sheetName: "Sheet2", cell: "P32", opts: &Chart{Type: Pie3D, Series: series3, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "3D Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
-		{sheetName: "Sheet2", cell: "X32", opts: &Chart{Type: Pie, Series: series3, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Pie Chart"}}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false, NumFmt: ChartNumFmt{CustomNumFmt: "0.00%;0;;"}}, ShowBlanksAs: "gap"}},
+		{sheetName: "Sheet2", cell: "X32", opts: &Chart{Type: Pie, Series: series4, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false}, Title: []RichTextRun{{Text: "Pie Chart"}}, PlotArea: ChartPlotArea{ShowBubbleSize: true, ShowCatName: false, ShowLeaderLines: false, ShowPercent: true, ShowSerName: false, ShowVal: false, NumFmt: ChartNumFmt{CustomNumFmt: "0.00%;0;;"}}, ShowBlanksAs: "gap"}},
 		// bar series chart
 		{sheetName: "Sheet2", cell: "P48", opts: &Chart{Type: Bar, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Clustered Bar Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet2", cell: "X48", opts: &Chart{Type: BarStacked, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Stacked Bar Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
@@ -280,8 +286,8 @@ func TestAddChart(t *testing.T) {
 		{sheetName: "Sheet2", cell: "AV32", opts: &Chart{Type: Contour, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Contour Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet2", cell: "BD1", opts: &Chart{Type: WireframeContour, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Wireframe Contour Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		// bubble chart
-		{sheetName: "Sheet2", cell: "BD16", opts: &Chart{Type: Bubble, Series: series4, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", BubbleSize: 75}},
-		{sheetName: "Sheet2", cell: "BD32", opts: &Chart{Type: Bubble3D, Series: series4, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble 3D Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
+		{sheetName: "Sheet2", cell: "BD16", opts: &Chart{Type: Bubble, Series: series5, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", BubbleSize: 75}},
+		{sheetName: "Sheet2", cell: "BD32", opts: &Chart{Type: Bubble3D, Series: series5, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble 3D Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
 		// pie of pie chart
 		{sheetName: "Sheet2", cell: "BD48", opts: &Chart{Type: PieOfPie, Series: series3, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Pie of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}},
 		// bar of pie chart
@@ -312,17 +318,128 @@ func TestAddChart(t *testing.T) {
 	// Test with illegal cell reference
 	assert.EqualError(t, f.AddChart("Sheet2", "A", &Chart{Type: Col, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	// Test with unsupported chart type
-	assert.EqualError(t, f.AddChart("Sheet2", "BD32", &Chart{Type: 0x37, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble 3D Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}), newUnsupportedChartType(0x37).Error())
+	assert.EqualError(t, f.AddChart("Sheet2", "BD32", &Chart{Type: 0x39, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bubble 3D Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}), newUnsupportedChartType(0x39).Error())
 	// Test add combo chart with invalid format set
 	assert.EqualError(t, f.AddChart("Sheet2", "BD32", &Chart{Type: Col, Series: series, Format: format, Legend: legend, Title: []RichTextRun{{Text: "2D Column Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero"}, nil), ErrParameterInvalid.Error())
 	// Test add combo chart with unsupported chart type
-	assert.EqualError(t, f.AddChart("Sheet2", "BD64", &Chart{Type: BarOfPie, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bar of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}, &Chart{Type: 0x37, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bar of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}), newUnsupportedChartType(0x37).Error())
+	assert.EqualError(t, f.AddChart("Sheet2", "BD64", &Chart{Type: BarOfPie, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bar of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}, &Chart{Type: 0x39, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}, Format: format, Legend: legend, Title: []RichTextRun{{Text: "Bar of Pie Chart"}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{MajorGridLines: true}, YAxis: ChartAxis{MajorGridLines: true}}), newUnsupportedChartType(0x39).Error())
+	// Test add chart with series transparency value exceeds limit
+	assert.Equal(t, ErrTransparency, f.AddChart("Sheet1", "BD64", &Chart{Type: Col, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30", Fill: Fill{Transparency: 110}}}}))
+	// Test add chart with transparency value exceeds limit
+	assert.Equal(t, ErrTransparency, f.AddChart("Sheet1", "BD64", &Chart{Type: Col, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"}}, Fill: Fill{Transparency: -1}}))
 	assert.NoError(t, f.Close())
 
 	// Test add chart with unsupported charset content types.
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.AddChart("Sheet1", "P1", &Chart{Type: Col, Series: []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"}}, Title: []RichTextRun{{Text: "2D Column Chart"}}}), "XML syntax error on line 1: invalid UTF-8")
+
+	t.Run("for_create_stock_chart", func(t *testing.T) {
+		f := NewFile()
+		for i, row := range [][]interface{}{
+			{"Date", "Volume", "Open", "High", "Low", "Close"},
+			{45593, 14864000, 431.66, 431.94, 426.3, 426.59},
+			{45590, 16899100, 426.76, 432.52, 426.57, 428.15},
+			{45589, 13581600, 425.33, 425.98, 422.4, 424.73},
+			{45588, 19654400, 430.86, 431.08, 422.53, 424.6},
+			{45587, 25482200, 418.49, 430.58, 418.04, 427.51},
+			{45586, 14206100, 416.12, 418.96, 413.75, 418.78},
+			{45583, 17145300, 417.14, 419.65, 416.26, 418.16},
+			{45582, 14820000, 422.36, 422.5, 415.59, 416.72},
+			{45581, 15508900, 415.17, 416.36, 410.48, 416.12},
+			{45580, 18900200, 422.18, 422.48, 415.26, 418.74},
+			{45579, 16653100, 417.77, 424.04, 417.52, 419.14},
+			{45576, 14144900, 416.14, 417.13, 413.25, 416.32},
+			{45575, 13848400, 415.23, 417.35, 413.15, 415.84},
+			{45574, 14974300, 415.86, 420.38, 414.3, 417.46},
+			{45573, 19229300, 410.9, 415.66, 408.17, 414.71},
+			{45572, 20919800, 416, 417.11, 409, 409.54},
+			{45569, 19169700, 418.24, 419.75, 414.97, 416.06},
+			{45568, 13686400, 417.63, 419.55, 414.29, 416.54},
+			{45567, 16582300, 422.58, 422.82, 416.71, 417.13},
+			{45566, 19092900, 428.45, 428.48, 418.81, 420.69},
+			{45565, 16807300, 428.21, 430.42, 425.37, 430.3},
+		} {
+			cell, err := CoordinatesToCellName(1, i+1)
+			assert.NoError(t, err)
+			assert.NoError(t, f.SetSheetRow("Sheet1", cell, &row))
+		}
+		style, err := f.NewStyle(&Style{NumFmt: 15})
+		assert.NoError(t, err)
+		assert.NoError(t, f.SetColStyle("Sheet1", "A", style))
+
+		assert.NoError(t, f.AddChart("Sheet1", "G1", &Chart{
+			Type: StockHighLowClose,
+			Series: []ChartSeries{
+				{Name: "Sheet1!$D$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$D$2:$D$22"},
+				{Name: "Sheet1!$E$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$E$2:$E$22"},
+				{Name: "Sheet1!$F$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$F$2:$F$22"},
+			},
+			Legend: ChartLegend{Position: "none"},
+			Title:  []RichTextRun{{Text: "High-Low-Close Stock Chart"}},
+			XAxis:  ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "d-mmm-yy"}},
+		}))
+		assert.NoError(t, f.AddChart("Sheet1", "G16", &Chart{
+			Type: StockOpenHighLowClose,
+			Series: []ChartSeries{
+				{Name: "Sheet1!$C$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$C$2:$C$22"},
+				{Name: "Sheet1!$D$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$D$2:$D$22"},
+				{Name: "Sheet1!$E$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$E$2:$E$22"},
+				{Name: "Sheet1!$F$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$F$2:$F$22"},
+			},
+			Legend: ChartLegend{Position: "none"},
+			Title:  []RichTextRun{{Text: "Open-High-Low-Close Stock Chart"}},
+			XAxis:  ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "d-mmm-yy"}},
+			PlotArea: ChartPlotArea{
+				UpBars: ChartUpDownBar{
+					Border: ChartLine{Type: ChartLineNone},
+					Fill:   Fill{Type: "pattern", Color: []string{"00B050"}, Pattern: 1},
+				},
+				DownBars: ChartUpDownBar{
+					Border: ChartLine{Type: ChartLineNone},
+					Fill:   Fill{Type: "pattern", Color: []string{"FF0000"}, Pattern: 1},
+				},
+			},
+		}))
+		assert.NoError(t, f.AddChart("Sheet1", "O1", &Chart{
+			Type: Col,
+			Series: []ChartSeries{
+				{Name: "Sheet1!$B$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$B$2:$B$22"},
+			},
+			VaryColors: boolPtr(false),
+			XAxis:      ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "d-mmm-yy"}},
+			YAxis:      ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "#,##0"}},
+			Title:      []RichTextRun{{Text: "Volume-High-Low-Close Stock Chart"}},
+		}, &Chart{
+			Type: StockHighLowClose,
+			Series: []ChartSeries{
+				{Name: "Sheet1!$D$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$D$2:$D$22"},
+				{Name: "Sheet1!$E$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$E$2:$E$22"},
+				{Name: "Sheet1!$F$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$F$2:$F$22"},
+			},
+			YAxis: ChartAxis{Secondary: true},
+		}))
+		assert.NoError(t, f.AddChart("Sheet1", "O16", &Chart{
+			Type: Col,
+			Series: []ChartSeries{
+				{Name: "Sheet1!$B$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$B$2:$B$22"},
+			},
+			VaryColors: boolPtr(false),
+			XAxis:      ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "d-mmm-yy"}},
+			YAxis:      ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "#,##0"}},
+			Title:      []RichTextRun{{Text: "Volume-Open-High-Low-Close Stock Chart"}},
+		}, &Chart{
+			Type: StockOpenHighLowClose,
+			Series: []ChartSeries{
+				{Name: "Sheet1!$C$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$C$2:$C$22"},
+				{Name: "Sheet1!$D$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$D$2:$D$22"},
+				{Name: "Sheet1!$E$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$E$2:$E$22"},
+				{Name: "Sheet1!$F$1", Categories: "Sheet1!$A$2:$A$22", Values: "Sheet1!$F$2:$F$22"},
+			},
+			YAxis: ChartAxis{Secondary: true},
+		}))
+		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddChartStock.xlsx")))
+	})
 }
 
 func TestAddChartSheet(t *testing.T) {
@@ -359,7 +476,7 @@ func TestAddChartSheet(t *testing.T) {
 	// Test add chartsheet with invalid sheet name
 	assert.EqualError(t, f.AddChartSheet("Sheet:1", nil, &Chart{Type: Col3DClustered, Series: series, Title: []RichTextRun{{Text: "Fruit 3D Clustered Column Chart"}}}), ErrSheetNameInvalid.Error())
 	// Test with unsupported chart type
-	assert.EqualError(t, f.AddChartSheet("Chart2", &Chart{Type: 0x37, Series: series, Title: []RichTextRun{{Text: "Fruit 3D Clustered Column Chart"}}}), newUnsupportedChartType(0x37).Error())
+	assert.EqualError(t, f.AddChartSheet("Chart2", &Chart{Type: 0x39, Series: series, Title: []RichTextRun{{Text: "Fruit 3D Clustered Column Chart"}}}), newUnsupportedChartType(0x39).Error())
 
 	assert.NoError(t, f.UpdateLinkedValue())
 
