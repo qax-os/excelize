@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -299,6 +299,13 @@ func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 	}
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
+	ws.setColVisible(minVal, maxVal, visible)
+	return err
+}
+
+// setColVisible provides a function to set the visibility of a single column
+// or multiple columns by given column number.
+func (ws *xlsxWorksheet) setColVisible(minVal, maxVal int, visible bool) {
 	colData := xlsxCol{
 		Min:         minVal,
 		Max:         maxVal,
@@ -310,7 +317,7 @@ func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 		cols := xlsxCols{}
 		cols.Col = append(cols.Col, colData)
 		ws.Cols = &cols
-		return nil
+		return
 	}
 	ws.Cols.Col = flatCols(colData, ws.Cols.Col, func(fc, c xlsxCol) xlsxCol {
 		fc.BestFit = c.BestFit
@@ -322,7 +329,6 @@ func (f *File) SetColVisible(sheet, columns string, visible bool) error {
 		fc.Width = c.Width
 		return fc
 	})
-	return nil
 }
 
 // GetColOutlineLevel provides a function to get outline level of a single

@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -152,7 +152,7 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 // object with the cell, the default value of that is 0.
 //
 // The optional parameter "ScaleX" specifies the horizontal scale of graph
-// object. The value of ScaleY must be a floating-point number greater than 0
+// object. The value of ScaleX must be a floating-point number greater than 0
 // with a precision of two decimal places. The default value of that is 1.0
 // which presents 100%.
 //
@@ -493,7 +493,7 @@ func (f *File) addMedia(file []byte, ext string) string {
 // returns the image contents as []byte data types. This function is
 // concurrency safe. Note that this function currently does not support
 // retrieving all properties from the image's Format property, and the value of
-// the ScaleX and ScaleY property is a floating-point number greater than 0 with 
+// the ScaleX and ScaleY property is a floating-point number greater than 0 with
 // a precision of two decimal places. For example:
 //
 //	f, err := excelize.OpenFile("Book1.xlsx")

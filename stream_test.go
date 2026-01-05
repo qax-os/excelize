@@ -154,6 +154,21 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, file.Close())
 }
 
+func TestStreamSetColVisible(t *testing.T) {
+	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.SetColVisible(3, 2, false))
+	assert.Equal(t, ErrColumnNumber, streamWriter.SetColVisible(0, 3, false))
+	assert.Equal(t, ErrColumnNumber, streamWriter.SetColVisible(MaxColumns+1, 3, false))
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
+	assert.Equal(t, ErrStreamSetColVisible, streamWriter.SetColVisible(2, 3, false))
+	assert.NoError(t, streamWriter.Flush())
+}
+
 func TestStreamSetColStyle(t *testing.T) {
 	file := NewFile()
 	defer func() {
