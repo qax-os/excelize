@@ -1,0 +1,79 @@
+{
+  "type": "Entity",
+  "text": "Card Top Title",
+  "properties": {
+    "Effective Date": {
+      "type": "FormattedNumber",
+      "basicValue": 29253,
+      "numberFormat": "yyyy-mm-dd"
+    },
+    "Items": {
+      "type": "Array",
+      "elements": [
+        [
+          { "type": "String", "basicValue": "Thomas" },
+          { "type": "String", "basicValue": "Scholtz" },
+          {
+            "type": "FormattedNumber",
+            "basicValue": 8.03,
+            "numberFormat": "$0.0"
+          }
+        ],
+        [
+          { "type": "String", "basicValue": "James" },
+          { "type": "String", "basicValue": "Spanjaard" },
+          {
+            "type": "FormattedNumber",
+            "basicValue": 28.3,
+            "numberFormat": "$0.0"
+          }
+        ]
+      ]
+    },
+    "Items2": {
+      "type": "Array",
+      "elements": [
+        [
+          { "type": "String", "basicValue": "Raymond" },
+          { "type": "String", "basicValue": "Mendoza" }
+        ],
+        [
+          { "type": "String", "basicValue": "Mary" },
+          { "type": "String", "basicValue": "James" }
+        ]
+      ]
+    },
+    "Owner": { "type": "String", "basicValue": "Jan Krynauw" },
+    "Price": {
+      "type": "FormattedNumber",
+      "basicValue": 55.4,
+      "numberFormat": "$0.00"
+    },
+    "Sub Properties A": {
+      "type": "Entity",
+      "text": "Another one",
+      "properties": {
+        "Key 1": { "type": "String", "basicValue": "Value 1" },
+        "Key 2": { "type": "String", "basicValue": "Value 2" },
+        "Sub Properties A": {
+          "type": "Entity",
+          "text": "Another one",
+          "properties": {
+            "Key 1": { "type": "String", "basicValue": "Value 1" },
+            "Key 2": { "type": "String", "basicValue": "Value 2" }
+          }
+        }
+      }
+    },
+    "Total Amount": { "type": "Double", "basicValue": 7777.77 },
+    "Validated": { "type": "Boolean", "basicValue": true }
+  },
+  "layouts": {
+    "compact": { "icon": "Cloud" },
+    "card": {
+      "title": { "property": "Owner" },
+      "subTitle": { "property": "Effective Date" }
+    }
+  },
+  "provider": { "description": "Some nice description" }
+}
