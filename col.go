@@ -390,21 +390,28 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 	if err != nil {
 		return err
 	}
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	ws.setColOutlineLevel(colNum, level)
+	return err
+}
+
+// setColOutlineLevel provides a function to set the outline level of a single
+// column by given column number.
+func (ws *xlsxWorksheet) setColOutlineLevel(colNum int, level uint8) {
 	colData := xlsxCol{
 		Min:          colNum,
 		Max:          colNum,
 		OutlineLevel: level,
 		CustomWidth:  true,
 	}
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
-		return err
-	}
 	if ws.Cols == nil {
 		cols := xlsxCols{}
 		cols.Col = append(cols.Col, colData)
 		ws.Cols = &cols
-		return err
+		return
 	}
 	ws.Cols.Col = flatCols(colData, ws.Cols.Col, func(fc, c xlsxCol) xlsxCol {
 		fc.BestFit = c.BestFit
@@ -416,7 +423,6 @@ func (f *File) SetColOutlineLevel(sheet, col string, level uint8) error {
 		fc.Width = c.Width
 		return fc
 	})
-	return err
 }
 
 // SetColStyle provides a function to set style of columns by given worksheet

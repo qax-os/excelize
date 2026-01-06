@@ -136,18 +136,6 @@ var (
 	// ErrSparklineType defined the error message on receive the invalid
 	// sparkline Type parameters.
 	ErrSparklineType = errors.New("parameter 'Type' value must be one of 'line', 'column' or 'win_loss'")
-	// ErrStreamSetColVisible defined the error message on set columns
-	// visibility in stream writing mode.
-	ErrStreamSetColVisible = errors.New("must call the SetColVisible function before the SetRow function")
-	// ErrStreamSetColStyle defined the error message on set column style in
-	// stream writing mode.
-	ErrStreamSetColStyle = errors.New("must call the SetColStyle function before the SetRow function")
-	// ErrStreamSetColWidth defined the error message on set column width in
-	// stream writing mode.
-	ErrStreamSetColWidth = errors.New("must call the SetColWidth function before the SetRow function")
-	// ErrStreamSetPanes defined the error message on set panes in stream
-	// writing mode.
-	ErrStreamSetPanes = errors.New("must call the SetPanes function before the SetRow function")
 	// ErrTotalSheetHyperlinks defined the error message on hyperlinks count
 	// overflow.
 	ErrTotalSheetHyperlinks = errors.New("over maximum limit hyperlinks in a worksheet")
@@ -326,6 +314,12 @@ func newPivotTableRangeError(msg string) error {
 // receiving the non-ascending row number.
 func newStreamSetRowError(row int) error {
 	return fmt.Errorf("row %d has already been written", row)
+}
+
+// newStreamSetRowOrderError defined the error message on calling the SetRow
+// function before the order function.
+func newStreamSetRowOrderError(name string) error {
+	return fmt.Errorf("must call the %s function before the SetRow function", name)
 }
 
 // newUnknownFilterTokenError defined the error message on receiving a unknown
