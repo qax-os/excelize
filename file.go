@@ -34,8 +34,8 @@ func NewFile(opts ...Options) *File {
 	f.Pkg.Store(defaultXMLPathDocPropsApp, []byte(xml.Header+templateDocpropsApp))
 	f.Pkg.Store(defaultXMLPathDocPropsCore, []byte(xml.Header+templateDocpropsCore))
 	f.Pkg.Store(defaultXMLPathWorkbookRels, []byte(xml.Header+templateWorkbookRels))
-	f.Pkg.Store("xl/theme/theme1.xml", []byte(xml.Header+templateTheme))
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+templateSheet))
+	f.Pkg.Store(defaultXMLPathTheme, []byte(xml.Header+templateTheme))
+	f.Pkg.Store(defaultXMLPathSheet, []byte(xml.Header+templateSheet))
 	f.Pkg.Store(defaultXMLPathStyles, []byte(xml.Header+templateStyles))
 	f.Pkg.Store(defaultXMLPathWorkbook, []byte(xml.Header+templateWorkbook))
 	f.Pkg.Store(defaultXMLPathContentTypes, []byte(xml.Header+templateContentTypes))
@@ -47,9 +47,9 @@ func NewFile(opts ...Options) *File {
 	f.Relationships = sync.Map{}
 	rels, _ := f.relsReader(defaultXMLPathWorkbookRels)
 	f.Relationships.Store(defaultXMLPathWorkbookRels, rels)
-	f.sheetMap["Sheet1"] = "xl/worksheets/sheet1.xml"
+	f.sheetMap["Sheet1"] = defaultXMLPathSheet
 	ws, _ := f.workSheetReader("Sheet1")
-	f.Sheet.Store("xl/worksheets/sheet1.xml", ws)
+	f.Sheet.Store(defaultXMLPathSheet, ws)
 	f.Theme, _ = f.themeReader()
 	f.options = f.getOptions(opts...)
 	return f

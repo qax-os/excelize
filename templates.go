@@ -299,6 +299,7 @@ const (
 	defaultXMLPathDocPropsCustom          = "docProps/custom.xml"
 	defaultXMLPathRels                    = "_rels/.rels"
 	defaultXMLPathSharedStrings           = "xl/sharedStrings.xml"
+	defaultXMLPathSheet                   = "xl/worksheets/sheet1.xml"
 	defaultXMLPathStyles                  = "xl/styles.xml"
 	defaultXMLPathTheme                   = "xl/theme/theme1.xml"
 	defaultXMLPathVolatileDeps            = "xl/volatileDependencies.xml"
