@@ -964,7 +964,7 @@ func (f *File) getImageCells(sheet string) ([]string, error) {
 				}
 				cells = append(cells, c.R)
 			}
-			r, err := f.getImageCellRel(&c, &Picture{})
+			r, err := f.getImageCellRel(&c, &Picture{Format: &GraphicOptions{}})
 			if err != nil {
 				return cells, err
 			}
@@ -1043,17 +1043,42 @@ func (f *File) getImageCellRel(c *xlsxC, pic *Picture) (*xlsxRelationship, error
 	if richValueIdx >= len(richValue.Rv) {
 		return r, err
 	}
-	rv := richValue.Rv[richValueIdx].V
-	if len(rv) == 2 && rv[1] == "5" {
+	rv := richValue.Rv[richValueIdx]
+	rvStructures, err := f.richValueStructuresReader()
+	if err != nil {
+		return r, err
+	}
+	if rv.S >= len(rvStructures.S) {
+		return r, err
+	}
+	rvStruct := rvStructures.S[rv.S]
+	if len(rvStruct.K) != len(rv.V) {
+		return r, err
+	}
+	if idx := rvStruct.getRichDataValueIdx("Text"); idx != -1 {
+		pic.Format.AltText = rv.V[idx]
+	}
+	if idx := rvStruct.getRichDataValueIdx("_rvRel:LocalImageIdentifier"); idx != -1 {
 		pic.InsertType = PictureInsertTypePlaceInCell
-		return f.getRichDataRichValueRel(rv[0])
+		return f.getRichDataRichValueRel(rv.V[idx])
 	}
 	// cell image inserted by IMAGE formula function
-	if len(rv) > 3 && rv[1]+rv[2] == "10" {
+	if idx := rvStruct.getRichDataValueIdx("WebImageIdentifier"); idx != -1 {
 		pic.InsertType = PictureInsertTypeIMAGE
-		return f.getRichDataWebImagesRel(rv[0])
+		return f.getRichDataWebImagesRel(rv.V[idx])
 	}
 	return r, err
+}
+
+// getRichDataValueIdx provides a function to get the index of rich data value
+// structure by given name and rich data value.
+func (s *xlsxRichValueStructure) getRichDataValueIdx(n string) int {
+	for idx, k := range s.K {
+		if k.N == n {
+			return idx
+		}
+	}
+	return -1
 }
 
 // getCellImages provides a function to get the cell images and

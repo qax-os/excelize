@@ -99,6 +99,30 @@ type xlsxRichValueRelRelationship struct {
 	ID string `xml:"id,attr"`
 }
 
+// xlsxRichValueStructures directly maps the rvStructures element. This element
+// specifies rich value structures, which contain lists of rich value keys and
+// the data types for the corresponding rich value data.
+type xlsxRichValueStructures struct {
+	XMLName xml.Name                 `xml:"rvStructures"`
+	Count   int                      `xml:"count,attr,omitempty"`
+	S       []xlsxRichValueStructure `xml:"s"`
+	ExtLst  *xlsxInnerXML            `xml:"extLst"`
+}
+
+// xlsxRichValueStructure directly maps the s element. This element specifies
+// the list of rich value structures.
+type xlsxRichValueStructure struct {
+	T string             `xml:"t,attr"`
+	K []xlsxRichValueKey `xml:"k"`
+}
+
+// xlsxRichValueKey directly maps the k element. This element specifies the rich
+// value key.
+type xlsxRichValueKey struct {
+	N string `xml:"n,attr"`
+	T string `xml:"t,attr,omitempty"`
+}
+
 // xlsxWebImagesSupportingRichData directly maps the webImagesSrd element. This
 // element specifies a list of sets of properties associated with web image rich
 // values.
