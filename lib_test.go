@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -411,4 +412,11 @@ func TestUnzipToTemp(t *testing.T) {
 
 	_, err = f.unzipToTemp(z.File[0])
 	assert.EqualError(t, err, "EOF")
+}
+
+func TestFloat2Frac(t *testing.T) {
+	assert.Empty(t, floatToFraction(0.19, 0, 0))
+	assert.Equal(t, "1/5", floatToFraction(0.19, 1, 1))
+	assert.Equal(t, "9999/10000", strings.Trim(floatToFraction(0.9999, 10, 10), " "))
+	assert.Equal(t, "954888175898973913/351283728530932463", floatToFraction(math.E, 1, 18))
 }

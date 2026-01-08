@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -193,7 +193,8 @@ var (
 			return fmt.Sprintf("R[%d]C[%d]", row, col), nil
 		},
 	}
-	formulaFormats = []*regexp.Regexp{
+	formulaFnNameReplacer = strings.NewReplacer("_xlfn.", "", ".", "dot")
+	formulaFormats        = []*regexp.Regexp{
 		regexp.MustCompile(`^(\d+)$`),
 		regexp.MustCompile(`^=(.*)$`),
 		regexp.MustCompile(`^<>(.*)$`),
@@ -756,6 +757,7 @@ type formulaFuncs struct {
 //	SLN
 //	SLOPE
 //	SMALL
+//	SORTBY
 //	SQRT
 //	SQRTPI
 //	STANDARDIZE
@@ -809,6 +811,7 @@ type formulaFuncs struct {
 //	TYPE
 //	UNICHAR
 //	UNICODE
+//	UNIQUE
 //	UPPER
 //	VALUE
 //	VALUETOTEXT
@@ -838,6 +841,10 @@ type formulaFuncs struct {
 //	Z.TEST
 //	ZTEST
 func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string, err error) {
+	entry := sheet + "!" + cell
+	if cachedResult, ok := f.calcCache.Load(entry); ok {
+		return cachedResult.(string), nil
+	}
 	options := f.getOptions(opts...)
 	var (
 		rawCellValue = options.RawCellValue
@@ -845,7 +852,7 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 		token        formulaArg
 	)
 	if token, err = f.calcCellValue(&calcContext{
-		entry:             fmt.Sprintf("%s!%s", sheet, cell),
+		entry:             entry,
 		maxCalcIterations: options.MaxCalcIterations,
 		iterations:        make(map[string]uint),
 		iterationsCache:   make(map[string]formulaArg),
@@ -860,15 +867,30 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 		_, precision, decimal := isNumeric(token.Value())
 		if precision > 15 {
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'G', 15, 64))}, rawCellValue, CellTypeNumber)
+			if err == nil {
+				f.calcCache.Store(entry, result)
+			}
 			return
 		}
 		if !strings.HasPrefix(result, "0") {
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'f', -1, 64))}, rawCellValue, CellTypeNumber)
 		}
+		if err == nil {
+			f.calcCache.Store(entry, result)
+		}
 		return
 	}
 	result, err = f.formattedValue(&xlsxC{S: styleIdx, V: token.Value()}, rawCellValue, CellTypeInlineString)
+	if err == nil {
+		f.calcCache.Store(entry, result)
+	}
 	return
+}
+
+// clearCalcCache clear all calculation related caches.
+func (f *File) clearCalcCache() {
+	f.calcCache.Clear()
+	f.formulaArgCache.Clear()
 }
 
 // calcCellValue calculate cell value by given context, worksheet name and cell
@@ -1092,8 +1114,8 @@ func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nex
 	}
 	prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack)
 	// call formula function to evaluate
-	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet, cell: cell, ctx: ctx}, strings.NewReplacer(
-		"_xlfn.", "", ".", "dot").Replace(opfStack.Peek().(efp.Token).TValue),
+	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet, cell: cell, ctx: ctx},
+		formulaFnNameReplacer.Replace(opfStack.Peek().(efp.Token).TValue),
 		[]reflect.Value{reflect.ValueOf(argsStack.Peek().(*list.List))})
 	if arg.Type == ArgError && opfStack.Len() == 1 {
 		return arg
@@ -1637,7 +1659,11 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 		value string
 		err   error
 	)
-	ref := fmt.Sprintf("%s!%s", sheet, cell)
+	ref := sheet + "!" + cell
+	if cached, ok := f.formulaArgCache.Load(ref); ok {
+		return cached.(formulaArg), err
+	}
+
 	if formula, _ := f.getCellFormula(sheet, cell, true); len(formula) != 0 {
 		ctx.mu.Lock()
 		if ctx.entry != ref {
@@ -1646,6 +1672,7 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 				ctx.mu.Unlock()
 				arg, _ = f.calcCellValue(ctx, sheet, cell)
 				ctx.iterationsCache[ref] = arg
+				f.formulaArgCache.Store(ref, arg)
 				return arg, nil
 			}
 			ctx.mu.Unlock()
@@ -1660,29 +1687,29 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 	cellType, _ := f.GetCellType(sheet, cell)
 	switch cellType {
 	case CellTypeBool:
-		return arg.ToBool(), err
+		arg = arg.ToBool()
 	case CellTypeNumber, CellTypeUnset:
 		if arg.Value() == "" {
-			return newEmptyFormulaArg(), err
+			arg = newEmptyFormulaArg()
+		} else {
+			arg = arg.ToNumber()
 		}
-		return arg.ToNumber(), err
 	case CellTypeInlineString, CellTypeSharedString:
-		return arg, err
 	case CellTypeFormula:
-		if value != "" {
-			return arg, err
+		if value == "" {
+			arg = newEmptyFormulaArg()
 		}
-		return newEmptyFormulaArg(), err
 	case CellTypeDate:
 		if value, err = f.GetCellValue(sheet, cell); err == nil {
 			if num := newStringFormulaArg(value).ToNumber(); num.Type == ArgNumber {
-				return num, err
+				arg = num
 			}
 		}
-		return arg, err
 	default:
-		return newErrorFormulaArg(value, value), err
+		arg = newErrorFormulaArg(value, value)
 	}
+	f.formulaArgCache.Store(ref, arg)
+	return arg, err
 }
 
 // rangeResolver extract value as string from given reference and range list.
@@ -1721,13 +1748,39 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 			return
 		}
 
+		// Detect whole column/row reference, limit to actual data range
+		if valueRange[1] == TotalRows {
+			actualMaxRow := 0
+			for _, rowData := range ws.SheetData.Row {
+				if rowData.R > actualMaxRow {
+					actualMaxRow = rowData.R
+				}
+			}
+			if actualMaxRow > 0 && actualMaxRow < TotalRows {
+				valueRange[1] = actualMaxRow
+			}
+		}
+		if valueRange[3] == MaxColumns {
+			actualMaxCol := 0
+			for _, rowData := range ws.SheetData.Row {
+				for _, cell := range rowData.C {
+					col, _, err := CellNameToCoordinates(cell.R)
+					if err == nil && col > actualMaxCol {
+						actualMaxCol = col
+					}
+				}
+			}
+			if actualMaxCol > 0 && actualMaxCol < MaxColumns {
+				valueRange[3] = actualMaxCol
+			}
+		}
+
 		for row := valueRange[0]; row <= valueRange[1]; row++ {
 			colMax := 0
 			if row <= len(ws.SheetData.Row) {
 				rowData := &ws.SheetData.Row[row-1]
 				colMax = min(valueRange[3], len(rowData.C))
 			}
-
 			var matrixRow []formulaArg
 			for col := valueRange[2]; col <= valueRange[3]; col++ {
 				value := newEmptyFormulaArg()
@@ -14581,6 +14634,139 @@ func (fn *formulaFuncs) UNICODE(argsList *list.List) formulaArg {
 	return fn.code("UNICODE", argsList)
 }
 
+// UNIQUE function returns a list of unique values in a list or range. The
+// syntax of the function is:
+//
+//	UNIQUE(array,[by_col],[exactly_once])
+func (fn *formulaFuncs) UNIQUE(argsList *list.List) formulaArg {
+	args, errArg := getFormulaUniqueArgs(argsList)
+	if errArg != nil {
+		return *errArg
+	}
+	if args.byColumn {
+		args.cellRange, args.cols, args.rows = transposeFormulaArgsList(args.cellRange, args.cols, args.rows)
+	}
+	counts := map[string]int{}
+	for i := 0; i < len(args.cellRange); i += args.cols {
+		key := concatValues(args.cellRange[i : i+args.cols])
+
+		if _, ok := counts[key]; !ok {
+			counts[key] = 0
+		}
+		counts[key]++
+	}
+	uniqueAxes := [][]formulaArg{}
+	for i := 0; i < len(args.cellRange); i += args.cols {
+		key := concatValues(args.cellRange[i : i+args.cols])
+
+		if (args.exactlyOnce && counts[key] == 1) || (!args.exactlyOnce && counts[key] >= 1) {
+			uniqueAxes = append(uniqueAxes, args.cellRange[i:i+args.cols])
+		}
+		delete(counts, key)
+	}
+	if args.byColumn {
+		uniqueAxes = transposeFormulaArgsMatrix(uniqueAxes)
+	}
+	return newMatrixFormulaArg(uniqueAxes)
+}
+
+// transposeFormulaArgsMatrix transposes a 2D slice of formulaArg.
+func transposeFormulaArgsMatrix(args [][]formulaArg) [][]formulaArg {
+	if len(args) == 0 {
+		return args
+	}
+	transposedArgs := make([][]formulaArg, len(args[0]))
+	for i := 0; i < len(args[0]); i++ {
+		transposedArgs[i] = make([]formulaArg, len(args))
+	}
+	for i := 0; i < len(args); i++ {
+		for j := 0; j < len(args[i]); j++ {
+			transposedArgs[j][i] = args[i][j]
+		}
+	}
+	return transposedArgs
+}
+
+// transposeFormulaArgsList transposes a flat slice of formulaArg given the
+// number of columns and rows.
+func transposeFormulaArgsList(args []formulaArg, cols, rows int) ([]formulaArg, int, int) {
+	transposedArgs := make([]formulaArg, len(args))
+	for i := 0; i < rows; i++ {
+		for j := 0; j < cols; j++ {
+			transposedArgs[j*rows+i] = args[i*cols+j]
+		}
+	}
+	return transposedArgs, rows, cols
+}
+
+// concatValues concatenates the values of a slice of formulaArg into a single
+// string.
+func concatValues(args []formulaArg) string {
+	val := ""
+	for _, arg := range args {
+		// Call to Value is cheap.
+		val += arg.Value()
+	}
+	return val
+}
+
+// uniqueArgs holds the parsed arguments for the UNIQUE function.
+type uniqueArgs struct {
+	cellRange   []formulaArg
+	cols        int
+	rows        int
+	byColumn    bool
+	exactlyOnce bool
+}
+
+// getFormulaUniqueArgs parses and validates the arguments for the UNIQUE
+// function.
+func getFormulaUniqueArgs(argsList *list.List) (uniqueArgs, *formulaArg) {
+	res := uniqueArgs{}
+	argsLen := argsList.Len()
+	if argsLen == 0 {
+		errArg := newErrorFormulaArg(formulaErrorVALUE, "UNIQUE requires at least 1 argument")
+		return res, &errArg
+	}
+	if argsLen > 3 {
+		msg := fmt.Sprintf("UNIQUE takes at most 3 arguments, received %d arguments", argsLen)
+		errArg := newErrorFormulaArg(formulaErrorVALUE, msg)
+
+		return res, &errArg
+	}
+	firstArg := argsList.Front()
+	res.cellRange = firstArg.Value.(formulaArg).ToList()
+	if len(res.cellRange) == 0 {
+		errArg := newErrorFormulaArg(formulaErrorVALUE, "missing first argument to UNIQUE")
+		return res, &errArg
+	}
+	if res.cellRange[0].Type == ArgError {
+		return res, &res.cellRange[0]
+	}
+	rmin, rmax := calcColsRowsMinMax(false, argsList)
+	cmin, cmax := calcColsRowsMinMax(true, argsList)
+	res.cols, res.rows = cmax-cmin+1, rmax-rmin+1
+	secondArg := firstArg.Next()
+	if secondArg == nil {
+		return res, nil
+	}
+	argByColumn := secondArg.Value.(formulaArg).ToBool()
+	if argByColumn.Type == ArgError {
+		return res, &argByColumn
+	}
+	res.byColumn = (argByColumn.Value() == "TRUE")
+	thirdArg := secondArg.Next()
+	if thirdArg == nil {
+		return res, nil
+	}
+	argExactlyOnce := thirdArg.Value.(formulaArg).ToBool()
+	if argExactlyOnce.Type == ArgError {
+		return res, &argExactlyOnce
+	}
+	res.exactlyOnce = (argExactlyOnce.Value() == "TRUE")
+	return res, nil
+}
+
 // UPPER converts all characters in a supplied text string to upper case. The
 // syntax of the function is:
 //
@@ -15140,6 +15326,56 @@ func (fn *formulaFuncs) HYPERLINK(argsList *list.List) formulaArg {
 
 // calcMatch returns the position of the value by given match type, criteria
 // and lookup array for the formula function MATCH.
+// matchType only contains -1, and 1.
+func calcMatchMatrix(vertical bool, matchType int, criteria *formulaCriteria, lookupArray [][]formulaArg) formulaArg {
+	idx := -1
+	calc := func(i int, arg formulaArg) bool {
+		switch matchType {
+		case -1:
+			if ok, _ := formulaCriteriaEval(arg, &formulaCriteria{
+				Type: criteriaGe, Condition: criteria.Condition,
+			}); ok {
+				idx = i
+				return false
+			}
+			if criteria.Condition.Type == ArgNumber {
+				return true
+			}
+		case 1:
+			if ok, _ := formulaCriteriaEval(arg, &formulaCriteria{
+				Type: criteriaLe, Condition: criteria.Condition,
+			}); ok {
+				idx = i
+				return false
+			}
+			if criteria.Condition.Type == ArgNumber {
+				return true
+			}
+		}
+		return false
+	}
+
+	if vertical {
+		for i, row := range lookupArray {
+			if ok := calc(i, row[0]); ok {
+				break
+			}
+		}
+	} else {
+		for i, cell := range lookupArray[0] {
+			if ok := calc(i, cell); ok {
+				break
+			}
+		}
+	}
+	if idx == -1 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	}
+	return newNumberFormulaArg(float64(idx + 1))
+}
+
+// calcMatch returns the position of the value by given match type, criteria
+// and lookup array for the formula function MATCH.
 func calcMatch(matchType int, criteria *formulaCriteria, lookupArray []formulaArg) formulaArg {
 	idx := -1
 	switch matchType {
@@ -15252,18 +15488,8 @@ func (fn *formulaFuncs) TRANSPOSE(argsList *list.List) formulaArg {
 // lookupLinearSearch sequentially checks each look value of the lookup array until
 // a match is found or the whole list has been searched.
 func lookupLinearSearch(vertical bool, lookupValue, lookupArray, matchMode, searchMode formulaArg) (int, bool) {
-	var tableArray []formulaArg
-	if vertical {
-		for _, row := range lookupArray.Matrix {
-			tableArray = append(tableArray, row[0])
-		}
-	} else {
-		tableArray = lookupArray.Matrix[0]
-	}
 	matchIdx, wasExact := -1, false
-start:
-	for i, cell := range tableArray {
-		lhs := cell
+	linearSearch := func(i int, cell, lhs formulaArg) bool {
 		if lookupValue.Type == ArgNumber {
 			if lhs = cell.ToNumber(); lhs.Type == ArgError {
 				lhs = cell
@@ -15277,12 +15503,28 @@ start:
 			matchIdx = i
 			wasExact = true
 			if searchMode.Number == searchModeLinear {
-				break start
+				return true
 			}
 		}
 		if matchMode.Number == matchModeMinGreater || matchMode.Number == matchModeMaxLess {
-			matchIdx = int(calcMatch(int(matchMode.Number), formulaCriteriaParser(lookupValue), tableArray).Number)
-			continue
+			matchIdx = int(calcMatchMatrix(vertical, int(matchMode.Number), formulaCriteriaParser(lookupValue), lookupArray.Matrix).Number)
+			return false
+		}
+		return false
+	}
+
+	if vertical {
+		for i, row := range lookupArray.Matrix {
+			lhs := row[0]
+			if linearSearch(i, lhs, lhs) {
+				break
+			}
+		}
+	} else {
+		for i, lhs := range lookupArray.Matrix[0] {
+			if linearSearch(i, lhs, lhs) {
+				break
+			}
 		}
 	}
 	return matchIdx, wasExact
@@ -18319,7 +18561,7 @@ func (fn *formulaFuncs) vdb(cost, salvage, life, life1, period, factor formulaAr
 			ddbArgs.PushBack(factor)
 			ddb = fn.DDB(ddbArgs).Number
 			sln = cs / (life1.Number - i + 1)
-			if sln > ddb {
+			if sln > ddb && i != endInt {
 				term = sln
 				nowSln = true
 			} else {
@@ -18377,13 +18619,7 @@ func (fn *formulaFuncs) VDB(argsList *list.List) formulaArg {
 		}
 		return vdb
 	}
-	life1, part := life, 0.0
-	if startPeriod.Number != math.Floor(startPeriod.Number) && factor.Number > 1.0 && startPeriod.Number >= life.Number/2.0 {
-		part = startPeriod.Number - life.Number/2.0
-		startPeriod.Number = life.Number / 2.0
-		endPeriod.Number -= part
-	}
-	cost.Number -= fn.vdb(cost, salvage, life, life1, startPeriod, factor).Number
+	cost.Number -= fn.vdb(cost, salvage, life, life, startPeriod, factor).Number
 	return fn.vdb(cost, salvage, life, newNumberFormulaArg(life.Number-startPeriod.Number), newNumberFormulaArg(endPeriod.Number-startPeriod.Number), factor)
 }
 
@@ -18983,4 +19219,177 @@ func (fn *formulaFuncs) DISPIMG(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "DISPIMG requires 2 numeric arguments")
 	}
 	return argsList.Front().Value.(formulaArg)
+}
+
+// sortbyArgs holds the parsed arguments for the SORTBY function.
+type sortbyArgs struct {
+	array    []formulaArg
+	cols     int
+	rows     int
+	sortKeys []sortbyKey
+}
+
+// sortbyKey represents a single sort key with its associated array and order.
+type sortbyKey struct {
+	byArray   []formulaArg
+	cols      int
+	rows      int
+	ascending bool // true = ascending (1 or omitted), false = descending (-1)
+}
+
+// rowWithKeys pairs a data row with its corresponding sort key values.
+type rowWithKeys struct {
+	rowData  []formulaArg
+	sortKeys [][]formulaArg // up to 3 sets of sort keys
+}
+
+// SORTBY function sorts the contents of a range or array based on the values
+// in a corresponding range or array. The syntax of the function is:
+//
+//	SORTBY(array,by_array1,[sort_order1],[by_array2,sort_order2],[by_array3, sort_order3])
+func (fn *formulaFuncs) SORTBY(argsList *list.List) formulaArg {
+	args, errArg := prepareSortbyArgs(argsList)
+	if errArg != nil {
+		return *errArg
+	}
+	rowsWithKeys := make([]rowWithKeys, args.rows)
+	for i := 0; i < args.rows; i++ {
+		rowsWithKeys[i].rowData = args.array[i*args.cols : (i+1)*args.cols]
+		rowsWithKeys[i].sortKeys = make([][]formulaArg, len(args.sortKeys))
+		for keyIdx, sortKey := range args.sortKeys {
+			rowsWithKeys[i].sortKeys[keyIdx] = sortKey.byArray[i*sortKey.cols : (i+1)*sortKey.cols]
+		}
+	}
+	sort.Slice(rowsWithKeys, func(i, j int) bool {
+		return compareRowsForSortby(rowsWithKeys[i], rowsWithKeys[j], args.sortKeys)
+	})
+	result := make([][]formulaArg, args.rows)
+	for i, row := range rowsWithKeys {
+		result[i] = row.rowData
+	}
+	return newMatrixFormulaArg(result)
+}
+
+// checkSortbyArgs checking arguments for the formula function SORTBY.
+func checkSortbyArgs(argsList *list.List) formulaArg {
+	argsLen := argsList.Len()
+	if argsLen < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SORTBY requires at least 2 arguments")
+	}
+	if argsLen > 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("SORTBY takes at most 7 arguments, received %d", argsLen))
+	}
+	if argsLen != 2 && argsLen != 3 && argsLen != 5 && argsLen != 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("SORTBY requires 2, 3, 5, or 7 arguments, received %d", argsLen))
+	}
+	arrArg := argsList.Front().Value.(formulaArg).ToList()
+	if len(arrArg) == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "missing first argument to SORTBY")
+	}
+	if arrArg[0].Type == ArgError {
+		return arrArg[0]
+	}
+	return newListFormulaArg(arrArg)
+}
+
+// prepareSortbyArgs prepare arguments for the formula function SORTBY.
+func prepareSortbyArgs(argsList *list.List) (sortbyArgs, *formulaArg) {
+	res := sortbyArgs{}
+	args := checkSortbyArgs(argsList)
+	if args.Type != ArgList {
+		return res, &args
+	}
+	res.array = args.List
+	argsLen := argsList.Len()
+	array := argsList.Front()
+	tempList := list.New()
+	tempList.PushBack(array.Value)
+	rmin, rmax := calcColsRowsMinMax(false, tempList)
+	cmin, cmax := calcColsRowsMinMax(true, tempList)
+	res.cols, res.rows = cmax-cmin+1, rmax-rmin+1
+	byArray := array.Next()
+	keyCount := 0
+	for byArray != nil && keyCount < 3 {
+		var key sortbyKey
+		key.byArray = byArray.Value.(formulaArg).ToList()
+		if len(key.byArray) == 0 {
+			errArg := newErrorFormulaArg(formulaErrorVALUE, "missing by_array argument to SORTBY")
+			return res, &errArg
+		}
+		if key.byArray[0].Type == ArgError {
+			return res, &key.byArray[0]
+		}
+		tempList := list.New()
+		tempList.PushBack(byArray.Value)
+		rmin, rmax := calcColsRowsMinMax(false, tempList)
+		cmin, cmax := calcColsRowsMinMax(true, tempList)
+		key.cols, key.rows = cmax-cmin+1, rmax-rmin+1
+		if key.rows != res.rows {
+			errArg := newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("by_array dimensions (%d rows) do not match array dimensions (%d rows)",
+				key.rows, res.rows))
+			return res, &errArg
+		}
+		key.ascending = true
+		nextByArray, errArg := parseSortOrderArg(byArray.Next(), &key, keyCount, argsLen)
+		if errArg != nil {
+			return res, errArg
+		}
+		byArray = nextByArray
+		res.sortKeys = append(res.sortKeys, key)
+		keyCount++
+	}
+	return res, nil
+}
+
+// parseSortOrderArg processes the optional sort_order argument for a SORTBY
+// key. It updates the key's ascending field and returns the next element in the
+// list. Returns an error if the sort_order value is invalid.
+func parseSortOrderArg(byArray *list.Element, key *sortbyKey, keyCount, argsLen int) (*list.Element, *formulaArg) {
+	if byArray == nil {
+		return nil, nil
+	}
+	sortOrderArg := byArray.Value.(formulaArg).ToNumber()
+	expectedSortOrder := false
+	if keyCount == 0 && (argsLen == 3 || argsLen == 5 || argsLen == 7) {
+		expectedSortOrder = true
+	} else if keyCount == 1 && (argsLen == 5 || argsLen == 7) {
+		expectedSortOrder = true
+	} else if keyCount == 2 && argsLen == 7 {
+		expectedSortOrder = true
+	}
+	if sortOrderArg.Type == ArgError {
+		if expectedSortOrder {
+			return byArray, &sortOrderArg
+		}
+		return byArray, nil
+	}
+	switch sortOrderArg.Number {
+	case -1:
+		key.ascending = false
+		return byArray.Next(), nil
+	case 1:
+		key.ascending = true
+		return byArray.Next(), nil
+	}
+	errArg := newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("sort_order must be 1 or -1, received %v", sortOrderArg.Number))
+	return byArray, &errArg
+}
+
+// compareRowsForSortby compares two rows using multiple sort keys.
+// Returns true if row i should come before row j.
+func compareRowsForSortby(i, j rowWithKeys, sortKeys []sortbyKey) bool {
+	for idx, sortKey := range sortKeys {
+		lhs, rhs := i.sortKeys[idx], j.sortKeys[idx]
+		for colIdx := 0; colIdx < len(lhs) && colIdx < len(rhs); colIdx++ {
+			criteria := compareFormulaArg(lhs[colIdx], rhs[colIdx], newNumberFormulaArg(matchModeMaxLess), false)
+			if criteria == criteriaEq {
+				continue
+			}
+			if sortKey.ascending {
+				return criteria == criteriaL
+			}
+			return criteria == criteriaG
+		}
+	}
+	return false
 }

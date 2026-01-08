@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -75,6 +75,7 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	if err != nil {
 		return err
 	}
+	f.clearCalcCache()
 	sheetID := f.getSheetID(sheet)
 	if dir == rows {
 		err = f.adjustRowDimensions(sheet, ws, num, offset)

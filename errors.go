@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -136,15 +136,6 @@ var (
 	// ErrSparklineType defined the error message on receive the invalid
 	// sparkline Type parameters.
 	ErrSparklineType = errors.New("parameter 'Type' value must be one of 'line', 'column' or 'win_loss'")
-	// ErrStreamSetColStyle defined the error message on set column style in
-	// stream writing mode.
-	ErrStreamSetColStyle = errors.New("must call the SetColStyle function before the SetRow function")
-	// ErrStreamSetColWidth defined the error message on set column width in
-	// stream writing mode.
-	ErrStreamSetColWidth = errors.New("must call the SetColWidth function before the SetRow function")
-	// ErrStreamSetPanes defined the error message on set panes in stream
-	// writing mode.
-	ErrStreamSetPanes = errors.New("must call the SetPanes function before the SetRow function")
 	// ErrTotalSheetHyperlinks defined the error message on hyperlinks count
 	// overflow.
 	ErrTotalSheetHyperlinks = errors.New("over maximum limit hyperlinks in a worksheet")
@@ -191,6 +182,12 @@ type ErrSheetNotExist struct {
 // Error returns the error message on receiving the non existing sheet name.
 func (err ErrSheetNotExist) Error() string {
 	return fmt.Sprintf("sheet %s does not exist", err.SheetName)
+}
+
+// newAddCommentError defined the error message on the comment already exist in
+// the cell.
+func newAddCommentError(cell string) error {
+	return fmt.Errorf("comment already exist on cell %s", cell)
 }
 
 // newCellNameToCoordinatesError defined the error message on converts
@@ -317,6 +314,12 @@ func newPivotTableRangeError(msg string) error {
 // receiving the non-ascending row number.
 func newStreamSetRowError(row int) error {
 	return fmt.Errorf("row %d has already been written", row)
+}
+
+// newStreamSetRowOrderError defined the error message on calling the SetRow
+// function before the order function.
+func newStreamSetRowOrderError(name string) error {
+	return fmt.Errorf("must call the %s function before the SetRow function", name)
 }
 
 // newUnknownFilterTokenError defined the error message on receiving a unknown

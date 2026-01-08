@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 
@@ -41,6 +41,8 @@ type File struct {
 	streams          map[string]*StreamWriter
 	tempFiles        sync.Map
 	xmlAttr          sync.Map
+	calcCache        sync.Map
+	formulaArgCache  sync.Map
 	CalcChain        *xlsxCalcChain
 	CharsetReader    func(charset string, input io.Reader) (rdr io.Reader, err error)
 	Comments         map[string]*xlsxComments
@@ -616,19 +618,19 @@ func (f *File) setContentTypePartProjectExtensions(contentType string) error {
 // metadataReader provides a function to get the pointer to the structure
 // after deserialization of xl/metadata.xml.
 func (f *File) metadataReader() (*xlsxMetadata, error) {
-	var mataData xlsxMetadata
+	var metaData xlsxMetadata
 	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLMetadata)))).
-		Decode(&mataData); err != nil && err != io.EOF {
-		return &mataData, err
+		Decode(&metaData); err != nil && err != io.EOF {
+		return &metaData, err
 	}
-	return &mataData, nil
+	return &metaData, nil
 }
 
 // richValueReader provides a function to get the pointer to the structure after
 // deserialization of xl/richData/richvalue.xml.
 func (f *File) richValueReader() (*xlsxRichValueData, error) {
 	var richValue xlsxRichValueData
-	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRdRichValuePart)))).
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRdRichValue)))).
 		Decode(&richValue); err != nil && err != io.EOF {
 		return &richValue, err
 	}
@@ -646,11 +648,22 @@ func (f *File) richValueRelReader() (*xlsxRichValueRels, error) {
 	return &richValueRels, nil
 }
 
+// richValueStructuresReader provides a function to get the pointer to the structure after
+// deserialization of xl/richData/rdrichvaluestructure.xml.
+func (f *File) richValueStructuresReader() (*xlsxRichValueStructures, error) {
+	var richValueStructures xlsxRichValueStructures
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRdRichValueStructure)))).
+		Decode(&richValueStructures); err != nil && err != io.EOF {
+		return &richValueStructures, err
+	}
+	return &richValueStructures, nil
+}
+
 // richValueWebImageReader provides a function to get the pointer to the
 // structure after deserialization of xl/richData/rdRichValueWebImage.xml.
 func (f *File) richValueWebImageReader() (*xlsxWebImagesSupportingRichData, error) {
 	var richValueWebImages xlsxWebImagesSupportingRichData
-	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRdRichValueWebImagePart)))).
+	if err := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readXML(defaultXMLRdRichValueWebImage)))).
 		Decode(&richValueWebImages); err != nil && err != io.EOF {
 		return &richValueWebImages, err
 	}
@@ -675,7 +688,7 @@ func (f *File) getRichDataRichValueRelRelationships(rID string) *xlsxRelationshi
 // getRichValueWebImageRelationships provides a function to get relationships
 // from xl/richData/_rels/rdRichValueWebImage.xml.rels by given relationship ID.
 func (f *File) getRichValueWebImageRelationships(rID string) *xlsxRelationship {
-	if rels, _ := f.relsReader(defaultXMLRdRichValueWebImagePartRels); rels != nil {
+	if rels, _ := f.relsReader(defaultXMLRdRichValueWebImageRels); rels != nil {
 		rels.mu.Lock()
 		defer rels.mu.Unlock()
 		for _, v := range rels.Relationships {

@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -115,6 +115,7 @@ func (f *File) UnmergeCell(sheet, topLeftCell, bottomRightCell string) error {
 	if err = ws.mergeOverlapCells(); err != nil {
 		return err
 	}
+	f.clearCalcCache()
 	i := 0
 	for _, mergeCell := range ws.MergeCells.Cells {
 		if rect2, _ := rangeRefToCoordinates(mergeCell.Ref); isOverlap(rect1, rect2) {

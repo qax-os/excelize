@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -703,6 +703,13 @@ type ChartDataLabel struct {
 	Fill      Fill
 }
 
+// ChartDataPoint directly maps the format settings of the chart data point for
+// doughnut, pie and 3D pie charts.
+type ChartDataPoint struct {
+	Index int
+	Fill  Fill
+}
+
 // ChartSeries directly maps the format settings of the chart series.
 type ChartSeries struct {
 	Name              string
@@ -715,4 +722,5 @@ type ChartSeries struct {
 	Marker            ChartMarker
 	DataLabel         ChartDataLabel
 	DataLabelPosition ChartDataLabelPositionType
+	DataPoint         []ChartDataPoint
 }

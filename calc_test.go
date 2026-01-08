@@ -1937,6 +1937,11 @@ func TestCalcCellValue(t *testing.T) {
 		"UNICODE(\"alpha\")": "97",
 		"UNICODE(\"?\")":     "63",
 		"UNICODE(\"3\")":     "51",
+		// UNIQUE
+		"TEXTJOIN(\",\", TRUE, UNIQUE(D2:D9))":               "Jan,Feb",
+		"TEXTJOIN(\",\", TRUE, UNIQUE(D2:D9, FALSE, FALSE))": "Jan,Feb",
+		"TEXTJOIN(\",\", TRUE, UNIQUE(E2:E9, FALSE, FALSE))": "North 1,North 2,South 1,South 2",
+		"TEXTJOIN(\",\", TRUE, UNIQUE(D2:D9, FALSE, TRUE))":  "",
 		// UPPER
 		"UPPER(\"test\")":     "TEST",
 		"UPPER(\"TEST\")":     "TEST",
@@ -2261,6 +2266,7 @@ func TestCalcCellValue(t *testing.T) {
 		"VDB(10000,1000,5,0,1)":           "4000",
 		"VDB(10000,1000,5,1,3)":           "3840",
 		"VDB(10000,1000,5,3,5)":           "1160",
+		"VDB(10000,1000,5,3.5,5,2)":       "709.6",
 		"VDB(10000,1000,5,3,5,0.2,FALSE)": "3600",
 		"VDB(10000,1000,5,3,5,0.2,TRUE)":  "693.633024",
 		"VDB(24000,3000,10,0,0.875,2)":    "4200",
@@ -5040,6 +5046,13 @@ func TestCalcVLOOKUP(t *testing.T) {
 		assert.Equal(t, expected[0], result, formula)
 		assert.EqualError(t, err, expected[1], formula)
 	}
+	argsList := list.New()
+	argsList.PushBack(newStringFormulaArg(""))
+	argsList.PushBack(newMatrixFormulaArg([][]formulaArg{{newNumberFormulaArg(1)}}))
+	argsList.PushBack(newNumberFormulaArg(1))
+	argsList.PushBack(newStringFormulaArg(""))
+	_, _, _, _, err := checkHVLookupArgs("VLOOKUP", argsList)
+	assert.Equal(t, ArgError, err.Type)
 }
 
 func TestCalcBoolean(t *testing.T) {
@@ -5159,6 +5172,100 @@ func TestCalcCOVAR(t *testing.T) {
 	}
 }
 
+func TestCalcUniqueExactlyOnce(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Customer name"},
+		{"Fife, Grant"},
+		{"Pruitt, Barbara"},
+		{"Horn, Frances"},
+		{"Barrett, Alicia"},
+		{"Barrett, Alicia"},
+		{"Larson, Lynn"},
+		{"Pruitt, Barbara"},
+		{"Snook, Anthony"},
+		{"Snook, Anthony"},
+		{"Horn, Frances"},
+		{"Brown, Charity"},
+	}
+	f := prepareCalcData(cellData)
+
+	formulaList := map[string]string{
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A12))":             "Fife, Grant:Pruitt, Barbara:Horn, Frances:Barrett, Alicia:Larson, Lynn:Snook, Anthony:Brown, Charity",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A12,FALSE,TRUE))":  "Fife, Grant:Larson, Lynn:Brown, Charity",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A12,FALSE,FALSE))": "Fife, Grant:Pruitt, Barbara:Horn, Frances:Barrett, Alicia:Larson, Lynn:Snook, Anthony:Brown, Charity",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcUniqueMultiColumn(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Player name", "Gender", "Nickname"},
+		{"Tom", "M", "Tom"},
+		{"Fred", "M", "Fred"},
+		{"Amy", "F", "Amy"},
+		{"John", "M", "John"},
+		{"Malicia", "F", "Malicia"},
+		{"Fred", "M", "Fred"},
+	}
+	f := prepareCalcData(cellData)
+
+	formulaList := map[string]string{
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:C7))":            "Tom:M:Tom:Fred:M:Fred:Amy:F:Amy:John:M:John:Malicia:F:Malicia",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:C7,TRUE))":       "Tom:M:Fred:M:Amy:F:John:M:Malicia:F:Fred:M",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:C7,TRUE, TRUE))": "M:M:F:M:F:M",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestCalcUniqueErrors(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Player name", "Gender", "Nickname"},
+		{"Tom", "M", "Tom"},
+		{"Fred", "M", "Fred"},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"TEXTJOIN(\":\", TRUE, UNIQUE())":                       "#VALUE!",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(1, 2, 3, 4))":             "#VALUE!",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A3, \"Hello\"))":       "#VALUE!",
+		"TEXTJOIN(\":\", TRUE, UNIQUE(A2:A3, TRUE, \"Hello\"))": "#VALUE!",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.Error(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
+func TestTransposeFormulaArgsMatrix(t *testing.T) {
+	assert.Empty(t, transposeFormulaArgsMatrix([][]formulaArg{}))
+}
+
+func TestGetFormulaUniqueArgs(t *testing.T) {
+	argsList := list.New()
+	emptyArg := newEmptyFormulaArg()
+	argsList.PushBack(emptyArg)
+
+	_, err := getFormulaUniqueArgs(argsList)
+	assert.Equal(t, "missing first argument to UNIQUE", err.Error)
+
+	argsList = list.New()
+	argsList.PushBack(newListFormulaArg([]formulaArg{newErrorFormulaArg(formulaErrorNAME, formulaErrorNAME)}))
+	_, err = getFormulaUniqueArgs(argsList)
+	assert.Equal(t, formulaErrorNAME, err.Error)
+}
+
 func TestCalcDatabase(t *testing.T) {
 	cellData := [][]interface{}{
 		{"Tree", "Height", "Age", "Yield", "Profit", "Height"},
@@ -5223,6 +5330,7 @@ func TestCalcDatabase(t *testing.T) {
 		"DCOUNTA(A4:E4,,A1:F2)":              {"#VALUE!", "#VALUE!"},
 		"DCOUNTA(A4:E10,\"x\",A2:F3)":        {"#VALUE!", "#VALUE!"},
 		"DGET()":                             {"#VALUE!", "DGET requires 3 arguments"},
+		"DGET(A1,\"Profit\",A1)":             {"#VALUE!", "#VALUE!"},
 		"DGET(A4:E5,\"Profit\",A1:F3)":       {"#VALUE!", "#VALUE!"},
 		"DGET(A4:E10,\"Profit\",A1:F3)":      {"#NUM!", "#NUM!"},
 		"DMAX()":                             {"#VALUE!", "DMAX requires 3 arguments"},
@@ -5376,6 +5484,7 @@ func TestCalcHLOOKUP(t *testing.T) {
 	}
 	calcError := map[string][]string{
 		"HLOOKUP(INT(1),A3:A3,1,FALSE)": {"#N/A", "HLOOKUP no result found"},
+		"HLOOKUP(4,A1:E1048576,2,TRUE)": {"#N/A", "HLOOKUP no result found"},
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "B10", formula))
@@ -6365,6 +6474,20 @@ func TestCalcRangeResolver(t *testing.T) {
 	cellRefs.PushBack(cellRef{Col: 1, Row: TotalRows + 1, Sheet: "SheetN"})
 	_, err = f.rangeResolver(&calcContext{}, cellRefs, cellRanges)
 	assert.Equal(t, ErrMaxRows, err)
+	t.Run("for_range_resolver_error", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", "test"))
+		cellRefs := list.New()
+		cellRanges := list.New()
+		cellRanges.PushBack(cellRange{
+			From: cellRef{Col: 1, Row: 1, Sheet: "Sheet1"},
+			To:   cellRef{Col: 1, Row: 1, Sheet: "Sheet1"},
+		})
+		f.SharedStrings = nil
+		f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+		_, err := f.rangeResolver(&calcContext{}, cellRefs, cellRanges)
+		assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	})
 }
 
 func TestCalcBahttextAppendDigit(t *testing.T) {
@@ -6532,4 +6655,289 @@ func TestParseToken(t *testing.T) {
 	assert.Equal(t, formulaErrorNAME, f.parseToken(nil, "Sheet1",
 		efp.Token{TSubType: efp.TokenSubTypeRange, TValue: "1A"}, nil, nil,
 	).Error())
+}
+
+func TestCalcCellValueCache(t *testing.T) {
+	t.Run("for_calc_call_value_with_cache", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 40))
+		assert.NoError(t, f.SetCellValue("Sheet1", "A2", 50))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "A1+A2"))
+
+		result1, err := f.CalcCellValue("Sheet1", "A3")
+		assert.NoError(t, err)
+		assert.Equal(t, "90", result1)
+
+		result2, err := f.CalcCellValue("Sheet1", "A3")
+		assert.NoError(t, err)
+		assert.Equal(t, result1, result2, "cached result should be consistent")
+
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 60))
+
+		result3, err := f.CalcCellValue("Sheet1", "A3")
+		assert.NoError(t, err)
+		assert.Equal(t, "110", result3)
+		assert.NotEqual(t, result1, result3, "result should be updated after cache clear")
+	})
+	t.Run("for_calc_call_value_with_multiple_dependent_cells", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 10))
+		assert.NoError(t, f.SetCellValue("Sheet1", "A2", 10))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "A1+A2"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A4", "A3*3"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A5", "A3+A4"))
+
+		result3, err := f.CalcCellValue("Sheet1", "A3")
+		assert.NoError(t, err)
+		assert.Equal(t, "20", result3)
+
+		result4, err := f.CalcCellValue("Sheet1", "A4")
+		assert.NoError(t, err)
+		assert.Equal(t, "60", result4)
+
+		result5, err := f.CalcCellValue("Sheet1", "A5")
+		assert.NoError(t, err)
+		assert.Equal(t, "80", result5)
+
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 20))
+
+		newResult3, err := f.CalcCellValue("Sheet1", "A3")
+		assert.NoError(t, err)
+		assert.Equal(t, "30", newResult3)
+		assert.NotEqual(t, result3, newResult3, "A3 should be updated")
+
+		newResult5, err := f.CalcCellValue("Sheet1", "A5")
+		assert.NoError(t, err)
+		assert.Equal(t, "120", newResult5)
+		assert.NotEqual(t, result5, newResult5, "A5 should be updated")
+	})
+	t.Run("for_clear_calculation_cache", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 10))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "A1*2"))
+
+		result1, err := f.CalcCellValue("Sheet1", "A2")
+		assert.NoError(t, err)
+		assert.Equal(t, "20", result1)
+
+		result2, err := f.CalcCellValue("Sheet1", "A2")
+		assert.NoError(t, err)
+		assert.Equal(t, result1, result2, "results should be consistent from cache")
+
+		cases := []struct {
+			name string
+			fn   func() error
+		}{
+			{"SetCellValue", func() error { return f.SetCellValue("Sheet1", "B1", 100) }},
+			{"SetCellInt", func() error { return f.SetCellInt("Sheet1", "B2", 200) }},
+			{"SetCellUint", func() error { return f.SetCellUint("Sheet1", "B3", 300) }},
+			{"SetCellFloat", func() error { return f.SetCellFloat("Sheet1", "B4", 3.14, 2, 64) }},
+			{"SetCellStr", func() error { return f.SetCellStr("Sheet1", "B5", "test") }},
+			{"SetCellBool", func() error { return f.SetCellBool("Sheet1", "B6", true) }},
+			{"SetCellDefault", func() error { return f.SetCellDefault("Sheet1", "B7", "default") }},
+			{"SetCellFormula", func() error { return f.SetCellFormula("Sheet1", "B8", "=1+1") }},
+			{"SetCellHyperLink", func() error {
+				return f.SetCellHyperLink("Sheet1", "B9", "https://github.com/xuri/excelize", "External")
+			}},
+			{"SetCellRichText", func() error {
+				runs := []RichTextRun{{Text: "Rich", Font: &Font{Bold: true}}}
+				return f.SetCellRichText("Sheet1", "B10", runs)
+			}},
+			{"SetSheetRow", func() error { return f.SetSheetRow("Sheet1", "C1", &[]interface{}{1, 2, 3}) }},
+			{"SetSheetCol", func() error { return f.SetSheetCol("Sheet1", "D1", &[]interface{}{4, 5, 6}) }},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				_, err := f.CalcCellValue("Sheet1", "A2")
+				assert.NoError(t, err)
+				assert.NoError(t, tc.fn())
+				result, err := f.CalcCellValue("Sheet1", "A2")
+				assert.NoError(t, err)
+				assert.Equal(t, "20", result, "calculation should still work after cache clear")
+			})
+		}
+	})
+}
+
+func TestCalcLookupCol(t *testing.T) {
+	result := lookupCol(formulaArg{
+		Type: ArgMatrix,
+		Matrix: [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2)},
+			{},
+			{newNumberFormulaArg(3), newNumberFormulaArg(4)},
+		},
+	}, 0)
+	assert.Equal(t, 3, len(result))
+	assert.Equal(t, "1", result[0].Value())
+	assert.Equal(t, "", result[1].Value())
+	assert.Equal(t, "3", result[2].Value())
+}
+
+func TestCalcLookupLinearSearch(t *testing.T) {
+	lookupValue := newStringFormulaArg("test")
+	lookupArray := formulaArg{
+		Type: ArgString,
+		Matrix: [][]formulaArg{
+			{newStringFormulaArg("test")},
+		},
+	}
+	matchMode := newNumberFormulaArg(0)
+	searchMode := newNumberFormulaArg(1)
+	idx, wasExact := lookupLinearSearch(false, lookupValue, lookupArray, matchMode, searchMode)
+	assert.Equal(t, 0, idx)
+	assert.True(t, wasExact)
+}
+
+func TestCalcMatchMatrix(t *testing.T) {
+	assert.Equal(t, formulaArg{Type: ArgNumber, Number: 2},
+		calcMatchMatrix(true, 1, &formulaCriteria{
+			Type:      criteriaEq,
+			Condition: newStringFormulaArg("B"),
+		}, [][]formulaArg{
+			{newStringFormulaArg("A")},
+			{newStringFormulaArg("B")},
+			{newStringFormulaArg("C")},
+		}),
+	)
+}
+
+func TestCalcSORTBY(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Name", "Region", "Sales", "Quarter"},
+		{"Alice", "North", 1500, 1},
+		{"Bob", "South", 2000, 2},
+		{"Alice", "North", 1200, 2},
+		{"Charlie", "East", 1800, 1},
+		{"Bob", "South", 2200, 1},
+		{"David", "West", 1000, 2},
+		{"Alice", "North", 1700, 3},
+		{"Test", "Mixed", "Text", 4},
+		{nil, "Empty", 500, 4},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"TEXTJOIN(\",\", TRUE, SORTBY(A2:A8, C2:C8))":                         "David,Alice,Alice,Alice,Charlie,Bob,Bob",
+		"TEXTJOIN(\",\", TRUE, SORTBY(A2:A8, C2:C8, -1))":                     "Bob,Bob,Charlie,Alice,Alice,Alice,David",
+		"TEXTJOIN(\",\", TRUE, SORTBY(A2:A8, B2:B8, 1, C2:C8, -1))":           "Charlie,Alice,Alice,Alice,Bob,Bob,David",
+		"TEXTJOIN(\",\", TRUE, SORTBY(A2:A8, D2:D8, 1, B2:B8, 1, C2:C8, -1))": "Charlie,Alice,Bob,Alice,Bob,David,Alice",
+		"TEXTJOIN(\";\", TRUE, SORTBY(A2:C4, C2:C4))":                         "Alice;North;1200;Alice;North;1500;Bob;South;2000",
+		"TEXTJOIN(\",\", TRUE, SORTBY(C2:C8, A2:B8))":                         "1500,1200,1700,2000,2200,1800,1000",
+		"TEXTJOIN(\",\", TRUE, SORTBY(A2:A10, C2:C10))":                       "David,Alice,Alice,Alice,Charlie,Bob,Bob,Test",
+		"TEXTJOIN(\",\", TRUE, SORTBY(D2:D8, D2:D8))":                         "1,1,1,2,2,2,3",
+		"TEXTJOIN(\",\", TRUE, SORTBY(B2:B8, B2:B8))":                         "East,North,North,North,South,South,West",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string][]string{
+		"SORTBY(A2:A7)": {"#VALUE!", "SORTBY requires at least 2 arguments"},
+		"SORTBY(A2:A7, C2:C7, 1, D2:D7, 1, B2:B7, 1, E2:E7, 1)": {"#VALUE!", "SORTBY takes at most 7 arguments, received 9"},
+		"SORTBY(A2:A7, C2:C7, 1, D2:D7)":                        {"#VALUE!", "SORTBY requires 2, 3, 5, or 7 arguments, received 4"},
+		"SORTBY(A2:A7, C2:C7, 1, D2:D7, 1, B2:B7)":              {"#VALUE!", "SORTBY requires 2, 3, 5, or 7 arguments, received 6"},
+		"SORTBY(A2:A7, C2:C5)":                                  {"#VALUE!", "by_array dimensions (4 rows) do not match array dimensions (6 rows)"},
+		"SORTBY(A2:A7, C2:C7, 2)":                               {"#VALUE!", "sort_order must be 1 or -1, received 2"},
+		"SORTBY(A2:A7, C2:C7, 0)":                               {"#VALUE!", "sort_order must be 1 or -1, received 0"},
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "F1", formula))
+		result, err := f.CalcCellValue("Sheet1", "F1")
+		assert.EqualError(t, err, expected[1], formula)
+		assert.Equal(t, expected[0], result, formula)
+	}
+
+	f = prepareCalcData([][]interface{}{
+		{"Name", "Score"},
+		{"Alice", 100},
+	})
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "TEXTJOIN(\",\", TRUE, SORTBY(A2:A2, B2:B2))"))
+	result, err := f.CalcCellValue("Sheet1", "C1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Alice", result, "Single row should work")
+
+	f = prepareCalcData([][]interface{}{
+		{"Name", "Score"},
+		{"Alice", 100},
+		{"Bob", 100},
+		{"Charlie", 100},
+	})
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "TEXTJOIN(\",\", TRUE, SORTBY(A2:A4, B2:B4))"))
+	result, err = f.CalcCellValue("Sheet1", "C1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Alice,Bob,Charlie", result, "Equal values maintain original order")
+
+	f = prepareCalcData([][]interface{}{
+		{"Name", "Group", "Score"},
+		{"Charlie", "A", 90},
+		{"Alice", "A", 95},
+		{"Bob", "A", 85},
+	})
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "TEXTJOIN(\",\", TRUE, SORTBY(A2:A4, B2:B4, 1, C2:C4, 1))"))
+	result, err = f.CalcCellValue("Sheet1", "D1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Bob,Charlie,Alice", result, "Second key determines order when first is equal")
+
+	f = prepareCalcData([][]interface{}{
+		{"Name", "Score"},
+		{"Alice", 100},
+	})
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=SORTBY(A2:A2,{})"))
+	result, err = f.CalcCellValue("Sheet1", "C1")
+	assert.Error(t, err)
+	assert.Equal(t, formulaErrorVALUE, result)
+
+	f = prepareCalcData([][]interface{}{
+		{"Name", "Score"},
+		{"Alice", 100},
+	})
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=SORTBY({},B2:B2)"))
+	result, err = f.CalcCellValue("Sheet1", "C1")
+	assert.Error(t, err)
+	assert.Equal(t, formulaErrorVALUE, result)
+
+	f = prepareCalcData([][]interface{}{
+		{1, 2, 3},
+		{4, 5, 6},
+		{7, 8, 9},
+	})
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D2", "=SORTBY(NA(),B1:B2)"))
+	result, err = f.CalcCellValue("Sheet1", "D2")
+	assert.Equal(t, formulaErrorNA, result)
+	assert.Equal(t, formulaErrorNA, err.Error())
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D4", "=SORTBY(A1:A2,NA())"))
+	_, err = f.CalcCellValue("Sheet1", "D4")
+	assert.Equal(t, formulaErrorNA, result)
+	assert.Equal(t, formulaErrorNA, err.Error())
+
+	argsList := list.New()
+	argsList.PushBack(newStringFormulaArg("text"))
+	nextByArray, errArg := parseSortOrderArg(argsList.Front(), &sortbyKey{}, 0, 3)
+	assert.Equal(t, "strconv.ParseFloat: parsing \"text\": invalid syntax", errArg.Error)
+	assert.NotNil(t, nextByArray)
+	nextByArray, errArg = parseSortOrderArg(argsList.Front(), &sortbyKey{}, 0, 1)
+	assert.Nil(t, errArg)
+	assert.NotNil(t, nextByArray)
+}
+
+func TestCalcTrendGrowthMultipleRegressionPart2(t *testing.T) {
+	calcTrendGrowthMultipleRegressionPart2(true, false,
+		[][]float64{{1}, {2}, {3}},
+		[][]float64{},
+		[][]float64{},
+		[][]float64{{0}},
+		2.0, 0, 0, 3)
+	calcTrendGrowthMultipleRegressionPart2(true, false,
+		[][]float64{{1}, {2}, {3}},
+		[][]float64{{0}, {0}, {0}},
+		[][]float64{},
+		[][]float64{{0}},
+		2.0, 0, 1, 3)
+}
+
+func TestCalcTrendGrowthRegression(t *testing.T) {
+	mtx := [][]float64{}
+	calcTrendGrowthRegression(false, false, 0, 0, 0, 0, 0, mtx, mtx, mtx, mtx)
 }

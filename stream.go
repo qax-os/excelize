@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -413,7 +413,7 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 		if err != nil {
 			return err
 		}
-		c := xlsxC{R: ref, S: sw.worksheet.prepareCellStyle(col, row, options.StyleID)}
+		c := xlsxC{R: ref, S: sw.worksheet.prepareCellStyle(col+i, row, options.StyleID)}
 		var s int
 		if v, ok := val.(Cell); ok {
 			s, val = v.StyleID, v.Value
@@ -435,6 +435,50 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 	return sw.rawData.Sync()
 }
 
+// SetColVisible provides a function set the visibility of a single column or
+// multiple columns for the StreamWriter. Note that you must call the
+// 'SetColVisible' function before the 'SetRow' function.
+//
+// For example hide column D on Sheet1:
+//
+//	err := sw.SetColVisible(4, 4, false)
+//
+// Hide the columns from D to F (included):
+//
+//	err := sw.SetColVisible(4, 6, false)
+func (sw *StreamWriter) SetColVisible(minVal, maxVal int, visible bool) error {
+	if sw.sheetWritten {
+		return newStreamSetRowOrderError("SetColVisible")
+	}
+	if minVal < MinColumns || minVal > MaxColumns || maxVal < MinColumns || maxVal > MaxColumns {
+		return ErrColumnNumber
+	}
+	if minVal > maxVal {
+		minVal, maxVal = maxVal, minVal
+	}
+	sw.worksheet.setColVisible(minVal, maxVal, visible)
+	return nil
+}
+
+// SetColOutlineLevel provides a function to set outline level of a single
+// column for the StreamWriter. The value of parameter 'level' is 1-7. For
+// example, set outline level of column D in Sheet1 to 2:
+//
+//	err := sw.SetColOutlineLevel(4, 2)
+func (sw *StreamWriter) SetColOutlineLevel(col int, level uint8) error {
+	if sw.sheetWritten {
+		return newStreamSetRowOrderError("SetColOutlineLevel")
+	}
+	if col < MinColumns || col > MaxColumns {
+		return ErrColumnNumber
+	}
+	if level > 7 || level < 1 {
+		return ErrOutlineLevel
+	}
+	sw.worksheet.setColOutlineLevel(col, level)
+	return nil
+}
+
 // SetColStyle provides a function to set the style of a single column or
 // multiple columns for the StreamWriter. Note that you must call
 // the 'SetColStyle' function before the 'SetRow' function. For example set
@@ -443,7 +487,7 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 //	err := sw.SetColStyle(8, 8, style)
 func (sw *StreamWriter) SetColStyle(minVal, maxVal, styleID int) error {
 	if sw.sheetWritten {
-		return ErrStreamSetColStyle
+		return newStreamSetRowOrderError("SetColStyle")
 	}
 	if minVal < MinColumns || minVal > MaxColumns || maxVal < MinColumns || maxVal > MaxColumns {
 		return ErrColumnNumber
@@ -470,7 +514,7 @@ func (sw *StreamWriter) SetColStyle(minVal, maxVal, styleID int) error {
 //	err := sw.SetColWidth(2, 3, 20)
 func (sw *StreamWriter) SetColWidth(minVal, maxVal int, width float64) error {
 	if sw.sheetWritten {
-		return ErrStreamSetColWidth
+		return newStreamSetRowOrderError("SetColWidth")
 	}
 	if minVal < MinColumns || minVal > MaxColumns || maxVal < MinColumns || maxVal > MaxColumns {
 		return ErrColumnNumber
@@ -498,7 +542,7 @@ func (sw *StreamWriter) InsertPageBreak(cell string) error {
 // the 'SetPanes' function before the 'SetRow' function.
 func (sw *StreamWriter) SetPanes(panes *Panes) error {
 	if sw.sheetWritten {
-		return ErrStreamSetPanes
+		return newStreamSetRowOrderError("SetPanes")
 	}
 	return sw.worksheet.setPanes(panes)
 }
@@ -680,6 +724,14 @@ func (sw *StreamWriter) writeSheetData() {
 				if col.Style != 0 {
 					sw.rawData.WriteString(` style="`)
 					sw.rawData.WriteString(strconv.Itoa(col.Style))
+					sw.rawData.WriteString(`"`)
+				}
+				if col.Hidden {
+					sw.rawData.WriteString(` hidden="1"`)
+				}
+				if col.OutlineLevel > 0 {
+					sw.rawData.WriteString(` outlineLevel="`)
+					sw.rawData.WriteString(strconv.FormatUint(uint64(col.OutlineLevel), 10))
 					sw.rawData.WriteString(`"`)
 				}
 				sw.rawData.WriteString(`/>`)

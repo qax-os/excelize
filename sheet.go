@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -384,6 +384,7 @@ func (f *File) SetSheetName(source, target string) error {
 	if target == source {
 		return err
 	}
+	f.clearCalcCache()
 	wb, _ := f.workbookReader()
 	for k, v := range wb.Sheets.Sheet {
 		if v.Name == source {
@@ -527,7 +528,7 @@ func (f *File) getSheetXMLPath(sheet string) (string, bool) {
 }
 
 // SetSheetBackground provides a function to set background picture by given
-// worksheet name and file path. Supported image types: BMP, EMF, EMZ, GIF,
+// worksheet name and file path. Supported image types: BMP, EMF, EMZ, GIF, ICO,
 // JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
 func (f *File) SetSheetBackground(sheet, picture string) error {
 	var err error
@@ -541,7 +542,7 @@ func (f *File) SetSheetBackground(sheet, picture string) error {
 
 // SetSheetBackgroundFromBytes provides a function to set background picture by
 // given worksheet name, extension name and image data. Supported image types:
-// BMP, EMF, EMZ, GIF, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
+// BMP, EMF, EMZ, GIF, ICO, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
 func (f *File) SetSheetBackgroundFromBytes(sheet, extension string, picture []byte) error {
 	if len(picture) == 0 {
 		return ErrParameterInvalid
@@ -579,7 +580,7 @@ func (f *File) DeleteSheet(sheet string) error {
 	if idx, _ := f.GetSheetIndex(sheet); f.SheetCount == 1 || idx == -1 {
 		return nil
 	}
-
+	f.clearCalcCache()
 	wb, _ := f.workbookReader()
 	wbRels, _ := f.relsReader(f.getWorkbookRelsPath())
 	activeSheetName := f.GetSheetName(f.GetActiveSheetIndex())
@@ -768,6 +769,7 @@ func (f *File) copySheet(from, to int) error {
 	if err != nil {
 		return err
 	}
+	f.clearCalcCache()
 	worksheet := &xlsxWorksheet{}
 	deepcopy.Copy(worksheet, sheet)
 	toSheetID := strconv.Itoa(f.getSheetID(f.GetSheetName(to)))
@@ -1755,11 +1757,11 @@ func (f *File) GetPageLayout(sheet string) (PageLayoutOptions, error) {
 //
 // You can also use the function in RefersTo. For example:
 //
-// 	err := f.SetDefinedName(&excelize.DefinedName{
-//     Name:     "CustomRange",
-//     RefersTo: "Sheet1!$A$2+Sheet1!$D$5",
-//     Scope:    "Sheet1",
-// 	})
+//	err := f.SetDefinedName(&excelize.DefinedName{
+//	    Name:     "CustomRange",
+//	    RefersTo: "Sheet1!$A$2+Sheet1!$D$5",
+//	    Scope:    "Sheet1",
+//	})
 func (f *File) SetDefinedName(definedName *DefinedName) error {
 	if definedName.Name == "" || definedName.RefersTo == "" {
 		return ErrParameterInvalid
@@ -1771,6 +1773,7 @@ func (f *File) SetDefinedName(definedName *DefinedName) error {
 	if err != nil {
 		return err
 	}
+	f.clearCalcCache()
 	d := xlsxDefinedName{
 		Name:    definedName.Name,
 		Comment: definedName.Comment,
@@ -1813,6 +1816,7 @@ func (f *File) DeleteDefinedName(definedName *DefinedName) error {
 	if err != nil {
 		return err
 	}
+	f.clearCalcCache()
 	if wb.DefinedNames != nil {
 		for idx, dn := range wb.DefinedNames.DefinedName {
 			scope := "Workbook"

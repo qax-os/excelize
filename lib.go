@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -856,28 +856,53 @@ func bstrMarshal(s string) (result string) {
 	return result
 }
 
-// newRat converts decimals to rational fractions with the required precision.
-func newRat(n float64, iterations int64, prec float64) *big.Rat {
-	x := int64(math.Floor(n))
-	y := n - float64(x)
-	rat := continuedFraction(y, 1, iterations, prec)
-	return rat.Add(rat, new(big.Rat).SetInt64(x))
+// floatToFraction converts a float number to a fraction string representation
+// with specified placeholder widths for numerator and denominator.
+func floatToFraction(x float64, numeratorPlaceHolder, denominatorPlaceHolder int) string {
+	if denominatorPlaceHolder <= 0 {
+		return ""
+	}
+	num, den := floatToFracUseContinuedFraction(x, int64(math.Pow10(denominatorPlaceHolder)))
+	if num == 0 {
+		return strings.Repeat(" ", numeratorPlaceHolder+denominatorPlaceHolder+1)
+	}
+	numStr := strconv.FormatInt(num, 10)
+	denStr := strconv.FormatInt(den, 10)
+	numeratorPlaceHolder = max(numeratorPlaceHolder-len(numStr), 0)
+	denominatorPlaceHolder = max(denominatorPlaceHolder-len(denStr), 0)
+	return fmt.Sprintf("%s%s/%s%s", strings.Repeat(" ", numeratorPlaceHolder), numStr, denStr, strings.Repeat(" ", denominatorPlaceHolder))
 }
 
-// continuedFraction returns rational from decimal with the continued fraction
-// algorithm.
-func continuedFraction(n float64, i int64, limit int64, prec float64) *big.Rat {
-	if i >= limit || n <= prec {
-		return big.NewRat(0, 1)
+// floatToFracUseContinuedFraction implement convert a floating-point decimal
+// to a fraction using continued fractions and recurrence relations.
+func floatToFracUseContinuedFraction(r float64, denominatorLimit int64) (num, den int64) {
+	p1 := int64(1) // LaTex: p_{-1}
+	q1 := int64(0) // LaTex: q_{-1}
+	p2 := int64(0) // LaTex: p_{-2}
+	q2 := int64(1) // LaTex: q_{-2}
+	var lasta, lastb int64
+	var curra, currb int64
+	for k := 0; ; k++ {
+		// a_{k} = \lfloor r_{k} \rfloor
+		a := int64(math.Floor(r))
+		// Fundamental recurrence formulas:  p_{k} = a_{k} \cdot p_{k-1} + p_{k-2}
+		curra, currb = a*p1+p2, a*q1+q2
+		p2 = p1
+		q2 = q1
+		p1 = curra
+		q1 = currb
+		frac := r - float64(a)
+		if q1 >= denominatorLimit {
+			return lasta, lastb
+		}
+		if math.Abs(frac) < 1e-12 {
+			// use safe floating-point number comparison. If the input(r) is a real number, here is 0.
+			return curra, currb
+		}
+		lasta, lastb = curra, currb
+		// r_{k+1} = \frac{1}{r_{k} - a_{k}}
+		r = 1.0 / frac
 	}
-	inverted := 1 / n
-	y := int64(math.Floor(inverted))
-	x := inverted - float64(y)
-	ratY := new(big.Rat).SetInt64(y)
-	ratNext := continuedFraction(x, i+1, limit, prec)
-	res := ratY.Add(ratY, ratNext)
-	res = res.Inv(res)
-	return res
 }
 
 // assignFieldValue assigns the value from an immutable reflect.Value to a

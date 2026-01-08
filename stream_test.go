@@ -154,6 +154,38 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, file.Close())
 }
 
+func TestStreamSetColVisible(t *testing.T) {
+	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.SetColVisible(3, 2, false))
+	assert.Equal(t, ErrColumnNumber, streamWriter.SetColVisible(0, 3, false))
+	assert.Equal(t, ErrColumnNumber, streamWriter.SetColVisible(MaxColumns+1, 3, false))
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
+	assert.Equal(t, newStreamSetRowOrderError("SetColVisible"), streamWriter.SetColVisible(2, 3, false))
+	assert.NoError(t, streamWriter.Flush())
+}
+
+func TestStreamSetColOutlineLevel(t *testing.T) {
+	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.SetColOutlineLevel(4, 2))
+	assert.Equal(t, ErrOutlineLevel, streamWriter.SetColOutlineLevel(4, 0))
+	assert.Equal(t, ErrOutlineLevel, streamWriter.SetColOutlineLevel(4, 8))
+	assert.Equal(t, ErrColumnNumber, streamWriter.SetColOutlineLevel(0, 2))
+	assert.Equal(t, ErrColumnNumber, streamWriter.SetColOutlineLevel(MaxColumns+1, 2))
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
+	assert.Equal(t, newStreamSetRowOrderError("SetColOutlineLevel"), streamWriter.SetColOutlineLevel(4, 2))
+	assert.NoError(t, streamWriter.Flush())
+}
+
 func TestStreamSetColStyle(t *testing.T) {
 	file := NewFile()
 	defer func() {
@@ -166,7 +198,7 @@ func TestStreamSetColStyle(t *testing.T) {
 	assert.Equal(t, ErrColumnNumber, streamWriter.SetColStyle(MaxColumns+1, 3, 20))
 	assert.Equal(t, newInvalidStyleID(2), streamWriter.SetColStyle(1, 3, 2))
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
-	assert.Equal(t, ErrStreamSetColStyle, streamWriter.SetColStyle(2, 3, 0))
+	assert.Equal(t, newStreamSetRowOrderError("SetColStyle"), streamWriter.SetColStyle(2, 3, 0))
 
 	file = NewFile()
 	defer func() {
@@ -199,7 +231,7 @@ func TestStreamSetColWidth(t *testing.T) {
 	assert.Equal(t, ErrColumnNumber, streamWriter.SetColWidth(MaxColumns+1, 3, 20))
 	assert.Equal(t, ErrColumnWidth, streamWriter.SetColWidth(1, 3, MaxColumnWidth+1))
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
-	assert.Equal(t, ErrStreamSetColWidth, streamWriter.SetColWidth(2, 3, 20))
+	assert.Equal(t, newStreamSetRowOrderError("SetColWidth"), streamWriter.SetColWidth(2, 3, 20))
 	assert.NoError(t, streamWriter.Flush())
 }
 
@@ -223,7 +255,7 @@ func TestStreamSetPanes(t *testing.T) {
 	assert.NoError(t, streamWriter.SetPanes(paneOpts))
 	assert.Equal(t, ErrParameterInvalid, streamWriter.SetPanes(nil))
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{"A", "B", "C"}))
-	assert.Equal(t, ErrStreamSetPanes, streamWriter.SetPanes(paneOpts))
+	assert.Equal(t, newStreamSetRowOrderError("SetPanes"), streamWriter.SetPanes(paneOpts))
 }
 
 func TestStreamTable(t *testing.T) {
@@ -362,21 +394,34 @@ func TestStreamSetRowWithStyle(t *testing.T) {
 	blueStyleID, err := file.NewStyle(&Style{Font: &Font{Color: "0000FF"}})
 	assert.NoError(t, err)
 
-	streamWriter, err := file.NewStreamWriter("Sheet1")
+	sheetName := "Sheet1"
+	streamWriter, err := file.NewStreamWriter(sheetName)
 	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.SetColStyle(1, 1, grayStyleID))
+	assert.NoError(t, streamWriter.SetColStyle(3, 3, blueStyleID))
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{
-		"value1",
-		Cell{Value: "value2"},
-		&Cell{Value: "value2"},
-		Cell{StyleID: blueStyleID, Value: "value3"},
-		&Cell{StyleID: blueStyleID, Value: "value3"},
+		"A1",
+		Cell{Value: "B1"},
+		&Cell{Value: "C1"},
+		Cell{StyleID: blueStyleID, Value: "D1"},
+		&Cell{StyleID: blueStyleID, Value: "E1"},
 	}, RowOpts{StyleID: grayStyleID}))
+	assert.NoError(t, streamWriter.SetRow("A2", []interface{}{
+		"A2",
+		Cell{Value: "B2"},
+		&Cell{Value: "C2"},
+		Cell{StyleID: grayStyleID, Value: "D2"},
+		&Cell{StyleID: blueStyleID, Value: "E2"},
+	}))
 	assert.NoError(t, streamWriter.Flush())
 
-	ws, err := file.workSheetReader("Sheet1")
+	ws, err := file.workSheetReader(sheetName)
 	assert.NoError(t, err)
 	for colIdx, expected := range []int{grayStyleID, grayStyleID, grayStyleID, blueStyleID, blueStyleID} {
 		assert.Equal(t, expected, ws.SheetData.Row[0].C[colIdx].S)
+	}
+	for colIdx, expected := range []int{grayStyleID, 0, blueStyleID, grayStyleID, blueStyleID} {
+		assert.Equal(t, expected, ws.SheetData.Row[1].C[colIdx].S)
 	}
 }
 

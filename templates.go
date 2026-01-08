@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -288,28 +288,30 @@ var supportedChartDataLabelsPosition = map[ChartType][]ChartDataLabelPositionTyp
 }
 
 const (
-	defaultTempFileSST                    = "sharedStrings"
-	defaultXMLMetadata                    = "xl/metadata.xml"
-	defaultXMLPathCalcChain               = "xl/calcChain.xml"
-	defaultXMLPathCellImages              = "xl/cellimages.xml"
-	defaultXMLPathCellImagesRels          = "xl/_rels/cellimages.xml.rels"
-	defaultXMLPathContentTypes            = "[Content_Types].xml"
-	defaultXMLPathDocPropsApp             = "docProps/app.xml"
-	defaultXMLPathDocPropsCore            = "docProps/core.xml"
-	defaultXMLPathDocPropsCustom          = "docProps/custom.xml"
-	defaultXMLPathRels                    = "_rels/.rels"
-	defaultXMLPathSharedStrings           = "xl/sharedStrings.xml"
-	defaultXMLPathSheet                   = "xl/worksheets/sheet1.xml"
-	defaultXMLPathStyles                  = "xl/styles.xml"
-	defaultXMLPathTheme                   = "xl/theme/theme1.xml"
-	defaultXMLPathVolatileDeps            = "xl/volatileDependencies.xml"
-	defaultXMLPathWorkbook                = "xl/workbook.xml"
-	defaultXMLPathWorkbookRels            = "xl/_rels/workbook.xml.rels"
-	defaultXMLRdRichValuePart             = "xl/richData/rdrichvalue.xml"
-	defaultXMLRdRichValueRel              = "xl/richData/richValueRel.xml"
-	defaultXMLRdRichValueRelRels          = "xl/richData/_rels/richValueRel.xml.rels"
-	defaultXMLRdRichValueWebImagePart     = "xl/richData/rdRichValueWebImage.xml"
-	defaultXMLRdRichValueWebImagePartRels = "xl/richData/_rels/rdRichValueWebImage.xml.rels"
+	defaultTempFileSST                = "sharedStrings"
+	defaultXMLMetadata                = "xl/metadata.xml"
+	defaultXMLPathCalcChain           = "xl/calcChain.xml"
+	defaultXMLPathCellImages          = "xl/cellimages.xml"
+	defaultXMLPathCellImagesRels      = "xl/_rels/cellimages.xml.rels"
+	defaultXMLPathContentTypes        = "[Content_Types].xml"
+	defaultXMLPathDocPropsApp         = "docProps/app.xml"
+	defaultXMLPathDocPropsCore        = "docProps/core.xml"
+	defaultXMLPathDocPropsCustom      = "docProps/custom.xml"
+	defaultXMLPathRels                = "_rels/.rels"
+	defaultXMLPathSharedStrings       = "xl/sharedStrings.xml"
+  defaultXMLPathSheet               = "xl/worksheets/sheet1.xml"
+	defaultXMLPathStyles              = "xl/styles.xml"
+	defaultXMLPathTheme               = "xl/theme/theme1.xml"
+	defaultXMLPathVolatileDeps        = "xl/volatileDependencies.xml"
+	defaultXMLPathWorkbook            = "xl/workbook.xml"
+	defaultXMLPathWorkbookRels        = "xl/_rels/workbook.xml.rels"
+	defaultXMLRdRichValue             = "xl/richData/rdrichvalue.xml"
+	defaultXMLRdRichValueRel          = "xl/richData/richValueRel.xml"
+	defaultXMLRdRichValueRelRels      = "xl/richData/_rels/richValueRel.xml.rels"
+	defaultXMLRdRichValueStructure    = "xl/richData/rdrichvaluestructure.xml"
+	defaultXMLRdRichValueTypes        = "xl/richData/rdRichValueTypes.xml"
+	defaultXMLRdRichValueWebImage     = "xl/richData/rdRichValueWebImage.xml"
+	defaultXMLRdRichValueWebImageRels = "xl/richData/_rels/rdRichValueWebImage.xml.rels"
 )
 
 // IndexedColorMapping is the table of default mappings from indexed color value
@@ -493,8 +495,9 @@ var supportedDefinedNameAfterStartCharCodeRange = []int{
 // supportedImageTypes defined supported image types.
 var supportedImageTypes = map[string]string{
 	".bmp": ".bmp", ".emf": ".emf", ".emz": ".emz", ".gif": ".gif",
-	".jpeg": ".jpeg", ".jpg": ".jpeg", ".png": ".png", ".svg": ".svg",
-	".tif": ".tiff", ".tiff": ".tiff", ".wmf": ".wmf", ".wmz": ".wmz",
+	".ico": ".ico", ".jpeg": ".jpeg", ".jpg": ".jpeg", ".png": ".png",
+	".svg": ".svg", ".tif": ".tiff", ".tiff": ".tiff", ".wmf": ".wmf",
+	".wmz": ".wmz",
 }
 
 // supportedCalcMode defined supported formula calculate mode.
