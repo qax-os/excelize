@@ -38,14 +38,9 @@ const (
 
 // parseGraphicOptions provides a function to parse the format settings of
 // the picture with default value.
-func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
+func (opts *GraphicOptions) parseGraphicOptions(defaults *GraphicOptions) (*GraphicOptions, error) {
 	if opts == nil {
-		return &GraphicOptions{
-			PrintObject: boolPtr(true),
-			Locked:      boolPtr(true),
-			ScaleX:      defaultDrawingScale,
-			ScaleY:      defaultDrawingScale,
-		}
+		return defaults, nil
 	}
 	if opts.PrintObject == nil {
 		opts.PrintObject = boolPtr(true)
@@ -59,7 +54,24 @@ func parseGraphicOptions(opts *GraphicOptions) *GraphicOptions {
 	if opts.ScaleY == 0 {
 		opts.ScaleY = defaultDrawingScale
 	}
-	return opts
+	if opts.Positioning != "" && inStrSlice(supportedPositioning, opts.Positioning, true) == -1 {
+		return defaults, newInvalidOptionalValue("Positioning", opts.Positioning, supportedPositioning)
+	}
+	return opts, nil
+}
+
+// parsePictureOptions provides a function to parse the picture options with
+// default value.
+func parsePictureOptions(pic *Picture) (*GraphicOptions, error) {
+	if pic.InsertType != PictureInsertTypePlaceOverCells {
+		return nil, ErrParameterInvalid
+	}
+	return pic.Format.parseGraphicOptions(&GraphicOptions{
+		PrintObject: boolPtr(true),
+		Locked:      boolPtr(true),
+		ScaleX:      defaultDrawingScale,
+		ScaleY:      defaultDrawingScale,
+	})
 }
 
 // AddPicture provides the method to add picture in a sheet by given picture
@@ -237,10 +249,10 @@ func (f *File) AddPictureFromBytes(sheet, cell string, pic *Picture) error {
 	if !ok {
 		return ErrImgExt
 	}
-	if pic.InsertType != PictureInsertTypePlaceOverCells {
-		return ErrParameterInvalid
+	options, err := parsePictureOptions(pic)
+	if err != nil {
+		return err
 	}
-	options := parseGraphicOptions(pic.Format)
 	img, _, err := image.DecodeConfig(bytes.NewReader(pic.File))
 	if err != nil {
 		return err

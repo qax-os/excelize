@@ -151,6 +151,10 @@ func TestAddChart(t *testing.T) {
 
 	// Test add chart on not exists worksheet
 	assert.EqualError(t, f.AddChart("SheetN", "P1", nil), "sheet SheetN does not exist")
+	// Test add chart with invalid positioning types
+	assert.Equal(t, f.AddChart("Sheet1", "P1", &Chart{
+		Format: GraphicOptions{Positioning: "x"},
+	}), newInvalidOptionalValue("Positioning", "x", supportedPositioning))
 	maximum, minimum, zero := 7.5, 0.5, .0
 	series := []ChartSeries{
 		{Name: "Sheet1!$A$30", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$30:$D$30"},

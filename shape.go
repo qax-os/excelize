@@ -31,25 +31,19 @@ func parseShapeOptions(opts *Shape) (*Shape, error) {
 	if opts.Height == 0 {
 		opts.Height = defaultShapeSize
 	}
-	if opts.Format.PrintObject == nil {
-		opts.Format.PrintObject = boolPtr(true)
-	}
-	if opts.Format.Locked == nil {
-		opts.Format.Locked = boolPtr(false)
-	}
-	if opts.Format.ScaleX == 0 {
-		opts.Format.ScaleX = defaultDrawingScale
-	}
-	if opts.Format.ScaleY == 0 {
-		opts.Format.ScaleY = defaultDrawingScale
-	}
 	if opts.Line.Width == nil {
 		opts.Line.Width = float64Ptr(defaultShapeLineWidth)
 	}
 	if opts.Fill.Transparency < 0 || 100 < opts.Fill.Transparency {
 		return opts, ErrTransparency
 	}
-	return opts, nil
+	format := opts.Format
+	graphicOptions, err := format.parseGraphicOptions(nil)
+	if err != nil {
+		return opts, err
+	}
+	opts.Format = *graphicOptions
+	return opts, err
 }
 
 // AddShape provides the method to add shape in a sheet by given worksheet
@@ -325,9 +319,9 @@ func (f *File) AddShape(sheet string, opts *Shape) error {
 	return f.addContentTypePart(drawingID, "drawings")
 }
 
-// twoCellAnchorShape create a two cell anchor shape size placeholder for a
+// cellAnchorShape create a two cell anchor shape size placeholder for a
 // group, a shape, or a drawing element.
-func (f *File) twoCellAnchorShape(sheet, drawingXML, cell string, width, height uint, format GraphicOptions) (*xlsxWsDr, *xdrCellAnchor, int, error) {
+func (f *File) cellAnchorShape(sheet, drawingXML, cell string, width, height uint, format GraphicOptions) (*xlsxWsDr, *xdrCellAnchor, int, error) {
 	fromCol, fromRow, err := CellNameToCoordinates(cell)
 	if err != nil {
 		return nil, nil, 0, err
@@ -339,27 +333,36 @@ func (f *File) twoCellAnchorShape(sheet, drawingXML, cell string, width, height 
 	if err != nil {
 		return content, nil, cNvPrID, err
 	}
-	twoCellAnchor := xdrCellAnchor{}
-	twoCellAnchor.EditAs = format.Positioning
+	cellAnchor := xdrCellAnchor{}
+	cellAnchor.EditAs = format.Positioning
 	from := xlsxFrom{}
 	from.Col = colStart
 	from.ColOff = x1 * EMU
 	from.Row = rowStart
 	from.RowOff = y1 * EMU
-	to := xlsxTo{}
-	to.Col = colEnd
-	to.ColOff = x2 * EMU
-	to.Row = rowEnd
-	to.RowOff = y2 * EMU
-	twoCellAnchor.From = &from
-	twoCellAnchor.To = &to
-	return content, &twoCellAnchor, cNvPrID, err
+	cellAnchor.From = &from
+	if format.Positioning != "oneCell" {
+		to := xlsxTo{}
+		to.Col = colEnd
+		to.ColOff = x2 * EMU
+		to.Row = rowEnd
+		to.RowOff = y2 * EMU
+		cellAnchor.To = &to
+		cellAnchor.EditAs = format.Positioning
+	}
+	if format.Positioning == "oneCell" {
+		cellAnchor.Ext = &xlsxPositiveSize2D{
+			Cx: x2 * EMU,
+			Cy: y2 * EMU,
+		}
+	}
+	return content, &cellAnchor, cNvPrID, err
 }
 
 // addDrawingShape provides a function to add preset geometry by given sheet,
 // drawingXML and format sets.
 func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) error {
-	content, twoCellAnchor, cNvPrID, err := f.twoCellAnchorShape(
+	content, cellAnchor, cNvPrID, err := f.cellAnchorShape(
 		sheet, drawingXML, cell, opts.Width, opts.Height, opts.Format)
 	if err != nil {
 		return err
@@ -380,6 +383,12 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 			},
 		},
 		SpPr: &xlsxSpPr{
+			Xfrm: xlsxXfrm{
+				Ext: xlsxPositiveSize2D{
+					Cx: int(opts.Width) * EMU,
+					Cy: int(opts.Height) * EMU,
+				},
+			},
 			PrstGeom: xlsxPrstGeom{
 				Prst: opts.Type,
 			},
@@ -476,12 +485,16 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 		}
 		shape.TxBody.P = append(shape.TxBody.P, paragraph)
 	}
-	twoCellAnchor.Sp = &shape
-	twoCellAnchor.ClientData = &xdrClientData{
+	cellAnchor.Sp = &shape
+	cellAnchor.ClientData = &xdrClientData{
 		FLocksWithSheet:  *opts.Format.Locked,
 		FPrintsWithSheet: *opts.Format.PrintObject,
 	}
-	content.TwoCellAnchor = append(content.TwoCellAnchor, twoCellAnchor)
+	if opts.Format.Positioning == "oneCell" {
+		content.OneCellAnchor = append(content.OneCellAnchor, cellAnchor)
+	} else {
+		content.TwoCellAnchor = append(content.TwoCellAnchor, cellAnchor)
+	}
 	f.Drawings.Store(drawingXML, content)
 	return err
 }

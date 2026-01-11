@@ -45,6 +45,7 @@ func TestSlicer(t *testing.T) {
 		Height:        200,
 		DisplayHeader: &disable,
 		ItemDesc:      true,
+		Format:        GraphicOptions{Positioning: "oneCell"},
 	}))
 	// Test get table slicers
 	slicers, err := f.GetSlicers("Sheet1")
@@ -174,6 +175,14 @@ func TestSlicer(t *testing.T) {
 		TableSheet: "SheetN",
 		TableName:  "Table1",
 	}), "sheet SheetN does not exist")
+	// Test add slicer with invalid positioning types
+	assert.Equal(t, f.AddSlicer("Sheet1", &SlicerOptions{
+		Name:       "Column2",
+		Cell:       "Q1",
+		TableSheet: "Sheet1",
+		TableName:  "Table1",
+		Format:     GraphicOptions{Positioning: "x"},
+	}), newInvalidOptionalValue("Positioning", "x", supportedPositioning))
 	// Test add a table slicer with not exist table name
 	assert.Equal(t, newNoExistTableError("Table2"), f.AddSlicer("Sheet1", &SlicerOptions{
 		Name:       "Column2",
@@ -399,9 +408,17 @@ func TestSlicer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, slicers)
 	assert.NoError(t, f.Close())
-	// Test open a workbook and get sheet slicer with invalid cell reference in the drawing part
+	// Test open a workbook and get sheet slicer with invalid cell reference in the drawing one cell anchor
 	f, err = OpenFile(workbookPath)
 	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(fmt.Sprintf(`<wsDr xmlns="%s"><oneCellAnchor><from><col>-1</col><row>-1</row></from><mc:AlternateContent><mc:Choice xmlns:sle15="%s"><graphicFrame><nvGraphicFramePr><cNvPr id="2" name="Column1"/></nvGraphicFramePr></graphicFrame></mc:Choice></mc:AlternateContent></oneCellAnchor></wsDr>`, NameSpaceDrawingMLSpreadSheet.Value, NameSpaceDrawingMLSlicerX15.Value)))
+	_, err = f.GetSlicers("Sheet1")
+	assert.Equal(t, newCoordinatesToCellNameError(0, 0), err)
+	assert.NoError(t, f.Close())
+	// Test open a workbook and get sheet slicer with invalid cell reference in the drawing one cell anchor
+	f, err = OpenFile(workbookPath)
+	assert.NoError(t, err)
+	// Test open a workbook and get sheet slicer with invalid cell reference in the drawing two cell anchor
 	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(fmt.Sprintf(`<wsDr xmlns="%s"><twoCellAnchor><from><col>-1</col><row>-1</row></from><mc:AlternateContent><mc:Choice xmlns:sle15="%s"><graphicFrame><nvGraphicFramePr><cNvPr id="2" name="Column1"/></nvGraphicFramePr></graphicFrame></mc:Choice></mc:AlternateContent></twoCellAnchor></wsDr>`, NameSpaceDrawingMLSpreadSheet.Value, NameSpaceDrawingMLSlicerX15.Value)))
 	_, err = f.GetSlicers("Sheet1")
 	assert.Equal(t, newCoordinatesToCellNameError(0, 0), err)
@@ -424,8 +441,27 @@ func TestSlicer(t *testing.T) {
 	_, err = f.GetSlicers("Sheet2")
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
-
-	// Test create a workbook and get sheet slicer with invalid cell reference in the drawing part
+	// Test create a workbook and get sheet slicer with invalid cell reference in the drawing one cell anchor
+	f = NewFile()
+	assert.NoError(t, f.AddTable("Sheet1", &Table{
+		Name:  "Table1",
+		Range: "A1:D5",
+	}))
+	assert.NoError(t, f.AddSlicer("Sheet1", &SlicerOptions{
+		Name:       "Column1",
+		Cell:       "E1",
+		TableSheet: "Sheet1",
+		TableName:  "Table1",
+		Caption:    "Column1",
+		Format:     GraphicOptions{Positioning: "oneCell"},
+	}))
+	drawing, ok := f.Drawings.Load("xl/drawings/drawing1.xml")
+	assert.True(t, ok)
+	drawing.(*xlsxWsDr).OneCellAnchor[0].From = &xlsxFrom{Col: -1, Row: -1}
+	_, err = f.GetSlicers("Sheet1")
+	assert.Equal(t, newCoordinatesToCellNameError(0, 0), err)
+	assert.NoError(t, f.Close())
+	// Test create a workbook and get sheet slicer with invalid cell reference in the drawing two cell anchor
 	f = NewFile()
 	assert.NoError(t, f.AddTable("Sheet1", &Table{
 		Name:  "Table1",
@@ -438,7 +474,7 @@ func TestSlicer(t *testing.T) {
 		TableName:  "Table1",
 		Caption:    "Column1",
 	}))
-	drawing, ok := f.Drawings.Load("xl/drawings/drawing1.xml")
+	drawing, ok = f.Drawings.Load("xl/drawings/drawing1.xml")
 	assert.True(t, ok)
 	drawing.(*xlsxWsDr).TwoCellAnchor[0].From = &xlsxFrom{Col: -1, Row: -1}
 	_, err = f.GetSlicers("Sheet1")

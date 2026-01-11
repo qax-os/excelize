@@ -369,8 +369,8 @@ func TestAddPictureFromBytes(t *testing.T) {
 	imgFile, err := os.ReadFile("logo.png")
 	assert.NoError(t, err, "Unable to load logo for test")
 
-	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 1), &Picture{Extension: ".png", File: imgFile, Format: &GraphicOptions{AltText: "logo"}}))
-	assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprint("A", 50), &Picture{Extension: ".png", File: imgFile, Format: &GraphicOptions{AltText: "logo"}}))
+	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "A1", &Picture{Extension: ".png", File: imgFile, Format: &GraphicOptions{AltText: "logo"}}))
+	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "A50", &Picture{Extension: ".png", File: imgFile, Format: &GraphicOptions{AltText: "logo"}}))
 	imageCount := 0
 	f.Pkg.Range(func(fileName, v interface{}) bool {
 		if strings.Contains(fileName.(string), "media/image") {
@@ -379,9 +379,11 @@ func TestAddPictureFromBytes(t *testing.T) {
 		return true
 	})
 	assert.Equal(t, 1, imageCount, "Duplicate image should only be stored once.")
-	assert.EqualError(t, f.AddPictureFromBytes("SheetN", fmt.Sprint("A", 1), &Picture{Extension: ".png", File: imgFile, Format: &GraphicOptions{AltText: "logo"}}), "sheet SheetN does not exist")
+	assert.EqualError(t, f.AddPictureFromBytes("SheetN", "A1", &Picture{Extension: ".png", File: imgFile}), "sheet SheetN does not exist")
 	// Test add picture from bytes with invalid sheet name
-	assert.EqualError(t, f.AddPictureFromBytes("Sheet:1", fmt.Sprint("A", 1), &Picture{Extension: ".png", File: imgFile, Format: &GraphicOptions{AltText: "logo"}}), ErrSheetNameInvalid.Error())
+	assert.EqualError(t, f.AddPictureFromBytes("Sheet:1", "A1", &Picture{Extension: ".png", File: imgFile}), ErrSheetNameInvalid.Error())
+	// Test add picture from bytes with invalid positioning types
+	assert.Equal(t, f.AddPictureFromBytes("Sheet1", "A1", &Picture{Extension: ".png", File: imgFile, Format: &GraphicOptions{Positioning: "x"}}), newInvalidOptionalValue("Positioning", "x", supportedPositioning))
 }
 
 func TestDeletePicture(t *testing.T) {

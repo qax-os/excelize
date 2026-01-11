@@ -583,18 +583,6 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 	if opts.Dimension.Height == 0 {
 		opts.Dimension.Height = defaultChartDimensionHeight
 	}
-	if opts.Format.PrintObject == nil {
-		opts.Format.PrintObject = boolPtr(true)
-	}
-	if opts.Format.Locked == nil {
-		opts.Format.Locked = boolPtr(false)
-	}
-	if opts.Format.ScaleX == 0 {
-		opts.Format.ScaleX = defaultDrawingScale
-	}
-	if opts.Format.ScaleY == 0 {
-		opts.Format.ScaleY = defaultDrawingScale
-	}
 	if opts.Legend.Position == "" {
 		opts.Legend.Position = defaultChartLegendPosition
 	}
@@ -611,6 +599,12 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 	if opts.ShowBlanksAs == "" {
 		opts.ShowBlanksAs = defaultChartShowBlanksAs
 	}
+	format := opts.Format
+	graphicOptions, err := format.parseGraphicOptions(nil)
+	if err != nil {
+		return opts, err
+	}
+	opts.Format = *graphicOptions
 	return opts, opts.parseSeries()
 }
 

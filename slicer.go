@@ -137,19 +137,13 @@ func parseSlicerOptions(opts *SlicerOptions) (*SlicerOptions, error) {
 	if opts.Height == 0 {
 		opts.Height = defaultSlicerHeight
 	}
-	if opts.Format.PrintObject == nil {
-		opts.Format.PrintObject = boolPtr(true)
+	format := opts.Format
+	graphicOptions, err := format.parseGraphicOptions(nil)
+	if err != nil {
+		return opts, err
 	}
-	if opts.Format.Locked == nil {
-		opts.Format.Locked = boolPtr(false)
-	}
-	if opts.Format.ScaleX == 0 {
-		opts.Format.ScaleX = defaultDrawingScale
-	}
-	if opts.Format.ScaleY == 0 {
-		opts.Format.ScaleY = defaultDrawingScale
-	}
-	return opts, nil
+	opts.Format = *graphicOptions
+	return opts, err
 }
 
 // countSlicers provides a function to get slicer files count storage in the
@@ -600,7 +594,7 @@ func (f *File) addDrawingSlicer(sheet, slicerName string, ns xml.Attr, opts *Sli
 		return err
 	}
 	drawingID, drawingXML = f.prepareDrawing(ws, drawingID, sheet, drawingXML)
-	content, twoCellAnchor, cNvPrID, err := f.twoCellAnchorShape(sheet, drawingXML, opts.Cell, opts.Width, opts.Height, opts.Format)
+	content, cellAnchor, cNvPrID, err := f.cellAnchorShape(sheet, drawingXML, opts.Cell, opts.Width, opts.Height, opts.Format)
 	if err != nil {
 		return err
 	}
@@ -648,7 +642,7 @@ func (f *File) addDrawingSlicer(sheet, slicerName string, ns xml.Attr, opts *Sli
 		},
 	}
 	shape, _ := xml.Marshal(sp)
-	twoCellAnchor.ClientData = &xdrClientData{
+	cellAnchor.ClientData = &xdrClientData{
 		FLocksWithSheet:  *opts.Format.Locked,
 		FPrintsWithSheet: *opts.Format.PrintObject,
 	}
@@ -662,11 +656,16 @@ func (f *File) addDrawingSlicer(sheet, slicerName string, ns xml.Attr, opts *Sli
 	fallback := xlsxFallback{Content: string(shape)}
 	choiceBytes, _ := xml.Marshal(choice)
 	shapeBytes, _ := xml.Marshal(fallback)
-	twoCellAnchor.AlternateContent = append(twoCellAnchor.AlternateContent, &xlsxAlternateContent{
+	cellAnchor.AlternateContent = append(cellAnchor.AlternateContent, &xlsxAlternateContent{
 		XMLNSMC: SourceRelationshipCompatibility.Value,
 		Content: string(choiceBytes) + string(shapeBytes),
 	})
-	content.TwoCellAnchor = append(content.TwoCellAnchor, twoCellAnchor)
+	if opts.Format.Positioning == "oneCell" {
+		content.OneCellAnchor = append(content.OneCellAnchor, cellAnchor)
+	} else {
+		content.TwoCellAnchor = append(content.TwoCellAnchor, cellAnchor)
+	}
+
 	f.Drawings.Store(drawingXML, content)
 	return f.addContentTypePart(drawingID, "drawings")
 }
@@ -896,56 +895,88 @@ func (f *File) extractPivotTableSlicer(slicerCache *xlsxSlicerCacheDefinition, o
 			opt.ItemDesc = slicerCache.Data.Tabular.SortOrder == "descending"
 		}
 	}
-	return nil
+	return err
 }
 
 // extractSlicerCellAnchor extract slicer drawing object from two cell anchor by
 // giving drawing part path and slicer options.
 func (f *File) extractSlicerCellAnchor(drawingXML string, opt *SlicerOptions) error {
 	var (
-		wsDr         *xlsxWsDr
-		deCellAnchor = new(decodeCellAnchor)
-		deChoice     = new(decodeChoice)
-		err          error
+		wsDr *xlsxWsDr
+		err  error
 	)
 	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
 		return err
 	}
 	wsDr.mu.Lock()
 	defer wsDr.mu.Unlock()
-	cond := func(ac *xlsxAlternateContent) bool {
+	for _, anchor := range wsDr.OneCellAnchor {
+		if err = f.extractSlicerFromAnchor(anchor, opt); err != nil {
+			return err
+		}
+		if err = f.extractSlicerFromDecodeAnchor(anchor, opt); err != nil {
+			return err
+		}
+	}
+	for _, anchor := range wsDr.TwoCellAnchor {
+		if err = f.extractSlicerFromAnchor(anchor, opt); err != nil {
+			return err
+		}
+		if err = f.extractSlicerFromDecodeAnchor(anchor, opt); err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+// extractSlicerFromAnchor extract slicer drawing object from cell anchor by
+// giving drawing part path and slicer options.
+func (f *File) extractSlicerFromAnchor(anchor *xdrCellAnchor, opt *SlicerOptions) error {
+	var (
+		deChoice = new(decodeChoice)
+		err      error
+	)
+	for _, ac := range anchor.AlternateContent {
 		if ac != nil {
 			_ = f.xmlNewDecoder(strings.NewReader(ac.Content)).Decode(&deChoice)
 			if deChoice.XMLNSSle15 == NameSpaceDrawingMLSlicerX15.Value || deChoice.XMLNSA14 == NameSpaceDrawingMLA14.Value {
 				if deChoice.GraphicFrame.NvGraphicFramePr.CNvPr.Name == opt.Name {
-					return true
+					if anchor.From != nil {
+						opt.Macro = deChoice.GraphicFrame.Macro
+						if opt.Cell, err = CoordinatesToCellName(anchor.From.Col+1, anchor.From.Row+1); err != nil {
+							return err
+						}
+					}
+					return err
 				}
 			}
 		}
-		return false
 	}
-	for _, anchor := range wsDr.TwoCellAnchor {
-		for _, ac := range anchor.AlternateContent {
-			if cond(ac) {
-				if anchor.From != nil {
-					opt.Macro = deChoice.GraphicFrame.Macro
-					if opt.Cell, err = CoordinatesToCellName(anchor.From.Col+1, anchor.From.Row+1); err != nil {
-						return err
+	return err
+}
+
+// extractSlicerFromDecodeAnchor extract slicer drawing object from decode cell
+// anchor by giving drawing part path and slicer options.
+func (f *File) extractSlicerFromDecodeAnchor(anchor *xdrCellAnchor, opt *SlicerOptions) error {
+	var (
+		deCellAnchor = new(decodeCellAnchor)
+		deChoice     = new(decodeChoice)
+		err          error
+	)
+	_ = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + anchor.GraphicFrame + "</decodeCellAnchor>")).Decode(&deCellAnchor)
+	for _, ac := range deCellAnchor.AlternateContent {
+		if ac != nil {
+			_ = f.xmlNewDecoder(strings.NewReader(ac.Content)).Decode(&deChoice)
+			if deChoice.XMLNSSle15 == NameSpaceDrawingMLSlicerX15.Value || deChoice.XMLNSA14 == NameSpaceDrawingMLA14.Value {
+				if deChoice.GraphicFrame.NvGraphicFramePr.CNvPr.Name == opt.Name {
+					if deCellAnchor.From != nil {
+						opt.Macro = deChoice.GraphicFrame.Macro
+						if opt.Cell, err = CoordinatesToCellName(deCellAnchor.From.Col+1, deCellAnchor.From.Row+1); err != nil {
+							return err
+						}
 					}
+					return err
 				}
-				return err
-			}
-		}
-		_ = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + anchor.GraphicFrame + "</decodeCellAnchor>")).Decode(&deCellAnchor)
-		for _, ac := range deCellAnchor.AlternateContent {
-			if cond(ac) {
-				if deCellAnchor.From != nil {
-					opt.Macro = deChoice.GraphicFrame.Macro
-					if opt.Cell, err = CoordinatesToCellName(deCellAnchor.From.Col+1, deCellAnchor.From.Row+1); err != nil {
-						return err
-					}
-				}
-				return err
 			}
 		}
 	}
