@@ -1398,6 +1398,8 @@ var (
 		{Type: "percent", F: "60"},
 		{Type: "percent", F: "80"},
 	}}}
+	// condFmtX14IconSetPresets defined the list of icon set conditional
+	// formatting rules which defined in worksheet extension list.
 	condFmtX14IconSetPresets = map[string]*xlsxX14CfRule{
 		"3Stars":     x14cfvo3,
 		"3Triangles": x14cfvo3,
