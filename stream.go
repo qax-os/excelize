@@ -439,7 +439,7 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 // multiple columns for the StreamWriter. Note that you must call the
 // 'SetColVisible' function before the 'SetRow' function.
 //
-// For example hide column D on Sheet1:
+// For example hide column D:
 //
 //	err := sw.SetColVisible(4, 4, false)
 //
@@ -461,8 +461,9 @@ func (sw *StreamWriter) SetColVisible(minVal, maxVal int, visible bool) error {
 }
 
 // SetColOutlineLevel provides a function to set outline level of a single
-// column for the StreamWriter. The value of parameter 'level' is 1-7. For
-// example, set outline level of column D in Sheet1 to 2:
+// column for the StreamWriter. The value of parameter 'level' is 1-7. Note that
+// you must call the 'SetColOutlineLevel' function before the 'SetRow' function.
+// For example, set outline level of column D to 2:
 //
 //	err := sw.SetColOutlineLevel(4, 2)
 func (sw *StreamWriter) SetColOutlineLevel(col int, level uint8) error {
@@ -482,7 +483,7 @@ func (sw *StreamWriter) SetColOutlineLevel(col int, level uint8) error {
 // SetColStyle provides a function to set the style of a single column or
 // multiple columns for the StreamWriter. Note that you must call
 // the 'SetColStyle' function before the 'SetRow' function. For example set
-// style of column H on Sheet1:
+// style of column H:
 //
 //	err := sw.SetColStyle(8, 8, style)
 func (sw *StreamWriter) SetColStyle(minVal, maxVal, styleID int) error {

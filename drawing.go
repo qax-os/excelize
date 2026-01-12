@@ -884,13 +884,13 @@ func (f *File) drawChartSeriesDPt(i int, opts *Chart) []*cDPt {
 				W:   25400,
 				Cap: "rnd",
 				SolidFill: &aSolidFill{
-					SchemeClr: &aSchemeClr{Val: "lt" + strconv.Itoa(i+1)},
+					SchemeClr: &aSchemeClr{Val: "lt1"},
 				},
 			},
 			Sp3D: &aSp3D{
 				ContourW: 25400,
 				ContourClr: &aContourClr{
-					SchemeClr: &aSchemeClr{Val: "lt" + strconv.Itoa(i+1)},
+					SchemeClr: &aSchemeClr{Val: "lt1"},
 				},
 			},
 		},

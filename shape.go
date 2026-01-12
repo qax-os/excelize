@@ -334,7 +334,6 @@ func (f *File) cellAnchorShape(sheet, drawingXML, cell string, width, height uin
 		return content, nil, cNvPrID, err
 	}
 	cellAnchor := xdrCellAnchor{}
-	cellAnchor.EditAs = format.Positioning
 	from := xlsxFrom{}
 	from.Col = colStart
 	from.ColOff = x1 * EMU
