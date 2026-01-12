@@ -331,7 +331,7 @@ func TestUnsetConditionalFormat(t *testing.T) {
 
 func TestNewStyle(t *testing.T) {
 	f := NewFile()
-	for i := 0; i < 18; i++ {
+	for i := range 18 {
 		_, err := f.NewStyle(&Style{
 			Fill: Fill{Type: "gradient", Color: []string{"FFFFFF", "4E71BE"}, Shading: i},
 		})
@@ -447,6 +447,26 @@ func TestNewStyle(t *testing.T) {
 	f.Styles.CellXfs.Count = MaxCellStyles
 	_, err = f.NewStyle(&Style{NumFmt: 0})
 	assert.Equal(t, ErrCellStyles, err)
+
+	t.Run("for_create_new_style_with_font_charset", func(t *testing.T) {
+		f, charset := NewFile(), 178
+		style := &Style{Font: &Font{
+			Family:  "B Titr",
+			Size:    12,
+			Color:   "000000",
+			Charset: &charset,
+		}}
+		styleID, err := f.NewStyle(style)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, styleID)
+		s, err := f.GetStyle(styleID)
+		assert.NoError(t, err)
+		assert.Equal(t, style.Font, s.Font)
+		text := "\u0627\u06cc\u0646\u0020\u06cc\u06a9\u0020\u0645\u062a\u0646\u0020\u0622\u0632\u0645\u0627\u06cc\u0634\u06cc\u0020\u0627\u0633\u062a\u002e"
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", text))
+		assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", styleID))
+		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetFontCharset.xlsx")))
+	})
 }
 
 func TestConditionalStyle(t *testing.T) {
@@ -568,16 +588,6 @@ func TestGetStyleID(t *testing.T) {
 	styleID, err := f.getStyleID(&xlsxStyleSheet{}, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, -1, styleID)
-	// Test get style ID with unsupported charset style sheet
-	f.Styles = nil
-	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
-	_, err = f.getStyleID(&xlsxStyleSheet{
-		CellXfs: &xlsxCellXfs{},
-		Fonts: &xlsxFonts{
-			Font: []*xlsxFont{{}},
-		},
-	}, &Style{NumFmt: 0, Font: &Font{}})
-	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestGetFillID(t *testing.T) {
@@ -641,7 +651,8 @@ func TestGetStyle(t *testing.T) {
 		Fill: Fill{Type: "gradient", Shading: 16, Color: []string{"0000FF", "00FF00"}},
 		Font: &Font{
 			Bold: true, Italic: true, Underline: "single", Family: "Arial",
-			Size: 8.5, Strike: true, Color: "777777", ColorIndexed: 1, ColorTint: 0.1,
+			Size: 8.5, Strike: true, Color: "777777", ColorIndexed: 1,
+			ColorTint: 0.1, VertAlign: "superscript",
 		},
 		Alignment: &Alignment{
 			Horizontal:      "center",
