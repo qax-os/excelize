@@ -290,6 +290,25 @@ func TestGetConditionalFormats(t *testing.T) {
 		assert.Equal(t, format, opts[fmt.Sprintf("%s1:%s10", col, col)])
 	}
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestGetConditionalFormats.xlsx")))
+	// Test unset all conditional formats
+	f, err = OpenFile(filepath.Join("test", "TestGetConditionalFormats.xlsx"))
+	assert.NoError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+		Location: []string{"C1"},
+		Range:    []string{"Sheet1!A1:B1"},
+	}))
+	for _, rangeRef := range []string{"Y1:Y10", "Z1:Z10", "AG1:AG10", "AH1:AH10", "AI1:AI10"} {
+		assert.NoError(t, f.UnsetConditionalFormat("Sheet1", rangeRef))
+	}
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+	// Test unset conditional formats with invalid extension list characters
+	f, err = OpenFile(filepath.Join("test", "TestGetConditionalFormats.xlsx"))
+	assert.NoError(t, err)
+	w, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	w.ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:conditionalFormattings></ext>`, ExtURIConditionalFormattings)}
+	assert.EqualError(t, f.UnsetConditionalFormat("Sheet1", "Y1:Y10"), "XML syntax error on line 1: element <conditionalFormattings> closed by </ext>")
+	assert.NoError(t, f.Close())
 	// Test get multiple conditional formats
 	f = NewFile()
 	expected := []ConditionalFormatOptions{
@@ -310,9 +329,9 @@ func TestGetConditionalFormats(t *testing.T) {
 	_, err = f.GetConditionalFormats("Sheet:1")
 	assert.Equal(t, ErrSheetNameInvalid, err)
 	// Test get conditional formats with invalid extension list characters
-	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
-	assert.True(t, ok)
-	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:conditionalFormattings></ext>`, ExtURIConditionalFormattings)}
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	ws.ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:conditionalFormattings></ext>`, ExtURIConditionalFormattings)}
 	_, err = f.GetConditionalFormats("Sheet1")
 	assert.EqualError(t, err, "XML syntax error on line 1: element <conditionalFormattings> closed by </ext>")
 }
@@ -329,6 +348,23 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN does not exist")
 	// Test unset conditional format with invalid sheet name
 	assert.Equal(t, ErrSheetNameInvalid, f.UnsetConditionalFormat("Sheet:1", "A1:A10"))
+	// Test unset conditional format from extLst
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "B1:B10", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "3Stars"}}))
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "C1:C10", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "5Boxes"}}))
+	condFmts, err := f.GetConditionalFormats("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, condFmts, 2)
+	// Unset the first extLst conditional format
+	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "B1:B10"))
+	condFmts, err = f.GetConditionalFormats("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, condFmts, 1)
+	assert.NotNil(t, condFmts["C1:C10"])
+	// Unset the last extLst conditional format
+	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "C1:C10"))
+	condFmts, err = f.GetConditionalFormats("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, condFmts, 0)
 	// Save spreadsheet by the given path
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnsetConditionalFormat.xlsx")))
 }

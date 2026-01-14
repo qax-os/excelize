@@ -802,7 +802,7 @@ type decodeX14CfRule struct {
 	Type          string            `xml:"type,attr,omitempty"`
 	Priority      int               `xml:"priority,attr,omitempty"`
 	StopIfTrue    bool              `xml:"stopIfTrue,attr,omitempty"`
-	AboveAverage  bool              `xml:"aboveAverage,attr,omitempty"`
+	AboveAverage  *bool             `xml:"aboveAverage,attr"`
 	Percent       bool              `xml:"percent,attr,omitempty"`
 	Bottom        bool              `xml:"bottom,attr,omitempty"`
 	Operator      string            `xml:"operator,attr,omitempty"`
@@ -853,7 +853,7 @@ type decodeX14Cfvo struct {
 	XMLName xml.Name    `xml:"cfvo"`
 	Type    string      `xml:"type,attr"`
 	Gte     *bool       `xml:"gte,attr"`
-	F       string      `xml:"xm:f"`
+	F       string      `xml:"f"`
 	ExtLst  *xlsxExtLst `xml:"extLst"`
 }
 

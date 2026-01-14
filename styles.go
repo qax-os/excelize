@@ -3249,10 +3249,130 @@ func (f *File) UnsetConditionalFormat(sheet, rangeRef string) error {
 	for i, cf := range ws.ConditionalFormatting {
 		if cf.SQRef == rangeRef {
 			ws.ConditionalFormatting = append(ws.ConditionalFormatting[:i], ws.ConditionalFormatting[i+1:]...)
-			return err
 		}
 	}
-	return nil
+	if ws.ExtLst != nil {
+		var condFmtsBytes, extLstBytes []byte
+		decodeExtLst := new(decodeExtLst)
+		if err = f.xmlNewDecoder(strings.NewReader("<extLst>" + ws.ExtLst.Ext + "</extLst>")).
+			Decode(decodeExtLst); err != nil && err != io.EOF {
+			return err
+		}
+		for idx := 0; idx < len(decodeExtLst.Ext); idx++ {
+			ext := decodeExtLst.Ext[idx]
+			if ext.URI == ExtURIConditionalFormattings {
+				decodeCondFmts := new(decodeX14ConditionalFormattingRules)
+				_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(decodeCondFmts)
+				condFmtsBytes, _ = decodeCondFmts.deleteCfRule(rangeRef)
+				decodeExtLst.Ext[idx].Content = string(condFmtsBytes)
+				if len(decodeExtLst.Ext[idx].Content) == 57 { // empty x14:conditionalFormattings element
+					decodeExtLst.Ext = append(decodeExtLst.Ext[:idx], decodeExtLst.Ext[idx+1:]...)
+					idx--
+				}
+			}
+		}
+		sort.Slice(decodeExtLst.Ext, func(i, j int) bool {
+			return inStrSlice(worksheetExtURIPriority, decodeExtLst.Ext[i].URI, false) <
+				inStrSlice(worksheetExtURIPriority, decodeExtLst.Ext[j].URI, false)
+		})
+		extLstBytes, err = xml.Marshal(decodeExtLst)
+		ws.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}
+		if len(ws.ExtLst.Ext) == 0 {
+			ws.ExtLst = nil
+		}
+	}
+	return err
+}
+
+// deleteCfRule provides a function to delete conditional formatting rule by
+// given range reference and return the updated x14:conditionalFormattings
+// element content.
+func (r *decodeX14ConditionalFormattingRules) deleteCfRule(rangeRef string) ([]byte, error) {
+	condFmts := &xlsxX14ConditionalFormattings{}
+	for _, condFmt := range r.CondFmt {
+		if condFmt.Sqref == rangeRef {
+			continue
+		}
+		x14ConditionalFormatting := xlsxX14ConditionalFormatting{
+			XMLNSXM: NameSpaceSpreadSheetExcel2006Main.Value,
+			Pivot:   condFmt.Pivot,
+			Sqref:   condFmt.Sqref,
+			ExtLst:  condFmt.ExtLst,
+		}
+		for _, rule := range condFmt.CfRule {
+			x14CfRule := &xlsxX14CfRule{
+				Type:          rule.Type,
+				Priority:      rule.Priority,
+				StopIfTrue:    rule.StopIfTrue,
+				AboveAverage:  rule.AboveAverage,
+				Percent:       rule.Percent,
+				Bottom:        rule.Bottom,
+				Operator:      rule.Operator,
+				Text:          rule.Text,
+				TimePeriod:    rule.TimePeriod,
+				Rank:          rule.Rank,
+				StdDev:        rule.StdDev,
+				EqualAverage:  rule.EqualAverage,
+				ActivePresent: rule.ActivePresent,
+				ID:            rule.ID,
+				F:             rule.F,
+				ColorScale:    rule.ColorScale,
+				Dxf:           rule.Dxf,
+				ExtLst:        rule.ExtLst,
+			}
+			if rule.DataBar != nil {
+				x14DataBar := &xlsx14DataBar{
+					MaxLength:         rule.DataBar.MaxLength,
+					MinLength:         rule.DataBar.MinLength,
+					Border:            rule.DataBar.Border,
+					ShowValue:         rule.DataBar.ShowValue,
+					Direction:         rule.DataBar.Direction,
+					BorderColor:       rule.DataBar.BorderColor,
+					NegativeFillColor: rule.DataBar.NegativeFillColor,
+					AxisColor:         rule.DataBar.AxisColor,
+				}
+				if rule.DataBar.Gradient != nil {
+					x14DataBar.Gradient = *rule.DataBar.Gradient
+				}
+				if rule.DataBar.Cfvo != nil {
+					for _, cfvo := range rule.DataBar.Cfvo {
+						x14DataBar.Cfvo = append(x14DataBar.Cfvo, &xlsxCfvo{
+							Gte:    cfvo.Gte,
+							Type:   cfvo.Type,
+							Val:    cfvo.Val,
+							ExtLst: cfvo.ExtLst,
+						})
+					}
+				}
+				x14CfRule.DataBar = x14DataBar
+			}
+			if rule.IconSet != nil {
+				x14IconSet := &xlsx14IconSet{
+					IconSet:   rule.IconSet.IconSet,
+					ShowValue: rule.IconSet.ShowValue,
+					Percent:   rule.IconSet.Percent,
+					Reverse:   rule.IconSet.Reverse,
+					Custom:    rule.IconSet.Custom,
+					CfIcon:    rule.IconSet.CfIcon,
+				}
+				if rule.IconSet.Cfvo != nil {
+					for _, cfvo := range rule.IconSet.Cfvo {
+						x14IconSet.Cfvo = append(x14IconSet.Cfvo, &xlsx14Cfvo{
+							Type:   cfvo.Type,
+							Gte:    cfvo.Gte,
+							F:      cfvo.F,
+							ExtLst: cfvo.ExtLst,
+						})
+					}
+				}
+				x14CfRule.IconSet = x14IconSet
+			}
+			x14ConditionalFormatting.CfRule = append(x14ConditionalFormatting.CfRule, x14CfRule)
+		}
+		condFmtBytes, _ := xml.Marshal(x14ConditionalFormatting)
+		condFmts.Content += string(condFmtBytes)
+	}
+	return xml.Marshal(condFmts)
 }
 
 // drawCondFmtCellIs provides a function to create conditional formatting rule
