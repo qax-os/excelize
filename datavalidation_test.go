@@ -270,4 +270,32 @@ func TestDeleteDataValidation(t *testing.T) {
 			ExtLst: &xlsxExtLst{Ext: "<extLst><x14:dataValidations></x14:dataValidation></x14:dataValidations></ext></extLst>"},
 		}, nil), "XML syntax error on line 1: element <dataValidations> closed by </dataValidation>")
 	})
+
+	t.Run("delete_data_validation_with_unordered_sqref", func(t *testing.T) {
+		// Test deleting data validation when sqref has unordered ranges
+		f := NewFile()
+		ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+		assert.True(t, ok)
+
+		ws.(*xlsxWorksheet).DataValidations = &xlsxDataValidations{
+			Count: 1,
+			DataValidation: []*xlsxDataValidation{{
+				AllowBlank:       true,
+				ShowInputMessage: true,
+				ShowErrorMessage: true,
+				Type:             "whole",
+				Operator:         "between",
+				Sqref:            "A5:A10 A15:A20 A3:A4",
+				Formula1:         &xlsxInnerXML{Content: "1"},
+				Formula2:         &xlsxInnerXML{Content: "100"},
+			}},
+		}
+
+		assert.NoError(t, f.DeleteDataValidation("Sheet1", "A7"))
+
+		dvs, err := f.GetDataValidations("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, dvs, 1)
+		assert.Equal(t, "A3:A6 A8:A10 A15:A20", dvs[0].Sqref)
+	})
 }
