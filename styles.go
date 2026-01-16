@@ -127,7 +127,7 @@ func (f *File) sharedStringsWriter() {
 func parseFormatStyleSet(style *Style) (*Style, error) {
 	var err error
 	if style.Font != nil {
-		if len(style.Font.Family) > MaxFontFamilyLength {
+		if countUTF16String(style.Font.Family) > MaxFontFamilyLength {
 			return style, ErrFontLength
 		}
 		if style.Font.Size > MaxFontSize {

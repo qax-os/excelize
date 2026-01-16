@@ -202,7 +202,7 @@ func (f *File) parseFormatPivotTableSet(opts *PivotTableOptions) (*xlsxWorksheet
 	if err != nil {
 		return nil, "", newPivotTableRangeError(err.Error())
 	}
-	if len(opts.Name) > MaxFieldLength {
+	if countUTF16String(opts.Name) > MaxFieldLength {
 		return nil, "", ErrNameLength
 	}
 	opts.pivotSheetName = pivotTableSheetName
@@ -713,8 +713,8 @@ func (f *File) getPivotTableFieldsSubtotal(fields []PivotTableField) []string {
 func (f *File) getPivotTableFieldsName(fields []PivotTableField) []string {
 	field := make([]string, len(fields))
 	for idx, fld := range fields {
-		if len(fld.Name) > MaxFieldLength {
-			field[idx] = fld.Name[:MaxFieldLength]
+		if countUTF16String(fld.Name) > MaxFieldLength {
+			field[idx] = truncateUTF16Units(fld.Name, MaxFieldLength)
 			continue
 		}
 		field[idx] = fld.Name

@@ -19,7 +19,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 )
 
 var (
@@ -328,7 +327,7 @@ func (f *File) setTableColumns(sheet string, showHeaderRow bool, x1, y1, x2 int,
 // 1. Starts with a letter or underscore (_)
 // 2. Doesn't include a space or character that isn't allowed
 func checkDefinedName(name string) error {
-	if utf8.RuneCountInString(name) > MaxFieldLength {
+	if countUTF16String(name) > MaxFieldLength {
 		return ErrNameLength
 	}
 	inCodeRange := func(code int, tbl []int) bool {

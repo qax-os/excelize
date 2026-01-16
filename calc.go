@@ -3824,7 +3824,7 @@ func (fn *formulaFuncs) ARABIC(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "ARABIC requires 1 numeric argument")
 	}
 	text := argsList.Front().Value.(formulaArg).Value()
-	if len(text) > MaxFieldLength {
+	if countUTF16String(text) > MaxFieldLength {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	text = strings.ToUpper(text)
@@ -14054,9 +14054,9 @@ func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
 		return newStringFormulaArg(text)
 	}
 	// LEFT/RIGHT
-	if utf8.RuneCountInString(text) > numChars {
+	if countUTF16String(text) > numChars {
 		if name == "LEFT" {
-			return newStringFormulaArg(string([]rune(text)[:numChars]))
+			return newStringFormulaArg(truncateUTF16Units(text, numChars))
 		}
 		// RIGHT
 		return newStringFormulaArg(string([]rune(text)[utf8.RuneCountInString(text)-numChars:]))
@@ -14072,7 +14072,7 @@ func (fn *formulaFuncs) LEN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LEN requires 1 string argument")
 	}
-	return newNumberFormulaArg(float64(utf8.RuneCountInString(argsList.Front().Value.(formulaArg).Value())))
+	return newNumberFormulaArg(float64(countUTF16String(argsList.Front().Value.(formulaArg).Value())))
 }
 
 // LENB returns the number of bytes used to represent the characters in a text
@@ -14172,7 +14172,7 @@ func (fn *formulaFuncs) mid(name string, argsList *list.List) formulaArg {
 		return newStringFormulaArg(result)
 	}
 	// MID
-	textLen := utf8.RuneCountInString(text)
+	textLen := countUTF16String(text)
 	if startNum > textLen {
 		return newStringFormulaArg("")
 	}
@@ -15052,7 +15052,7 @@ func matchPattern(findText, withinText string, dbcs bool, startNum int) (int, bo
 		}
 		offset++
 	}
-	return offset, utf8.RuneCountInString(withinText) != offset-1
+	return offset, countUTF16String(withinText) != offset-1
 }
 
 // compareFormulaArg compares the left-hand sides and the right-hand sides'

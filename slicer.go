@@ -602,8 +602,9 @@ func (f *File) addDrawingSlicer(sheet, slicerName string, ns xml.Attr, opts *Sli
 		Macro: opts.Macro,
 		NvGraphicFramePr: xlsxNvGraphicFramePr{
 			CNvPr: &xlsxCNvPr{
-				ID:   cNvPrID,
-				Name: slicerName,
+				ID:    cNvPrID,
+				Name:  slicerName,
+				Descr: opts.Format.AltText,
 			},
 		},
 		Xfrm: xlsxXfrm{Off: xlsxOff{}, Ext: xlsxPositiveSize2D{}},
@@ -619,7 +620,8 @@ func (f *File) addDrawingSlicer(sheet, slicerName string, ns xml.Attr, opts *Sli
 		Macro: opts.Macro,
 		NvSpPr: &xdrNvSpPr{
 			CNvPr: &xlsxCNvPr{
-				ID: cNvPrID,
+				ID:    cNvPrID,
+				Descr: opts.Format.AltText,
 			},
 			CNvSpPr: &xdrCNvSpPr{
 				TxBox: true,

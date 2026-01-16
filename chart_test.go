@@ -507,6 +507,8 @@ func TestDeleteChart(t *testing.T) {
 		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37"},
 	}
 	format := GraphicOptions{
+		Name:            "Chart 3",
+		AltText:         "chart",
 		ScaleX:          defaultDrawingScale,
 		ScaleY:          defaultDrawingScale,
 		OffsetX:         15,

@@ -19,7 +19,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 )
 
 // FormControlType is the type of supported form controls.
@@ -269,8 +268,8 @@ func (f *File) addComment(commentsXML string, opts vmlOptions) error {
 	if opts.Author == "" {
 		opts.Author = "Author"
 	}
-	if len(opts.Author) > MaxFieldLength {
-		opts.Author = opts.Author[:MaxFieldLength]
+	if countUTF16String(opts.Author) > MaxFieldLength {
+		opts.Author = truncateUTF16Units(opts.Author, MaxFieldLength)
 	}
 	cmts, err := f.commentsReader(commentsXML)
 	if err != nil {
@@ -297,20 +296,20 @@ func (f *File) addComment(commentsXML string, opts vmlOptions) error {
 		Text:     xlsxText{R: []xlsxR{}},
 	}
 	if opts.Comment.Text != "" {
-		if utf8.RuneCountInString(opts.Comment.Text) > TotalCellChars {
-			opts.Comment.Text = string([]rune(opts.Comment.Text)[:TotalCellChars])
+		if countUTF16String(opts.Comment.Text) > TotalCellChars {
+			opts.Comment.Text = truncateUTF16Units(opts.Comment.Text, TotalCellChars)
 		}
 		cmt.Text.T = stringPtr(opts.Comment.Text)
-		chars += utf8.RuneCountInString(opts.Comment.Text)
+		chars += countUTF16String(opts.Comment.Text)
 	}
 	for _, run := range opts.Comment.Paragraph {
 		if chars == TotalCellChars {
 			break
 		}
-		if chars+utf8.RuneCountInString(run.Text) > TotalCellChars {
-			run.Text = string([]rune(run.Text)[:TotalCellChars-chars])
+		if chars+countUTF16String(run.Text) > TotalCellChars {
+			run.Text = truncateUTF16Units(run.Text, TotalCellChars-chars)
 		}
-		chars += utf8.RuneCountInString(run.Text)
+		chars += countUTF16String(run.Text)
 		r := xlsxR{
 			RPr: &xlsxRPr{
 				Sz: &attrValFloat{Val: float64Ptr(9)},

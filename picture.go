@@ -42,6 +42,12 @@ func (opts *GraphicOptions) parseGraphicOptions(defaults *GraphicOptions) (*Grap
 	if opts == nil {
 		return defaults, nil
 	}
+	if countUTF16String(opts.AltText) > MaxGraphicAltTextLength {
+		return defaults, ErrMaxGraphicAltTextLength
+	}
+	if countUTF16String(opts.Name) > MaxGraphicNameLength {
+		return defaults, ErrMaxGraphicNameLength
+	}
 	if opts.PrintObject == nil {
 		opts.PrintObject = boolPtr(true)
 	}
@@ -411,6 +417,9 @@ func (f *File) addDrawingPicture(sheet, drawingXML, cell, ext string, rID, hyper
 	pic.NvPicPr.CNvPr.ID = cNvPrID
 	pic.NvPicPr.CNvPr.Descr = opts.AltText
 	pic.NvPicPr.CNvPr.Name = "Picture " + strconv.Itoa(cNvPrID)
+	if len(opts.Name) > 0 {
+		pic.NvPicPr.CNvPr.Name = opts.Name
+	}
 	if hyperlinkRID != 0 {
 		pic.NvPicPr.CNvPr.HlinkClick = &xlsxHlinkClick{
 			R:   SourceRelationship.Value,
@@ -703,6 +712,7 @@ func (f *File) extractPictureFromAnchor(drawingRelationships string, a *xdrCellA
 			}
 			pic.Format.LockAspectRatio = a.Pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect
 			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
+			pic.Format.Name = a.Pic.NvPicPr.CNvPr.Name
 			if a.Pic.NvPicPr.CNvPr.HlinkClick != nil {
 				if drawRel := f.getDrawingRelationships(drawingRelationships, a.Pic.NvPicPr.CNvPr.HlinkClick.RID); drawRel != nil {
 					pic.Format.Hyperlink = drawRel.Target
@@ -762,6 +772,7 @@ func (f *File) extractPictureFromDecodeAnchor(drawingRelationships string, a *de
 			}
 			pic.Format.LockAspectRatio = a.Pic.NvPicPr.CNvPicPr.PicLocks.NoChangeAspect
 			pic.Format.AltText = a.Pic.NvPicPr.CNvPr.Descr
+			pic.Format.Name = a.Pic.NvPicPr.CNvPr.Name
 			if a.Pic.NvPicPr.CNvPr.HlinkClick != nil {
 				if drawRel := f.getDrawingRelationships(drawingRelationships, a.Pic.NvPicPr.CNvPr.HlinkClick.RID); drawRel != nil {
 					pic.Format.Hyperlink = drawRel.Target
@@ -1148,6 +1159,7 @@ func (f *File) getDispImages(sheet, cell string) ([]Picture, error) {
 					if buffer, _ := f.Pkg.Load("xl/" + r.Target); buffer != nil {
 						pic.File = buffer.([]byte)
 						pic.Format.AltText = cellImg.Pic.NvPicPr.CNvPr.Descr
+						pic.Format.Name = cellImg.Pic.NvPicPr.CNvPr.Name
 						pics = append(pics, pic)
 					}
 				}

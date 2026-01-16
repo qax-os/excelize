@@ -358,7 +358,7 @@ func (e *encryption) encrypt(input []byte) []byte {
 
 // standardKeyEncryption encrypt convert the password to an encryption key.
 func (e *encryption) standardKeyEncryption(password string) ([]byte, error) {
-	if len(password) == 0 || len(password) > MaxFieldLength {
+	if countUTF16String(password) == 0 || countUTF16String(password) > MaxFieldLength {
 		return nil, ErrPasswordLengthInvalid
 	}
 	var storage cfb
@@ -589,7 +589,7 @@ func randomBytes(n int) ([]byte, error) {
 // plaintext password, name of the cryptographic hash algorithm, salt value
 // and spin count.
 func genISOPasswdHash(passwd, hashAlgorithm, salt string, spinCount int) (hashValue, saltValue string, err error) {
-	if len(passwd) < 1 || len(passwd) > MaxFieldLength {
+	if countUTF16String(passwd) < 1 || countUTF16String(passwd) > MaxFieldLength {
 		err = ErrPasswordLengthInvalid
 		return
 	}

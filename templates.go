@@ -170,23 +170,25 @@ var worksheetExtURIPriority = []string{
 
 // Excel specifications and limits
 const (
-	MaxCellStyles        = 65430
-	MaxColumns           = 16384
-	MaxColumnWidth       = 255
-	MaxFieldLength       = 255
-	MaxFilePathLength    = 207
-	MaxFormControlValue  = 30000
-	MaxFontFamilyLength  = 31
-	MaxFontSize          = 409
-	MaxRowHeight         = 409
-	MaxSheetNameLength   = 31
-	MinColumns           = 1
-	MinFontSize          = 1
-	StreamChunkSize      = 1 << 24
-	TotalCellChars       = 32767
-	TotalRows            = 1048576
-	TotalSheetHyperlinks = 65529
-	UnzipSizeLimit       = 1000 << 24
+	MaxCellStyles           = 65430
+	MaxColumns              = 16384
+	MaxColumnWidth          = 255
+	MaxFieldLength          = 255
+	MaxFilePathLength       = 207
+	MaxFormControlValue     = 30000
+	MaxFontFamilyLength     = 31
+	MaxGraphicAltTextLength = 65535
+	MaxGraphicNameLength    = 254
+	MaxFontSize             = 409
+	MaxRowHeight            = 409
+	MaxSheetNameLength      = 31
+	MinColumns              = 1
+	MinFontSize             = 1
+	StreamChunkSize         = 1 << 24
+	TotalCellChars          = 32767
+	TotalRows               = 1048576
+	TotalSheetHyperlinks    = 65529
+	UnzipSizeLimit          = 1000 << 24
 	// pivotTableVersion should be greater than 3. One or more of the
 	// PivotTables chosen are created in a version of Excel earlier than
 	// Excel 2007 or in compatibility mode. Slicer can only be used with

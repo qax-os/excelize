@@ -433,6 +433,7 @@ type Picture struct {
 // GraphicOptions directly maps the format settings of the picture.
 type GraphicOptions struct {
 	AltText             string
+	Name                string
 	PrintObject         *bool
 	Locked              *bool
 	LockAspectRatio     bool

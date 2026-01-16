@@ -37,11 +37,11 @@ func TestAddPicture(t *testing.T) {
 
 	// Test add picture to worksheet with offset and location hyperlink
 	opts := []GraphicOptions{
-		{Hyperlink: "#Sheet2!D8", HyperlinkType: "Location"},
-		{OffsetX: 10, OffsetY: 10, ScaleX: 0.5, ScaleY: 0.5, Hyperlink: "https://github.com/xuri/excelize", HyperlinkType: "External", Positioning: "oneCell"},
-		{OffsetX: 10, OffsetY: 10, ScaleX: 0.88, ScaleY: 0.88, Hyperlink: "https://github.com/xuri/excelize", HyperlinkType: "External"},
-		{PrintObject: boolPtr(true), Locked: boolPtr(true), OffsetX: 200, ScaleX: 1, ScaleY: 1, Positioning: "oneCell"},
-		{PrintObject: boolPtr(true), Locked: boolPtr(true), AltText: "Excel Logo", LockAspectRatio: true, ScaleX: 1, ScaleY: 1},
+		{Name: "Picture 4", Hyperlink: "#Sheet2!D8", HyperlinkType: "Location"},
+		{Name: "Picture 4", OffsetX: 10, OffsetY: 10, ScaleX: 0.5, ScaleY: 0.5, Hyperlink: "https://github.com/xuri/excelize", HyperlinkType: "External", Positioning: "oneCell"},
+		{Name: "Picture 5", OffsetX: 10, OffsetY: 10, ScaleX: 0.88, ScaleY: 0.88, Hyperlink: "https://github.com/xuri/excelize", HyperlinkType: "External"},
+		{Name: "Picture 4", PrintObject: boolPtr(true), Locked: boolPtr(true), OffsetX: 200, ScaleX: 1, ScaleY: 1, Positioning: "oneCell"},
+		{Name: "Picture 9", PrintObject: boolPtr(true), Locked: boolPtr(true), AltText: "Excel Logo", LockAspectRatio: true, ScaleX: 1, ScaleY: 1},
 	}
 	assert.NoError(t, f.AddPicture("Sheet2", "I9", filepath.Join("test", "images", "excel.jpg"), &opts[0]))
 	// Test add picture to worksheet with offset, external hyperlink and positioning
@@ -199,6 +199,12 @@ func TestAddPictureErrors(t *testing.T) {
 	// Test add picture to worksheet with invalid file data
 	assert.EqualError(t, f.AddPictureFromBytes("Sheet1", "G21", &Picture{Extension: ".jpg", File: make([]byte, 1), Format: &GraphicOptions{AltText: "Excel Logo"}}), image.ErrFormat.Error())
 
+	// Test add picture to worksheet with name length exceeds the limit
+	assert.EqualError(t, f.AddPicture("Sheet1", "Q25", "excelize.svg", &GraphicOptions{Name: strings.Repeat("s", MaxGraphicNameLength+1)}), ErrMaxGraphicNameLength.Error())
+
+	// Test add picture to worksheet with alt text length exceeds the limit
+	assert.EqualError(t, f.AddPicture("Sheet1", "Q25", "excelize.svg", &GraphicOptions{AltText: strings.Repeat("s", MaxGraphicAltTextLength+1)}), ErrMaxGraphicAltTextLength.Error())
+
 	// Test add picture with custom image decoder and encoder
 	decode := func(r io.Reader) (image.Image, error) { return nil, nil }
 	decodeConfig := func(r io.Reader) (image.Config, error) { return image.Config{Height: 100, Width: 90}, nil }
@@ -218,6 +224,7 @@ func TestGetPicture(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, pics[0].File, 4718)
 	assert.Empty(t, pics[0].Format.AltText)
+	assert.Equal(t, "Picture 2", pics[0].Format.Name)
 	assert.Equal(t, PictureInsertTypePlaceOverCells, pics[0].InsertType)
 
 	f, err = prepareTestBook1()
@@ -369,7 +376,7 @@ func TestAddPictureFromBytes(t *testing.T) {
 	imgFile, err := os.ReadFile("logo.png")
 	assert.NoError(t, err, "Unable to load logo for test")
 
-	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "A1", &Picture{Extension: ".png", File: imgFile, Format: &GraphicOptions{AltText: "logo"}}))
+	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "A1", &Picture{Extension: ".png", File: imgFile, Format: &GraphicOptions{AltText: strings.Repeat("\u4e00", MaxGraphicAltTextLength), Name: strings.Repeat("\u4e00", MaxGraphicNameLength)}}))
 	assert.NoError(t, f.AddPictureFromBytes("Sheet1", "A50", &Picture{Extension: ".png", File: imgFile, Format: &GraphicOptions{AltText: "logo"}}))
 	imageCount := 0
 	f.Pkg.Range(func(fileName, v interface{}) bool {

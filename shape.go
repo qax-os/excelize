@@ -374,8 +374,9 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 		Macro: opts.Macro,
 		NvSpPr: &xdrNvSpPr{
 			CNvPr: &xlsxCNvPr{
-				ID:   cNvPrID,
-				Name: "Shape " + strconv.Itoa(cNvPrID),
+				ID:    cNvPrID,
+				Name:  "Shape " + strconv.Itoa(cNvPrID),
+				Descr: opts.Format.AltText,
 			},
 			CNvSpPr: &xdrCNvSpPr{
 				TxBox: true,
@@ -412,6 +413,9 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 				Anchor:       "t",
 			},
 		},
+	}
+	if len(opts.Format.Name) > 0 {
+		shape.NvSpPr.CNvPr.Name = opts.Format.Name
 	}
 	if *opts.Line.Width != 1 {
 		shape.SpPr.Ln = xlsxLineProperties{

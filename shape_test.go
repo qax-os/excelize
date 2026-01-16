@@ -47,6 +47,8 @@ func TestAddShape(t *testing.T) {
 		Line: ShapeLine{Color: "4286F4", Width: &lineWidth},
 		Fill: Fill{Color: []string{"8EB9FF"}, Transparency: 60},
 		Format: GraphicOptions{
+			AltText:     "Shape",
+			Name:        "Shape 1",
 			PrintObject: boolPtr(true),
 			Locked:      boolPtr(false),
 			ScaleX:      0.8,

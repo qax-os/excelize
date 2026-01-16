@@ -1518,8 +1518,9 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	graphicFrame := xlsxGraphicFrame{
 		NvGraphicFramePr: xlsxNvGraphicFramePr{
 			CNvPr: &xlsxCNvPr{
-				ID:   cNvPrID,
-				Name: "Chart " + strconv.Itoa(cNvPrID),
+				ID:    cNvPrID,
+				Name:  "Chart " + strconv.Itoa(cNvPrID),
+				Descr: opts.AltText,
 			},
 		},
 		Graphic: &xlsxGraphic{
@@ -1532,6 +1533,9 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 				},
 			},
 		},
+	}
+	if len(opts.Name) > 0 {
+		graphicFrame.NvGraphicFramePr.CNvPr.Name = opts.Name
 	}
 	graphic, _ := xml.Marshal(graphicFrame)
 	twoCellAnchor.GraphicFrame = string(graphic)
