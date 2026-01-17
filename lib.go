@@ -23,6 +23,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode/utf16"
@@ -392,6 +393,12 @@ func flatSqref(sqref string) (cells map[int][][]int, err error) {
 				}
 			}
 		}
+	}
+	// Sort each column's cells by row number
+	for col := range cells {
+		sort.Slice(cells[col], func(i, j int) bool {
+			return cells[col][i][1] < cells[col][j][1]
+		})
 	}
 	return
 }
