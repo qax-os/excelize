@@ -1193,59 +1193,59 @@ var (
 	}
 
 	// extractContFmtFunc defines functions to get conditional formats.
-	extractContFmtFunc = map[string]func(*File, *xlsxCfRule, *xlsxExtLst) ConditionalFormatOptions{
-		"cellIs": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+	extractContFmtFunc = map[string]func(*File, string, *xlsxCfRule, *xlsxExtLst) ConditionalFormatOptions{
+		"cellIs": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtCellIs(c, extLst)
 		},
-		"timePeriod": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-			return f.extractCondFmtTimePeriod(c, extLst)
+		"timePeriod": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtTimePeriod(c, ref, extLst)
 		},
-		"containsText": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"containsText": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtText(c, extLst)
 		},
-		"notContainsText": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"notContainsText": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtText(c, extLst)
 		},
-		"beginsWith": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"beginsWith": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtText(c, extLst)
 		},
-		"endsWith": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"endsWith": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtText(c, extLst)
 		},
-		"top10": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"top10": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtTop10(c, extLst)
 		},
-		"aboveAverage": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"aboveAverage": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtAboveAverage(c, extLst)
 		},
-		"duplicateValues": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"duplicateValues": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtDuplicateUniqueValues(c, extLst)
 		},
-		"uniqueValues": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"uniqueValues": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtDuplicateUniqueValues(c, extLst)
 		},
-		"containsBlanks": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"containsBlanks": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtBlanks(c, extLst)
 		},
-		"notContainsBlanks": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"notContainsBlanks": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtNoBlanks(c, extLst)
 		},
-		"containsErrors": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"containsErrors": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtErrors(c, extLst)
 		},
-		"notContainsErrors": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"notContainsErrors": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtNoErrors(c, extLst)
 		},
-		"colorScale": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"colorScale": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtColorScale(c, extLst)
 		},
-		"dataBar": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"dataBar": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtDataBar(c, extLst)
 		},
-		"expression": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"expression": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtExp(c, extLst)
 		},
-		"iconSet": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"iconSet": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtIconSet(c, extLst)
 		},
 	}
@@ -2969,8 +2969,26 @@ func (f *File) extractCondFmtCellIs(c *xlsxCfRule, extLst *xlsxExtLst) Condition
 
 // extractCondFmtTimePeriod provides a function to extract conditional format
 // settings for time period by given conditional formatting rule.
-func (f *File) extractCondFmtTimePeriod(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	return ConditionalFormatOptions{Format: c.DxfID, StopIfTrue: c.StopIfTrue, Type: "time_period", Criteria: operatorType[c.Operator]}
+func (f *File) extractCondFmtTimePeriod(c *xlsxCfRule, ref string, extLst *xlsxExtLst) ConditionalFormatOptions {
+	var critera string
+	for _, formula := range c.Formula {
+		if c, ok := map[string]string{
+			fmt.Sprintf("FLOOR(%s,1)=TODAY()-1", ref):                                  "yesterday",
+			fmt.Sprintf("FLOOR(%s,1)=TODAY()", ref):                                    "today",
+			fmt.Sprintf("FLOOR(%s,1)=TODAY()+1", ref):                                  "tomorrow",
+			fmt.Sprintf("AND(TODAY()-FLOOR(%[1]s,1)<=6,FLOOR(%[1]s,1)<=TODAY())", ref): "last 7 days",
+			fmt.Sprintf("AND(TODAY()-ROUNDDOWN(%[1]s,0)>=(WEEKDAY(TODAY())),TODAY()-ROUNDDOWN(%[1]s,0)<(WEEKDAY(TODAY())+7))", ref):               "last week",
+			fmt.Sprintf("AND(TODAY()-ROUNDDOWN(%[1]s,0)<=WEEKDAY(TODAY())-1,ROUNDDOWN(%[1]s,0)-TODAY()>=7-WEEKDAY(TODAY()))", ref):                "this week",
+			fmt.Sprintf("AND(ROUNDDOWN(%[1]s,0)-TODAY()>(7-WEEKDAY(TODAY())),ROUNDDOWN(%[1]s,0)-TODAY()<(15-WEEKDAY(TODAY())))", ref):             "continue week",
+			fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY())-1,OR(YEAR(%[1]s)=YEAR(TODAY()),AND(MONTH(%[1]s)=1,YEAR(%[1]s)=YEAR(TODAY())-1)))", ref):  "last month",
+			fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY()),YEAR(%[1]s)=YEAR(TODAY()))", ref):                                                        "this month",
+			fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY())+1,OR(YEAR(%[1]s)=YEAR(TODAY()),AND(MONTH(%[1]s)=12,YEAR(%[1]s)=YEAR(TODAY())+1)))", ref): "continue month",
+		}[formula]; ok {
+			critera = c
+			break
+		}
+	}
+	return ConditionalFormatOptions{Format: c.DxfID, StopIfTrue: c.StopIfTrue, Type: "time_period", Criteria: critera}
 }
 
 // extractCondFmtText provides a function to extract conditional format
@@ -3207,9 +3225,13 @@ func (f *File) GetConditionalFormats(sheet string) (map[string][]ConditionalForm
 	}
 	for _, cf := range ws.ConditionalFormatting {
 		var opts []ConditionalFormatOptions
+		_, mastCell, err := prepareConditionalFormatRange(cf.SQRef)
+		if err != nil {
+			return conditionalFormats, err
+		}
 		for _, cr := range cf.CfRule {
 			if extractFunc, ok := extractContFmtFunc[cr.Type]; ok {
-				opts = append(opts, extractFunc(f, cr, ws.ExtLst))
+				opts = append(opts, extractFunc(f, mastCell, cr, ws.ExtLst))
 			}
 		}
 		conditionalFormats[cf.SQRef] = opts
@@ -3246,9 +3268,17 @@ func (f *File) UnsetConditionalFormat(sheet, rangeRef string) error {
 	if err != nil {
 		return err
 	}
-	for i, cf := range ws.ConditionalFormatting {
-		if cf.SQRef == rangeRef {
+	delCells, err := flatSqref(rangeRef)
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(ws.ConditionalFormatting); i++ {
+		if ws.ConditionalFormatting[i].SQRef, err = deleteCellsFromSqref(ws.ConditionalFormatting[i].SQRef, delCells); err != nil {
+			return err
+		}
+		if len(ws.ConditionalFormatting[i].SQRef) == 0 {
 			ws.ConditionalFormatting = append(ws.ConditionalFormatting[:i], ws.ConditionalFormatting[i+1:]...)
+			i--
 		}
 	}
 	if ws.ExtLst != nil {
@@ -3263,7 +3293,9 @@ func (f *File) UnsetConditionalFormat(sheet, rangeRef string) error {
 			if ext.URI == ExtURIConditionalFormattings {
 				decodeCondFmts := new(decodeX14ConditionalFormattingRules)
 				_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(decodeCondFmts)
-				condFmtsBytes, _ = decodeCondFmts.deleteCfRule(rangeRef)
+				if condFmtsBytes, err = decodeCondFmts.deleteCfRule(delCells); err != nil {
+					return err
+				}
 				decodeExtLst.Ext[idx].Content = string(condFmtsBytes)
 				if len(decodeExtLst.Ext[idx].Content) == 57 { // empty x14:conditionalFormattings element
 					decodeExtLst.Ext = append(decodeExtLst.Ext[:idx], decodeExtLst.Ext[idx+1:]...)
@@ -3287,10 +3319,16 @@ func (f *File) UnsetConditionalFormat(sheet, rangeRef string) error {
 // deleteCfRule provides a function to delete conditional formatting rule by
 // given range reference and return the updated x14:conditionalFormattings
 // element content.
-func (r *decodeX14ConditionalFormattingRules) deleteCfRule(rangeRef string) ([]byte, error) {
-	condFmts := &xlsxX14ConditionalFormattings{}
+func (r *decodeX14ConditionalFormattingRules) deleteCfRule(delCells map[int][][]int) ([]byte, error) {
+	var (
+		err      error
+		condFmts = &xlsxX14ConditionalFormattings{}
+	)
 	for _, condFmt := range r.CondFmt {
-		if condFmt.Sqref == rangeRef {
+		if condFmt.Sqref, err = deleteCellsFromSqref(condFmt.Sqref, delCells); err != nil {
+			return nil, err
+		}
+		if len(condFmt.Sqref) == 0 {
 			continue
 		}
 		x14ConditionalFormatting := xlsxX14ConditionalFormatting{
@@ -3403,7 +3441,6 @@ func drawCondFmtTimePeriod(p int, ct, ref, GUID string, format *ConditionalForma
 		Priority:   p + 1,
 		StopIfTrue: format.StopIfTrue,
 		Type:       "timePeriod",
-		Operator:   ct,
 		Formula: []string{
 			map[string]string{
 				"yesterday": fmt.Sprintf("FLOOR(%s,1)=TODAY()-1", ref),

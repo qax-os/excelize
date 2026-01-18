@@ -407,7 +407,7 @@ func (f *File) DeleteDataValidation(sheet string, sqref ...string) error {
 		}
 	}
 	if ws.ExtLst != nil {
-		return f.deleteX14DataValidation(ws, sqref)
+		return f.deleteX14DataValidation(ws, delCells)
 	}
 	return nil
 }
@@ -416,25 +416,12 @@ func (f *File) DeleteDataValidation(sheet string, sqref ...string) error {
 // reference list.
 func (f *File) deleteDataValidation(ws *xlsxWorksheet, delCells map[int][][]int) error {
 	dv := ws.DataValidations
+	var err error
 	for i := 0; i < len(dv.DataValidation); i++ {
-		var applySqref []string
-		colCells, err := flatSqref(dv.DataValidation[i].Sqref)
-		if err != nil {
+		if dv.DataValidation[i].Sqref, err = deleteCellsFromSqref(dv.DataValidation[i].Sqref, delCells); err != nil {
 			return err
 		}
-		for col, cells := range delCells {
-			for _, cell := range cells {
-				idx := inCoordinates(colCells[col], cell)
-				if idx != -1 {
-					colCells[col] = append(colCells[col][:idx], colCells[col][idx+1:]...)
-				}
-			}
-		}
-		for _, col := range colCells {
-			applySqref = append(applySqref, squashSqref(col)...)
-		}
-		dv.DataValidation[i].Sqref = strings.Join(applySqref, " ")
-		if len(applySqref) == 0 {
+		if len(dv.DataValidation[i].Sqref) == 0 {
 			dv.DataValidation = append(dv.DataValidation[:i], dv.DataValidation[i+1:]...)
 			i--
 		}
@@ -448,8 +435,9 @@ func (f *File) deleteDataValidation(ws *xlsxWorksheet, delCells map[int][][]int)
 
 // deleteX14DataValidation deletes data validation in the extLst element by
 // given worksheet and cell reference list.
-func (f *File) deleteX14DataValidation(ws *xlsxWorksheet, sqref []string) error {
+func (f *File) deleteX14DataValidation(ws *xlsxWorksheet, delCells map[int][][]int) error {
 	var (
+		err                   error
 		decodeExtLst          = new(decodeExtLst)
 		decodeDataValidations *xlsxDataValidations
 		x14DataValidations    *xlsxX14DataValidations
@@ -468,25 +456,29 @@ func (f *File) deleteX14DataValidation(ws *xlsxWorksheet, sqref []string) error 
 			x14DataValidations.XWindow = decodeDataValidations.XWindow
 			x14DataValidations.YWindow = decodeDataValidations.YWindow
 			for _, dv := range decodeDataValidations.DataValidation {
-				if inStrSlice(sqref, dv.XMSqref, false) == -1 {
-					x14DataValidations.DataValidation = append(x14DataValidations.DataValidation, &xlsxX14DataValidation{
-						AllowBlank:       dv.AllowBlank,
-						Error:            dv.Error,
-						ErrorStyle:       dv.ErrorStyle,
-						ErrorTitle:       dv.ErrorTitle,
-						Operator:         dv.Operator,
-						Prompt:           dv.Prompt,
-						PromptTitle:      dv.PromptTitle,
-						ShowDropDown:     dv.ShowDropDown,
-						ShowErrorMessage: dv.ShowErrorMessage,
-						ShowInputMessage: dv.ShowInputMessage,
-						Sqref:            dv.Sqref,
-						XMSqref:          dv.XMSqref,
-						Type:             dv.Type,
-						Formula1:         dv.Formula1,
-						Formula2:         dv.Formula2,
-					})
+				if dv.XMSqref, err = deleteCellsFromSqref(dv.XMSqref, delCells); err != nil {
+					return err
 				}
+				if len(dv.XMSqref) == 0 {
+					continue
+				}
+				x14DataValidations.DataValidation = append(x14DataValidations.DataValidation, &xlsxX14DataValidation{
+					AllowBlank:       dv.AllowBlank,
+					Error:            dv.Error,
+					ErrorStyle:       dv.ErrorStyle,
+					ErrorTitle:       dv.ErrorTitle,
+					Operator:         dv.Operator,
+					Prompt:           dv.Prompt,
+					PromptTitle:      dv.PromptTitle,
+					ShowDropDown:     dv.ShowDropDown,
+					ShowErrorMessage: dv.ShowErrorMessage,
+					ShowInputMessage: dv.ShowInputMessage,
+					Sqref:            dv.Sqref,
+					XMSqref:          dv.XMSqref,
+					Type:             dv.Type,
+					Formula1:         dv.Formula1,
+					Formula2:         dv.Formula2,
+				})
 			}
 			x14DataValidations.Count = len(x14DataValidations.DataValidation)
 			x14DataValidationsBytes, _ := xml.Marshal(x14DataValidations)
@@ -531,6 +523,31 @@ func squashSqref(cells [][]int) []string {
 		ref, _ = CoordinatesToCellName(cells[l][0], cells[l][1])
 	}
 	return append(refs, ref)
+}
+
+// deleteCellsFromSqref deletes cells from given sqref by delCells map and
+// returns the updated sqref.
+func deleteCellsFromSqref(sqref string, delCells map[int][][]int) (string, error) {
+	var (
+		ref        string
+		applySqref []string
+	)
+	colCells, err := flatSqref(sqref)
+	if err != nil {
+		return ref, err
+	}
+	for col, cells := range delCells {
+		for _, cell := range cells {
+			idx := inCoordinates(colCells[col], cell)
+			if idx != -1 {
+				colCells[col] = append(colCells[col][:idx], colCells[col][idx+1:]...)
+			}
+		}
+	}
+	for _, col := range colCells {
+		applySqref = append(applySqref, squashSqref(col)...)
+	}
+	return strings.Join(applySqref, " "), err
 }
 
 // isFormulaDataValidation returns whether the data validation rule is a formula.

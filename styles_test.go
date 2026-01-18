@@ -321,8 +321,8 @@ func TestGetConditionalFormats(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, opts["A2:A1 B1:B1048576 A2:XFD2"])
 
-	// Test get conditional formats on no exists worksheet
 	f = NewFile()
+	// Test get conditional formats on no exists worksheet
 	_, err = f.GetConditionalFormats("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test get conditional formats with invalid sheet name
@@ -344,6 +344,8 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A10", []ConditionalFormatOptions{{Type: "cell", Criteria: ">", Format: &format, Value: "6"}}))
 	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
+	// Test unset conditional format with invalid range
+	assert.Equal(t, f.UnsetConditionalFormat("Sheet1", "A"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
 	// Test unset conditional format on not exists worksheet
 	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN does not exist")
 	// Test unset conditional format with invalid sheet name
@@ -367,6 +369,41 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	assert.Len(t, condFmts, 0)
 	// Save spreadsheet by the given path
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnsetConditionalFormat.xlsx")))
+	// Test get and unset conditional format with invalid sqref value
+	f = NewFile()
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	ws.ConditionalFormatting = []*xlsxConditionalFormatting{{SQRef: ""}}
+	_, err = f.GetConditionalFormats("Sheet1")
+	assert.Equal(t, ErrParameterRequired, err)
+	ws.ConditionalFormatting = []*xlsxConditionalFormatting{{SQRef: "A"}}
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.UnsetConditionalFormat("Sheet1", "A1"))
+	// Test unset conditional formats with invalid extension list characters
+	ws.ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:conditionalFormattings>
+	<x14:conditionalFormatting><xm:sqref>A</xm:sqref></x14:conditionalFormatting></x14:conditionalFormattings></ext>`, ExtURIConditionalFormattings)}
+	assert.Equal(t, f.UnsetConditionalFormat("Sheet1", "A1"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
+
+	t.Run("with_unordered_sqref", func(t *testing.T) {
+		f := NewFile()
+		condFmt := []ConditionalFormatOptions{{Type: "cell", Criteria: "greater than", Value: "6"}}
+		f.SetConditionalFormat("Sheet1", "A5:A10 A15:A20 A3:A4", condFmt)
+		assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A7"))
+		condFmts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, condFmts, 1)
+		assert.Equal(t, condFmt, condFmts["A3:A6 A8:A10 A15:A20"])
+	})
+
+	t.Run("with_unordered_sqref_in_extLst", func(t *testing.T) {
+		f := NewFile()
+		condFmt := []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "3Stars"}}
+		f.SetConditionalFormat("Sheet1", "A5:A10 A15:A20 A3:A4", condFmt)
+		assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A7"))
+		condFmts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, condFmts, 1)
+		assert.Equal(t, condFmt, condFmts["A3:A6 A8:A10 A15:A20"])
+	})
 }
 
 func TestNewStyle(t *testing.T) {

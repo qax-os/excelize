@@ -244,7 +244,7 @@ func TestDeleteDataValidation(t *testing.T) {
 	assert.NoError(t, f.DeleteDataValidation("Sheet1"))
 	assert.Nil(t, ws.(*xlsxWorksheet).DataValidations)
 
-	t.Run("delete_data_validation_from_extLst", func(t *testing.T) {
+	t.Run("with_data_validation_in_extLst", func(t *testing.T) {
 		f := NewFile()
 		f.Sheet.Delete("xl/worksheets/sheet1.xml")
 		f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil,
@@ -264,14 +264,14 @@ func TestDeleteDataValidation(t *testing.T) {
 		assert.Empty(t, dvs)
 	})
 
-	t.Run("delete_data_validation_failed_from_extLst", func(t *testing.T) {
+	t.Run("with_invalid_data_validation_in_extLst", func(t *testing.T) {
 		f := NewFile()
 		assert.EqualError(t, f.deleteX14DataValidation(&xlsxWorksheet{
 			ExtLst: &xlsxExtLst{Ext: "<extLst><x14:dataValidations></x14:dataValidation></x14:dataValidations></ext></extLst>"},
 		}, nil), "XML syntax error on line 1: element <dataValidations> closed by </dataValidation>")
 	})
 
-	t.Run("delete_data_validation_with_unordered_sqref", func(t *testing.T) {
+	t.Run("with_unordered_sqref", func(t *testing.T) {
 		// Test deleting data validation when sqref has unordered ranges
 		f := NewFile()
 		ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
@@ -297,5 +297,29 @@ func TestDeleteDataValidation(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, dvs, 1)
 		assert.Equal(t, "A3:A6 A8:A10 A15:A20", dvs[0].Sqref)
+	})
+
+	t.Run("with_unordered_sqref_in_extLst", func(t *testing.T) {
+		f := NewFile()
+		f.Sheet.Delete("xl/worksheets/sheet1.xml")
+		f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil,
+			`<worksheet xmlns="%s"><sheetData/><extLst><ext xmlns:x14="%s" uri="%s"><x14:dataValidations xmlns:xm="%s" count="1"><x14:dataValidation><xm:sqref>A5:A10 A15:A20 A3:A4</xm:sqref><x14:formula1></x14:formula1></x14:dataValidation></x14:dataValidations></ext></extLst></worksheet>`,
+			NameSpaceSpreadSheet.Value, NameSpaceSpreadSheetExcel2006Main.Value,
+			ExtURIDataValidations, NameSpaceSpreadSheetExcel2006Main.Value))
+		f.checked = sync.Map{}
+		assert.NoError(t, f.DeleteDataValidation("Sheet1", "A7"))
+		dvs, err := f.GetDataValidations("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, dvs, 1)
+		assert.Equal(t, "A3:A6 A8:A10 A15:A20", dvs[0].Sqref)
+		// Test deleting data validation with invalid sqref
+		f = NewFile()
+		f.Sheet.Delete("xl/worksheets/sheet1.xml")
+		f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil,
+			`<worksheet xmlns="%s"><sheetData/><extLst><ext xmlns:x14="%s" uri="%s"><x14:dataValidations xmlns:xm="%s" count="1"><x14:dataValidation><xm:sqref>A</xm:sqref><x14:formula1></x14:formula1></x14:dataValidation></x14:dataValidations></ext></extLst></worksheet>`,
+			NameSpaceSpreadSheet.Value, NameSpaceSpreadSheetExcel2006Main.Value,
+			ExtURIDataValidations, NameSpaceSpreadSheetExcel2006Main.Value))
+		f.checked = sync.Map{}
+		assert.Equal(t, f.DeleteDataValidation("Sheet1", "A7"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
 	})
 }
