@@ -1256,7 +1256,15 @@ func drawChartFont(fnt *Font, r *aRPr) {
 		if r.Latin == nil {
 			r.Latin = &xlsxCTTextFont{}
 		}
+		if r.Ea == nil {
+			r.Ea = &xlsxCTTextFont{}
+		}
+		if r.Cs == nil {
+			r.Cs = &xlsxCTTextFont{}
+		}
 		r.Latin.Typeface = fnt.Family
+		r.Ea.Typeface = fnt.Family
+		r.Cs.Typeface = fnt.Family
 	}
 	if fnt.Size > 0 {
 		r.Sz = fnt.Size * 100
@@ -1349,8 +1357,8 @@ func (f *File) drawPlotAreaTxPr(opts *ChartAxis) *cTxPr {
 						},
 					},
 					Latin: &xlsxCTTextFont{Typeface: "+mn-lt"},
-					Ea:    &aEa{Typeface: "+mn-ea"},
-					Cs:    &aCs{Typeface: "+mn-cs"},
+					Ea:    &xlsxCTTextFont{Typeface: "+mn-ea"},
+					Cs:    &xlsxCTTextFont{Typeface: "+mn-cs"},
 				},
 			},
 			EndParaRPr: &aEndParaRPr{Lang: "en-US"},

@@ -196,16 +196,6 @@ type attrValString struct {
 	Val *string `xml:"val,attr"`
 }
 
-// aCs directly maps the a:cs element.
-type aCs struct {
-	Typeface string `xml:"typeface,attr"`
-}
-
-// aEa directly maps the a:ea element.
-type aEa struct {
-	Typeface string `xml:"typeface,attr"`
-}
-
 type xlsxCTTextFont struct {
 	Typeface    string `xml:"typeface,attr"`
 	Panose      string `xml:"panose,attr,omitempty"`
@@ -246,8 +236,8 @@ type aRPr struct {
 	U          string          `xml:"u,attr,omitempty"`
 	SolidFill  *aSolidFill     `xml:"a:solidFill"`
 	Latin      *xlsxCTTextFont `xml:"a:latin"`
-	Ea         *aEa            `xml:"a:ea"`
-	Cs         *aCs            `xml:"a:cs"`
+	Ea         *xlsxCTTextFont `xml:"a:ea"`
+	Cs         *xlsxCTTextFont `xml:"a:cs"`
 }
 
 // cDTable (Data Table) directly maps the dTable element.
