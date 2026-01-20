@@ -471,6 +471,8 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 					U:       u,
 					Sz:      font.Size * 100,
 					Latin:   &xlsxCTTextFont{Typeface: font.Family},
+					Ea:      &xlsxCTTextFont{Typeface: font.Family},
+					Cs:      &xlsxCTTextFont{Typeface: font.Family},
 				},
 				T: text,
 			},
