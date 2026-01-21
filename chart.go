@@ -952,6 +952,8 @@ func (opts *Chart) parseTitle() {
 // The properties of 'XAxis' that can be set are:
 //
 //	None
+//	DropLines
+//	HighLowLines
 //	MajorGridLines
 //	MinorGridLines
 //	TickLabelSkip
@@ -980,6 +982,17 @@ func (opts *Chart) parseTitle() {
 //	Title
 //
 // None: Disable axes.
+//
+// DropLines: Specifies drop lines for the 2D and 3D area and line charts. Drop
+// lines are vertical lines that connect data points in a chart down to the
+// horizontal (category) axis. They are often used in Line or Area charts to
+// make it easier to see the exact category position of each point. The
+// 'DropLines' property is optional. The default value is false.
+//
+// HighLowLines: Specifies high low lines for the 2D line chart. High low lines
+// displayed by default in stock charts. They extend from the highest value to
+// the lowest value in each category. The 'HighLowLines' property is optional.
+// The default value is false.
 //
 // MajorGridLines: Specifies major grid lines.
 //

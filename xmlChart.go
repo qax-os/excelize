@@ -376,6 +376,7 @@ type cCharts struct {
 	SplitPos     *attrValInt    `xml:"splitPos"`
 	SerLines     *attrValString `xml:"serLines"`
 	DLbls        *cDLbls        `xml:"dLbls"`
+	DropLines    *cChartLines   `xml:"dropLines"`
 	HiLowLines   *cChartLines   `xml:"hiLowLines"`
 	UpDownBars   *cUpDownBars   `xml:"upDownBars"`
 	GapWidth     *attrValInt    `xml:"gapWidth"`
@@ -593,6 +594,8 @@ type ChartNumFmt struct {
 // ChartAxis directly maps the format settings of the chart axis.
 type ChartAxis struct {
 	None              bool
+	DropLines         bool
+	HighLowLines      bool
 	MajorGridLines    bool
 	MinorGridLines    bool
 	MajorUnit         float64

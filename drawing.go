@@ -221,6 +221,9 @@ func (f *File) drawBaseChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	var ok bool
 	if *c[0].BarDir.Val, ok = plotAreaChartBarDir[opts.Type]; !ok {
 		c[0].BarDir = nil
+		if opts.XAxis.DropLines {
+			c[0].DropLines = &cChartLines{}
+		}
 	}
 	catAx := f.drawPlotAreaCatAx(pa, opts)
 	valAx := f.drawPlotAreaValAx(pa, opts)
@@ -463,7 +466,7 @@ func (f *File) drawDoughnutChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 // drawLineChart provides a function to draw the c:plotArea element for line
 // chart by given format sets.
 func (f *File) drawLineChart(pa *cPlotArea, opts *Chart) *cPlotArea {
-	return &cPlotArea{
+	plotArea := &cPlotArea{
 		LineChart: []*cCharts{
 			{
 				Grouping: &attrValString{
@@ -480,12 +483,19 @@ func (f *File) drawLineChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		CatAx: f.drawPlotAreaCatAx(pa, opts),
 		ValAx: f.drawPlotAreaValAx(pa, opts),
 	}
+	if opts.XAxis.DropLines {
+		plotArea.LineChart[0].DropLines = &cChartLines{}
+	}
+	if opts.XAxis.HighLowLines {
+		plotArea.LineChart[0].HiLowLines = &cChartLines{}
+	}
+	return plotArea
 }
 
 // drawLine3DChart provides a function to draw the c:plotArea element for line
 // chart by given format sets.
 func (f *File) drawLine3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
-	return &cPlotArea{
+	plotArea := &cPlotArea{
 		Line3DChart: []*cCharts{
 			{
 				Grouping: &attrValString{
@@ -502,6 +512,10 @@ func (f *File) drawLine3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		CatAx: f.drawPlotAreaCatAx(pa, opts),
 		ValAx: f.drawPlotAreaValAx(pa, opts),
 	}
+	if opts.XAxis.DropLines {
+		plotArea.Line3DChart[0].DropLines = &cChartLines{}
+	}
+	return plotArea
 }
 
 // drawPieChart provides a function to draw the c:plotArea element for pie
