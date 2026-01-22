@@ -424,6 +424,28 @@ func TestSetCellHyperLink(t *testing.T) {
 		Display: &display,
 		Tooltip: &tooltip,
 	}))
+	cells, err := f.GetHyperLinkCells("Sheet1", "")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"A22", "B19"}, cells)
+	cells, err = f.GetHyperLinkCells("Sheet2", "")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"C1", "D6", "D7"}, cells)
+	cells, err = f.GetHyperLinkCells("Sheet2", "External")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"C1"}, cells)
+	cells, err = f.GetHyperLinkCells("Sheet2", "Location")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"D6", "D7"}, cells)
+	cells, err = f.GetHyperLinkCells("Sheet2", "None")
+	assert.NoError(t, err)
+	assert.Empty(t, cells)
+	// Test get hyperlink cells on not exists worksheet
+	_, err = f.GetHyperLinkCells("SheetN", "")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test get hyperlink cells with invalid link type
+	_, err = f.GetHyperLinkCells("Sheet2", "InvalidType")
+	assert.Equal(t, err, newInvalidLinkTypeError("InvalidType"))
+
 	// Test set cell hyperlink with invalid sheet name
 	assert.Equal(t, ErrSheetNameInvalid, f.SetCellHyperLink("Sheet:1", "A1", "Sheet1!D60", "Location"))
 	assert.Equal(t, newInvalidLinkTypeError(""), f.SetCellHyperLink("Sheet2", "C3", "Sheet1!D8", ""))
@@ -468,6 +490,12 @@ func TestSetCellHyperLink(t *testing.T) {
 	assert.NoError(t, f.SetCellHyperLink("Sheet1", "A1", "Sheet1!D8", "Location"))
 	ws.(*xlsxWorksheet).Hyperlinks.Hyperlink[0].Ref = "A:A"
 	assert.Error(t, f.SetCellHyperLink("Sheet1", "B2", "", "None"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
+
+	// Test get hyperlink cells on worksheet without hyperlinks
+	f = NewFile()
+	cells, err = f.GetHyperLinkCells("Sheet1", "")
+	assert.NoError(t, err)
+	assert.Empty(t, cells)
 }
 
 func TestGetCellHyperLink(t *testing.T) {
@@ -1393,6 +1421,9 @@ func TestProtectSheet(t *testing.T) {
 		Password:      "password",
 		EditScenarios: false,
 	}))
+	opts, err := f.GetSheetProtection(sheetName)
+	assert.NoError(t, err)
+	assert.Equal(t, false, opts.EditScenarios)
 	ws, err := f.workSheetReader(sheetName)
 	assert.NoError(t, err)
 	assert.Equal(t, "83AF", ws.SheetProtection.Password)
@@ -1430,6 +1461,9 @@ func TestProtectSheet(t *testing.T) {
 	assert.EqualError(t, f.ProtectSheet("SheetN", nil), "sheet SheetN does not exist")
 	// Test protect sheet with invalid sheet name
 	assert.EqualError(t, f.ProtectSheet("Sheet:1", nil), ErrSheetNameInvalid.Error())
+	// Test get sheet protection on not exists worksheet
+	_, err = f.GetSheetProtection("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 
 func TestUnprotectSheet(t *testing.T) {

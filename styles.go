@@ -2970,7 +2970,7 @@ func (f *File) extractCondFmtCellIs(c *xlsxCfRule, extLst *xlsxExtLst) Condition
 // extractCondFmtTimePeriod provides a function to extract conditional format
 // settings for time period by given conditional formatting rule.
 func (f *File) extractCondFmtTimePeriod(c *xlsxCfRule, ref string, extLst *xlsxExtLst) ConditionalFormatOptions {
-	var critera string
+	var criteria string
 	for _, formula := range c.Formula {
 		if c, ok := map[string]string{
 			fmt.Sprintf("FLOOR(%s,1)=TODAY()-1", ref):                                  "yesterday",
@@ -2984,11 +2984,11 @@ func (f *File) extractCondFmtTimePeriod(c *xlsxCfRule, ref string, extLst *xlsxE
 			fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY()),YEAR(%[1]s)=YEAR(TODAY()))", ref):                                                        "this month",
 			fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY())+1,OR(YEAR(%[1]s)=YEAR(TODAY()),AND(MONTH(%[1]s)=12,YEAR(%[1]s)=YEAR(TODAY())+1)))", ref): "continue month",
 		}[formula]; ok {
-			critera = c
+			criteria = c
 			break
 		}
 	}
-	return ConditionalFormatOptions{Format: c.DxfID, StopIfTrue: c.StopIfTrue, Type: "time_period", Criteria: critera}
+	return ConditionalFormatOptions{Format: c.DxfID, StopIfTrue: c.StopIfTrue, Type: "time_period", Criteria: criteria}
 }
 
 // extractCondFmtText provides a function to extract conditional format
