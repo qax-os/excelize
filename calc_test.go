@@ -6821,3 +6821,175 @@ func TestCalcTrendGrowthRegression(t *testing.T) {
 	mtx := [][]float64{}
 	calcTrendGrowthRegression(false, false, 0, 0, 0, 0, 0, mtx, mtx, mtx, mtx)
 }
+
+func TestCalcCellValueWithNamedRangesInFormula(t *testing.T) {
+	f := NewFile()
+	defer func() {
+		assert.NoError(t, f.Close())
+	}()
+
+	sheetName := "Test - Sheet"
+	idx, err := f.NewSheet(sheetName)
+	assert.NoError(t, err)
+	f.SetActiveSheet(idx)
+
+	// Create cells with values
+	assert.NoError(t, f.SetCellValue(sheetName, "A1", 100))
+	assert.NoError(t, f.SetCellValue(sheetName, "A2", 20))
+	assert.NoError(t, f.SetCellValue(sheetName, "A3", 30))
+	assert.NoError(t, f.SetCellValue(sheetName, "A4", 5))
+
+	// Define named ranges with periods in names to test dot notation support
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "value.first",
+		RefersTo: "'Test - Sheet'!$A$1",
+		Scope:    "Workbook",
+	}))
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "value_second",
+		RefersTo: "'Test - Sheet'!$A$2",
+		Scope:    "Workbook",
+	}))
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "value_third",
+		RefersTo: "'Test - Sheet'!$A$3",
+		Scope:    "Workbook",
+	}))
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "value_fourth",
+		RefersTo: "'Test - Sheet'!$A$4",
+		Scope:    "Workbook",
+	}))
+
+	// Set formula that references multiple named ranges in arithmetic operations
+	assert.NoError(t, f.SetCellFormula(sheetName, "B1", "=value.first-value_second-value_third-value_fourth"))
+
+	// Define a named range for the result cell
+	assert.NoError(t, f.SetDefinedName(&DefinedName{
+		Name:     "result",
+		RefersTo: "'Test - Sheet'!$B$1",
+		Scope:    "Workbook",
+	}))
+
+	// This should calculate to 100 - 20 - 30 - 5 = 45
+	result, err := f.CalcCellValue(sheetName, "B1")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, result, "Formula with named ranges should return a calculated value")
+	assert.Equal(t, "45", result, "Formula should calculate correctly: 100 - 20 - 30 - 5")
+}
+
+func TestCalcWithNamedRangesVariousScenarios(t *testing.T) {
+	// Test 1: Named ranges on sheet without special chars
+	t.Run("SimpleSheetName", func(t *testing.T) {
+		f := NewFile()
+		defer func() {
+			assert.NoError(t, f.Close())
+		}()
+
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 100))
+		assert.NoError(t, f.SetCellValue("Sheet1", "A2", 50))
+
+		assert.NoError(t, f.SetDefinedName(&DefinedName{
+			Name:     "Value1",
+			RefersTo: "Sheet1!$A$1",
+			Scope:    "Workbook",
+		}))
+		assert.NoError(t, f.SetDefinedName(&DefinedName{
+			Name:     "Value2",
+			RefersTo: "Sheet1!$A$2",
+			Scope:    "Workbook",
+		}))
+
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=Value1+Value2"))
+		result, err := f.CalcCellValue("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "150", result)
+	})
+
+	// Test 2: Named ranges in functions
+	t.Run("NamedRangesInFunctions", func(t *testing.T) {
+		f := NewFile()
+		defer func() {
+			assert.NoError(t, f.Close())
+		}()
+
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 10))
+		assert.NoError(t, f.SetCellValue("Sheet1", "A2", 20))
+		assert.NoError(t, f.SetCellValue("Sheet1", "A3", 30))
+
+		assert.NoError(t, f.SetDefinedName(&DefinedName{
+			Name:     "DataRange",
+			RefersTo: "Sheet1!$A$1:$A$3",
+			Scope:    "Workbook",
+		}))
+
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=SUM(DataRange)"))
+		result, err := f.CalcCellValue("Sheet1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "60", result)
+	})
+
+	// Test 3: Named ranges with sheet names containing various special chars
+	t.Run("SheetWithHyphens", func(t *testing.T) {
+		f := NewFile()
+		defer func() {
+			assert.NoError(t, f.Close())
+		}()
+
+		sheetName := "Data-Sheet-2025"
+		idx, err := f.NewSheet(sheetName)
+		assert.NoError(t, err)
+		f.SetActiveSheet(idx)
+
+		assert.NoError(t, f.SetCellValue(sheetName, "C5", 42))
+
+		assert.NoError(t, f.SetDefinedName(&DefinedName{
+			Name:     "SpecialValue",
+			RefersTo: "'Data-Sheet-2025'!$C$5",
+			Scope:    "Workbook",
+		}))
+
+		assert.NoError(t, f.SetCellFormula(sheetName, "D5", "=SpecialValue*2"))
+		result, err := f.CalcCellValue(sheetName, "D5")
+		assert.NoError(t, err)
+		assert.Equal(t, "84", result)
+	})
+
+	// Test 4: Multiple arithmetic operations with named ranges
+	t.Run("ComplexArithmetic", func(t *testing.T) {
+		f := NewFile()
+		defer func() {
+			assert.NoError(t, f.Close())
+		}()
+
+		sheetName := "My Sheet"
+		idx, err := f.NewSheet(sheetName)
+		assert.NoError(t, err)
+		f.SetActiveSheet(idx)
+
+		assert.NoError(t, f.SetCellValue(sheetName, "A1", 1000))
+		assert.NoError(t, f.SetCellValue(sheetName, "A2", 200))
+		assert.NoError(t, f.SetCellValue(sheetName, "A3", 50))
+
+		assert.NoError(t, f.SetDefinedName(&DefinedName{
+			Name:     "Total",
+			RefersTo: "'My Sheet'!$A$1",
+			Scope:    "Workbook",
+		}))
+		assert.NoError(t, f.SetDefinedName(&DefinedName{
+			Name:     "Cost",
+			RefersTo: "'My Sheet'!$A$2",
+			Scope:    "Workbook",
+		}))
+		assert.NoError(t, f.SetDefinedName(&DefinedName{
+			Name:     "Tax",
+			RefersTo: "'My Sheet'!$A$3",
+			Scope:    "Workbook",
+		}))
+
+		assert.NoError(t, f.SetCellFormula(sheetName, "B1", "=(Total-Cost)*Tax/100"))
+		result, err := f.CalcCellValue(sheetName, "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "400", result)
+	})
+}
