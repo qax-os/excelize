@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -266,6 +267,57 @@ func TestSharedStringsReader(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathWorkbookRels, MacintoshCyrillicCharset)
 	_, err = f.sharedStringsReader()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+}
+
+func TestGetCellValueEmptySharedString(t *testing.T) {
+	// Test that GetCellValue returns empty string for empty shared string entries
+	// Regression test for issue #2240
+	f := NewFile()
+
+	// Create a shared string table with an empty string at index 1
+	// Index 0: "Hello"
+	// Index 1: "" (empty)
+	// Index 2: "World"
+	sharedStrings := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="3" uniqueCount="3">
+<si><t>Hello</t></si>
+<si><t/></si>
+<si><t>World</t></si>
+</sst>`
+
+	// Create worksheet with cells referencing shared strings
+	// A1 -> index 0 ("Hello")
+	// A2 -> index 1 ("" - empty)
+	// A3 -> index 2 ("World")
+	sheetData := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetData>
+<row r="1"><c r="A1" t="s"><v>0</v></c></row>
+<row r="2"><c r="A2" t="s"><v>1</v></c></row>
+<row r="3"><c r="A3" t="s"><v>2</v></c></row>
+</sheetData>
+</worksheet>`
+
+	f.Pkg.Store("xl/sharedStrings.xml", []byte(sharedStrings))
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(sheetData))
+	f.checked = sync.Map{}
+
+	// Test GetCellValue for non-empty shared strings
+	val, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "Hello", val)
+
+	val, err = f.GetCellValue("Sheet1", "A3")
+	assert.NoError(t, err)
+	assert.Equal(t, "World", val)
+
+	// Test GetCellValue for empty shared string - this is the regression test
+	// Before fix: returns "1" (the index)
+	// After fix: returns "" (the actual empty string value)
+	val, err = f.GetCellValue("Sheet1", "A2")
+	assert.NoError(t, err)
+	assert.Equal(t, "", val, "empty shared string should return empty string, not index")
 }
 
 func TestRowVisibility(t *testing.T) {

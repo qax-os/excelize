@@ -355,7 +355,7 @@ func (f *File) getFromStringItem(index int) string {
 			return strconv.Itoa(index)
 		}
 		offsetRange := f.sharedStringItem[index]
-		if len(offsetRange) != 2 || offsetRange[0] >= offsetRange[1] {
+		if len(offsetRange) != 2 || offsetRange[0] > offsetRange[1] {
 			return strconv.Itoa(index)
 		}
 		buf := make([]byte, offsetRange[1]-offsetRange[0])
