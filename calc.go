@@ -1533,12 +1533,7 @@ func parseRef(ref string) (cellRef, bool, bool, error) {
 		tokens              = strings.Split(ref, "!")
 	)
 	if len(tokens) == 2 { // have a worksheet
-		cr.Sheet, cell = tokens[0], tokens[1]
-		// Strip surrounding single quotes from sheet name if present
-		// Excel requires quotes around sheet names with spaces/special chars: 'Sheet Name'!A1
-		if len(cr.Sheet) >= 2 && cr.Sheet[0] == '\'' && cr.Sheet[len(cr.Sheet)-1] == '\'' {
-			cr.Sheet = cr.Sheet[1 : len(cr.Sheet)-1]
-		}
+		cr.Sheet, cell = strings.TrimSuffix(strings.TrimPrefix(tokens[0], "'"), "'"), tokens[1]
 	}
 	if cr.Col, cr.Row, err = CellNameToCoordinates(cell); err != nil {
 		if cr.Col, colErr = ColumnNameToNumber(cell); colErr == nil { // cast to column
