@@ -4797,6 +4797,28 @@ func TestCalcWithDefinedName(t *testing.T) {
 	result, err = f.CalcCellValue("Sheet1", "D1")
 	assert.NoError(t, err)
 	assert.Equal(t, "YES", result, "IF(\"B1_as_string\"=defined_name1,\"YES\",\"NO\")")
+
+	t.Run("for_sheet_name_with_space", func(t *testing.T) {
+		f := NewFile()
+		defer func() {
+			assert.NoError(t, f.Close())
+		}()
+		assert.NoError(t, f.SetSheetName("Sheet1", "Sheet 1"))
+		cells := []string{"A1", "A2", "A3", "A4"}
+		names := []string{"val1", "val2", "val3", "val4"}
+		for idx, v := range []interface{}{100, 20, 30, 5} {
+			assert.NoError(t, f.SetCellValue("Sheet 1", cells[idx], v))
+		}
+		for idx, cell := range cells {
+			assert.NoError(t, f.SetDefinedName(&DefinedName{
+				Name: names[idx], RefersTo: "'Sheet 1'!" + cell,
+			}))
+		}
+		assert.NoError(t, f.SetCellFormula("Sheet 1", "B1", "=val1-val2-val3-val4"))
+		result, err := f.CalcCellValue("Sheet 1", "B1")
+		assert.NoError(t, err)
+		assert.Equal(t, "45", result)
+	})
 }
 
 func TestCalcISBLANK(t *testing.T) {

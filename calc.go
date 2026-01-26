@@ -1534,7 +1534,7 @@ func parseRef(ref string) (cellRef, bool, bool, error) {
 		tokens              = strings.Split(ref, "!")
 	)
 	if len(tokens) == 2 { // have a worksheet
-		cr.Sheet, cell = tokens[0], tokens[1]
+		cr.Sheet, cell = strings.TrimSuffix(strings.TrimPrefix(tokens[0], "'"), "'"), tokens[1]
 	}
 	if cr.Col, cr.Row, err = CellNameToCoordinates(cell); err != nil {
 		if cr.Col, colErr = ColumnNameToNumber(cell); colErr == nil { // cast to column
