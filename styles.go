@@ -1115,13 +1115,13 @@ var (
 			return xf.NumFmtID != nil && *xf.NumFmtID == numFmtID
 		},
 		"font": func(fontID int, xf xlsxXf, style *Style) bool {
-			if style.Font == nil {
+			if style.Font == nil || fontID == 0 {
 				return (xf.FontID == nil || *xf.FontID == 0) && (xf.ApplyFont == nil || !*xf.ApplyFont)
 			}
 			return xf.FontID != nil && *xf.FontID == fontID && xf.ApplyFont != nil && *xf.ApplyFont
 		},
 		"fill": func(fillID int, xf xlsxXf, style *Style) bool {
-			if style.Fill.Type == "" {
+			if style.Fill.Type == "" || fillID == 0 {
 				return (xf.FillID == nil || *xf.FillID == 0) && (xf.ApplyFill == nil || !*xf.ApplyFill)
 			}
 			return xf.FillID != nil && *xf.FillID == fillID && xf.ApplyFill != nil && *xf.ApplyFill
