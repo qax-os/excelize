@@ -24,15 +24,15 @@ func prepareCalcData(cellData [][]interface{}) *File {
 
 func TestCalcCellValue(t *testing.T) {
 	cellData := [][]interface{}{
-		{1, 4, nil, "Month", "Team", "Sales"},
-		{2, 5, nil, "Jan", "North 1", 36693},
-		{3, nil, nil, "Jan", "North 2", 22100},
-		{0, nil, nil, "Jan", "South 1", 53321},
-		{nil, nil, nil, "Jan", "South 2", 34440},
-		{nil, nil, nil, "Feb", "North 1", 29889},
-		{nil, nil, nil, "Feb", "North 2", 50090},
-		{nil, nil, nil, "Feb", "South 1", 32080},
-		{nil, nil, nil, "Feb", "South 2", 45500},
+		{1, 4, nil, "Month", "Team", "Sales", nil, nil, nil, nil, nil, nil, "Apple", 10, 1.0},
+		{2, 5, nil, "Jan", "North 1", 36693, nil, nil, nil, nil, nil, nil, "Banana", 20, 1.0},
+		{3, nil, nil, "Jan", "North 2", 22100, nil, nil, nil, nil, nil, nil, "Apple", 15, 1.0},
+		{0, nil, nil, "Jan", "South 1", 53321, nil, nil, nil, nil, nil, nil, "Cherry", 5, 1.0},
+		{nil, nil, nil, "Jan", "South 2", 34440, nil, nil, nil, nil, nil, nil, "Banana", 25, 1.0},
+		{nil, nil, nil, "Feb", "North 1", 29889, nil, nil, nil, nil, nil, nil, "Apple", 30, 1.0},
+		{nil, nil, nil, "Feb", "North 2", 50090, nil, nil, nil, nil, nil, nil, nil, nil, nil},
+		{nil, nil, nil, "Feb", "South 1", 32080, nil, nil, nil, nil, nil, nil, nil, nil, nil},
+		{nil, nil, nil, "Feb", "South 2", 45500, nil, nil, nil, nil, nil, nil, nil, nil, nil},
 	}
 	mathCalc := map[string]string{
 		"2^3":                   "8",
@@ -920,6 +920,12 @@ func TestCalcCellValue(t *testing.T) {
 		"SUMPRODUCT(A1:A3,B1:B3)":       "14",
 		"SUMPRODUCT(A1:B3)":             "15",
 		"SUMPRODUCT(A1:A3,B1:B3,B2:B4)": "20",
+		// SUMPRODUCT with conditionals (array operations)
+		"SUMPRODUCT((M1:M6=\"Apple\")*(N1:N6))":           "55",
+		"SUMPRODUCT((M1:M6=\"Apple\")*(N1:N6)*(O1:O6))":   "55",
+		"SUMPRODUCT((N1:N6>10)*(N1:N6))":                  "90",
+		"SUMPRODUCT((M1:M6=\"Apple\")*(N1:N6>10)*(N1:N6))": "45",
+		"SUMPRODUCT((M2:M6=\"Banana\")*(N2:N6))":          "45",
 		// SUMSQ
 		"SUMSQ(A1:A4)":              "14",
 		"SUMSQ(A1,B1,A2,B2,6)":      "82",
@@ -1073,6 +1079,10 @@ func TestCalcCellValue(t *testing.T) {
 		"COUNTIF(D1:D9,\"<>Jan\")":   "5",
 		"COUNTIF(A1:F9,\">=50000\")": "2",
 		"COUNTIF(A1:F9,TRUE)":        "0",
+		// COUNTIF with range criteria (array operations)
+		"COUNTIF(M1:M6,M1:M6)": "6",
+		"COUNTIF(M2:M6,M2:M6)": "5",
+		"COUNTIF(D2:D5,D2:D5)": "4",
 		// COUNTIFS
 		"COUNTIFS(A1:A9,2,D1:D9,\"Jan\")":          "1",
 		"COUNTIFS(F1:F9,\">20000\",D1:D9,\"Jan\")": "4",
