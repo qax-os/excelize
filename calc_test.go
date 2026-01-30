@@ -1114,6 +1114,7 @@ func TestCalcCellValue(t *testing.T) {
 		"COUNTIF(D2:D5,D2:D5)": "4",
 		"COUNTIF(N1:N6,N1:N6)": "6", // Numeric range criteria
 		"COUNTIF(M1:M3,M4:M6)": "3", // Partial overlap - M1,M3 match M6 (Apple), M2 matches M5 (Banana)
+		"COUNTIF(A1:B2,C1:C2)": "0", // No matches - numbers vs nil/empty
 		// COUNTIFS
 		"COUNTIFS(A1:A9,2,D1:D9,\"Jan\")":          "1",
 		"COUNTIFS(F1:F9,\">20000\",D1:D9,\"Jan\")": "4",
