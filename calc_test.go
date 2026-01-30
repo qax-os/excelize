@@ -6831,3 +6831,403 @@ func TestCalcTrendGrowthRegression(t *testing.T) {
 	mtx := [][]float64{}
 	calcTrendGrowthRegression(false, false, 0, 0, 0, 0, 0, mtx, mtx, mtx, mtx)
 }
+
+func TestCalcEqArray(t *testing.T) {
+	t.Run("matrix_matrix_same_dimensions", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{1, 2}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{1, 2}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{3, 5}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B2=C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+	})
+
+	t.Run("scalar_matrix_broadcasting", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 5))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{5, 3}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{5, 7}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1=C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+	})
+
+	t.Run("string_comparison", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"apple", "banana"}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]string{"apple", "cherry"}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B1=C1:D1",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+	})
+}
+
+func TestCalcNEqArray(t *testing.T) {
+	t.Run("matrix_matrix_not_equal", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{1, 2}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{1, 2}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{3, 5}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B2<>C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+	})
+
+	t.Run("scalar_matrix_broadcasting", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 5))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{5, 3}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{5, 7}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1<>C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+	})
+}
+
+func TestCalcLArray(t *testing.T) {
+	t.Run("number_comparison", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{1, 5}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{2, 3}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{2, 4}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B2<C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+	})
+
+	t.Run("string_comparison", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"apple", "cherry"}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]string{"banana", "banana"}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B1<C1:D1",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+	})
+
+	t.Run("mixed_types_number_string", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 5))
+		assert.NoError(t, f.SetCellValue("Sheet1", "C1", "text"))
+		formulaType, ref := STCellFormulaTypeArray, "E1:E1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1<C1",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+	})
+
+	t.Run("scalar_broadcasting", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 5))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{3, 7}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1<C1:D1",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+	})
+}
+
+func TestCalcLeArray(t *testing.T) {
+	t.Run("number_comparison", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{1, 5}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{2, 3}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{2, 4}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B2<=C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+	})
+
+	t.Run("string_comparison", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"apple", "banana"}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]string{"banana", "banana"}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B1<=C1:D1",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+	})
+}
+
+func TestCalcGArray(t *testing.T) {
+	t.Run("number_comparison", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{5, 2}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{2, 3}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{4, 4}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B2>C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+	})
+
+	t.Run("string_comparison", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"cherry", "apple"}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]string{"banana", "banana"}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B1>C1:D1",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+	})
+
+	t.Run("mixed_types_string_number", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", "text"))
+		assert.NoError(t, f.SetCellValue("Sheet1", "C1", 5))
+		formulaType, ref := STCellFormulaTypeArray, "E1:E1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1>C1",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+	})
+}
+
+func TestCalcGeArray(t *testing.T) {
+	t.Run("number_comparison", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{5, 2}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{2, 3}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{4, 4}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B2>=C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+	})
+
+	t.Run("string_comparison", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"banana", "apple"}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]string{"banana", "banana"}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B1>=C1:D1",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+	})
+}
+
+func TestCalcMultiplyArray(t *testing.T) {
+	t.Run("element_wise_multiplication", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{2, 3}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A2", &[]int{4, 5}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{10, 20}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{30, 40}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B2*C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "20", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "60", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "120", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "200", result)
+	})
+
+	t.Run("scalar_broadcasting", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 3))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{2, 4}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{6, 8}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1*C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "6", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "12", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "18", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "24", result)
+	})
+
+	t.Run("column_vector_broadcasting", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 2))
+		assert.NoError(t, f.SetCellValue("Sheet1", "A2", 3))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{10, 20}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{30, 40}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:A2*C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "20", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "60", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "90", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "120", result)
+	})
+
+	t.Run("row_vector_broadcasting", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{2, 3}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{10, 20}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{30, 40}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B1*C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "20", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "60", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "60", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "120", result)
+	})
+}
