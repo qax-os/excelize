@@ -926,6 +926,35 @@ func TestCalcCellValue(t *testing.T) {
 		"SUMPRODUCT((N1:N6>10)*(N1:N6))":                  "90",
 		"SUMPRODUCT((M1:M6=\"Apple\")*(N1:N6>10)*(N1:N6))": "45",
 		"SUMPRODUCT((M2:M6=\"Banana\")*(N2:N6))":          "45",
+		// Test not-equal operator (<>) - calcNEqArray
+		"SUMPRODUCT((M1:M6<>\"Apple\")*(N1:N6))":          "50",
+		"SUMPRODUCT((N1:N6<>10)*(N1:N6))":                 "95",
+		// Test less-than operator (<) - calcLArray
+		"SUMPRODUCT((N1:N6<20)*(N1:N6))":                  "30",
+		"SUMPRODUCT((N1:N6<15)*(N1:N6))":                  "15",
+		// Test less-than-or-equal operator (<=) - calcLeArray
+		"SUMPRODUCT((N1:N6<=20)*(N1:N6))":                 "50",  // 10+20+15+5
+		"SUMPRODUCT((N1:N6<=10)*(N1:N6))":                 "15",  // 10+5
+		// Test greater-than-or-equal operator (>=) - calcGeArray
+		"SUMPRODUCT((N1:N6>=20)*(N1:N6))":                 "75",
+		"SUMPRODUCT((N1:N6>=30)*(N1:N6))":                 "30",
+		// Test string comparisons in different operators
+		"SUMPRODUCT((M1:M6<>\"Banana\")*(N1:N6))":         "60",
+		"SUMPRODUCT((M1:M6<\"Cherry\")*(N1:N6))":          "100",
+		"SUMPRODUCT((M1:M6>\"Apple\")*(N1:N6))":           "50",
+		"SUMPRODUCT((M1:M6<=\"Banana\")*(N1:N6))":         "100",  // All but Cherry: 10+20+15+25+30
+		"SUMPRODUCT((M1:M6>=\"Cherry\")*(N1:N6))":         "5",    // Only "Cherry"
+		// Test mixed-type comparisons (string vs number)
+		"SUMPRODUCT((M1:M6<5)*(N1:N6))":                   "0",    // String < Number = false
+		"SUMPRODUCT((M1:M6>5)*(N1:N6))":                   "105",  // String > Number = true
+		"SUMPRODUCT((5<M1:M6)*(N1:N6))":                   "105",  // Number < String = true
+		"SUMPRODUCT((5>M1:M6)*(N1:N6))":                   "0",    // Number > String = false
+		// Test scalar broadcasting (1x1 matrix expands to match array dimensions)
+		"SUMPRODUCT((N1:N6>N1)*(N1:N6))":                  "90",  // N1=10, cells > 10: 20+15+25+30
+		"SUMPRODUCT((M1:M6=M1)*(N1:N6))":                  "55",  // M1="Apple", find all Apples: 10+15+30
+		"SUMPRODUCT((15>=N1:N6)*(N1:N6))":                 "30",  // 15 >= [10,20,15,5,25,30]: 10+15+5
+		"SUMPRODUCT((20<>N1:N6)*(N1:N6))":                 "85",  // 20 <> array: all except 20
+		"SUMPRODUCT((10<=N1:N6)*(N1:N6))":                 "100", // 10 <= array: all cells >= 10
 		// SUMSQ
 		"SUMSQ(A1:A4)":              "14",
 		"SUMSQ(A1,B1,A2,B2,6)":      "82",
@@ -1079,10 +1108,12 @@ func TestCalcCellValue(t *testing.T) {
 		"COUNTIF(D1:D9,\"<>Jan\")":   "5",
 		"COUNTIF(A1:F9,\">=50000\")": "2",
 		"COUNTIF(A1:F9,TRUE)":        "0",
-		// COUNTIF with range criteria (array operations)
+		// COUNTIF with range criteria (array operations) - tests matchesValue
 		"COUNTIF(M1:M6,M1:M6)": "6",
 		"COUNTIF(M2:M6,M2:M6)": "5",
 		"COUNTIF(D2:D5,D2:D5)": "4",
+		"COUNTIF(N1:N6,N1:N6)": "6", // Numeric range criteria
+		"COUNTIF(M1:M3,M4:M6)": "3", // Partial overlap - M1,M3 match M6 (Apple), M2 matches M5 (Banana)
 		// COUNTIFS
 		"COUNTIFS(A1:A9,2,D1:D9,\"Jan\")":          "1",
 		"COUNTIFS(F1:F9,\">20000\",D1:D9,\"Jan\")": "4",
