@@ -7263,3 +7263,202 @@ func TestCalcMultiplyArray(t *testing.T) {
 		assert.Equal(t, "120", result)
 	})
 }
+
+// TestCalcArrayDimensionValidationDirect tests dimension mismatch error handling
+// by directly calling the array comparison functions with ArgMatrix types.
+func TestCalcArrayDimensionValidationDirect(t *testing.T) {
+	t.Run("2x2_vs_3x3_equality_right_mismatch", func(t *testing.T) {
+		// Create 2x2 matrix (left operand)
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2)},
+			{newNumberFormulaArg(3), newNumberFormulaArg(4)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		// Create 3x3 matrix (right operand)
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2), newNumberFormulaArg(3)},
+			{newNumberFormulaArg(4), newNumberFormulaArg(5), newNumberFormulaArg(6)},
+			{newNumberFormulaArg(7), newNumberFormulaArg(8), newNumberFormulaArg(9)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcEqArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, "#VALUE!", result.Error)
+	})
+
+	t.Run("3x3_vs_2x2_equality_left_mismatch", func(t *testing.T) {
+		// Create 3x3 matrix (left operand)
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2), newNumberFormulaArg(3)},
+			{newNumberFormulaArg(4), newNumberFormulaArg(5), newNumberFormulaArg(6)},
+			{newNumberFormulaArg(7), newNumberFormulaArg(8), newNumberFormulaArg(9)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		// Create 2x2 matrix (right operand)
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2)},
+			{newNumberFormulaArg(3), newNumberFormulaArg(4)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcEqArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, "#VALUE!", result.Error)
+	})
+
+	t.Run("2x1_column_vector_vs_3x3_not_equal", func(t *testing.T) {
+		// Create 2x1 column vector (left operand) - not 1x1, so won't broadcast
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1)},
+			{newNumberFormulaArg(2)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		// Create 3x3 matrix (right operand)
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2), newNumberFormulaArg(3)},
+			{newNumberFormulaArg(4), newNumberFormulaArg(5), newNumberFormulaArg(6)},
+			{newNumberFormulaArg(7), newNumberFormulaArg(8), newNumberFormulaArg(9)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcNEqArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, "#VALUE!", result.Error)
+	})
+
+	t.Run("1x3_row_vector_vs_2x2_less_than", func(t *testing.T) {
+		// Create 1x3 row vector (left operand) - not 1x1, so won't broadcast
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2), newNumberFormulaArg(3)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		// Create 2x2 matrix (right operand)
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(10), newNumberFormulaArg(20)},
+			{newNumberFormulaArg(30), newNumberFormulaArg(40)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcLArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, "#VALUE!", result.Error)
+	})
+
+	t.Run("2x3_vs_3x2_multiply", func(t *testing.T) {
+		// Create 2x3 matrix (left operand)
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2), newNumberFormulaArg(3)},
+			{newNumberFormulaArg(4), newNumberFormulaArg(5), newNumberFormulaArg(6)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		// Create 3x2 matrix (right operand)
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2)},
+			{newNumberFormulaArg(3), newNumberFormulaArg(4)},
+			{newNumberFormulaArg(5), newNumberFormulaArg(6)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcMultiplyArray(rOpd, lOpd, opdStack)
+		assert.EqualError(t, err, "#VALUE!")
+	})
+
+	t.Run("2x2_vs_3x2_less_than_or_equal", func(t *testing.T) {
+		// Create 2x2 matrix (left operand)
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2)},
+			{newNumberFormulaArg(3), newNumberFormulaArg(4)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		// Create 3x2 matrix (right operand)
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(10), newNumberFormulaArg(20)},
+			{newNumberFormulaArg(30), newNumberFormulaArg(40)},
+			{newNumberFormulaArg(50), newNumberFormulaArg(60)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcLeArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, "#VALUE!", result.Error)
+	})
+
+	t.Run("3x3_vs_2x3_greater_than", func(t *testing.T) {
+		// Create 3x3 matrix (left operand)
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(100), newNumberFormulaArg(200), newNumberFormulaArg(300)},
+			{newNumberFormulaArg(400), newNumberFormulaArg(500), newNumberFormulaArg(600)},
+			{newNumberFormulaArg(700), newNumberFormulaArg(800), newNumberFormulaArg(900)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		// Create 2x3 matrix (right operand)
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2), newNumberFormulaArg(3)},
+			{newNumberFormulaArg(4), newNumberFormulaArg(5), newNumberFormulaArg(6)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcGArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, "#VALUE!", result.Error)
+	})
+
+	t.Run("2x4_vs_3x3_greater_than_or_equal", func(t *testing.T) {
+		// Create 2x4 matrix (left operand)
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2), newNumberFormulaArg(3), newNumberFormulaArg(4)},
+			{newNumberFormulaArg(5), newNumberFormulaArg(6), newNumberFormulaArg(7), newNumberFormulaArg(8)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		// Create 3x3 matrix (right operand)
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2), newNumberFormulaArg(3)},
+			{newNumberFormulaArg(4), newNumberFormulaArg(5), newNumberFormulaArg(6)},
+			{newNumberFormulaArg(7), newNumberFormulaArg(8), newNumberFormulaArg(9)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcGeArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, "#VALUE!", result.Error)
+	})
+}
+
