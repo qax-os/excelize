@@ -7763,3 +7763,47 @@ func TestCalcArrayDimensionValidationDirect(t *testing.T) {
 	})
 }
 
+// TestCalcArrayMixedTypeComparisons tests mixed-type comparisons (string vs number)
+// for array comparison operators to ensure all comparison branches are covered.
+func TestCalcArrayMixedTypeComparisons(t *testing.T) {
+	cellData := [][]interface{}{
+		{1, 4, nil, "Month", "Team", "Sales", nil, nil, nil, nil, nil, nil, "Apple", 10, 1.0},
+		{2, 5, nil, "Jan", "North 1", 36693, nil, nil, nil, nil, nil, nil, "Banana", 20, 1.0},
+	}
+	f := prepareCalcData(cellData)
+
+	// Test mixed-type comparisons with >= to cover calcGeArray lines 1640, 1642
+	// String >= Number should be TRUE
+	f.SetCellFormula("Sheet1", "P1", "=SUMPRODUCT((M1:M2>=5))")
+	result, err := f.CalcCellValue("Sheet1", "P1")
+	assert.NoError(t, err)
+	// M1:M2 = ["Apple", "Banana"], both strings >= 5 (number) should be TRUE
+	// String >= Number = true (line 1640)
+	assert.Equal(t, "2", result, "String >= Number should give 2 true values")
+
+	// Number >= String should be FALSE
+	f.SetCellFormula("Sheet1", "P2", "=SUMPRODUCT((N1:N2>=M1))")
+	result, err = f.CalcCellValue("Sheet1", "P2")
+	assert.NoError(t, err)
+	// N1:N2 = [10, 20] (numbers), M1 = "Apple" (string)
+	// Number >= String = false (line 1642)
+	assert.Equal(t, "0", result, "Number >= String should give 0 true values")
+
+	// Test mixed-type comparisons with <= to cover calcLeArray lines 1236-1239
+	// String <= Number should be FALSE
+	f.SetCellFormula("Sheet1", "P3", "=SUMPRODUCT((M1:M2<=5))")
+	result, err = f.CalcCellValue("Sheet1", "P3")
+	assert.NoError(t, err)
+	// M1:M2 = ["Apple", "Banana"] (strings), 5 is number
+	// String <= Number = false
+	assert.Equal(t, "0", result, "String <= Number should give 0 true values")
+
+	// Number <= String should be TRUE
+	f.SetCellFormula("Sheet1", "P4", "=SUMPRODUCT((N1:N2<=M1))")
+	result, err = f.CalcCellValue("Sheet1", "P4")
+	assert.NoError(t, err)
+	// N1:N2 = [10, 20] (numbers), M1 = "Apple" (string, broadcasted)
+	// Number <= String = true
+	assert.Equal(t, "2", result, "Number <= String should give 2 true values")
+}
+
