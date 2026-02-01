@@ -7761,6 +7761,60 @@ func TestCalcArrayDimensionValidationDirect(t *testing.T) {
 		assert.Equal(t, ArgError, result.Type)
 		assert.Equal(t, "#VALUE!", result.Error)
 	})
+
+	t.Run("calcEqArray_scalar_broadcasting_right", func(t *testing.T) {
+		// Test to cover rCols == 1 and rRows == 1 broadcasting (1x1 to 2x2)
+		// This specifically tests lines 1355-1360 (rRows == 1 and rCols == 1 checks)
+		// Left operand: 2x2 matrix
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(5), newNumberFormulaArg(5)},
+			{newNumberFormulaArg(5), newNumberFormulaArg(5)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		// Right operand: 1x1 scalar (this triggers both rRows == 1 and rCols == 1)
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(5)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcEqArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgMatrix, result.Type)
+		// All values should match (all 5s)
+		assert.Equal(t, 2, len(result.Matrix))
+		assert.Equal(t, 2, len(result.Matrix[0]))
+	})
+
+	t.Run("calcEqArray_scalar_broadcasting_left", func(t *testing.T) {
+		// Test to cover lCols == 1 and lRows == 1 broadcasting
+		// This specifically tests lines 1362-1367 (lRows == 1 and lCols == 1 checks)
+		// Left operand: 1x1 scalar (this triggers both lRows == 1 and lCols == 1)
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(10)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		// Right operand: 2x3 matrix
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(10), newNumberFormulaArg(20), newNumberFormulaArg(10)},
+			{newNumberFormulaArg(5), newNumberFormulaArg(10), newNumberFormulaArg(15)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcEqArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgMatrix, result.Type)
+		// Result should be 2x3 matrix
+		assert.Equal(t, 2, len(result.Matrix))
+		assert.Equal(t, 3, len(result.Matrix[0]))
+	})
 }
 
 // TestCalcArrayMixedTypeComparisons tests mixed-type comparisons (string vs number)
