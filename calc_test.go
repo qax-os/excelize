@@ -6924,6 +6924,33 @@ func TestCalcEqArray(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "FALSE", result)
 	})
+
+	t.Run("row_vector_broadcasting", func(t *testing.T) {
+		f := NewFile()
+		// Left operand: 1x2 row vector [10, 20]
+		assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]int{10, 20}))
+		// Right operand: 2x2 matrix [[10, 20], [10, 30]]
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C1", &[]int{10, 20}))
+		assert.NoError(t, f.SetSheetRow("Sheet1", "C2", &[]int{10, 30}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		// A1:B1 (1x2) will be broadcast to match C1:D2 (2x2)
+		// Row 1: [10, 20] = [10, 20] -> [TRUE, TRUE]
+		// Row 2: [10, 20] = [10, 30] -> [TRUE, FALSE]
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1:B1=C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "E2")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+		result, err = f.CalcCellValue("Sheet1", "F2")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+	})
 }
 
 func TestCalcNEqArray(t *testing.T) {
@@ -7077,6 +7104,84 @@ func TestCalcLeArray(t *testing.T) {
 		result, err = f.CalcCellValue("Sheet1", "F1")
 		assert.NoError(t, err)
 		assert.Equal(t, "TRUE", result)
+	})
+
+	t.Run("mixed_types_number_string", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 5))
+		assert.NoError(t, f.SetCellValue("Sheet1", "C1", "text"))
+		formulaType, ref := STCellFormulaTypeArray, "E1:E1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1<=C1",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "TRUE", result)
+	})
+
+	t.Run("mixed_types_string_number", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", "text"))
+		assert.NoError(t, f.SetCellValue("Sheet1", "C1", 5))
+		formulaType, ref := STCellFormulaTypeArray, "E1:E1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "A1<=C1",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err)
+		assert.Equal(t, "FALSE", result)
+	})
+}
+
+func TestCalcLeArrayMixedTypes(t *testing.T) {
+	t.Run("number_le_string_returns_true", func(t *testing.T) {
+		// number <= string should return true
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(5)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{
+			{newStringFormulaArg("text")},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcLeArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgMatrix, result.Type)
+		matrix := result.Matrix
+		assert.Equal(t, 1, len(matrix))
+		assert.Equal(t, 1, len(matrix[0]))
+		assert.Equal(t, ArgNumber, matrix[0][0].Type)
+		assert.Equal(t, true, matrix[0][0].Boolean)
+		assert.Equal(t, 1.0, matrix[0][0].Number)
+	})
+
+	t.Run("string_le_number_returns_false", func(t *testing.T) {
+		// string <= number should return false
+		lMatrix := [][]formulaArg{
+			{newStringFormulaArg("text")},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(5)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcLeArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgMatrix, result.Type)
+		matrix := result.Matrix
+		assert.Equal(t, 1, len(matrix))
+		assert.Equal(t, 1, len(matrix[0]))
+		assert.Equal(t, ArgNumber, matrix[0][0].Type)
+		assert.Equal(t, true, matrix[0][0].Boolean)
+		assert.Equal(t, 0.0, matrix[0][0].Number)
 	})
 }
 
