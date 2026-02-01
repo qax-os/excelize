@@ -7367,6 +7367,102 @@ func TestCalcMultiplyArray(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "120", result)
 	})
+
+	t.Run("scalar_right_operand_single_row_broadcasting", func(t *testing.T) {
+		// Right operand is a single cell (1x1), which has a single row
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(10), newNumberFormulaArg(20)},
+			{newNumberFormulaArg(30), newNumberFormulaArg(40)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(2)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcMultiplyArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgMatrix, result.Type)
+		resultMatrix := result.Matrix
+		assert.Equal(t, 2, len(resultMatrix))
+		assert.Equal(t, 2, len(resultMatrix[0]))
+		assert.Equal(t, 20.0, resultMatrix[0][0].Number)
+		assert.Equal(t, 40.0, resultMatrix[0][1].Number)
+		assert.Equal(t, 60.0, resultMatrix[1][0].Number)
+		assert.Equal(t, 80.0, resultMatrix[1][1].Number)
+	})
+
+	t.Run("scalar_left_operand_single_row_broadcasting", func(t *testing.T) {
+		// Left operand is a single cell (1x1), which has a single row
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(2)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(10), newNumberFormulaArg(20)},
+			{newNumberFormulaArg(30), newNumberFormulaArg(40)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcMultiplyArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgMatrix, result.Type)
+		resultMatrix := result.Matrix
+		assert.Equal(t, 2, len(resultMatrix))
+		assert.Equal(t, 2, len(resultMatrix[0]))
+		assert.Equal(t, 20.0, resultMatrix[0][0].Number)
+		assert.Equal(t, 40.0, resultMatrix[0][1].Number)
+		assert.Equal(t, 60.0, resultMatrix[1][0].Number)
+		assert.Equal(t, 80.0, resultMatrix[1][1].Number)
+	})
+
+	t.Run("non_numeric_in_right_operand", func(t *testing.T) {
+		// Right operand contains non-numeric value
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(10), newNumberFormulaArg(20)},
+			{newNumberFormulaArg(30), newNumberFormulaArg(40)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(2), newStringFormulaArg("text")},
+			{newNumberFormulaArg(4), newNumberFormulaArg(5)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcMultiplyArray(rOpd, lOpd, opdStack)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "text")
+	})
+
+	t.Run("non_numeric_in_left_operand", func(t *testing.T) {
+		// Left operand contains non-numeric value
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(10), newStringFormulaArg("text")},
+			{newNumberFormulaArg(30), newNumberFormulaArg(40)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(2), newNumberFormulaArg(3)},
+			{newNumberFormulaArg(4), newNumberFormulaArg(5)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcMultiplyArray(rOpd, lOpd, opdStack)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "text")
+	})
 }
 
 // TestCalcArrayDimensionValidationDirect tests dimension mismatch error handling
