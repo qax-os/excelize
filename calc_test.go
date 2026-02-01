@@ -7460,5 +7460,105 @@ func TestCalcArrayDimensionValidationDirect(t *testing.T) {
 		assert.Equal(t, ArgError, result.Type)
 		assert.Equal(t, "#VALUE!", result.Error)
 	})
+
+	t.Run("3x2_vs_2x2_less_than_or_equal_left_mismatch", func(t *testing.T) {
+		// This test validates that incompatible dimensions (3x2 vs 2x2) are correctly rejected.
+		// Neither operand can broadcast to a compatible dimension, so this should error.
+
+		// Create 3x2 matrix (left operand) - larger than right in rows
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2)},
+			{newNumberFormulaArg(3), newNumberFormulaArg(4)},
+			{newNumberFormulaArg(5), newNumberFormulaArg(6)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		// Create 2x2 matrix (right operand)
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(10), newNumberFormulaArg(20)},
+			{newNumberFormulaArg(30), newNumberFormulaArg(40)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcLeArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, "#VALUE!", result.Error)
+	})
+
+	t.Run("dimension_mismatch_error_cases", func(t *testing.T) {
+		// This test validates that various dimension mismatch scenarios correctly produce
+		// #VALUE! errors when neither operand can broadcast to a compatible dimension.
+
+		scenarios := []struct {
+			name         string
+			lRows, lCols int
+			rRows, rCols int
+		}{
+			{"1x2_vs_2x2", 1, 2, 2, 2}, // left is row vector, right is matrix
+			{"2x1_vs_2x2", 2, 1, 2, 2}, // left is column vector, right is matrix
+			{"1x3_vs_2x2", 1, 3, 2, 2}, // left row vector doesn't match right columns
+			{"3x1_vs_2x2", 3, 1, 2, 2}, // left column vector doesn't match right rows
+		}
+
+		for _, sc := range scenarios {
+			t.Run(sc.name, func(t *testing.T) {
+				// Create left matrix
+				lMatrix := make([][]formulaArg, sc.lRows)
+				for i := 0; i < sc.lRows; i++ {
+					lMatrix[i] = make([]formulaArg, sc.lCols)
+					for j := 0; j < sc.lCols; j++ {
+						lMatrix[i][j] = newNumberFormulaArg(float64(i*sc.lCols + j + 1))
+					}
+				}
+				lOpd := newMatrixFormulaArg(lMatrix)
+
+				// Create right matrix
+				rMatrix := make([][]formulaArg, sc.rRows)
+				for i := 0; i < sc.rRows; i++ {
+					rMatrix[i] = make([]formulaArg, sc.rCols)
+					for j := 0; j < sc.rCols; j++ {
+						rMatrix[i][j] = newNumberFormulaArg(float64(10 * (i*sc.rCols + j + 1)))
+					}
+				}
+				rOpd := newMatrixFormulaArg(rMatrix)
+
+				opdStack := NewStack()
+				err := calcLeArray(rOpd, lOpd, opdStack)
+				assert.NoError(t, err)
+
+				result := opdStack.Pop().(formulaArg)
+				// All these scenarios should trigger dimension mismatch errors
+				assert.Equal(t, ArgError, result.Type)
+				assert.Equal(t, "#VALUE!", result.Error)
+			})
+		}
+	})
+
+	t.Run("vector_dimension_mismatch", func(t *testing.T) {
+		// Test that incompatible vector dimensions (1x2 vs 2x1) correctly error.
+		// The dimensions are incompatible because neither can broadcast to the other.
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix) // 1x2 left operand
+
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(10)},
+			{newNumberFormulaArg(20)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix) // 2x1 right operand
+
+		opdStack := NewStack()
+		err := calcLeArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, "#VALUE!", result.Error)
+	})
 }
 

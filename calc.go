@@ -1345,10 +1345,6 @@ func calcEqArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
 		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
 		return nil
 	}
-	if (lRows != outRows || lCols != outCols) && (lRows != 1 || lCols != 1) {
-		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
-		return nil
-	}
 
 	// Perform element-wise comparison with broadcasting
 	result := make([][]formulaArg, outRows)
@@ -1394,10 +1390,6 @@ func calcNEqArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
 		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
 		return nil
 	}
-	if (lRows != outRows || lCols != outCols) && (lRows != 1 || lCols != 1) {
-		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
-		return nil
-	}
 
 	result := make([][]formulaArg, outRows)
 	for i := 0; i < outRows; i++ {
@@ -1439,10 +1431,6 @@ func calcLArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	}
 
 	if (rRows != outRows || rCols != outCols) && (rRows != 1 || rCols != 1) {
-		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
-		return nil
-	}
-	if (lRows != outRows || lCols != outCols) && (lRows != 1 || lCols != 1) {
 		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
 		return nil
 	}
@@ -1504,10 +1492,6 @@ func calcLeArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
 		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
 		return nil
 	}
-	if (lRows != outRows || lCols != outCols) && (lRows != 1 || lCols != 1) {
-		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
-		return nil
-	}
 
 	result := make([][]formulaArg, outRows)
 	for i := 0; i < outRows; i++ {
@@ -1563,10 +1547,6 @@ func calcGArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	}
 
 	if (rRows != outRows || rCols != outCols) && (rRows != 1 || rCols != 1) {
-		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
-		return nil
-	}
-	if (lRows != outRows || lCols != outCols) && (lRows != 1 || lCols != 1) {
 		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
 		return nil
 	}
@@ -1628,10 +1608,6 @@ func calcGeArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
 		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
 		return nil
 	}
-	if (lRows != outRows || lCols != outCols) && (lRows != 1 || lCols != 1) {
-		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
-		return nil
-	}
 
 	result := make([][]formulaArg, outRows)
 	for i := 0; i < outRows; i++ {
@@ -1687,9 +1663,6 @@ func calcMultiplyArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	}
 
 	if (rRows != outRows || rCols != outCols) && (rRows != 1 || rCols != 1) {
-		return errors.New(formulaErrorVALUE)
-	}
-	if (lRows != outRows || lCols != outCols) && (lRows != 1 || lCols != 1) {
 		return errors.New(formulaErrorVALUE)
 	}
 
