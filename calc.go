@@ -1296,6 +1296,99 @@ func operandToMatrix(opd formulaArg) [][]formulaArg {
 	}
 }
 
+// calculateBroadcastDimensions determines output dimensions for broadcasting.
+// Returns (outRows, outCols) where output size is the larger of the two inputs.
+func calculateBroadcastDimensions(rRows, rCols, lRows, lCols int) (outRows, outCols int) {
+	outRows, outCols = rRows, rCols
+	if lRows > 1 || lCols > 1 {
+		outRows, outCols = lRows, lCols
+	}
+	return
+}
+
+// validateBroadcastDimensions checks if dimensions are compatible for broadcasting.
+// Returns true if valid (exact match or one is 1x1 scalar).
+func validateBroadcastDimensions(rRows, rCols, lRows, lCols, outRows, outCols int) bool {
+	rValid := (rRows == outRows && rCols == outCols) || (rRows == 1 && rCols == 1)
+	lValid := (lRows == outRows && lCols == outCols) || (lRows == 1 && lCols == 1)
+	return rValid && lValid
+}
+
+// calculateBroadcastIndices maps output position to input positions with broadcasting.
+// If input is 1x1, always use index 0. Otherwise use output index.
+func calculateBroadcastIndices(i, j, rRows, rCols, lRows, lCols int) (rIdx, rJdx, lIdx, lJdx int) {
+	rIdx, rJdx = i, j
+	if rRows == 1 {
+		rIdx = 0
+	}
+	if rCols == 1 {
+		rJdx = 0
+	}
+	lIdx, lJdx = i, j
+	if lRows == 1 {
+		lIdx = 0
+	}
+	if lCols == 1 {
+		lJdx = 0
+	}
+	return
+}
+
+// compareTypedValues performs type-aware comparison between formulaArg values.
+// Returns -1 if lCell < rCell, 0 if equal, 1 if lCell > rCell.
+// Numbers sort before strings. Within same type, uses natural comparison.
+func compareTypedValues(lCell, rCell formulaArg) int {
+	if rCell.Type == ArgNumber && lCell.Type == ArgNumber {
+		if lCell.Number < rCell.Number {
+			return -1
+		}
+		if lCell.Number > rCell.Number {
+			return 1
+		}
+		return 0
+	}
+	if rCell.Type == ArgString && lCell.Type == ArgString {
+		return strings.Compare(lCell.Value(), rCell.Value())
+	}
+	// Mixed types: numbers sort before strings
+	if lCell.Type == ArgNumber && rCell.Type == ArgString {
+		return -1
+	}
+	if lCell.Type == ArgString && rCell.Type == ArgNumber {
+		return 1
+	}
+	return 0
+}
+
+// performArrayComparison executes element-wise comparison on arrays with broadcasting.
+// The cmpFunc callback receives left and right cells and returns the comparison result.
+func performArrayComparison(rOpd, lOpd formulaArg, opdStack *Stack, cmpFunc func(lCell, rCell formulaArg) bool) error {
+	rMatrix := operandToMatrix(rOpd)
+	lMatrix := operandToMatrix(lOpd)
+
+	rRows, rCols := len(rMatrix), len(rMatrix[0])
+	lRows, lCols := len(lMatrix), len(lMatrix[0])
+
+	outRows, outCols := calculateBroadcastDimensions(rRows, rCols, lRows, lCols)
+
+	if !validateBroadcastDimensions(rRows, rCols, lRows, lCols, outRows, outCols) {
+		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
+		return nil
+	}
+
+	result := make([][]formulaArg, outRows)
+	for i := 0; i < outRows; i++ {
+		result[i] = make([]formulaArg, outCols)
+		for j := 0; j < outCols; j++ {
+			rIdx, rJdx, lIdx, lJdx := calculateBroadcastIndices(i, j, rRows, rCols, lRows, lCols)
+			result[i][j] = newBoolFormulaArg(cmpFunc(lMatrix[lIdx][lJdx], rMatrix[rIdx][rJdx]))
+		}
+	}
+
+	opdStack.Push(newMatrixFormulaArg(result))
+	return nil
+}
+
 // matchesValue performs type-aware value equality check for COUNTIF.
 // Compares strings and numbers appropriately.
 func matchesValue(val, criteria formulaArg) bool {
@@ -1328,325 +1421,44 @@ func countifRangeCriteria(searchRange, criteriaRange formulaArg) formulaArg {
 // calcEqArray performs element-wise equality comparison on arrays with broadcasting.
 // Supports scalar-matrix, matrix-scalar, and matrix-matrix comparisons.
 func calcEqArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
-	rMatrix := operandToMatrix(rOpd)
-	lMatrix := operandToMatrix(lOpd)
-
-	rRows, rCols := len(rMatrix), len(rMatrix[0])
-	lRows, lCols := len(lMatrix), len(lMatrix[0])
-
-	// Determine result dimensions and validate
-	outRows, outCols := rRows, rCols
-	if lRows > 1 || lCols > 1 {
-		outRows, outCols = lRows, lCols
-	}
-
-	// Validate dimensions (allow broadcasting from 1x1)
-	if (rRows != outRows || rCols != outCols) && (rRows != 1 || rCols != 1) {
-		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
-		return nil
-	}
-
-	// Perform element-wise comparison with broadcasting
-	result := make([][]formulaArg, outRows)
-	for i := 0; i < outRows; i++ {
-		result[i] = make([]formulaArg, outCols)
-		for j := 0; j < outCols; j++ {
-			rIdx, rJdx := i, j
-			if rRows == 1 {
-				rIdx = 0
-			}
-			if rCols == 1 {
-				rJdx = 0
-			}
-			lIdx, lJdx := i, j
-			if lRows == 1 {
-				lIdx = 0
-			}
-			if lCols == 1 {
-				lJdx = 0
-			}
-			result[i][j] = newBoolFormulaArg(lMatrix[lIdx][lJdx].Value() == rMatrix[rIdx][rJdx].Value())
-		}
-	}
-
-	opdStack.Push(newMatrixFormulaArg(result))
-	return nil
+	return performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+		return lCell.Value() == rCell.Value()
+	})
 }
 
 // calcNEqArray performs element-wise inequality comparison on arrays with broadcasting.
 func calcNEqArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
-	rMatrix := operandToMatrix(rOpd)
-	lMatrix := operandToMatrix(lOpd)
-
-	rRows, rCols := len(rMatrix), len(rMatrix[0])
-	lRows, lCols := len(lMatrix), len(lMatrix[0])
-
-	outRows, outCols := rRows, rCols
-	if lRows > 1 || lCols > 1 {
-		outRows, outCols = lRows, lCols
-	}
-
-	if (rRows != outRows || rCols != outCols) && (rRows != 1 || rCols != 1) {
-		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
-		return nil
-	}
-
-	result := make([][]formulaArg, outRows)
-	for i := 0; i < outRows; i++ {
-		result[i] = make([]formulaArg, outCols)
-		for j := 0; j < outCols; j++ {
-			rIdx, rJdx := i, j
-			if rRows == 1 {
-				rIdx = 0
-			}
-			if rCols == 1 {
-				rJdx = 0
-			}
-			lIdx, lJdx := i, j
-			if lRows == 1 {
-				lIdx = 0
-			}
-			if lCols == 1 {
-				lJdx = 0
-			}
-			result[i][j] = newBoolFormulaArg(lMatrix[lIdx][lJdx].Value() != rMatrix[rIdx][rJdx].Value())
-		}
-	}
-
-	opdStack.Push(newMatrixFormulaArg(result))
-	return nil
+	return performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+		return lCell.Value() != rCell.Value()
+	})
 }
 
 // calcLArray performs element-wise less than comparison on arrays with broadcasting.
 func calcLArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
-	rMatrix := operandToMatrix(rOpd)
-	lMatrix := operandToMatrix(lOpd)
-
-	rRows, rCols := len(rMatrix), len(rMatrix[0])
-	lRows, lCols := len(lMatrix), len(lMatrix[0])
-
-	outRows, outCols := rRows, rCols
-	if lRows > 1 || lCols > 1 {
-		outRows, outCols = lRows, lCols
-	}
-
-	if (rRows != outRows || rCols != outCols) && (rRows != 1 || rCols != 1) {
-		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
-		return nil
-	}
-
-	result := make([][]formulaArg, outRows)
-	for i := 0; i < outRows; i++ {
-		result[i] = make([]formulaArg, outCols)
-		for j := 0; j < outCols; j++ {
-			rIdx, rJdx := i, j
-			if rRows == 1 {
-				rIdx = 0
-			}
-			if rCols == 1 {
-				rJdx = 0
-			}
-			lIdx, lJdx := i, j
-			if lRows == 1 {
-				lIdx = 0
-			}
-			if lCols == 1 {
-				lJdx = 0
-			}
-
-			rCell := rMatrix[rIdx][rJdx]
-			lCell := lMatrix[lIdx][lJdx]
-
-			var cmpResult bool
-			if rCell.Type == ArgNumber && lCell.Type == ArgNumber {
-				cmpResult = lCell.Number < rCell.Number
-			} else if rCell.Type == ArgString && lCell.Type == ArgString {
-				cmpResult = strings.Compare(lCell.Value(), rCell.Value()) == -1
-			} else if rCell.Type == ArgNumber && lCell.Type == ArgString {
-				cmpResult = false
-			} else if rCell.Type == ArgString && lCell.Type == ArgNumber {
-				cmpResult = true
-			}
-			result[i][j] = newBoolFormulaArg(cmpResult)
-		}
-	}
-
-	opdStack.Push(newMatrixFormulaArg(result))
-	return nil
+	return performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+		return compareTypedValues(lCell, rCell) == -1
+	})
 }
 
 // calcLeArray performs element-wise less than or equal comparison on arrays with broadcasting.
 func calcLeArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
-	rMatrix := operandToMatrix(rOpd)
-	lMatrix := operandToMatrix(lOpd)
-
-	rRows, rCols := len(rMatrix), len(rMatrix[0])
-	lRows, lCols := len(lMatrix), len(lMatrix[0])
-
-	outRows, outCols := rRows, rCols
-	if lRows > 1 || lCols > 1 {
-		outRows, outCols = lRows, lCols
-	}
-
-	if (rRows != outRows || rCols != outCols) && (rRows != 1 || rCols != 1) {
-		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
-		return nil
-	}
-
-	result := make([][]formulaArg, outRows)
-	for i := 0; i < outRows; i++ {
-		result[i] = make([]formulaArg, outCols)
-		for j := 0; j < outCols; j++ {
-			rIdx, rJdx := i, j
-			if rRows == 1 {
-				rIdx = 0
-			}
-			if rCols == 1 {
-				rJdx = 0
-			}
-			lIdx, lJdx := i, j
-			if lRows == 1 {
-				lIdx = 0
-			}
-			if lCols == 1 {
-				lJdx = 0
-			}
-
-			rCell := rMatrix[rIdx][rJdx]
-			lCell := lMatrix[lIdx][lJdx]
-
-			var cmpResult bool
-			if rCell.Type == ArgNumber && lCell.Type == ArgNumber {
-				cmpResult = lCell.Number <= rCell.Number
-			} else if rCell.Type == ArgString && lCell.Type == ArgString {
-				cmpResult = strings.Compare(lCell.Value(), rCell.Value()) != 1
-			} else if rCell.Type == ArgNumber && lCell.Type == ArgString {
-				cmpResult = false
-			} else if rCell.Type == ArgString && lCell.Type == ArgNumber {
-				cmpResult = true
-			}
-			result[i][j] = newBoolFormulaArg(cmpResult)
-		}
-	}
-
-	opdStack.Push(newMatrixFormulaArg(result))
-	return nil
+	return performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+		return compareTypedValues(lCell, rCell) != 1
+	})
 }
 
 // calcGArray performs element-wise greater than comparison on arrays with broadcasting.
 func calcGArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
-	rMatrix := operandToMatrix(rOpd)
-	lMatrix := operandToMatrix(lOpd)
-
-	rRows, rCols := len(rMatrix), len(rMatrix[0])
-	lRows, lCols := len(lMatrix), len(lMatrix[0])
-
-	outRows, outCols := rRows, rCols
-	if lRows > 1 || lCols > 1 {
-		outRows, outCols = lRows, lCols
-	}
-
-	if (rRows != outRows || rCols != outCols) && (rRows != 1 || rCols != 1) {
-		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
-		return nil
-	}
-
-	result := make([][]formulaArg, outRows)
-	for i := 0; i < outRows; i++ {
-		result[i] = make([]formulaArg, outCols)
-		for j := 0; j < outCols; j++ {
-			rIdx, rJdx := i, j
-			if rRows == 1 {
-				rIdx = 0
-			}
-			if rCols == 1 {
-				rJdx = 0
-			}
-			lIdx, lJdx := i, j
-			if lRows == 1 {
-				lIdx = 0
-			}
-			if lCols == 1 {
-				lJdx = 0
-			}
-
-			rCell := rMatrix[rIdx][rJdx]
-			lCell := lMatrix[lIdx][lJdx]
-
-			var cmpResult bool
-			if rCell.Type == ArgNumber && lCell.Type == ArgNumber {
-				cmpResult = lCell.Number > rCell.Number
-			} else if rCell.Type == ArgString && lCell.Type == ArgString {
-				cmpResult = strings.Compare(lCell.Value(), rCell.Value()) == 1
-			} else if rCell.Type == ArgNumber && lCell.Type == ArgString {
-				cmpResult = true
-			} else if rCell.Type == ArgString && lCell.Type == ArgNumber {
-				cmpResult = false
-			}
-			result[i][j] = newBoolFormulaArg(cmpResult)
-		}
-	}
-
-	opdStack.Push(newMatrixFormulaArg(result))
-	return nil
+	return performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+		return compareTypedValues(lCell, rCell) == 1
+	})
 }
 
 // calcGeArray performs element-wise greater than or equal comparison on arrays with broadcasting.
 func calcGeArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
-	rMatrix := operandToMatrix(rOpd)
-	lMatrix := operandToMatrix(lOpd)
-
-	rRows, rCols := len(rMatrix), len(rMatrix[0])
-	lRows, lCols := len(lMatrix), len(lMatrix[0])
-
-	outRows, outCols := rRows, rCols
-	if lRows > 1 || lCols > 1 {
-		outRows, outCols = lRows, lCols
-	}
-
-	if (rRows != outRows || rCols != outCols) && (rRows != 1 || rCols != 1) {
-		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
-		return nil
-	}
-
-	result := make([][]formulaArg, outRows)
-	for i := 0; i < outRows; i++ {
-		result[i] = make([]formulaArg, outCols)
-		for j := 0; j < outCols; j++ {
-			rIdx, rJdx := i, j
-			if rRows == 1 {
-				rIdx = 0
-			}
-			if rCols == 1 {
-				rJdx = 0
-			}
-			lIdx, lJdx := i, j
-			if lRows == 1 {
-				lIdx = 0
-			}
-			if lCols == 1 {
-				lJdx = 0
-			}
-
-			rCell := rMatrix[rIdx][rJdx]
-			lCell := lMatrix[lIdx][lJdx]
-
-			var cmpResult bool
-			if rCell.Type == ArgNumber && lCell.Type == ArgNumber {
-				cmpResult = lCell.Number >= rCell.Number
-			} else if rCell.Type == ArgString && lCell.Type == ArgString {
-				cmpResult = strings.Compare(lCell.Value(), rCell.Value()) != -1
-			} else if rCell.Type == ArgNumber && lCell.Type == ArgString {
-				cmpResult = true
-			} else if rCell.Type == ArgString && lCell.Type == ArgNumber {
-				cmpResult = false
-			}
-			result[i][j] = newBoolFormulaArg(cmpResult)
-		}
-	}
-
-	opdStack.Push(newMatrixFormulaArg(result))
-	return nil
+	return performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+		return compareTypedValues(lCell, rCell) != -1
+	})
 }
 
 // calcMultiplyArray performs element-wise multiplication on arrays with broadcasting.
@@ -1657,41 +1469,28 @@ func calcMultiplyArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	rRows, rCols := len(rMatrix), len(rMatrix[0])
 	lRows, lCols := len(lMatrix), len(lMatrix[0])
 
-	outRows, outCols := rRows, rCols
-	if lRows > 1 || lCols > 1 {
-		outRows, outCols = lRows, lCols
-	}
+	outRows, outCols := calculateBroadcastDimensions(rRows, rCols, lRows, lCols)
 
-	if (rRows != outRows || rCols != outCols) && (rRows != 1 || rCols != 1) {
-		return errors.New(formulaErrorVALUE)
+	if !validateBroadcastDimensions(rRows, rCols, lRows, lCols, outRows, outCols) {
+		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
+		return nil
 	}
 
 	result := make([][]formulaArg, outRows)
 	for i := 0; i < outRows; i++ {
 		result[i] = make([]formulaArg, outCols)
 		for j := 0; j < outCols; j++ {
-			rIdx, rJdx := i, j
-			if rRows == 1 {
-				rIdx = 0
-			}
-			if rCols == 1 {
-				rJdx = 0
-			}
-			lIdx, lJdx := i, j
-			if lRows == 1 {
-				lIdx = 0
-			}
-			if lCols == 1 {
-				lJdx = 0
-			}
+			rIdx, rJdx, lIdx, lJdx := calculateBroadcastIndices(i, j, rRows, rCols, lRows, lCols)
 
 			rCell := rMatrix[rIdx][rJdx].ToNumber()
 			if rCell.Type != ArgNumber {
-				return errors.New(rCell.Value())
+				opdStack.Push(newErrorFormulaArg(rCell.Value(), rCell.Value()))
+				return nil
 			}
 			lCell := lMatrix[lIdx][lJdx].ToNumber()
 			if lCell.Type != ArgNumber {
-				return errors.New(lCell.Value())
+				opdStack.Push(newErrorFormulaArg(lCell.Value(), lCell.Value()))
+				return nil
 			}
 
 			result[i][j] = newNumberFormulaArg(lCell.Number * rCell.Number)

@@ -921,40 +921,40 @@ func TestCalcCellValue(t *testing.T) {
 		"SUMPRODUCT(A1:B3)":             "15",
 		"SUMPRODUCT(A1:A3,B1:B3,B2:B4)": "20",
 		// SUMPRODUCT with conditionals (array operations)
-		"SUMPRODUCT((M1:M6=\"Apple\")*(N1:N6))":           "55",
-		"SUMPRODUCT((M1:M6=\"Apple\")*(N1:N6)*(O1:O6))":   "55",
-		"SUMPRODUCT((N1:N6>10)*(N1:N6))":                  "90",
+		"SUMPRODUCT((M1:M6=\"Apple\")*(N1:N6))":            "55",
+		"SUMPRODUCT((M1:M6=\"Apple\")*(N1:N6)*(O1:O6))":    "55",
+		"SUMPRODUCT((N1:N6>10)*(N1:N6))":                   "90",
 		"SUMPRODUCT((M1:M6=\"Apple\")*(N1:N6>10)*(N1:N6))": "45",
-		"SUMPRODUCT((M2:M6=\"Banana\")*(N2:N6))":          "45",
+		"SUMPRODUCT((M2:M6=\"Banana\")*(N2:N6))":           "45",
 		// Test not-equal operator (<>) - calcNEqArray
-		"SUMPRODUCT((M1:M6<>\"Apple\")*(N1:N6))":          "50",
-		"SUMPRODUCT((N1:N6<>10)*(N1:N6))":                 "95",
+		"SUMPRODUCT((M1:M6<>\"Apple\")*(N1:N6))": "50",
+		"SUMPRODUCT((N1:N6<>10)*(N1:N6))":        "95",
 		// Test less-than operator (<) - calcLArray
-		"SUMPRODUCT((N1:N6<20)*(N1:N6))":                  "30",
-		"SUMPRODUCT((N1:N6<15)*(N1:N6))":                  "15",
+		"SUMPRODUCT((N1:N6<20)*(N1:N6))": "30",
+		"SUMPRODUCT((N1:N6<15)*(N1:N6))": "15",
 		// Test less-than-or-equal operator (<=) - calcLeArray
-		"SUMPRODUCT((N1:N6<=20)*(N1:N6))":                 "50",  // 10+20+15+5
-		"SUMPRODUCT((N1:N6<=10)*(N1:N6))":                 "15",  // 10+5
+		"SUMPRODUCT((N1:N6<=20)*(N1:N6))": "50", // 10+20+15+5
+		"SUMPRODUCT((N1:N6<=10)*(N1:N6))": "15", // 10+5
 		// Test greater-than-or-equal operator (>=) - calcGeArray
-		"SUMPRODUCT((N1:N6>=20)*(N1:N6))":                 "75",
-		"SUMPRODUCT((N1:N6>=30)*(N1:N6))":                 "30",
+		"SUMPRODUCT((N1:N6>=20)*(N1:N6))": "75",
+		"SUMPRODUCT((N1:N6>=30)*(N1:N6))": "30",
 		// Test string comparisons in different operators
-		"SUMPRODUCT((M1:M6<>\"Banana\")*(N1:N6))":         "60",
-		"SUMPRODUCT((M1:M6<\"Cherry\")*(N1:N6))":          "100",
-		"SUMPRODUCT((M1:M6>\"Apple\")*(N1:N6))":           "50",
-		"SUMPRODUCT((M1:M6<=\"Banana\")*(N1:N6))":         "100",  // All but Cherry: 10+20+15+25+30
-		"SUMPRODUCT((M1:M6>=\"Cherry\")*(N1:N6))":         "5",    // Only "Cherry"
+		"SUMPRODUCT((M1:M6<>\"Banana\")*(N1:N6))": "60",
+		"SUMPRODUCT((M1:M6<\"Cherry\")*(N1:N6))":  "100",
+		"SUMPRODUCT((M1:M6>\"Apple\")*(N1:N6))":   "50",
+		"SUMPRODUCT((M1:M6<=\"Banana\")*(N1:N6))": "100", // All but Cherry: 10+20+15+25+30
+		"SUMPRODUCT((M1:M6>=\"Cherry\")*(N1:N6))": "5",   // Only "Cherry"
 		// Test mixed-type comparisons (string vs number)
-		"SUMPRODUCT((M1:M6<5)*(N1:N6))":                   "0",    // String < Number = false
-		"SUMPRODUCT((M1:M6>5)*(N1:N6))":                   "105",  // String > Number = true
-		"SUMPRODUCT((5<M1:M6)*(N1:N6))":                   "105",  // Number < String = true
-		"SUMPRODUCT((5>M1:M6)*(N1:N6))":                   "0",    // Number > String = false
+		"SUMPRODUCT((M1:M6<5)*(N1:N6))": "0",   // String < Number = false
+		"SUMPRODUCT((M1:M6>5)*(N1:N6))": "105", // String > Number = true
+		"SUMPRODUCT((5<M1:M6)*(N1:N6))": "105", // Number < String = true
+		"SUMPRODUCT((5>M1:M6)*(N1:N6))": "0",   // Number > String = false
 		// Test scalar broadcasting (1x1 matrix expands to match array dimensions)
-		"SUMPRODUCT((N1:N6>N1)*(N1:N6))":                  "90",  // N1=10, cells > 10: 20+15+25+30
-		"SUMPRODUCT((M1:M6=M1)*(N1:N6))":                  "55",  // M1="Apple", find all Apples: 10+15+30
-		"SUMPRODUCT((15>=N1:N6)*(N1:N6))":                 "30",  // 15 >= [10,20,15,5,25,30]: 10+15+5
-		"SUMPRODUCT((20<>N1:N6)*(N1:N6))":                 "85",  // 20 <> array: all except 20
-		"SUMPRODUCT((10<=N1:N6)*(N1:N6))":                 "100", // 10 <= array: all cells >= 10
+		"SUMPRODUCT((N1:N6>N1)*(N1:N6))":  "90",  // N1=10, cells > 10: 20+15+25+30
+		"SUMPRODUCT((M1:M6=M1)*(N1:N6))":  "55",  // M1="Apple", find all Apples: 10+15+30
+		"SUMPRODUCT((15>=N1:N6)*(N1:N6))": "30",  // 15 >= [10,20,15,5,25,30]: 10+15+5
+		"SUMPRODUCT((20<>N1:N6)*(N1:N6))": "85",  // 20 <> array: all except 20
+		"SUMPRODUCT((10<=N1:N6)*(N1:N6))": "100", // 10 <= array: all cells >= 10
 		// SUMSQ
 		"SUMSQ(A1:A4)":              "14",
 		"SUMSQ(A1,B1,A2,B2,6)":      "82",
@@ -7440,8 +7440,11 @@ func TestCalcMultiplyArray(t *testing.T) {
 
 		opdStack := NewStack()
 		err := calcMultiplyArray(rOpd, lOpd, opdStack)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "text")
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Contains(t, result.Error, "text")
 	})
 
 	t.Run("non_numeric_in_left_operand", func(t *testing.T) {
@@ -7460,8 +7463,11 @@ func TestCalcMultiplyArray(t *testing.T) {
 
 		opdStack := NewStack()
 		err := calcMultiplyArray(rOpd, lOpd, opdStack)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "text")
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Contains(t, result.Error, "text")
 	})
 }
 
@@ -7584,7 +7590,11 @@ func TestCalcArrayDimensionValidationDirect(t *testing.T) {
 
 		opdStack := NewStack()
 		err := calcMultiplyArray(rOpd, lOpd, opdStack)
-		assert.EqualError(t, err, "#VALUE!")
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, "#VALUE!", result.Error)
 	})
 
 	t.Run("2x2_vs_3x2_less_than_or_equal", func(t *testing.T) {
@@ -7817,6 +7827,146 @@ func TestCalcArrayDimensionValidationDirect(t *testing.T) {
 	})
 }
 
+// TestArrayBroadcastHelpers tests the helper functions used for array broadcasting.
+func TestArrayBroadcastHelpers(t *testing.T) {
+	t.Run("calculateBroadcastDimensions", func(t *testing.T) {
+		tests := []struct {
+			name                       string
+			rRows, rCols, lRows, lCols int
+			expectedRows, expectedCols int
+		}{
+			{"both_1x1", 1, 1, 1, 1, 1, 1},
+			{"2x2_vs_1x1", 2, 2, 1, 1, 2, 2},
+			{"1x1_vs_3x3", 1, 1, 3, 3, 3, 3},
+			{"same_dimensions", 2, 3, 2, 3, 2, 3},
+			{"row_vector_vs_matrix", 1, 3, 2, 3, 2, 3},
+			{"column_vector_vs_matrix", 2, 1, 2, 3, 2, 3},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				outRows, outCols := calculateBroadcastDimensions(tt.rRows, tt.rCols, tt.lRows, tt.lCols)
+				assert.Equal(t, tt.expectedRows, outRows)
+				assert.Equal(t, tt.expectedCols, outCols)
+			})
+		}
+	})
+
+	t.Run("validateBroadcastDimensions", func(t *testing.T) {
+		tests := []struct {
+			name                       string
+			rRows, rCols, lRows, lCols int
+			outRows, outCols           int
+			expected                   bool
+		}{
+			{"both_match_output", 2, 2, 2, 2, 2, 2, true},
+			{"right_is_scalar", 1, 1, 2, 3, 2, 3, true},
+			{"left_is_scalar", 2, 3, 1, 1, 2, 3, true},
+			{"both_are_scalar", 1, 1, 1, 1, 1, 1, true},
+			{"incompatible_dimensions", 2, 2, 3, 3, 3, 3, false},
+			{"partial_match_invalid", 2, 3, 3, 2, 3, 3, false},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := validateBroadcastDimensions(tt.rRows, tt.rCols, tt.lRows, tt.lCols, tt.outRows, tt.outCols)
+				assert.Equal(t, tt.expected, result)
+			})
+		}
+	})
+
+	t.Run("calculateBroadcastIndices", func(t *testing.T) {
+		tests := []struct {
+			name                       string
+			i, j                       int
+			rRows, rCols, lRows, lCols int
+			expectedRIdx, expectedRJdx int
+			expectedLIdx, expectedLJdx int
+		}{
+			{"both_non_scalar", 1, 2, 3, 3, 3, 3, 1, 2, 1, 2},
+			{"right_scalar", 1, 2, 1, 1, 3, 3, 0, 0, 1, 2},
+			{"left_scalar", 1, 2, 3, 3, 1, 1, 1, 2, 0, 0},
+			{"right_row_vector", 0, 2, 1, 3, 2, 3, 0, 2, 0, 2},
+			{"left_column_vector", 1, 0, 2, 3, 2, 1, 1, 0, 1, 0},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				rIdx, rJdx, lIdx, lJdx := calculateBroadcastIndices(tt.i, tt.j, tt.rRows, tt.rCols, tt.lRows, tt.lCols)
+				assert.Equal(t, tt.expectedRIdx, rIdx)
+				assert.Equal(t, tt.expectedRJdx, rJdx)
+				assert.Equal(t, tt.expectedLIdx, lIdx)
+				assert.Equal(t, tt.expectedLJdx, lJdx)
+			})
+		}
+	})
+
+	t.Run("compareTypedValues", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			lCell    formulaArg
+			rCell    formulaArg
+			expected int
+		}{
+			// Number comparisons
+			{"numbers_less", newNumberFormulaArg(1.0), newNumberFormulaArg(2.0), -1},
+			{"numbers_equal", newNumberFormulaArg(5.0), newNumberFormulaArg(5.0), 0},
+			{"numbers_greater", newNumberFormulaArg(10.0), newNumberFormulaArg(3.0), 1},
+			// String comparisons
+			{"strings_less", newStringFormulaArg("apple"), newStringFormulaArg("banana"), -1},
+			{"strings_equal", newStringFormulaArg("test"), newStringFormulaArg("test"), 0},
+			{"strings_greater", newStringFormulaArg("zebra"), newStringFormulaArg("apple"), 1},
+			// Mixed type comparisons (numbers sort before strings)
+			{"number_before_string", newNumberFormulaArg(100.0), newStringFormulaArg("1"), -1},
+			{"string_after_number", newStringFormulaArg("1"), newNumberFormulaArg(100.0), 1},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := compareTypedValues(tt.lCell, tt.rCell)
+				assert.Equal(t, tt.expected, result)
+			})
+		}
+	})
+
+	t.Run("performArrayComparison", func(t *testing.T) {
+		// Test basic comparison function with scalar broadcasting
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(5)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(5), newNumberFormulaArg(10)},
+			{newNumberFormulaArg(15), newNumberFormulaArg(5)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+			// Test with number comparison
+			return lCell.Number == rCell.Number
+		})
+
+		assert.NoError(t, err)
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgMatrix, result.Type)
+		assert.Equal(t, 2, len(result.Matrix))
+		assert.Equal(t, 2, len(result.Matrix[0]))
+
+		// Check values - left is scalar 5, so:
+		// [0][0]: 5 == 5 = true (Number=1)
+		// [0][1]: 5 == 10 = false (Number=0)
+		// [1][0]: 5 == 15 = false (Number=0)
+		// [1][1]: 5 == 5 = true (Number=1)
+		assert.Equal(t, ArgNumber, result.Matrix[0][0].Type)
+		assert.Equal(t, float64(1), result.Matrix[0][0].Number) // true
+		assert.Equal(t, float64(0), result.Matrix[0][1].Number) // false
+		assert.Equal(t, float64(0), result.Matrix[1][0].Number) // false
+		assert.Equal(t, float64(1), result.Matrix[1][1].Number) // true
+	})
+}
+
 // TestCalcArrayMixedTypeComparisons tests mixed-type comparisons (string vs number)
 // for array comparison operators to ensure all comparison branches are covered.
 func TestCalcArrayMixedTypeComparisons(t *testing.T) {
@@ -7860,4 +8010,3 @@ func TestCalcArrayMixedTypeComparisons(t *testing.T) {
 	// Number <= String = true
 	assert.Equal(t, "2", result, "Number <= String should give 2 true values")
 }
-
