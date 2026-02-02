@@ -8337,3 +8337,131 @@ func TestEmptyMatrixNoRegression(t *testing.T) {
 		assert.Equal(t, true, result.Matrix[0][0].Boolean)
 	})
 }
+// Benchmark element-wise comparison operations
+func BenchmarkCalcEqArray(b *testing.B) {
+	b.Run("2x2_matrix", func(b *testing.B) {
+		f := NewFile()
+		assert.NoError(b, f.SetSheetRow("Sheet1", "A1", &[]int{1, 2}))
+		assert.NoError(b, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		assert.NoError(b, f.SetSheetRow("Sheet1", "C1", &[]int{1, 2}))
+		assert.NoError(b, f.SetSheetRow("Sheet1", "C2", &[]int{3, 5}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(b, f.SetCellFormula("Sheet1", "E1", "A1:B2=C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = f.CalcCellValue("Sheet1", "E1")
+		}
+	})
+
+	b.Run("10x10_matrix", func(b *testing.B) {
+		f := NewFile()
+		// Setup 10x10 matrices
+		for row := 1; row <= 10; row++ {
+			data := make([]int, 10)
+			for col := 0; col < 10; col++ {
+				data[col] = row*10 + col
+			}
+			rowName := string(rune('A' + row - 1))
+			assert.NoError(b, f.SetSheetRow("Sheet1", rowName+"1", &data))
+			assert.NoError(b, f.SetSheetRow("Sheet1", rowName+"11", &data))
+		}
+		formulaType, ref := STCellFormulaTypeArray, "K1:T10"
+		assert.NoError(b, f.SetCellFormula("Sheet1", "K1", "A1:J10=A11:J20",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = f.CalcCellValue("Sheet1", "K1")
+		}
+	})
+
+	b.Run("scalar_broadcast_10x10", func(b *testing.B) {
+		f := NewFile()
+		assert.NoError(b, f.SetCellValue("Sheet1", "A1", 5))
+		// Setup 10x10 matrix
+		for row := 1; row <= 10; row++ {
+			data := make([]int, 10)
+			for col := 0; col < 10; col++ {
+				data[col] = row*10 + col
+			}
+			rowName := string(rune('B' + row - 1))
+			assert.NoError(b, f.SetSheetRow("Sheet1", rowName+"1", &data))
+		}
+		formulaType, ref := STCellFormulaTypeArray, "L1:U10"
+		assert.NoError(b, f.SetCellFormula("Sheet1", "L1", "A1=B1:K10",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = f.CalcCellValue("Sheet1", "L1")
+		}
+	})
+}
+
+func BenchmarkCalcMultiplyArray(b *testing.B) {
+	b.Run("2x2_matrix", func(b *testing.B) {
+		f := NewFile()
+		assert.NoError(b, f.SetSheetRow("Sheet1", "A1", &[]int{1, 2}))
+		assert.NoError(b, f.SetSheetRow("Sheet1", "A2", &[]int{3, 4}))
+		assert.NoError(b, f.SetSheetRow("Sheet1", "C1", &[]int{2, 3}))
+		assert.NoError(b, f.SetSheetRow("Sheet1", "C2", &[]int{4, 5}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(b, f.SetCellFormula("Sheet1", "E1", "A1:B2*C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = f.CalcCellValue("Sheet1", "E1")
+		}
+	})
+
+	b.Run("scalar_broadcast", func(b *testing.B) {
+		f := NewFile()
+		assert.NoError(b, f.SetCellValue("Sheet1", "A1", 5))
+		assert.NoError(b, f.SetSheetRow("Sheet1", "C1", &[]int{2, 3}))
+		assert.NoError(b, f.SetSheetRow("Sheet1", "C2", &[]int{4, 5}))
+		formulaType, ref := STCellFormulaTypeArray, "E1:F2"
+		assert.NoError(b, f.SetCellFormula("Sheet1", "E1", "A1*C1:D2",
+			FormulaOpts{Ref: &ref, Type: &formulaType}))
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = f.CalcCellValue("Sheet1", "E1")
+		}
+	})
+}
+
+func BenchmarkSUMPRODUCTWithConditionals(b *testing.B) {
+	cellData := [][]interface{}{
+		{"Apple", 10},
+		{"Banana", 20},
+		{"Apple", 15},
+		{"Cherry", 5},
+		{"Banana", 25},
+		{"Apple", 30},
+	}
+	f := prepareCalcData(cellData)
+
+	b.Run("simple_equality", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = f.CalcCellValue("Sheet1", "=SUMPRODUCT((A1:A6=\"Apple\")*(B1:B6))")
+		}
+	})
+
+	b.Run("greater_than", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = f.CalcCellValue("Sheet1", "=SUMPRODUCT((B1:B6>10)*(B1:B6))")
+		}
+	})
+
+	b.Run("multiple_conditions", func(b *testing.B) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			_, _ = f.CalcCellValue("Sheet1", "=SUMPRODUCT((A1:A6=\"Apple\")*(B1:B6>10)*(B1:B6))")
+		}
+	})
+}
