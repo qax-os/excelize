@@ -1287,12 +1287,20 @@ func calcGe(rOpd, lOpd formulaArg, opdStack *Stack) error {
 
 // operandToMatrix converts any formulaArg to matrix form for unified processing.
 // Scalars become 1x1 matrices to allow consistent array operation handling.
-func operandToMatrix(opd formulaArg) [][]formulaArg {
+// Returns error if matrix is empty (0 rows or 0 columns).
+func operandToMatrix(opd formulaArg) ([][]formulaArg, error) {
 	switch opd.Type {
 	case ArgMatrix:
-		return opd.Matrix
+		// Validate matrix has at least one element
+		if len(opd.Matrix) == 0 {
+			return nil, errors.New(formulaErrorVALUE)
+		}
+		if len(opd.Matrix[0]) == 0 {
+			return nil, errors.New(formulaErrorVALUE)
+		}
+		return opd.Matrix, nil
 	default:
-		return [][]formulaArg{{opd}} // Scalar becomes 1x1 matrix
+		return [][]formulaArg{{opd}}, nil // Scalar becomes 1x1 matrix
 	}
 }
 
@@ -1363,8 +1371,16 @@ func compareTypedValues(lCell, rCell formulaArg) int {
 // performArrayComparison executes element-wise comparison on arrays with broadcasting.
 // The cmpFunc callback receives left and right cells and returns the comparison result.
 func performArrayComparison(rOpd, lOpd formulaArg, opdStack *Stack, cmpFunc func(lCell, rCell formulaArg) bool) error {
-	rMatrix := operandToMatrix(rOpd)
-	lMatrix := operandToMatrix(lOpd)
+	rMatrix, err := operandToMatrix(rOpd)
+	if err != nil {
+		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
+		return nil
+	}
+	lMatrix, err := operandToMatrix(lOpd)
+	if err != nil {
+		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
+		return nil
+	}
 
 	rRows, rCols := len(rMatrix), len(rMatrix[0])
 	lRows, lCols := len(lMatrix), len(lMatrix[0])
@@ -1463,8 +1479,16 @@ func calcGeArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
 
 // calcMultiplyArray performs element-wise multiplication on arrays with broadcasting.
 func calcMultiplyArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
-	rMatrix := operandToMatrix(rOpd)
-	lMatrix := operandToMatrix(lOpd)
+	rMatrix, err := operandToMatrix(rOpd)
+	if err != nil {
+		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
+		return nil
+	}
+	lMatrix, err := operandToMatrix(lOpd)
+	if err != nil {
+		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
+		return nil
+	}
 
 	rRows, rCols := len(rMatrix), len(rMatrix[0])
 	lRows, lCols := len(lMatrix), len(lMatrix[0])

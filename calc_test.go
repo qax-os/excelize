@@ -8010,3 +8010,330 @@ func TestCalcArrayMixedTypeComparisons(t *testing.T) {
 	// Number <= String = true
 	assert.Equal(t, "2", result, "Number <= String should give 2 true values")
 }
+
+// TestEmptyMatrixEdgeCases tests that empty matrices are handled gracefully without panics.
+func TestEmptyMatrixEdgeCases(t *testing.T) {
+	t.Run("operandToMatrix_empty_matrix_zero_rows", func(t *testing.T) {
+		// Test empty matrix with 0 rows
+		emptyMatrix := [][]formulaArg{}
+		opd := newMatrixFormulaArg(emptyMatrix)
+
+		result, err := operandToMatrix(opd)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), formulaErrorVALUE)
+	})
+
+	t.Run("operandToMatrix_empty_matrix_zero_cols", func(t *testing.T) {
+		// Test matrix with rows but 0 columns
+		emptyMatrix := [][]formulaArg{{}}
+		opd := newMatrixFormulaArg(emptyMatrix)
+
+		result, err := operandToMatrix(opd)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), formulaErrorVALUE)
+	})
+
+	t.Run("operandToMatrix_valid_1x1_matrix", func(t *testing.T) {
+		// Test valid 1x1 matrix
+		matrix := [][]formulaArg{{newNumberFormulaArg(42)}}
+		opd := newMatrixFormulaArg(matrix)
+
+		result, err := operandToMatrix(opd)
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, 1, len(result))
+		assert.Equal(t, 1, len(result[0]))
+		assert.Equal(t, 42.0, result[0][0].Number)
+	})
+
+	t.Run("operandToMatrix_scalar_becomes_1x1", func(t *testing.T) {
+		// Test scalar conversion
+		scalar := newNumberFormulaArg(99)
+
+		result, err := operandToMatrix(scalar)
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, 1, len(result))
+		assert.Equal(t, 1, len(result[0]))
+		assert.Equal(t, 99.0, result[0][0].Number)
+	})
+
+	t.Run("calcEqArray_empty_left_operand", func(t *testing.T) {
+		// Empty matrix on left side of comparison
+		lMatrix := [][]formulaArg{}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{{newNumberFormulaArg(1)}}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcEqArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, formulaErrorVALUE, result.Error)
+	})
+
+	t.Run("calcEqArray_empty_right_operand", func(t *testing.T) {
+		// Empty matrix on right side of comparison
+		lMatrix := [][]formulaArg{{newNumberFormulaArg(1)}}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcEqArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, formulaErrorVALUE, result.Error)
+	})
+
+	t.Run("calcEqArray_both_empty", func(t *testing.T) {
+		// Both operands empty
+		lMatrix := [][]formulaArg{}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcEqArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, formulaErrorVALUE, result.Error)
+	})
+
+	t.Run("calcNEqArray_empty_operand", func(t *testing.T) {
+		// Test not-equal comparison with empty matrix
+		lMatrix := [][]formulaArg{}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{{newNumberFormulaArg(5)}}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcNEqArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+	})
+
+	t.Run("calcLArray_empty_operand", func(t *testing.T) {
+		// Test less-than comparison with empty matrix
+		lMatrix := [][]formulaArg{{newNumberFormulaArg(5)}}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcLArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+	})
+
+	t.Run("calcLeArray_empty_operand", func(t *testing.T) {
+		// Test less-than-or-equal comparison with empty matrix
+		lMatrix := [][]formulaArg{}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{{newNumberFormulaArg(10)}}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcLeArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+	})
+
+	t.Run("calcGArray_empty_operand", func(t *testing.T) {
+		// Test greater-than comparison with empty matrix
+		lMatrix := [][]formulaArg{{newNumberFormulaArg(15)}}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcGArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+	})
+
+	t.Run("calcGeArray_empty_operand", func(t *testing.T) {
+		// Test greater-than-or-equal comparison with empty matrix
+		lMatrix := [][]formulaArg{}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{{newNumberFormulaArg(20)}}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcGeArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+	})
+
+	t.Run("calcMultiplyArray_empty_left_operand", func(t *testing.T) {
+		// Empty matrix on left side of multiplication
+		lMatrix := [][]formulaArg{}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{{newNumberFormulaArg(5)}}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcMultiplyArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, formulaErrorVALUE, result.Error)
+	})
+
+	t.Run("calcMultiplyArray_empty_right_operand", func(t *testing.T) {
+		// Empty matrix on right side of multiplication
+		lMatrix := [][]formulaArg{{newNumberFormulaArg(10)}}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcMultiplyArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, formulaErrorVALUE, result.Error)
+	})
+
+	t.Run("calcMultiplyArray_both_empty", func(t *testing.T) {
+		// Both operands empty
+		lMatrix := [][]formulaArg{}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcMultiplyArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, formulaErrorVALUE, result.Error)
+	})
+
+	t.Run("matrix_with_zero_columns", func(t *testing.T) {
+		// Matrix with multiple rows but zero columns
+		emptyColsMatrix := [][]formulaArg{{}, {}}
+		opd := newMatrixFormulaArg(emptyColsMatrix)
+
+		result, err := operandToMatrix(opd)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), formulaErrorVALUE)
+	})
+
+	t.Run("performArrayComparison_empty_matrix_integration", func(t *testing.T) {
+		// Integration test: performArrayComparison with empty matrix
+		lMatrix := [][]formulaArg{}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{{newNumberFormulaArg(1), newNumberFormulaArg(2)}}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		cmpFunc := func(lCell, rCell formulaArg) bool {
+			return lCell.Value() == rCell.Value()
+		}
+
+		err := performArrayComparison(rOpd, lOpd, opdStack, cmpFunc)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, formulaErrorVALUE, result.Error)
+	})
+}
+
+// TestEmptyMatrixNoRegression verifies that valid matrices still work correctly after the fix.
+func TestEmptyMatrixNoRegression(t *testing.T) {
+	t.Run("valid_matrices_still_work", func(t *testing.T) {
+		// Ensure the fix doesn't break valid matrix operations
+		lMatrix := [][]formulaArg{
+			{newNumberFormulaArg(1), newNumberFormulaArg(2)},
+			{newNumberFormulaArg(3), newNumberFormulaArg(4)},
+		}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{
+			{newNumberFormulaArg(10), newNumberFormulaArg(20)},
+			{newNumberFormulaArg(30), newNumberFormulaArg(40)},
+		}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcMultiplyArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgMatrix, result.Type)
+		assert.Equal(t, 2, len(result.Matrix))
+		assert.Equal(t, 2, len(result.Matrix[0]))
+		// 1*10=10, 2*20=40, 3*30=90, 4*40=160
+		assert.Equal(t, 10.0, result.Matrix[0][0].Number)
+		assert.Equal(t, 40.0, result.Matrix[0][1].Number)
+		assert.Equal(t, 90.0, result.Matrix[1][0].Number)
+		assert.Equal(t, 160.0, result.Matrix[1][1].Number)
+	})
+
+	t.Run("scalar_operations_still_work", func(t *testing.T) {
+		// Ensure scalar operations work
+		lScalar := newNumberFormulaArg(5)
+		rScalar := newNumberFormulaArg(3)
+
+		opdStack := NewStack()
+		err := calcMultiply(rScalar, lScalar, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgNumber, result.Type)
+		assert.Equal(t, 15.0, result.Number)
+	})
+
+	t.Run("comparison_operations_still_work", func(t *testing.T) {
+		// Ensure comparison operations work
+		lMatrix := [][]formulaArg{{newNumberFormulaArg(5)}}
+		lOpd := newMatrixFormulaArg(lMatrix)
+
+		rMatrix := [][]formulaArg{{newNumberFormulaArg(5)}}
+		rOpd := newMatrixFormulaArg(rMatrix)
+
+		opdStack := NewStack()
+		err := calcEqArray(rOpd, lOpd, opdStack)
+		assert.NoError(t, err)
+
+		result := opdStack.Pop().(formulaArg)
+		assert.Equal(t, ArgMatrix, result.Type)
+		assert.Equal(t, true, result.Matrix[0][0].Boolean)
+	})
+}
