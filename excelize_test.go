@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/html/charset"
 )
 
 func TestOpenFile(t *testing.T) {
@@ -244,7 +245,7 @@ func TestSaveAsWrongPath(t *testing.T) {
 
 func TestCharsetTranscoder(t *testing.T) {
 	f := NewFile()
-	f.CharsetTranscoder(*new(charsetTranscoderFn))
+	f.CharsetTranscoder(charset.NewReaderLabel)
 }
 
 func TestOpenReader(t *testing.T) {
@@ -355,7 +356,7 @@ func TestOpenReader(t *testing.T) {
 
 func TestBrokenFile(t *testing.T) {
 	// Test write file with broken file struct
-	f := File{}
+	f := File{ZipWriter: func(w io.Writer) ZipWriter { return zip.NewWriter(w) }}
 
 	t.Run("SaveWithoutName", func(t *testing.T) {
 		assert.EqualError(t, f.Save(), "no path defined for file, consider File.WriteTo or File.Write")
@@ -423,6 +424,28 @@ func TestSetCellHyperLink(t *testing.T) {
 		Display: &display,
 		Tooltip: &tooltip,
 	}))
+	cells, err := f.GetHyperLinkCells("Sheet1", "")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"A22", "B19"}, cells)
+	cells, err = f.GetHyperLinkCells("Sheet2", "")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"C1", "D6", "D7"}, cells)
+	cells, err = f.GetHyperLinkCells("Sheet2", "External")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"C1"}, cells)
+	cells, err = f.GetHyperLinkCells("Sheet2", "Location")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"D6", "D7"}, cells)
+	cells, err = f.GetHyperLinkCells("Sheet2", "None")
+	assert.NoError(t, err)
+	assert.Empty(t, cells)
+	// Test get hyperlink cells on not exists worksheet
+	_, err = f.GetHyperLinkCells("SheetN", "")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test get hyperlink cells with invalid link type
+	_, err = f.GetHyperLinkCells("Sheet2", "InvalidType")
+	assert.Equal(t, err, newInvalidLinkTypeError("InvalidType"))
+
 	// Test set cell hyperlink with invalid sheet name
 	assert.Equal(t, ErrSheetNameInvalid, f.SetCellHyperLink("Sheet:1", "A1", "Sheet1!D60", "Location"))
 	assert.Equal(t, newInvalidLinkTypeError(""), f.SetCellHyperLink("Sheet2", "C3", "Sheet1!D8", ""))
@@ -467,6 +490,12 @@ func TestSetCellHyperLink(t *testing.T) {
 	assert.NoError(t, f.SetCellHyperLink("Sheet1", "A1", "Sheet1!D8", "Location"))
 	ws.(*xlsxWorksheet).Hyperlinks.Hyperlink[0].Ref = "A:A"
 	assert.Error(t, f.SetCellHyperLink("Sheet1", "B2", "", "None"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
+
+	// Test get hyperlink cells on worksheet without hyperlinks
+	f = NewFile()
+	cells, err = f.GetHyperLinkCells("Sheet1", "")
+	assert.NoError(t, err)
+	assert.Empty(t, cells)
 }
 
 func TestGetCellHyperLink(t *testing.T) {
@@ -778,10 +807,10 @@ func TestSetCellStyleNumberFormat(t *testing.T) {
 	idxTbl := []int{0, 1, 2, 3, 4, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49}
 	value := []string{"37947.7500001", "-37947.7500001", "0.007", "2.1", "String"}
 	expected := [][]string{
-		{"37947.75", "37948", "37947.75", "37,948", "37,947.75", "3794775%", "3794775.00%", "3.79E+04", "37947 3/4", "37947 3/4", "11-22-03", "22-Nov-03", "22-Nov", "Nov-03", "6:00 PM", "6:00:00 PM", "18:00", "18:00:00", "11/22/03 18:00", "37,948 ", "37,948 ", "37,947.75 ", "37,947.75 ", " 37,948 ", " $37,948 ", " 37,947.75 ", " $37,947.75 ", "00:00", "910746:00:00", "00:00.0", "37947.7500001", "37947.7500001"},
-		{"-37947.75", "-37948", "-37947.75", "-37,948", "-37,947.75", "-3794775%", "-3794775.00%", "-3.79E+04", "-37947 3/4", "-37947 3/4", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "(37,948)", "(37,948)", "(37,947.75)", "(37,947.75)", " (37,948)", " $(37,948)", " (37,947.75)", " $(37,947.75)", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001"},
-		{"0.007", "0", "0.01", "0", "0.01", "1%", "0.70%", "7.00E-03", "0    ", "0    ", "12-30-99", "30-Dec-99", "30-Dec", "Dec-99", "12:10 AM", "12:10:05 AM", "00:10", "00:10:05", "12/30/99 00:10", "0 ", "0 ", "0.01 ", "0.01 ", " 0 ", " $0 ", " 0.01 ", " $0.01 ", "10:05", "0:10:05", "10:04.8", "0.007", "0.007"},
-		{"2.1", "2", "2.10", "2", "2.10", "210%", "210.00%", "2.10E+00", "2 1/9", "2 1/10", "01-01-00", "1-Jan-00", "1-Jan", "Jan-00", "2:24 AM", "2:24:00 AM", "02:24", "02:24:00", "1/1/00 02:24", "2 ", "2 ", "2.10 ", "2.10 ", " 2 ", " $2 ", " 2.10 ", " $2.10 ", "24:00", "50:24:00", "24:00.0", "2.1", "2.1"},
+		{"37947.75", "37948", "37947.75", "37,948", "37,947.75", "3794775%", "3794775.00%", "3.79E+04", "37947 3/4", "37947  3/4 ", "11-22-03", "22-Nov-03", "22-Nov", "Nov-03", "6:00 PM", "6:00:00 PM", "18:00", "18:00:00", "11/22/03 18:00", "37,948 ", "37,948 ", "37,947.75 ", "37,947.75 ", " 37,948 ", " $37,948 ", " 37,947.75 ", " $37,947.75 ", "00:00", "910746:00:00", "00:00.0", "37947.7500001", "37947.7500001"},
+		{"-37947.75", "-37948", "-37947.75", "-37,948", "-37,947.75", "-3794775%", "-3794775.00%", "-3.79E+04", "-37947 3/4", "-37947  3/4 ", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "(37,948)", "(37,948)", "(37,947.75)", "(37,947.75)", " (37,948)", " $(37,948)", " (37,947.75)", " $(37,947.75)", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001", "-37947.7500001"},
+		{"0.007", "0", "0.01", "0", "0.01", "1%", "0.70%", "7.00E-03", "0    ", "0      ", "01-00-00", "0-Jan-00", "0-Jan", "Jan-00", "12:10 AM", "12:10:05 AM", "00:10", "00:10:05", "1/0/00 00:10", "0 ", "0 ", "0.01 ", "0.01 ", " 0 ", " $0 ", " 0.01 ", " $0.01 ", "10:05", "0:10:05", "10:04.8", "0.007", "0.007"},
+		{"2.1", "2", "2.10", "2", "2.10", "210%", "210.00%", "2.10E+00", "2 1/9", "2  1/10", "01-02-00", "2-Jan-00", "2-Jan", "Jan-00", "2:24 AM", "2:24:00 AM", "02:24", "02:24:00", "1/2/00 02:24", "2 ", "2 ", "2.10 ", "2.10 ", " 2 ", " $2 ", " 2.10 ", " $2.10 ", "24:00", "50:24:00", "24:00.0", "2.1", "2.1"},
 		{"String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", "String", " String ", " String ", " String ", " String ", "String", "String", "String", "String", "String"},
 	}
 
@@ -1392,6 +1421,9 @@ func TestProtectSheet(t *testing.T) {
 		Password:      "password",
 		EditScenarios: false,
 	}))
+	opts, err := f.GetSheetProtection(sheetName)
+	assert.NoError(t, err)
+	assert.Equal(t, false, opts.EditScenarios)
 	ws, err := f.workSheetReader(sheetName)
 	assert.NoError(t, err)
 	assert.Equal(t, "83AF", ws.SheetProtection.Password)
@@ -1429,6 +1461,9 @@ func TestProtectSheet(t *testing.T) {
 	assert.EqualError(t, f.ProtectSheet("SheetN", nil), "sheet SheetN does not exist")
 	// Test protect sheet with invalid sheet name
 	assert.EqualError(t, f.ProtectSheet("Sheet:1", nil), ErrSheetNameInvalid.Error())
+	// Test get sheet protection on not exists worksheet
+	_, err = f.GetSheetProtection("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 
 func TestUnprotectSheet(t *testing.T) {

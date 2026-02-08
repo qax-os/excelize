@@ -1,9 +1,11 @@
 package excelize
 
 import (
+	"archive/zip"
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -43,6 +45,7 @@ func TestWriteTo(t *testing.T) {
 	// Test WriteToBuffer err
 	{
 		f, buf := File{Pkg: sync.Map{}}, bytes.Buffer{}
+		f.SetZipWriter(func(w io.Writer) ZipWriter { return zip.NewWriter(w) })
 		f.Pkg.Store("/d/", []byte("s"))
 		_, err := f.WriteTo(bufio.NewWriter(&buf))
 		assert.EqualError(t, err, "zip: write to directory")
@@ -51,6 +54,7 @@ func TestWriteTo(t *testing.T) {
 	// Test file path overflow
 	{
 		f, buf := File{Pkg: sync.Map{}}, bytes.Buffer{}
+		f.SetZipWriter(func(w io.Writer) ZipWriter { return zip.NewWriter(w) })
 		const maxUint16 = 1<<16 - 1
 		f.Pkg.Store(strings.Repeat("s", maxUint16+1), nil)
 		_, err := f.WriteTo(bufio.NewWriter(&buf))
@@ -59,6 +63,7 @@ func TestWriteTo(t *testing.T) {
 	// Test StreamsWriter err
 	{
 		f, buf := File{Pkg: sync.Map{}}, bytes.Buffer{}
+		f.SetZipWriter(func(w io.Writer) ZipWriter { return zip.NewWriter(w) })
 		f.Pkg.Store("s", nil)
 		f.streams = make(map[string]*StreamWriter)
 		file, err := os.Open("123")
@@ -73,6 +78,7 @@ func TestWriteTo(t *testing.T) {
 	// Test write with temporary file
 	{
 		f, buf := File{tempFiles: sync.Map{}}, bytes.Buffer{}
+		f.SetZipWriter(func(w io.Writer) ZipWriter { return zip.NewWriter(w) })
 		const maxUint16 = 1<<16 - 1
 		f.tempFiles.Store("s", "")
 		f.tempFiles.Store(strings.Repeat("s", maxUint16+1), "")
@@ -82,6 +88,7 @@ func TestWriteTo(t *testing.T) {
 	// Test write with unsupported workbook file format
 	{
 		f, buf := File{Pkg: sync.Map{}}, bytes.Buffer{}
+		f.SetZipWriter(func(w io.Writer) ZipWriter { return zip.NewWriter(w) })
 		f.Pkg.Store("/d", []byte("s"))
 		f.Path = "Book1.xls"
 		_, err := f.WriteTo(bufio.NewWriter(&buf))

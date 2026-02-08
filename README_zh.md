@@ -13,7 +13,7 @@
 
 ## 简介
 
-Excelize 是 Go 语言编写的用于操作 Office Excel 文档基础库，基于 ECMA-376，ISO/IEC 29500 国际标准。可以使用它来读取、写入由 Microsoft Excel&trade; 2007 及以上版本创建的电子表格文档。支持 XLAM / XLSM / XLSX / XLTM / XLTX 等多种文档格式，高度兼容带有样式、图片(表)、透视表、切片器等复杂组件的文档，并提供流式读写函数，用于处理包含大规模数据的工作簿。可应用于各类报表平台、云计算、边缘计算等系统。使用本类库要求使用的 Go 语言为 1.23.0 或更高版本。完整的使用文档请访问 [go.dev](https://pkg.go.dev/github.com/xuri/excelize/v2) 或查看 [参考文档](https://xuri.me/excelize/)。
+Excelize 是 Go 语言编写的用于操作 Office Excel 文档基础库，基于 ECMA-376，ISO/IEC 29500 国际标准。可以使用它来读取、写入由 Microsoft Excel&trade; 2007 及以上版本创建的电子表格文档。支持 XLAM / XLSM / XLSX / XLTM / XLTX 等多种文档格式，高度兼容带有样式、图片(表)、透视表、切片器等复杂组件的文档，并提供流式读写函数，用于处理包含大规模数据的工作簿。可应用于各类报表平台、云计算、边缘计算等系统。使用本类库要求使用的 Go 语言为 1.24.0 或更高版本。完整的使用文档请访问 [go.dev](https://pkg.go.dev/github.com/xuri/excelize/v2) 或查看 [参考文档](https://xuri.me/excelize/)。
 
 ## 快速上手
 
@@ -245,4 +245,8 @@ func main() {
 
 Excel 徽标是 [Microsoft Corporation](https://aka.ms/trademarks-usage) 的商标，项目的图片是一种改编。
 
-gopher.{ai,svg,png} 由 [Takuya Ueda](https://twitter.com/tenntenn) 创作，遵循 [Creative Commons 3.0 Attributions license](http://creativecommons.org/licenses/by/3.0/) 创作共用授权条款。
+Go gopher 由 [Renee French](https://go.dev/doc/gopher/README) 创作，遵循 [Creative Commons 4.0 Attributions license](http://creativecommons.org/licenses/by/4.0/) 创作共用授权条款。
+
+## 金牌赞助商
+
+<a href="https://www.gravityclimate.com" alt="Gravity"><img width="120" src="https://xuri.me/excelize/images/vendor/gravityclimate.com.svg" alt="Gravity"></a>

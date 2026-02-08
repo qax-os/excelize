@@ -5,8 +5,8 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.23.x, 1.24.x]
-        os: [ubuntu-24.04, macos-13, windows-latest]
+        go-version: [1.24.x, 1.25.x]
+        os: [ubuntu-24.04, macos-15-intel, windows-latest]
         targetplatform: [x86, x64]
 
     runs-on: ${{ matrix.os }}
@@ -14,13 +14,13 @@ jobs:
     steps:
 
     - name: Install Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: ${{ matrix.go-version }}
         cache: false
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Get dependencies
       run: |
@@ -38,7 +38,7 @@ jobs:
         GOARCH=arm64 GOOS=android go build .
 
     - name: Test
-      run: env GO111MODULE=on go test -v -timeout 50m -race ./... -coverprofile='coverage.txt' -covermode=atomic
+      run: env GO111MODULE=on go test -v -timeout 60m -race ./... -coverprofile='coverage.txt' -covermode=atomic
 
     - name: Codecov
       uses: codecov/codecov-action@v5

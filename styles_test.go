@@ -242,65 +242,98 @@ func TestSetConditionalFormat(t *testing.T) {
 }
 
 func TestGetConditionalFormats(t *testing.T) {
-	for _, format := range [][]ConditionalFormatOptions{
-		{{Type: "cell", Format: intPtr(1), Criteria: "greater than", Value: "6"}},
-		{{Type: "cell", Format: intPtr(1), Criteria: "between", MinValue: "6", MaxValue: "8"}},
-		{{Type: "time_period", Format: intPtr(1), Criteria: "yesterday"}},
-		{{Type: "time_period", Format: intPtr(1), Criteria: "today"}},
-		{{Type: "time_period", Format: intPtr(1), Criteria: "tomorrow"}},
-		{{Type: "time_period", Format: intPtr(1), Criteria: "last 7 days"}},
-		{{Type: "time_period", Format: intPtr(1), Criteria: "last week"}},
-		{{Type: "time_period", Format: intPtr(1), Criteria: "this week"}},
-		{{Type: "time_period", Format: intPtr(1), Criteria: "continue week"}},
-		{{Type: "time_period", Format: intPtr(1), Criteria: "last month"}},
-		{{Type: "time_period", Format: intPtr(1), Criteria: "this month"}},
-		{{Type: "time_period", Format: intPtr(1), Criteria: "continue month"}},
-		{{Type: "text", Format: intPtr(1), Criteria: "containing", Value: "~!@#$%^&*()_+{}|:<>?\"';"}},
-		{{Type: "text", Format: intPtr(1), Criteria: "not containing", Value: "text"}},
-		{{Type: "text", Format: intPtr(1), Criteria: "begins with", Value: "prefix"}},
-		{{Type: "text", Format: intPtr(1), Criteria: "ends with", Value: "suffix"}},
-		{{Type: "top", Format: intPtr(1), Criteria: "=", Value: "6"}},
-		{{Type: "bottom", Format: intPtr(1), Criteria: "=", Value: "6"}},
-		{{Type: "average", AboveAverage: true, Format: intPtr(1), Criteria: "="}},
-		{{Type: "duplicate", Format: intPtr(1), Criteria: "="}},
-		{{Type: "unique", Format: intPtr(1), Criteria: "="}},
+	f := NewFile()
+	idx, err := f.NewConditionalStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1}})
+	assert.NoError(t, err)
+	for idx, format := range [][]ConditionalFormatOptions{
+		{{Type: "cell", Format: &idx, Criteria: "greater than", Value: "6"}},
+		{{Type: "cell", Format: &idx, Criteria: "between", MinValue: "6", MaxValue: "8"}},
+		{{Type: "time_period", Format: &idx, Criteria: "yesterday"}},
+		{{Type: "time_period", Format: &idx, Criteria: "today"}},
+		{{Type: "time_period", Format: &idx, Criteria: "tomorrow"}},
+		{{Type: "time_period", Format: &idx, Criteria: "last 7 days"}},
+		{{Type: "time_period", Format: &idx, Criteria: "last week"}},
+		{{Type: "time_period", Format: &idx, Criteria: "this week"}},
+		{{Type: "time_period", Format: &idx, Criteria: "continue week"}},
+		{{Type: "time_period", Format: &idx, Criteria: "last month"}},
+		{{Type: "time_period", Format: &idx, Criteria: "this month"}},
+		{{Type: "time_period", Format: &idx, Criteria: "continue month"}},
+		{{Type: "text", Format: &idx, Criteria: "containing", Value: "~!@#$%^&*()_+{}|:<>?\"';"}},
+		{{Type: "text", Format: &idx, Criteria: "not containing", Value: "text"}},
+		{{Type: "text", Format: &idx, Criteria: "begins with", Value: "prefix"}},
+		{{Type: "text", Format: &idx, Criteria: "ends with", Value: "suffix"}},
+		{{Type: "top", Format: &idx, Criteria: "=", Value: "6"}},
+		{{Type: "bottom", Format: &idx, Criteria: "=", Value: "6"}},
+		{{Type: "average", AboveAverage: true, Format: &idx, Criteria: "="}},
+		{{Type: "duplicate", Format: &idx, Criteria: "="}},
+		{{Type: "unique", Format: &idx, Criteria: "="}},
 		{{Type: "3_color_scale", Criteria: "=", MinType: "num", MidType: "num", MaxType: "num", MinValue: "-10", MidValue: "50", MaxValue: "10", MinColor: "#FF0000", MidColor: "#00FF00", MaxColor: "#0000FF"}},
 		{{Type: "2_color_scale", Criteria: "=", MinType: "num", MaxType: "num", MinColor: "#FF0000", MaxColor: "#0000FF"}},
 		{{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true}},
 		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: true, StopIfTrue: true}},
-		{{Type: "formula", Format: intPtr(1), Criteria: "="}},
-		{{Type: "blanks", Format: intPtr(1)}},
-		{{Type: "no_blanks", Format: intPtr(1)}},
-		{{Type: "errors", Format: intPtr(1)}},
-		{{Type: "no_errors", Format: intPtr(1)}},
+		{{Type: "formula", Format: &idx, Criteria: "1"}},
+		{{Type: "blanks", Format: &idx}},
+		{{Type: "no_blanks", Format: &idx}},
+		{{Type: "errors", Format: &idx}},
+		{{Type: "no_errors", Format: &idx}},
 		{{Type: "icon_set", IconStyle: "3Arrows", ReverseIcons: true, IconsOnly: true}},
+		{{Type: "icon_set", IconStyle: "3Stars", ReverseIcons: true, IconsOnly: true}},
+		{{Type: "icon_set", IconStyle: "3Triangles", ReverseIcons: true, IconsOnly: true}},
+		{{Type: "icon_set", IconStyle: "5Boxes", ReverseIcons: true, IconsOnly: true}},
 	} {
-		f := NewFile()
-		err := f.SetConditionalFormat("Sheet1", "A2:A1,B:B,2:2", format)
+		col, err := ColumnNumberToName(idx + 2)
+		assert.NoError(t, err)
+		err = f.SetConditionalFormat("Sheet1", fmt.Sprintf("%s1:%s10", col, col), format)
 		assert.NoError(t, err)
 		opts, err := f.GetConditionalFormats("Sheet1")
 		assert.NoError(t, err)
-		assert.Equal(t, format, opts["A2:A1 B1:B1048576 A2:XFD2"])
+		assert.Equal(t, format, opts[fmt.Sprintf("%s1:%s10", col, col)])
 	}
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestGetConditionalFormats.xlsx")))
+	// Test unset all conditional formats
+	f, err = OpenFile(filepath.Join("test", "TestGetConditionalFormats.xlsx"))
+	assert.NoError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+		Location: []string{"C1"},
+		Range:    []string{"Sheet1!A1:B1"},
+	}))
+	for _, rangeRef := range []string{"Y1:Y10", "Z1:Z10", "AG1:AG10", "AH1:AH10", "AI1:AI10"} {
+		assert.NoError(t, f.UnsetConditionalFormat("Sheet1", rangeRef))
+	}
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+	// Test unset conditional formats with invalid extension list characters
+	f, err = OpenFile(filepath.Join("test", "TestGetConditionalFormats.xlsx"))
+	assert.NoError(t, err)
+	w, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	w.ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:conditionalFormattings></ext>`, ExtURIConditionalFormattings)}
+	assert.EqualError(t, f.UnsetConditionalFormat("Sheet1", "Y1:Y10"), "XML syntax error on line 1: element <conditionalFormattings> closed by </ext>")
+	assert.NoError(t, f.Close())
 	// Test get multiple conditional formats
-	f := NewFile()
+	f = NewFile()
 	expected := []ConditionalFormatOptions{
 		{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true},
 		{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: false, StopIfTrue: true},
 	}
-	err := f.SetConditionalFormat("Sheet1", "A1:A2", expected)
+	err = f.SetConditionalFormat("Sheet1", "A2:A1,B:B,2:2", expected)
 	assert.NoError(t, err)
 	opts, err := f.GetConditionalFormats("Sheet1")
 	assert.NoError(t, err)
-	assert.Equal(t, expected, opts["A1:A2"])
+	assert.Equal(t, expected, opts["A2:A1 B1:B1048576 A2:XFD2"])
 
-	// Test get conditional formats on no exists worksheet
 	f = NewFile()
+	// Test get conditional formats on no exists worksheet
 	_, err = f.GetConditionalFormats("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 	// Test get conditional formats with invalid sheet name
 	_, err = f.GetConditionalFormats("Sheet:1")
 	assert.Equal(t, ErrSheetNameInvalid, err)
+	// Test get conditional formats with invalid extension list characters
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	ws.ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:conditionalFormattings></ext>`, ExtURIConditionalFormattings)}
+	_, err = f.GetConditionalFormats("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: element <conditionalFormattings> closed by </ext>")
 }
 
 func TestUnsetConditionalFormat(t *testing.T) {
@@ -311,12 +344,66 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A10", []ConditionalFormatOptions{{Type: "cell", Criteria: ">", Format: &format, Value: "6"}}))
 	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A1:A10"))
+	// Test unset conditional format with invalid range
+	assert.Equal(t, f.UnsetConditionalFormat("Sheet1", "A"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
 	// Test unset conditional format on not exists worksheet
 	assert.EqualError(t, f.UnsetConditionalFormat("SheetN", "A1:A10"), "sheet SheetN does not exist")
 	// Test unset conditional format with invalid sheet name
 	assert.Equal(t, ErrSheetNameInvalid, f.UnsetConditionalFormat("Sheet:1", "A1:A10"))
+	// Test unset conditional format from extLst
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "B1:B10", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "3Stars"}}))
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "C1:C10", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "5Boxes"}}))
+	condFmts, err := f.GetConditionalFormats("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, condFmts, 2)
+	// Unset the first extLst conditional format
+	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "B1:B10"))
+	condFmts, err = f.GetConditionalFormats("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, condFmts, 1)
+	assert.NotNil(t, condFmts["C1:C10"])
+	// Unset the last extLst conditional format
+	assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "C1:C10"))
+	condFmts, err = f.GetConditionalFormats("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, condFmts, 0)
 	// Save spreadsheet by the given path
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestUnsetConditionalFormat.xlsx")))
+	// Test get and unset conditional format with invalid sqref value
+	f = NewFile()
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	ws.ConditionalFormatting = []*xlsxConditionalFormatting{{SQRef: ""}}
+	_, err = f.GetConditionalFormats("Sheet1")
+	assert.Equal(t, ErrParameterRequired, err)
+	ws.ConditionalFormatting = []*xlsxConditionalFormatting{{SQRef: "A"}}
+	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.UnsetConditionalFormat("Sheet1", "A1"))
+	// Test unset conditional formats with invalid extension list characters
+	ws.ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:conditionalFormattings>
+	<x14:conditionalFormatting><xm:sqref>A</xm:sqref></x14:conditionalFormatting></x14:conditionalFormattings></ext>`, ExtURIConditionalFormattings)}
+	assert.Equal(t, f.UnsetConditionalFormat("Sheet1", "A1"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")))
+
+	t.Run("with_unordered_sqref", func(t *testing.T) {
+		f := NewFile()
+		condFmt := []ConditionalFormatOptions{{Type: "cell", Criteria: "greater than", Value: "6"}}
+		f.SetConditionalFormat("Sheet1", "A5:A10 A15:A20 A3:A4", condFmt)
+		assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A7"))
+		condFmts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, condFmts, 1)
+		assert.Equal(t, condFmt, condFmts["A3:A6 A8:A10 A15:A20"])
+	})
+
+	t.Run("with_unordered_sqref_in_extLst", func(t *testing.T) {
+		f := NewFile()
+		condFmt := []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "3Stars"}}
+		f.SetConditionalFormat("Sheet1", "A5:A10 A15:A20 A3:A4", condFmt)
+		assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A7"))
+		condFmts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, condFmts, 1)
+		assert.Equal(t, condFmt, condFmts["A3:A6 A8:A10 A15:A20"])
+	})
 }
 
 func TestNewStyle(t *testing.T) {
@@ -456,6 +543,15 @@ func TestNewStyle(t *testing.T) {
 		assert.NoError(t, f.SetCellValue("Sheet1", "A1", text))
 		assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", styleID))
 		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetFontCharset.xlsx")))
+	})
+
+	t.Run("recreate_default_style", func(t *testing.T) {
+		f := NewFile()
+		style2, err := f.GetStyle(0) // Get the default style
+		assert.NoError(t, err)
+		styleId, err := f.NewStyle(style2) // Try to recreate the same style. Should return style ID 0
+		assert.NoError(t, err)
+		assert.Equal(t, 0, styleId)
 	})
 }
 
