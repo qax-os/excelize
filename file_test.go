@@ -62,7 +62,9 @@ func TestWriteTo(t *testing.T) {
 	}
 	// Test StreamsWriter err
 	{
-		f, buf := File{Pkg: sync.Map{}}, bytes.Buffer{}
+		f, buf := File{Pkg: sync.Map{}, options: &Options{
+			TmpDir: "/tmp",
+		}}, bytes.Buffer{}
 		f.SetZipWriter(func(w io.Writer) ZipWriter { return zip.NewWriter(w) })
 		f.Pkg.Store("s", nil)
 		f.streams = make(map[string]*StreamWriter)
