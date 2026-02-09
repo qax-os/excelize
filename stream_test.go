@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -154,6 +155,69 @@ func TestStreamWriter(t *testing.T) {
 	// Save spreadsheet with password.
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "EncryptionTestStreamWriter.xlsx"), Options{Password: "password"}))
 	assert.NoError(t, file.Close())
+
+	// Test stream writer with target file impl
+	{
+		file = NewFile(Options{
+			StreamingTmpFile: newTestFileImpl(),
+		})
+		defer func() {
+			assert.NoError(t, file.Close())
+		}()
+
+		streamWriter, err = file.NewStreamWriter("Sheet1")
+		assert.NoError(t, err)
+		assert.NoError(t, streamWriter.SetRow("A1", []interface{}{Cell{StyleID: styleID, Value: "Data"}}))
+		assert.NoError(t, streamWriter.Flush())
+
+		// then read from the file impl
+		rows, err = file.Rows("Sheet1")
+		assert.NoError(t, err)
+		assert.True(t, rows.Next())
+		rowColumns, err := rows.Columns()
+		assert.NoError(t, err)
+		assert.Equal(t, "Data", rowColumns[0])
+
+		cellValue, err = file.GetCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, "Data", cellValue)
+	}
+}
+
+func newTestFileImpl() *testFileImpl {
+	return &testFileImpl{
+		data: []byte{},
+	}
+}
+
+type testFileImpl struct {
+	data []byte
+}
+
+func (t *testFileImpl) Close() error {
+	return nil
+}
+
+func (t *testFileImpl) Reader() (io.Reader, error) {
+	return bytes.NewReader(t.data), nil
+}
+
+func (t *testFileImpl) Sync() error {
+	return nil
+}
+
+func (t *testFileImpl) Write(p []byte) (n int, err error) {
+	t.data = append(t.data, p...)
+	return len(p), nil
+}
+
+func (t *testFileImpl) WriteString(s string) (n int, err error) {
+	t.data = append(t.data, s...)
+	return len(s), nil
+}
+
+func (t *testFileImpl) Flush() error {
+	return nil
 }
 
 func TestStreamSetColVisible(t *testing.T) {

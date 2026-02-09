@@ -127,7 +127,7 @@ type Options struct {
 	LongTimePattern   string
 	CultureInfo       CultureName
 	TmpDir            string
-	StreamingTmpFile  *TmpFile
+	StreamingTmpFile  TmpFile
 }
 
 // OpenFile take the name of a spreadsheet file and returns a populated

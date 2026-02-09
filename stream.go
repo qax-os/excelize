@@ -122,7 +122,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 
 	rawData := TmpFile(newBufferedWriter(f.options.TmpDir, nil))
 	if f.options.StreamingTmpFile != nil {
-		rawData = *f.options.StreamingTmpFile
+		rawData = f.options.StreamingTmpFile
 	}
 
 	sw := &StreamWriter{
