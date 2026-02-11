@@ -134,6 +134,25 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 			return style, ErrFontSize
 		}
 	}
+	switch style.Fill.Type {
+	case "gradient":
+		if len(style.Fill.Color) != 2 {
+			return style, ErrFillGradientColor
+		}
+		if style.Fill.Shading < 0 || style.Fill.Shading > 16 {
+			return style, ErrFillGradientShading
+		}
+	case "pattern":
+		if len(style.Fill.Color) > 1 {
+			return style, ErrFillPatternColor
+		}
+		if style.Fill.Pattern < 0 || style.Fill.Pattern > 18 {
+			return style, ErrFillPattern
+		}
+	case "":
+	default:
+		return style, ErrFillType
+	}
 	if style.CustomNumFmt != nil && len(*style.CustomNumFmt) == 0 {
 		err = ErrCustomNumFmt
 	}
@@ -2054,9 +2073,6 @@ func newFills(style *Style, fg bool) *xlsxFill {
 	var fill xlsxFill
 	switch style.Fill.Type {
 	case "gradient":
-		if len(style.Fill.Color) != 2 || style.Fill.Shading < 0 || style.Fill.Shading > 16 {
-			break
-		}
 		gradient := styleFillVariants()[style.Fill.Shading]
 		gradient.Stop[0].Color.RGB = getPaletteColor(style.Fill.Color[0])
 		gradient.Stop[1].Color.RGB = getPaletteColor(style.Fill.Color[1])
@@ -2065,9 +2081,6 @@ func newFills(style *Style, fg bool) *xlsxFill {
 		}
 		fill.GradientFill = &gradient
 	case "pattern":
-		if style.Fill.Pattern > 18 || style.Fill.Pattern < 0 {
-			break
-		}
 		var pattern xlsxPatternFill
 		pattern.PatternType = styleFillPatterns[style.Fill.Pattern]
 		if len(style.Fill.Color) < 1 {
