@@ -62,13 +62,19 @@ func TestWriteTo(t *testing.T) {
 	}
 	// Test StreamsWriter err
 	{
-		f, buf := File{Pkg: sync.Map{}}, bytes.Buffer{}
+		f, buf := File{Pkg: sync.Map{}, options: &Options{
+			TmpDir: "/tmp",
+		}}, bytes.Buffer{}
 		f.SetZipWriter(func(w io.Writer) ZipWriter { return zip.NewWriter(w) })
 		f.Pkg.Store("s", nil)
 		f.streams = make(map[string]*StreamWriter)
-		file, _ := os.Open("123")
-		f.streams["s"] = &StreamWriter{rawData: bufferedWriter{tmp: file}}
-		_, err := f.WriteTo(bufio.NewWriter(&buf))
+		file, err := os.Open("123")
+		assert.Error(t, err)
+
+		rawData := newBufferedWriter(f.options.TmpDir, nil)
+		rawData.tmp = file
+		f.streams["s"] = &StreamWriter{rawData: rawData}
+		_, err = f.WriteTo(bufio.NewWriter(&buf))
 		assert.Nil(t, err)
 	}
 	// Test write with temporary file

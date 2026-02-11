@@ -110,17 +110,24 @@ type ZipWriter interface {
 //
 // CultureInfo specifies the country code for applying built-in language number
 // format code these effect by the system's local language settings.
+//
+// TmpDir specifies the temporary directory for creating temporary files, if the
+// value is empty, the system default temporary directory will be used.
+//
+// StreamingTmpFile specifies the temporary file for streaming writing streaming writer temporary file,
+// if the value is nil, the system default temporary file will be used to write streaming data.
 type Options struct {
 	MaxCalcIterations uint
 	Password          string
 	RawCellValue      bool
 	UnzipSizeLimit    int64
 	UnzipXMLSizeLimit int64
-	TmpDir            string
 	ShortDatePattern  string
 	LongDatePattern   string
 	LongTimePattern   string
 	CultureInfo       CultureName
+	TmpDir            string
+	StreamingTmpFile  TmpFile
 }
 
 // OpenFile take the name of a spreadsheet file and returns a populated

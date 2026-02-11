@@ -30,7 +30,7 @@ type StreamWriter struct {
 	SheetID         int
 	sheetWritten    bool
 	worksheet       *xlsxWorksheet
-	rawData         bufferedWriter
+	rawData         TmpFile
 	rows            int
 	mergeCellsCount int
 	mergeCells      strings.Builder
@@ -119,11 +119,17 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	if sheetID == -1 {
 		return nil, ErrSheetNotExist{sheet}
 	}
+
+	rawData := TmpFile(newBufferedWriter(f.options.TmpDir, nil))
+	if f.options.StreamingTmpFile != nil {
+		rawData = f.options.StreamingTmpFile
+	}
+
 	sw := &StreamWriter{
 		file:    f,
 		Sheet:   sheet,
 		SheetID: sheetID,
-		rawData: bufferedWriter{tmpDir: f.options.TmpDir},
+		rawData: rawData,
 	}
 	var err error
 	sw.worksheet, err = f.workSheetReader(sheet)
@@ -138,7 +144,7 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	f.streams[sheetXMLPath] = sw
 
 	_, _ = sw.rawData.WriteString(xml.Header + `<worksheet` + templateNamespaceIDMap)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 3, 4)
+	bulkAppendFields(sw.rawData, sw.worksheet, 3, 4)
 	return sw, err
 }
 
@@ -429,7 +435,7 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 			_, _ = sw.rawData.WriteString(`</row>`)
 			return err
 		}
-		writeCell(&sw.rawData, c)
+		writeCell(sw.rawData, c)
 	}
 	_, _ = sw.rawData.WriteString(`</row>`)
 	return sw.rawData.Sync()
@@ -647,7 +653,7 @@ func setCellIntFunc(c *xlsxC, val interface{}) {
 }
 
 // writeCell constructs a cell XML and writes it to the buffer.
-func writeCell(buf *bufferedWriter, c xlsxC) {
+func writeCell(buf TmpFile, c xlsxC) {
 	_, _ = buf.WriteString(`<c`)
 	if c.XMLSpace.Value != "" {
 		_, _ = buf.WriteString(` xml:`)
@@ -708,7 +714,7 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 // sheetData XML start element to the buffer.
 func (sw *StreamWriter) writeSheetData() {
 	if !sw.sheetWritten {
-		bulkAppendFields(&sw.rawData, sw.worksheet, 5, 6)
+		bulkAppendFields(sw.rawData, sw.worksheet, 5, 6)
 		if sw.worksheet.Cols != nil {
 			_, _ = sw.rawData.WriteString("<cols>")
 			for _, col := range sw.worksheet.Cols.Col {
@@ -748,7 +754,7 @@ func (sw *StreamWriter) writeSheetData() {
 func (sw *StreamWriter) Flush() error {
 	sw.writeSheetData()
 	_, _ = sw.rawData.WriteString(`</sheetData>`)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 9, 16)
+	bulkAppendFields(sw.rawData, sw.worksheet, 9, 16)
 	mergeCells := strings.Builder{}
 	if sw.mergeCellsCount > 0 {
 		_, _ = mergeCells.WriteString(`<mergeCells count="`)
@@ -758,9 +764,9 @@ func (sw *StreamWriter) Flush() error {
 		_, _ = mergeCells.WriteString(`</mergeCells>`)
 	}
 	_, _ = sw.rawData.WriteString(mergeCells.String())
-	bulkAppendFields(&sw.rawData, sw.worksheet, 18, 39)
+	bulkAppendFields(sw.rawData, sw.worksheet, 18, 39)
 	_, _ = sw.rawData.WriteString(sw.tableParts)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 41, 41)
+	bulkAppendFields(sw.rawData, sw.worksheet, 41, 41)
 	_, _ = sw.rawData.WriteString(`</worksheet>`)
 	if err := sw.rawData.Flush(); err != nil {
 		return err
@@ -786,11 +792,38 @@ func bulkAppendFields(w io.Writer, ws *xlsxWorksheet, from, to int) {
 	}
 }
 
+// TmpFile is an interface for a streaming writer temporary file abstraction, implement it to support
+// custom temporary file storage.
+type TmpFile interface {
+	Close() error
+	Reader() (io.Reader, error)
+	Sync() error
+	Write(p []byte) (n int, err error)
+	WriteString(s string) (n int, err error)
+	Flush() error
+}
+
+// newBufferedWriter create a new bufferedWriter, which will write to a temp
+// file if the buffer size exceeds the chunkSize. when chunkSize is nil, the
+// default chunkSize which is StreamChunkSize will be used.
+func newBufferedWriter(tmpDir string, chunkSize *int) *bufferedWriter {
+	tarChunkSize := StreamChunkSize
+	if chunkSize != nil {
+		tarChunkSize = *chunkSize
+	}
+	return &bufferedWriter{
+		chunkSize: tarChunkSize,
+		tmpDir:    tmpDir,
+	}
+}
+
 // bufferedWriter uses a temp file to store an extended buffer. Writes are
 // always made to an in-memory buffer, which will always succeed. The buffer
 // is written to the temp file with Sync, which may return an error.
 // Therefore, Sync should be periodically called and the error checked.
 type bufferedWriter struct {
+	chunkSize int
+
 	tmpDir string
 	tmp    *os.File
 	buf    bytes.Buffer
