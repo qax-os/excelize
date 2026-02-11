@@ -134,6 +134,25 @@ func parseFormatStyleSet(style *Style) (*Style, error) {
 			return style, ErrFontSize
 		}
 	}
+	switch style.Fill.Type {
+	case "gradient":
+		if len(style.Fill.Color) != 2 {
+			return style, ErrFillGradientColor
+		}
+		if style.Fill.Shading < 0 || style.Fill.Shading > 16 {
+			return style, ErrFillGradientShading
+		}
+	case "pattern":
+		if len(style.Fill.Color) > 1 {
+			return style, ErrFillPatternColor
+		}
+		if style.Fill.Pattern < 0 || style.Fill.Pattern > 18 {
+			return style, ErrFillPattern
+		}
+	case "":
+	default:
+		return style, ErrFillType
+	}
 	if style.CustomNumFmt != nil && len(*style.CustomNumFmt) == 0 {
 		err = ErrCustomNumFmt
 	}
@@ -1115,13 +1134,13 @@ var (
 			return xf.NumFmtID != nil && *xf.NumFmtID == numFmtID
 		},
 		"font": func(fontID int, xf xlsxXf, style *Style) bool {
-			if style.Font == nil || fontID == 0 {
+			if style.Font == nil {
 				return (xf.FontID == nil || *xf.FontID == 0) && (xf.ApplyFont == nil || !*xf.ApplyFont)
 			}
 			return xf.FontID != nil && *xf.FontID == fontID && xf.ApplyFont != nil && *xf.ApplyFont
 		},
 		"fill": func(fillID int, xf xlsxXf, style *Style) bool {
-			if style.Fill.Type == "" || fillID == 0 {
+			if style.Fill.Type == "" {
 				return (xf.FillID == nil || *xf.FillID == 0) && (xf.ApplyFill == nil || !*xf.ApplyFill)
 			}
 			return xf.FillID != nil && *xf.FillID == fillID && xf.ApplyFill != nil && *xf.ApplyFill
@@ -2054,9 +2073,6 @@ func newFills(style *Style, fg bool) *xlsxFill {
 	var fill xlsxFill
 	switch style.Fill.Type {
 	case "gradient":
-		if len(style.Fill.Color) != 2 || style.Fill.Shading < 0 || style.Fill.Shading > 16 {
-			break
-		}
 		gradient := styleFillVariants()[style.Fill.Shading]
 		gradient.Stop[0].Color.RGB = getPaletteColor(style.Fill.Color[0])
 		gradient.Stop[1].Color.RGB = getPaletteColor(style.Fill.Color[1])
@@ -2065,9 +2081,6 @@ func newFills(style *Style, fg bool) *xlsxFill {
 		}
 		fill.GradientFill = &gradient
 	case "pattern":
-		if style.Fill.Pattern > 18 || style.Fill.Pattern < 0 {
-			break
-		}
 		var pattern xlsxPatternFill
 		pattern.PatternType = styleFillPatterns[style.Fill.Pattern]
 		if len(style.Fill.Color) < 1 {

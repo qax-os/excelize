@@ -56,6 +56,19 @@ var (
 	ErrExistsSheet = errors.New("the same name sheet already exists")
 	// ErrExistsTableName defined the error message on given table already exists.
 	ErrExistsTableName = errors.New("the same name table already exists")
+	// ErrFillType defined the error message on receive an invalid fill type.
+	ErrFillType = errors.New("fill type value must be one of 'gradient' or 'pattern'")
+	// ErrFillGradientColor defined the error message on receive an invalid fill
+	// color for 'gradient' type.
+	ErrFillGradientColor = errors.New("fill color value must be an array of two colors for 'gradient' type")
+	// ErrFillGradientShading defined the error message on receive an invalid fill
+	// shading for 'gradient' type.
+	ErrFillGradientShading = errors.New("fill shading value must be between 0 and 16 for 'gradient' type")
+	// ErrFillPatternColor defined the error message on receive an invalid fill
+	// color for 'pattern' type.
+	ErrFillPatternColor = errors.New("fill color value must be empty or an array of one color for 'pattern' type")
+	// ErrFillPattern defined the error message on receive an invalid fill pattern.
+	ErrFillPattern = errors.New("fill pattern value must be between 0 and 18")
 	// ErrFontLength defined the error message on the length of the font
 	// family name overflow.
 	ErrFontLength = fmt.Errorf("the length of the font family name must be less than or equal to %d", MaxFontFamilyLength)

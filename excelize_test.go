@@ -970,15 +970,7 @@ func TestSetCellStyleFill(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "O23", "O23", style))
 
-	style, err = f.NewStyle(&Style{Fill: Fill{Type: "gradient", Color: []string{"FFFFFF"}, Shading: 1}})
-	assert.NoError(t, err)
-	assert.NoError(t, f.SetCellStyle("Sheet1", "O23", "O23", style))
-
 	style, err = f.NewStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{}, Shading: 1}})
-	assert.NoError(t, err)
-	assert.NoError(t, f.SetCellStyle("Sheet1", "O23", "O23", style))
-
-	style, err = f.NewStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{"E0EBF5"}, Pattern: 19}})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "O23", "O23", style))
 

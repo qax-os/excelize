@@ -836,8 +836,7 @@ func (f *File) drawChartSeries(opts *Chart) *[]cSer {
 // drawShapeFill provides a function to draw the a:solidFill element by given
 // fill format sets.
 func (f *File) drawShapeFill(fill Fill, spPr *cSpPr) *cSpPr {
-	// Support both "solid" and "pattern" with Pattern=1 for solid fills
-	if fill.Type == "solid" || (fill.Type == "pattern" && fill.Pattern == 1) {
+	if fill.Type == "pattern" && fill.Pattern == 1 {
 		if spPr == nil {
 			spPr = &cSpPr{}
 		}
