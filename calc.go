@@ -1184,18 +1184,30 @@ func calcPow(rOpd, lOpd formulaArg, opdStack *Stack) error {
 
 // calcEq evaluate equal arithmetic operations.
 func calcEq(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	// Handle matrix operands with element-wise comparison
+	if rOpd.Type == ArgMatrix || lOpd.Type == ArgMatrix {
+		return calcEqArray(rOpd, lOpd, opdStack)
+	}
 	opdStack.Push(newBoolFormulaArg(rOpd.Value() == lOpd.Value()))
 	return nil
 }
 
 // calcNEq evaluate not equal arithmetic operations.
 func calcNEq(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	// Handle matrix operands with element-wise comparison
+	if rOpd.Type == ArgMatrix || lOpd.Type == ArgMatrix {
+		return calcNEqArray(rOpd, lOpd, opdStack)
+	}
 	opdStack.Push(newBoolFormulaArg(rOpd.Value() != lOpd.Value()))
 	return nil
 }
 
 // calcL evaluate less than arithmetic operations.
 func calcL(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	// Handle matrix operands with element-wise comparison
+	if rOpd.Type == ArgMatrix || lOpd.Type == ArgMatrix {
+		return calcLArray(rOpd, lOpd, opdStack)
+	}
 	if rOpd.Type == ArgNumber && lOpd.Type == ArgNumber {
 		opdStack.Push(newBoolFormulaArg(lOpd.Number < rOpd.Number))
 	}
@@ -1213,6 +1225,10 @@ func calcL(rOpd, lOpd formulaArg, opdStack *Stack) error {
 
 // calcLe evaluate less than or equal arithmetic operations.
 func calcLe(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	// Handle matrix operands with element-wise comparison
+	if rOpd.Type == ArgMatrix || lOpd.Type == ArgMatrix {
+		return calcLeArray(rOpd, lOpd, opdStack)
+	}
 	if rOpd.Type == ArgNumber && lOpd.Type == ArgNumber {
 		opdStack.Push(newBoolFormulaArg(lOpd.Number <= rOpd.Number))
 	}
@@ -1230,6 +1246,10 @@ func calcLe(rOpd, lOpd formulaArg, opdStack *Stack) error {
 
 // calcG evaluate greater than arithmetic operations.
 func calcG(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	// Handle matrix operands with element-wise comparison
+	if rOpd.Type == ArgMatrix || lOpd.Type == ArgMatrix {
+		return calcGArray(rOpd, lOpd, opdStack)
+	}
 	if rOpd.Type == ArgNumber && lOpd.Type == ArgNumber {
 		opdStack.Push(newBoolFormulaArg(lOpd.Number > rOpd.Number))
 	}
@@ -1247,6 +1267,10 @@ func calcG(rOpd, lOpd formulaArg, opdStack *Stack) error {
 
 // calcGe evaluate greater than or equal arithmetic operations.
 func calcGe(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	// Handle matrix operands with element-wise comparison
+	if rOpd.Type == ArgMatrix || lOpd.Type == ArgMatrix {
+		return calcGeArray(rOpd, lOpd, opdStack)
+	}
 	if rOpd.Type == ArgNumber && lOpd.Type == ArgNumber {
 		opdStack.Push(newBoolFormulaArg(lOpd.Number >= rOpd.Number))
 	}
@@ -1259,6 +1283,246 @@ func calcGe(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	if rOpd.Type == ArgString && lOpd.Type == ArgNumber {
 		opdStack.Push(newBoolFormulaArg(false))
 	}
+	return nil
+}
+
+// operandToMatrix converts any formulaArg to matrix form for unified processing.
+// Scalars become 1x1 matrices to allow consistent array operation handling.
+// Returns error if matrix is empty (0 rows or 0 columns).
+func operandToMatrix(opd formulaArg) ([][]formulaArg, error) {
+	switch opd.Type {
+	case ArgMatrix:
+		// Validate matrix has at least one element
+		if len(opd.Matrix) == 0 {
+			return nil, errors.New(formulaErrorVALUE)
+		}
+		if len(opd.Matrix[0]) == 0 {
+			return nil, errors.New(formulaErrorVALUE)
+		}
+		return opd.Matrix, nil
+	default:
+		return [][]formulaArg{{opd}}, nil // Scalar becomes 1x1 matrix
+	}
+}
+
+// calculateBroadcastDimensions determines output dimensions for broadcasting.
+// Returns (outRows, outCols) where output size is the larger of the two inputs.
+func calculateBroadcastDimensions(rRows, rCols, lRows, lCols int) (outRows, outCols int) {
+	outRows, outCols = rRows, rCols
+	if lRows > 1 || lCols > 1 {
+		outRows, outCols = lRows, lCols
+	}
+	return
+}
+
+// validateBroadcastDimensions checks if dimensions are compatible for broadcasting.
+// Returns true if valid (exact match or one is 1x1 scalar).
+func validateBroadcastDimensions(rRows, rCols, lRows, lCols, outRows, outCols int) bool {
+	rValid := (rRows == outRows && rCols == outCols) || (rRows == 1 && rCols == 1)
+	lValid := (lRows == outRows && lCols == outCols) || (lRows == 1 && lCols == 1)
+	return rValid && lValid
+}
+
+// calculateBroadcastIndices maps output position to input positions with broadcasting.
+// If input is 1x1, always use index 0. Otherwise use output index.
+func calculateBroadcastIndices(i, j, rRows, rCols, lRows, lCols int) (rIdx, rJdx, lIdx, lJdx int) {
+	rIdx, rJdx = i, j
+	if rRows == 1 {
+		rIdx = 0
+	}
+	if rCols == 1 {
+		rJdx = 0
+	}
+	lIdx, lJdx = i, j
+	if lRows == 1 {
+		lIdx = 0
+	}
+	if lCols == 1 {
+		lJdx = 0
+	}
+	return
+}
+
+// compareTypedValues performs type-aware comparison between formulaArg values.
+// Returns -1 if lCell < rCell, 0 if equal, 1 if lCell > rCell.
+// Numbers sort before strings. Within same type, uses natural comparison.
+func compareTypedValues(lCell, rCell formulaArg) int {
+	if rCell.Type == ArgNumber && lCell.Type == ArgNumber {
+		if lCell.Number < rCell.Number {
+			return -1
+		}
+		if lCell.Number > rCell.Number {
+			return 1
+		}
+		return 0
+	}
+	if rCell.Type == ArgString && lCell.Type == ArgString {
+		return strings.Compare(lCell.Value(), rCell.Value())
+	}
+	// Mixed types: numbers sort before strings
+	if lCell.Type == ArgNumber && rCell.Type == ArgString {
+		return -1
+	}
+	if lCell.Type == ArgString && rCell.Type == ArgNumber {
+		return 1
+	}
+	return 0
+}
+
+// performArrayComparison executes element-wise comparison on arrays with broadcasting.
+// The cmpFunc callback receives left and right cells and returns the comparison result.
+func performArrayComparison(rOpd, lOpd formulaArg, opdStack *Stack, cmpFunc func(lCell, rCell formulaArg) bool) error {
+	rMatrix, err := operandToMatrix(rOpd)
+	if err != nil {
+		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
+		return nil
+	}
+	lMatrix, err := operandToMatrix(lOpd)
+	if err != nil {
+		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
+		return nil
+	}
+
+	rRows, rCols := len(rMatrix), len(rMatrix[0])
+	lRows, lCols := len(lMatrix), len(lMatrix[0])
+
+	outRows, outCols := calculateBroadcastDimensions(rRows, rCols, lRows, lCols)
+
+	if !validateBroadcastDimensions(rRows, rCols, lRows, lCols, outRows, outCols) {
+		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
+		return nil
+	}
+
+	result := make([][]formulaArg, outRows)
+	for i := 0; i < outRows; i++ {
+		result[i] = make([]formulaArg, outCols)
+		for j := 0; j < outCols; j++ {
+			rIdx, rJdx, lIdx, lJdx := calculateBroadcastIndices(i, j, rRows, rCols, lRows, lCols)
+			result[i][j] = newBoolFormulaArg(cmpFunc(lMatrix[lIdx][lJdx], rMatrix[rIdx][rJdx]))
+		}
+	}
+
+	opdStack.Push(newMatrixFormulaArg(result))
+	return nil
+}
+
+// matchesValue performs type-aware value equality check for COUNTIF.
+// Compares strings and numbers appropriately.
+func matchesValue(val, criteria formulaArg) bool {
+	if val.Type == ArgString || criteria.Type == ArgString {
+		return val.Value() == criteria.Value()
+	}
+	if val.Type == ArgNumber && criteria.Type == ArgNumber {
+		return val.Number == criteria.Number
+	}
+	return false
+}
+
+// countifRangeCriteria implements range-to-range matching for COUNTIF.
+// For each cell in searchRange, checks if it matches any value in criteriaRange.
+func countifRangeCriteria(searchRange, criteriaRange formulaArg) formulaArg {
+	searchList := searchRange.ToList()
+	criteriaList := criteriaRange.ToList()
+	var count float64
+	for _, searchCell := range searchList {
+		for _, criteriaCell := range criteriaList {
+			if matchesValue(searchCell, criteriaCell) {
+				count++
+				break // Count once per search cell
+			}
+		}
+	}
+	return newNumberFormulaArg(count)
+}
+
+// calcEqArray performs element-wise equality comparison on arrays with broadcasting.
+// Supports scalar-matrix, matrix-scalar, and matrix-matrix comparisons.
+func calcEqArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	return performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+		return lCell.Value() == rCell.Value()
+	})
+}
+
+// calcNEqArray performs element-wise inequality comparison on arrays with broadcasting.
+func calcNEqArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	return performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+		return lCell.Value() != rCell.Value()
+	})
+}
+
+// calcLArray performs element-wise less than comparison on arrays with broadcasting.
+func calcLArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	return performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+		return compareTypedValues(lCell, rCell) == -1
+	})
+}
+
+// calcLeArray performs element-wise less than or equal comparison on arrays with broadcasting.
+func calcLeArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	return performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+		return compareTypedValues(lCell, rCell) != 1
+	})
+}
+
+// calcGArray performs element-wise greater than comparison on arrays with broadcasting.
+func calcGArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	return performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+		return compareTypedValues(lCell, rCell) == 1
+	})
+}
+
+// calcGeArray performs element-wise greater than or equal comparison on arrays with broadcasting.
+func calcGeArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	return performArrayComparison(rOpd, lOpd, opdStack, func(lCell, rCell formulaArg) bool {
+		return compareTypedValues(lCell, rCell) != -1
+	})
+}
+
+// calcMultiplyArray performs element-wise multiplication on arrays with broadcasting.
+func calcMultiplyArray(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	rMatrix, err := operandToMatrix(rOpd)
+	if err != nil {
+		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
+		return nil
+	}
+	lMatrix, err := operandToMatrix(lOpd)
+	if err != nil {
+		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
+		return nil
+	}
+
+	rRows, rCols := len(rMatrix), len(rMatrix[0])
+	lRows, lCols := len(lMatrix), len(lMatrix[0])
+
+	outRows, outCols := calculateBroadcastDimensions(rRows, rCols, lRows, lCols)
+
+	if !validateBroadcastDimensions(rRows, rCols, lRows, lCols, outRows, outCols) {
+		opdStack.Push(newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE))
+		return nil
+	}
+
+	result := make([][]formulaArg, outRows)
+	for i := 0; i < outRows; i++ {
+		result[i] = make([]formulaArg, outCols)
+		for j := 0; j < outCols; j++ {
+			rIdx, rJdx, lIdx, lJdx := calculateBroadcastIndices(i, j, rRows, rCols, lRows, lCols)
+
+			rCell := rMatrix[rIdx][rJdx].ToNumber()
+			if rCell.Type != ArgNumber {
+				opdStack.Push(newErrorFormulaArg(rCell.Value(), rCell.Value()))
+				return nil
+			}
+			lCell := lMatrix[lIdx][lJdx].ToNumber()
+			if lCell.Type != ArgNumber {
+				opdStack.Push(newErrorFormulaArg(lCell.Value(), lCell.Value()))
+				return nil
+			}
+
+			result[i][j] = newNumberFormulaArg(lCell.Number * rCell.Number)
+		}
+	}
+
+	opdStack.Push(newMatrixFormulaArg(result))
 	return nil
 }
 
@@ -1304,6 +1568,10 @@ func calcSubtract(rOpd, lOpd formulaArg, opdStack *Stack) error {
 
 // calcMultiply evaluate multiplication arithmetic operations.
 func calcMultiply(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	// Handle matrix operands with element-wise multiplication
+	if rOpd.Type == ArgMatrix || lOpd.Type == ArgMatrix {
+		return calcMultiplyArray(rOpd, lOpd, opdStack)
+	}
 	lOpdVal := lOpd.ToNumber()
 	if lOpdVal.Type != ArgNumber {
 		return errors.New(lOpdVal.Value())
@@ -8015,11 +8283,21 @@ func (fn *formulaFuncs) COUNTIF(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "COUNTIF requires 2 arguments")
 	}
+
+	searchRange := argsList.Front().Value.(formulaArg)
+	criteriaArg := argsList.Front().Next().Value.(formulaArg)
+
+	// Handle range criteria (e.g., COUNTIF(D:D, D:D))
+	if criteriaArg.Type == ArgMatrix {
+		return countifRangeCriteria(searchRange, criteriaArg)
+	}
+
+	// Existing scalar criteria logic
 	var (
-		criteria = formulaCriteriaParser(argsList.Front().Next().Value.(formulaArg))
+		criteria = formulaCriteriaParser(criteriaArg)
 		count    float64
 	)
-	for _, cell := range argsList.Front().Value.(formulaArg).ToList() {
+	for _, cell := range searchRange.ToList() {
 		if cell.Type == ArgString && criteria.Condition.Type != ArgString {
 			continue
 		}
