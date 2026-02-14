@@ -988,7 +988,7 @@ func (f *File) GetCellHyperLink(sheet, cell string) (bool, string, error) {
 
 // GetHyperLinkCells returns cell references which contain hyperlinks in a
 // given worksheet name and link type. The optional parameter 'linkType' use for
-// specific link type,the optional values are "External" for website links,
+// specific link type, the optional values are "External" for website links,
 // "Location" for moving to one of cell in this workbook, "None" for no links.
 // If linkType is empty, it will return all hyperlinks in the worksheet.
 func (f *File) GetHyperLinkCells(sheet, linkType string) ([]string, error) {

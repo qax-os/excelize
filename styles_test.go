@@ -565,13 +565,13 @@ func TestNewStyle(t *testing.T) {
 		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestSetFontCharset.xlsx")))
 	})
 
-	t.Run("recreate_default_style", func(t *testing.T) {
+	t.Run("for_recreate_default_style", func(t *testing.T) {
 		f := NewFile()
-		style2, err := f.GetStyle(0) // Get the default style
+		style, err := f.GetStyle(0)
 		assert.NoError(t, err)
-		styleId, err := f.NewStyle(style2) // Try to recreate the same style. Should return style ID 0
+		styleID, err := f.NewStyle(style)
 		assert.NoError(t, err)
-		assert.Equal(t, 0, styleId)
+		assert.Equal(t, 0, styleID)
 	})
 }
 
