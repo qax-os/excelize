@@ -1541,7 +1541,7 @@ func parseRef(ref string) (cellRef, bool, bool, error) {
 			return cr, true, false, nil
 		}
 		if cr.Row, rowErr = strconv.Atoi(cell); rowErr == nil { // cast to row
-			if cr.Row < 1 {
+			if cr.Row < 1 || cr.Row > TotalRows {
 				return cr, false, false, fmt.Errorf("invalid row number %q", cell)
 			}
 			return cr, false, true, nil
