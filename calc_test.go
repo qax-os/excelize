@@ -2908,6 +2908,8 @@ func TestCalcCellValue(t *testing.T) {
 		"SUM(1/)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
 		"SUM(1*SUM(1/0))":   {"#DIV/0!", "#DIV/0!"},
 		"SUM(1*SUM(1/0)*1)": {"", "#DIV/0!"},
+		"SUM(0:2)":          {"#NAME?", "invalid reference"},
+		"SUM(1:1048577)":    {"#NAME?", "invalid reference"},
 		// SUMIF
 		"SUMIF()": {"#VALUE!", "SUMIF requires at least 2 arguments"},
 		// SUMSQ
