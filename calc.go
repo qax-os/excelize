@@ -6394,10 +6394,10 @@ func getBetaHelperContFrac(fX, fA, fB float64) float64 {
 		apl2m := fA + 2*rm
 		d2m := rm * (fB - rm) * fX / ((apl2m - 1) * apl2m)
 		d2m1 := -(fA + rm) * (fA + fB + rm) * fX / (apl2m * (apl2m + 1))
-		a1 = (a2 + d2m*a1) * fnorm
-		b1 = (b2 + d2m*b1) * fnorm
-		a2 = a1 + d2m1*a2*fnorm
-		b2 = b1 + d2m1*b2*fnorm
+		a1 = math.FMA(d2m, a1, a2) * fnorm
+		b1 = math.FMA(d2m, b1, b2) * fnorm
+		a2 = math.FMA(d2m1*a2, fnorm, a1)
+		b2 = math.FMA(d2m1*b2, fnorm, b1)
 		if b2 != 0 {
 			fnorm = 1 / b2
 			cfnew = a2 * fnorm

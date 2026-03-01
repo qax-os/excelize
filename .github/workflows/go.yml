@@ -5,8 +5,8 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: [1.24.x, 1.25.x, 1.26.x]
-        os: [ubuntu-24.04, macos-15-intel, windows-latest]
+        go-version: [1.25.x, 1.26.x]
+        os: [ubuntu-24.04, macos-15-intel, macos-26, windows-latest]
         targetplatform: [x86, x64]
 
     runs-on: ${{ matrix.os }}
