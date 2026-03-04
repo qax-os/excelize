@@ -1858,7 +1858,7 @@ func formulaCriteriaParser(exp formulaArg) *formulaCriteria {
 	}
 	if strings.ContainsAny(val, "?*") {
 		fc.Type, fc.Condition = criteriaRegexp, newStringFormulaArg(
-			"(?i)^"+strings.NewReplacer("?", ".", "*", ".*").Replace(val)+"$",
+			"(?i)^"+strings.NewReplacer(`\*`, `.*`, `\?`, `.`).Replace(regexp.QuoteMeta(val))+"$",
 		)
 		return fc
 	}
