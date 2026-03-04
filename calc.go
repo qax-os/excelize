@@ -101,6 +101,20 @@ const (
 )
 
 var (
+	// wildcardTokenRE tokenizes an Excel wildcard pattern into tilde-escaped
+	// sequences, bare wildcards (* ?), or any other single character.
+	wildcardTokenRE = regexp.MustCompile(`~[*?~]|[*?]|[\s\S]`)
+	// wildcardPatternMap maps each token produced by wildcardTokenRE to its
+	// regular-expression equivalent. Tokens absent from the map are literals.
+	wildcardPatternMap = map[string]string{
+		"~*": regexp.QuoteMeta("*"),
+		"~?": regexp.QuoteMeta("?"),
+		"~~": regexp.QuoteMeta("~"),
+		"*":  ".*",
+		"?":  ".",
+	}
+	// wildcardBareTokens is the set of tokens that represent real wildcards.
+	wildcardBareTokens = map[string]bool{"*": true, "?": true}
 	// tokenPriority defined basic arithmetic operator priority
 	tokenPriority = map[string]int{
 		"^":  5,
@@ -1183,12 +1197,20 @@ func calcPow(rOpd, lOpd formulaArg, opdStack *Stack) error {
 
 // calcEq evaluate equal arithmetic operations.
 func calcEq(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	if rOpd.Type == ArgString && lOpd.Type == ArgString {
+		opdStack.Push(newBoolFormulaArg(strings.EqualFold(lOpd.Value(), rOpd.Value())))
+		return nil
+	}
 	opdStack.Push(newBoolFormulaArg(rOpd.Value() == lOpd.Value()))
 	return nil
 }
 
 // calcNEq evaluate not equal arithmetic operations.
 func calcNEq(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	if rOpd.Type == ArgString && lOpd.Type == ArgString {
+		opdStack.Push(newBoolFormulaArg(!strings.EqualFold(lOpd.Value(), rOpd.Value())))
+		return nil
+	}
 	opdStack.Push(newBoolFormulaArg(rOpd.Value() != lOpd.Value()))
 	return nil
 }
@@ -1856,13 +1878,21 @@ func formulaCriteriaParser(exp formulaArg) *formulaCriteria {
 			return fc
 		}
 	}
-	if strings.ContainsAny(val, "?*") {
-		fc.Type, fc.Condition = criteriaRegexp, newStringFormulaArg(
-			"(?i)^"+strings.NewReplacer(`\*`, `.*`, `\?`, `.`).Replace(regexp.QuoteMeta(val))+"$",
-		)
+	hasWildcard := false
+	pattern := wildcardTokenRE.ReplaceAllStringFunc(val, func(m string) string {
+		hasWildcard = hasWildcard || wildcardBareTokens[m]
+		if r, ok := wildcardPatternMap[m]; ok {
+			return r
+		}
+		return regexp.QuoteMeta(m)
+	})
+	if hasWildcard {
+		fc.Type, fc.Condition = criteriaRegexp, newStringFormulaArg("(?i)^"+pattern+"$")
 		return fc
 	}
-	fc.Type, fc.Condition = criteriaEq, newStringFormulaArg(val)
+	fc.Type, fc.Condition = criteriaEq, newStringFormulaArg(
+		strings.NewReplacer("~~", "~", "~*", "*", "~?", "?").Replace(val),
+	)
 	if num := fc.Condition.ToNumber(); num.Type == ArgNumber {
 		fc.Condition = num
 	}
@@ -1881,16 +1911,7 @@ func formulaCriteriaEval(val formulaArg, criteria *formulaCriteria) (result bool
 		criteriaGe: calcGe,
 	}
 	switch criteria.Type {
-	case criteriaEq:
-		if criteria.Condition.Type == ArgString && val.Type == ArgString {
-			return strings.EqualFold(criteria.Condition.Value(), val.Value()), nil
-		}
-		if fn, ok := tokenCalcFunc[criteria.Type]; ok {
-			if _ = fn(criteria.Condition, val, s); s.Len() > 0 {
-				return s.Pop().(formulaArg).Number == 1, err
-			}
-		}
-	case criteriaLe, criteriaGe, criteriaNe, criteriaL, criteriaG:
+	case criteriaEq, criteriaLe, criteriaGe, criteriaNe, criteriaL, criteriaG:
 		if fn, ok := tokenCalcFunc[criteria.Type]; ok {
 			if _ = fn(criteria.Condition, val, s); s.Len() > 0 {
 				return s.Pop().(formulaArg).Number == 1, err
