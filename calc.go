@@ -1856,20 +1856,15 @@ func formulaCriteriaParser(exp formulaArg) *formulaCriteria {
 			return fc
 		}
 	}
-	hasWildcard := strings.Contains(val, "?") || strings.Contains(val, "*")
-	if strings.Contains(val, "?") {
-		val = strings.ReplaceAll(val, "?", ".")
+	if strings.ContainsAny(val, "?*") {
+		fc.Type, fc.Condition = criteriaRegexp, newStringFormulaArg(
+			"(?i)^"+strings.NewReplacer("?", ".", "*", ".*").Replace(val)+"$",
+		)
+		return fc
 	}
-	if strings.Contains(val, "*") {
-		val = strings.ReplaceAll(val, "*", ".*")
-	}
-	if hasWildcard {
-		fc.Type, fc.Condition = criteriaRegexp, newStringFormulaArg("^"+val+"$")
-	} else {
-		fc.Type, fc.Condition = criteriaEq, newStringFormulaArg(val)
-		if num := fc.Condition.ToNumber(); num.Type == ArgNumber {
-			fc.Condition = num
-		}
+	fc.Type, fc.Condition = criteriaEq, newStringFormulaArg(val)
+	if num := fc.Condition.ToNumber(); num.Type == ArgNumber {
+		fc.Condition = num
 	}
 	return fc
 }
@@ -1886,7 +1881,16 @@ func formulaCriteriaEval(val formulaArg, criteria *formulaCriteria) (result bool
 		criteriaGe: calcGe,
 	}
 	switch criteria.Type {
-	case criteriaEq, criteriaLe, criteriaGe, criteriaNe, criteriaL, criteriaG:
+	case criteriaEq:
+		if criteria.Condition.Type == ArgString && val.Type == ArgString {
+			return strings.EqualFold(criteria.Condition.Value(), val.Value()), nil
+		}
+		if fn, ok := tokenCalcFunc[criteria.Type]; ok {
+			if _ = fn(criteria.Condition, val, s); s.Len() > 0 {
+				return s.Pop().(formulaArg).Number == 1, err
+			}
+		}
+	case criteriaLe, criteriaGe, criteriaNe, criteriaL, criteriaG:
 		if fn, ok := tokenCalcFunc[criteria.Type]; ok {
 			if _ = fn(criteria.Condition, val, s); s.Len() > 0 {
 				return s.Pop().(formulaArg).Number == 1, err

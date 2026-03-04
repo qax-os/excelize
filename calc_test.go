@@ -5728,19 +5728,19 @@ func TestCalcSUMIFExactMatch(t *testing.T) {
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
 		// Exact text match should not match substrings
-		`SUMIF(A2:A7,"administrative",B2:B7)`: "250",
+		`SUMIF(A2:A7,"administrative",B2:B7)`: "300",
 		// Wildcard * should match substrings (case-sensitive)
-		`SUMIF(A2:A7,"*administrative*",B2:B7)`: "750",
+		`SUMIF(A2:A7,"*administrative*",B2:B7)`: "800",
 		// Wildcard * at end only
-		`SUMIF(A2:A7,"administrative*",B2:B7)`: "250",
+		`SUMIF(A2:A7,"administrative*",B2:B7)`: "300",
 		// Wildcard * at start only
-		`SUMIF(A2:A7,"*administrative",B2:B7)`: "450",
+		`SUMIF(A2:A7,"*administrative",B2:B7)`: "500",
 		// Single char wildcard ?
 		`SUMIF(A2:A7,"othe?",B2:B7)`: "400",
 		// COUNTIF exact match should not match substrings
-		`COUNTIF(A2:A7,"administrative")`: "2",
+		`COUNTIF(A2:A7,"administrative")`: "3",
 		// COUNTIF wildcard match
-		`COUNTIF(A2:A7,"*administrative*")`: "4",
+		`COUNTIF(A2:A7,"*administrative*")`: "5",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
