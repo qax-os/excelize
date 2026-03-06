@@ -532,7 +532,7 @@ func TestSlicer(t *testing.T) {
 		TableSheet:    "Sheet3",
 		TableName:     "Pivot_Products",
 		Caption:       "Product",
-		SelectedItems: nil, // ← 全选
+		SelectedItems: nil,
 	}))
 
 	assert.NoError(t, f.AddSlicer("Sheet3", &SlicerOptions{
@@ -797,6 +797,43 @@ func TestBuildSlicerItems(t *testing.T) {
 	assert.Equal(t, 1, len(items))
 	assert.True(t, items[0].S)
 
+	// Test case where allValues is empty, resulting in empty items slice
+	// This covers the branch: if len(items) == 0 { items = append(items, xlsxTabularSlicerCacheItem{S: true}) }
+	emptyValuesPivotOpts := &PivotTableOptions{
+		DataRange:       "Sheet1!A1:D20",
+		PivotTableRange: "Sheet1!F2:J15",
+		Name:            "TestPivotTableEmptyValues",
+		Rows:            []PivotTableField{{Data: "Month"}},
+		Columns:         []PivotTableField{{Data: "Year"}},
+		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Sum"}},
+	}
+	assert.NoError(t, f.AddPivotTable(emptyValuesPivotOpts))
+
+	pcEmpty, err := f.pivotCacheReader(emptyValuesPivotOpts.pivotCacheXML)
+	assert.NoError(t, err)
+
+	if pcEmpty.CacheFields != nil && len(pcEmpty.CacheFields.CacheField) > 0 {
+		// Create a scenario where sharedItems has no values (empty)
+		pcEmpty.CacheFields.CacheField[0].SharedItems = &xlsxSharedItems{
+			Count: 0,
+			S:     []xlsxString{},
+			N:     []xlsxNumber{},
+			D:     []xlsxDateTime{},
+			B:     []xlsxBoolean{},
+			M:     []xlsxMissing{},
+			E:     []xlsxError{},
+		}
+
+		pivotCacheEmpty, err := xml.Marshal(pcEmpty)
+		assert.NoError(t, err)
+		f.saveFileList(emptyValuesPivotOpts.pivotCacheXML, pivotCacheEmpty)
+	}
+
+	items, err = f.buildSlicerItems(emptyValuesPivotOpts, "Month", []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(items))
+	assert.True(t, items[0].S)
+
 	invalidPivotCacheXML := "xl/pivotCache/invalidCache.xml"
 	f.Pkg.Store(invalidPivotCacheXML, MacintoshCyrillicCharset)
 	invalidPivotOpts := &PivotTableOptions{
@@ -804,6 +841,66 @@ func TestBuildSlicerItems(t *testing.T) {
 	}
 	_, err = f.buildSlicerItems(invalidPivotOpts, "Month", []string{})
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+
+	pivotOptsNumeric := &PivotTableOptions{
+		DataRange:       "Sheet1!A1:D20",
+		PivotTableRange: "Sheet1!F2:J15",
+		Name:            "TestPivotTableNumeric",
+		Rows:            []PivotTableField{{Data: "Month"}},
+		Columns:         []PivotTableField{{Data: "Year"}},
+		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Sum"}},
+	}
+	assert.NoError(t, f.AddPivotTable(pivotOptsNumeric))
+
+	pcNumeric, err := f.pivotCacheReader(pivotOptsNumeric.pivotCacheXML)
+	assert.NoError(t, err)
+
+	if pcNumeric.CacheFields != nil && len(pcNumeric.CacheFields.CacheField) > 0 {
+		numericValues := []float64{1.5, 2.7, 3.14, 4.0, 5.25}
+		pcNumeric.CacheFields.CacheField[0].SharedItems = &xlsxSharedItems{
+			Count: len(numericValues),
+			N:     make([]xlsxNumber, len(numericValues)),
+		}
+		for i, val := range numericValues {
+			pcNumeric.CacheFields.CacheField[0].SharedItems.N[i] = xlsxNumber{V: val}
+		}
+
+		pivotCacheNumeric, err := xml.Marshal(pcNumeric)
+		assert.NoError(t, err)
+		f.saveFileList(pivotOptsNumeric.pivotCacheXML, pivotCacheNumeric)
+	}
+
+	items, err = f.buildSlicerItems(pivotOptsNumeric, "Month", []string{})
+	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, len(items), 5)
+
+	expectedNumericStrings := []string{"1.5", "2.7", "3.14", "4", "5.25"}
+
+	for i, item := range items {
+		if i < 5 {
+			assert.Equal(t, i, item.X, "Item %d should have correct index", i)
+			assert.True(t, item.S, "Item %d should be selected when no specific selections", i)
+		}
+	}
+
+	selectedNumericItems := []string{"1.5", "3.14", "5.25"}
+	items, err = f.buildSlicerItems(pivotOptsNumeric, "Month", selectedNumericItems)
+	assert.NoError(t, err)
+
+	for i, item := range items {
+		if i < 5 {
+			expectedSelected := false
+			expectedValue := expectedNumericStrings[i]
+			for _, sel := range selectedNumericItems {
+				if sel == expectedValue {
+					expectedSelected = true
+					break
+				}
+			}
+			assert.Equal(t, expectedSelected, item.S, "Item %d should have correct selection state", i)
+			assert.Equal(t, i, item.X, "Item %d should have correct index", i)
+		}
+	}
 
 	assert.NoError(t, f.Close())
 }
