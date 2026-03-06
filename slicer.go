@@ -513,14 +513,6 @@ func (f *File) buildSlicerItems(pivotTable *PivotTableOptions, fieldName string,
 		allValues = append(allValues, strconv.FormatFloat(n.V, 'f', -1, 64))
 	}
 
-	for _, d := range sharedItems.D {
-		_ = d
-	}
-
-	for _, b := range sharedItems.B {
-		_ = b
-	}
-
 	for range sharedItems.M {
 		allValues = append(allValues, "")
 	}
