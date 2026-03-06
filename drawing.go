@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -221,6 +221,9 @@ func (f *File) drawBaseChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	var ok bool
 	if *c[0].BarDir.Val, ok = plotAreaChartBarDir[opts.Type]; !ok {
 		c[0].BarDir = nil
+		if opts.XAxis.DropLines {
+			c[0].DropLines = &cChartLines{}
+		}
 	}
 	catAx := f.drawPlotAreaCatAx(pa, opts)
 	valAx := f.drawPlotAreaValAx(pa, opts)
@@ -463,7 +466,7 @@ func (f *File) drawDoughnutChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 // drawLineChart provides a function to draw the c:plotArea element for line
 // chart by given format sets.
 func (f *File) drawLineChart(pa *cPlotArea, opts *Chart) *cPlotArea {
-	return &cPlotArea{
+	plotArea := &cPlotArea{
 		LineChart: []*cCharts{
 			{
 				Grouping: &attrValString{
@@ -480,12 +483,19 @@ func (f *File) drawLineChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		CatAx: f.drawPlotAreaCatAx(pa, opts),
 		ValAx: f.drawPlotAreaValAx(pa, opts),
 	}
+	if opts.XAxis.DropLines {
+		plotArea.LineChart[0].DropLines = &cChartLines{}
+	}
+	if opts.XAxis.HighLowLines {
+		plotArea.LineChart[0].HiLowLines = &cChartLines{}
+	}
+	return plotArea
 }
 
 // drawLine3DChart provides a function to draw the c:plotArea element for line
 // chart by given format sets.
 func (f *File) drawLine3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
-	return &cPlotArea{
+	plotArea := &cPlotArea{
 		Line3DChart: []*cCharts{
 			{
 				Grouping: &attrValString{
@@ -502,6 +512,10 @@ func (f *File) drawLine3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		CatAx: f.drawPlotAreaCatAx(pa, opts),
 		ValAx: f.drawPlotAreaValAx(pa, opts),
 	}
+	if opts.XAxis.DropLines {
+		plotArea.Line3DChart[0].DropLines = &cChartLines{}
+	}
+	return plotArea
 }
 
 // drawPieChart provides a function to draw the c:plotArea element for pie
@@ -884,13 +898,13 @@ func (f *File) drawChartSeriesDPt(i int, opts *Chart) []*cDPt {
 				W:   25400,
 				Cap: "rnd",
 				SolidFill: &aSolidFill{
-					SchemeClr: &aSchemeClr{Val: "lt" + strconv.Itoa(i+1)},
+					SchemeClr: &aSchemeClr{Val: "lt1"},
 				},
 			},
 			Sp3D: &aSp3D{
 				ContourW: 25400,
 				ContourClr: &aContourClr{
-					SchemeClr: &aSchemeClr{Val: "lt" + strconv.Itoa(i+1)},
+					SchemeClr: &aSchemeClr{Val: "lt1"},
 				},
 			},
 		},
@@ -1256,7 +1270,15 @@ func drawChartFont(fnt *Font, r *aRPr) {
 		if r.Latin == nil {
 			r.Latin = &xlsxCTTextFont{}
 		}
+		if r.Ea == nil {
+			r.Ea = &xlsxCTTextFont{}
+		}
+		if r.Cs == nil {
+			r.Cs = &xlsxCTTextFont{}
+		}
 		r.Latin.Typeface = fnt.Family
+		r.Ea.Typeface = fnt.Family
+		r.Cs.Typeface = fnt.Family
 	}
 	if fnt.Size > 0 {
 		r.Sz = fnt.Size * 100
@@ -1349,8 +1371,8 @@ func (f *File) drawPlotAreaTxPr(opts *ChartAxis) *cTxPr {
 						},
 					},
 					Latin: &xlsxCTTextFont{Typeface: "+mn-lt"},
-					Ea:    &aEa{Typeface: "+mn-ea"},
-					Cs:    &aCs{Typeface: "+mn-cs"},
+					Ea:    &xlsxCTTextFont{Typeface: "+mn-ea"},
+					Cs:    &xlsxCTTextFont{Typeface: "+mn-cs"},
 				},
 			},
 			EndParaRPr: &aEndParaRPr{Lang: "en-US"},
@@ -1518,8 +1540,9 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 	graphicFrame := xlsxGraphicFrame{
 		NvGraphicFramePr: xlsxNvGraphicFramePr{
 			CNvPr: &xlsxCNvPr{
-				ID:   cNvPrID,
-				Name: "Chart " + strconv.Itoa(cNvPrID),
+				ID:    cNvPrID,
+				Name:  "Chart " + strconv.Itoa(cNvPrID),
+				Descr: opts.AltText,
 			},
 		},
 		Graphic: &xlsxGraphic{
@@ -1532,6 +1555,9 @@ func (f *File) addDrawingChart(sheet, drawingXML, cell string, width, height, rI
 				},
 			},
 		},
+	}
+	if len(opts.Name) > 0 {
+		graphicFrame.NvGraphicFramePr.CNvPr.Name = opts.Name
 	}
 	graphic, _ := xml.Marshal(graphicFrame)
 	twoCellAnchor.GraphicFrame = string(graphic)

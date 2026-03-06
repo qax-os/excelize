@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -984,6 +984,40 @@ func (f *File) GetCellHyperLink(sheet, cell string) (bool, string, error) {
 		}
 	}
 	return false, "", err
+}
+
+// GetHyperLinkCells returns cell references which contain hyperlinks in a
+// given worksheet name and link type. The optional parameter 'linkType' use for
+// specific link type, the optional values are "External" for website links,
+// "Location" for moving to one of cell in this workbook, "None" for no links.
+// If linkType is empty, it will return all hyperlinks in the worksheet.
+func (f *File) GetHyperLinkCells(sheet, linkType string) ([]string, error) {
+	var rangeRef []string
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return rangeRef, err
+	}
+	if ws.Hyperlinks != nil {
+		for _, link := range ws.Hyperlinks.Hyperlink {
+			switch linkType {
+			case "External":
+				if link.RID != "" {
+					rangeRef = append(rangeRef, link.Ref)
+				}
+			case "Location":
+				if link.Location != "" {
+					rangeRef = append(rangeRef, link.Ref)
+				}
+			case "None":
+				return rangeRef, err
+			case "":
+				rangeRef = append(rangeRef, link.Ref)
+			default:
+				return rangeRef, newInvalidLinkTypeError(linkType)
+			}
+		}
+	}
+	return rangeRef, err
 }
 
 // HyperlinkOpts can be passed to SetCellHyperlink to set optional hyperlink

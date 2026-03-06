@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -127,12 +127,31 @@ func (f *File) sharedStringsWriter() {
 func parseFormatStyleSet(style *Style) (*Style, error) {
 	var err error
 	if style.Font != nil {
-		if len(style.Font.Family) > MaxFontFamilyLength {
+		if countUTF16String(style.Font.Family) > MaxFontFamilyLength {
 			return style, ErrFontLength
 		}
 		if style.Font.Size > MaxFontSize {
 			return style, ErrFontSize
 		}
+	}
+	switch style.Fill.Type {
+	case "gradient":
+		if len(style.Fill.Color) != 2 {
+			return style, ErrFillGradientColor
+		}
+		if style.Fill.Shading < 0 || style.Fill.Shading > 16 {
+			return style, ErrFillGradientShading
+		}
+	case "pattern":
+		if len(style.Fill.Color) > 1 {
+			return style, ErrFillPatternColor
+		}
+		if style.Fill.Pattern < 0 || style.Fill.Pattern > 18 {
+			return style, ErrFillPattern
+		}
+	case "":
+	default:
+		return style, ErrFillType
 	}
 	if style.CustomNumFmt != nil && len(*style.CustomNumFmt) == 0 {
 		err = ErrCustomNumFmt
@@ -1115,13 +1134,13 @@ var (
 			return xf.NumFmtID != nil && *xf.NumFmtID == numFmtID
 		},
 		"font": func(fontID int, xf xlsxXf, style *Style) bool {
-			if style.Font == nil {
+			if style.Font == nil || fontID == 0 {
 				return (xf.FontID == nil || *xf.FontID == 0) && (xf.ApplyFont == nil || !*xf.ApplyFont)
 			}
 			return xf.FontID != nil && *xf.FontID == fontID && xf.ApplyFont != nil && *xf.ApplyFont
 		},
 		"fill": func(fillID int, xf xlsxXf, style *Style) bool {
-			if style.Fill.Type == "" {
+			if style.Fill.Type == "" || fillID == 0 {
 				return (xf.FillID == nil || *xf.FillID == 0) && (xf.ApplyFill == nil || !*xf.ApplyFill)
 			}
 			return xf.FillID != nil && *xf.FillID == fillID && xf.ApplyFill != nil && *xf.ApplyFill
@@ -1193,59 +1212,59 @@ var (
 	}
 
 	// extractContFmtFunc defines functions to get conditional formats.
-	extractContFmtFunc = map[string]func(*File, *xlsxCfRule, *xlsxExtLst) ConditionalFormatOptions{
-		"cellIs": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+	extractContFmtFunc = map[string]func(*File, string, *xlsxCfRule, *xlsxExtLst) ConditionalFormatOptions{
+		"cellIs": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtCellIs(c, extLst)
 		},
-		"timePeriod": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-			return f.extractCondFmtTimePeriod(c, extLst)
+		"timePeriod": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+			return f.extractCondFmtTimePeriod(c, ref, extLst)
 		},
-		"containsText": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"containsText": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtText(c, extLst)
 		},
-		"notContainsText": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"notContainsText": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtText(c, extLst)
 		},
-		"beginsWith": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"beginsWith": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtText(c, extLst)
 		},
-		"endsWith": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"endsWith": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtText(c, extLst)
 		},
-		"top10": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"top10": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtTop10(c, extLst)
 		},
-		"aboveAverage": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"aboveAverage": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtAboveAverage(c, extLst)
 		},
-		"duplicateValues": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"duplicateValues": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtDuplicateUniqueValues(c, extLst)
 		},
-		"uniqueValues": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"uniqueValues": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtDuplicateUniqueValues(c, extLst)
 		},
-		"containsBlanks": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"containsBlanks": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtBlanks(c, extLst)
 		},
-		"notContainsBlanks": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"notContainsBlanks": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtNoBlanks(c, extLst)
 		},
-		"containsErrors": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"containsErrors": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtErrors(c, extLst)
 		},
-		"notContainsErrors": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"notContainsErrors": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtNoErrors(c, extLst)
 		},
-		"colorScale": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"colorScale": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtColorScale(c, extLst)
 		},
-		"dataBar": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"dataBar": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtDataBar(c, extLst)
 		},
-		"expression": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"expression": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtExp(c, extLst)
 		},
-		"iconSet": func(f *File, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
+		"iconSet": func(f *File, ref string, c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 			return f.extractCondFmtIconSet(c, extLst)
 		},
 	}
@@ -1383,6 +1402,27 @@ var (
 		"5ArrowsGray":     cfvo5,
 		"5Quarters":       cfvo5,
 		"5Rating":         cfvo5,
+	}
+	// cfvo3 defined the icon set conditional formatting rules.
+	x14cfvo3 = &xlsxX14CfRule{IconSet: &xlsx14IconSet{Cfvo: []*xlsx14Cfvo{
+		{Type: "percent", F: "0"},
+		{Type: "percent", F: "33"},
+		{Type: "percent", F: "67"},
+	}}}
+	// cfvo5 defined the icon set conditional formatting rules.
+	x14cfvo5 = &xlsxX14CfRule{IconSet: &xlsx14IconSet{Cfvo: []*xlsx14Cfvo{
+		{Type: "percent", F: "0"},
+		{Type: "percent", F: "20"},
+		{Type: "percent", F: "40"},
+		{Type: "percent", F: "60"},
+		{Type: "percent", F: "80"},
+	}}}
+	// condFmtX14IconSetPresets defined the list of icon set conditional
+	// formatting rules which defined in worksheet extension list.
+	condFmtX14IconSetPresets = map[string]*xlsxX14CfRule{
+		"3Stars":     x14cfvo3,
+		"3Triangles": x14cfvo3,
+		"5Boxes":     x14cfvo5,
 	}
 )
 
@@ -2033,9 +2073,6 @@ func newFills(style *Style, fg bool) *xlsxFill {
 	var fill xlsxFill
 	switch style.Fill.Type {
 	case "gradient":
-		if len(style.Fill.Color) != 2 || style.Fill.Shading < 0 || style.Fill.Shading > 16 {
-			break
-		}
 		gradient := styleFillVariants()[style.Fill.Shading]
 		gradient.Stop[0].Color.RGB = getPaletteColor(style.Fill.Color[0])
 		gradient.Stop[1].Color.RGB = getPaletteColor(style.Fill.Color[1])
@@ -2044,9 +2081,6 @@ func newFills(style *Style, fg bool) *xlsxFill {
 		}
 		fill.GradientFill = &gradient
 	case "pattern":
-		if style.Fill.Pattern > 18 || style.Fill.Pattern < 0 {
-			break
-		}
 		var pattern xlsxPatternFill
 		pattern.PatternType = styleFillPatterns[style.Fill.Pattern]
 		if len(style.Fill.Color) < 1 {
@@ -2751,10 +2785,12 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 //	3ArrowsGray
 //	3Flags
 //	3Signs
+//	3Stars
 //	3Symbols
 //	3Symbols2
 //	3TrafficLights1
 //	3TrafficLights2
+//	3Triangles
 //	4Arrows
 //	4ArrowsGray
 //	4Rating
@@ -2762,6 +2798,7 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 //	4TrafficLights
 //	5Arrows
 //	5ArrowsGray
+//	5Boxes
 //	5Quarters
 //	5Rating
 //
@@ -2812,16 +2849,18 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 					priority := rules + i
 					rule, x14rule := drawFunc(priority, ct, mastCell,
 						fmt.Sprintf("{00000000-0000-0000-%04X-%012X}", f.getSheetID(sheet), priority), &opt)
-					if rule == nil {
+					if rule == nil && x14rule == nil {
 						return ErrParameterInvalid
 					}
+					if rule != nil {
+						cfRule = append(cfRule, rule)
+					}
 					if x14rule != nil {
-						if err = f.appendCfRule(ws, x14rule); err != nil {
+						if err = f.appendCfRule(ws, x14rule, SQRef); err != nil {
 							return err
 						}
 						f.addSheetNameSpace(sheet, NameSpaceSpreadSheetX14)
 					}
-					cfRule = append(cfRule, rule)
 					continue
 				}
 			}
@@ -2829,11 +2868,12 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 		}
 		return ErrParameterInvalid
 	}
-
-	ws.ConditionalFormatting = append(ws.ConditionalFormatting, &xlsxConditionalFormatting{
-		SQRef:  SQRef,
-		CfRule: cfRule,
-	})
+	if len(cfRule) > 0 {
+		ws.ConditionalFormatting = append(ws.ConditionalFormatting, &xlsxConditionalFormatting{
+			SQRef:  SQRef,
+			CfRule: cfRule,
+		})
+	}
 	return err
 }
 
@@ -2879,7 +2919,7 @@ func prepareConditionalFormatRange(rangeRef string) (string, string, error) {
 }
 
 // appendCfRule provides a function to append rules to conditional formatting.
-func (f *File) appendCfRule(ws *xlsxWorksheet, rule *xlsxX14CfRule) error {
+func (f *File) appendCfRule(ws *xlsxWorksheet, rule *xlsxX14CfRule, sqref string) error {
 	var (
 		err                                      error
 		idx                                      int
@@ -2891,7 +2931,7 @@ func (f *File) appendCfRule(ws *xlsxWorksheet, rule *xlsxX14CfRule) error {
 		condFmtBytes, condFmtsBytes, extLstBytes []byte
 	)
 	condFmtBytes, _ = xml.Marshal([]*xlsxX14ConditionalFormatting{
-		{XMLNSXM: NameSpaceSpreadSheetExcel2006Main.Value, CfRule: []*xlsxX14CfRule{rule}},
+		{XMLNSXM: NameSpaceSpreadSheetExcel2006Main.Value, Sqref: sqref, CfRule: []*xlsxX14CfRule{rule}},
 	})
 	if ws.ExtLst != nil { // append mode ext
 		if err = f.xmlNewDecoder(strings.NewReader("<extLst>" + ws.ExtLst.Ext + "</extLst>")).
@@ -2942,8 +2982,26 @@ func (f *File) extractCondFmtCellIs(c *xlsxCfRule, extLst *xlsxExtLst) Condition
 
 // extractCondFmtTimePeriod provides a function to extract conditional format
 // settings for time period by given conditional formatting rule.
-func (f *File) extractCondFmtTimePeriod(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
-	return ConditionalFormatOptions{Format: c.DxfID, StopIfTrue: c.StopIfTrue, Type: "time_period", Criteria: operatorType[c.Operator]}
+func (f *File) extractCondFmtTimePeriod(c *xlsxCfRule, ref string, extLst *xlsxExtLst) ConditionalFormatOptions {
+	var criteria string
+	for _, formula := range c.Formula {
+		if c, ok := map[string]string{
+			fmt.Sprintf("FLOOR(%s,1)=TODAY()-1", ref):                                  "yesterday",
+			fmt.Sprintf("FLOOR(%s,1)=TODAY()", ref):                                    "today",
+			fmt.Sprintf("FLOOR(%s,1)=TODAY()+1", ref):                                  "tomorrow",
+			fmt.Sprintf("AND(TODAY()-FLOOR(%[1]s,1)<=6,FLOOR(%[1]s,1)<=TODAY())", ref): "last 7 days",
+			fmt.Sprintf("AND(TODAY()-ROUNDDOWN(%[1]s,0)>=(WEEKDAY(TODAY())),TODAY()-ROUNDDOWN(%[1]s,0)<(WEEKDAY(TODAY())+7))", ref):               "last week",
+			fmt.Sprintf("AND(TODAY()-ROUNDDOWN(%[1]s,0)<=WEEKDAY(TODAY())-1,ROUNDDOWN(%[1]s,0)-TODAY()>=7-WEEKDAY(TODAY()))", ref):                "this week",
+			fmt.Sprintf("AND(ROUNDDOWN(%[1]s,0)-TODAY()>(7-WEEKDAY(TODAY())),ROUNDDOWN(%[1]s,0)-TODAY()<(15-WEEKDAY(TODAY())))", ref):             "continue week",
+			fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY())-1,OR(YEAR(%[1]s)=YEAR(TODAY()),AND(MONTH(%[1]s)=1,YEAR(%[1]s)=YEAR(TODAY())-1)))", ref):  "last month",
+			fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY()),YEAR(%[1]s)=YEAR(TODAY()))", ref):                                                        "this month",
+			fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY())+1,OR(YEAR(%[1]s)=YEAR(TODAY()),AND(MONTH(%[1]s)=12,YEAR(%[1]s)=YEAR(TODAY())+1)))", ref): "continue month",
+		}[formula]; ok {
+			criteria = c
+			break
+		}
+	}
+	return ConditionalFormatOptions{Format: c.DxfID, StopIfTrue: c.StopIfTrue, Type: "time_period", Criteria: criteria}
 }
 
 // extractCondFmtText provides a function to extract conditional format
@@ -3156,6 +3214,20 @@ func (f *File) extractCondFmtIconSet(c *xlsxCfRule, extLst *xlsxExtLst) Conditio
 	return format
 }
 
+// extractX14CondFmtIconSet provides a function to extract conditional format
+// settings for icon sets by given conditional formatting rule.
+func (f *File) extractX14CondFmtIconSetRule(c *decodeX14CfRule) ConditionalFormatOptions {
+	format := ConditionalFormatOptions{Type: "icon_set"}
+	if c.IconSet != nil {
+		if c.IconSet.ShowValue != nil {
+			format.IconsOnly = !*c.IconSet.ShowValue
+		}
+		format.IconStyle = c.IconSet.IconSet
+		format.ReverseIcons = c.IconSet.Reverse
+	}
+	return format
+}
+
 // GetConditionalFormats returns conditional format settings by given worksheet
 // name.
 func (f *File) GetConditionalFormats(sheet string) (map[string][]ConditionalFormatOptions, error) {
@@ -3166,12 +3238,38 @@ func (f *File) GetConditionalFormats(sheet string) (map[string][]ConditionalForm
 	}
 	for _, cf := range ws.ConditionalFormatting {
 		var opts []ConditionalFormatOptions
+		_, mastCell, err := prepareConditionalFormatRange(cf.SQRef)
+		if err != nil {
+			return conditionalFormats, err
+		}
 		for _, cr := range cf.CfRule {
 			if extractFunc, ok := extractContFmtFunc[cr.Type]; ok {
-				opts = append(opts, extractFunc(f, cr, ws.ExtLst))
+				opts = append(opts, extractFunc(f, mastCell, cr, ws.ExtLst))
 			}
 		}
 		conditionalFormats[cf.SQRef] = opts
+	}
+	if ws.ExtLst != nil {
+		decodeExtLst := new(decodeExtLst)
+		if err = f.xmlNewDecoder(strings.NewReader("<extLst>" + ws.ExtLst.Ext + "</extLst>")).
+			Decode(decodeExtLst); err != nil && err != io.EOF {
+			return conditionalFormats, err
+		}
+		for _, ext := range decodeExtLst.Ext {
+			if ext.URI == ExtURIConditionalFormattings {
+				decodeCondFmts := new(decodeX14ConditionalFormattingRules)
+				_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(decodeCondFmts)
+				for _, condFmt := range decodeCondFmts.CondFmt {
+					var opts []ConditionalFormatOptions
+					for _, rule := range condFmt.CfRule {
+						if rule.Type == "iconSet" {
+							opts = append(opts, f.extractX14CondFmtIconSetRule(rule))
+						}
+					}
+					conditionalFormats[condFmt.Sqref] = append(conditionalFormats[condFmt.Sqref], opts...)
+				}
+			}
+		}
 	}
 	return conditionalFormats, err
 }
@@ -3183,13 +3281,149 @@ func (f *File) UnsetConditionalFormat(sheet, rangeRef string) error {
 	if err != nil {
 		return err
 	}
-	for i, cf := range ws.ConditionalFormatting {
-		if cf.SQRef == rangeRef {
+	delCells, err := flatSqref(rangeRef)
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(ws.ConditionalFormatting); i++ {
+		if ws.ConditionalFormatting[i].SQRef, err = deleteCellsFromSqref(ws.ConditionalFormatting[i].SQRef, delCells); err != nil {
+			return err
+		}
+		if len(ws.ConditionalFormatting[i].SQRef) == 0 {
 			ws.ConditionalFormatting = append(ws.ConditionalFormatting[:i], ws.ConditionalFormatting[i+1:]...)
-			return nil
+			i--
 		}
 	}
-	return nil
+	if ws.ExtLst != nil {
+		var condFmtsBytes, extLstBytes []byte
+		decodeExtLst := new(decodeExtLst)
+		if err = f.xmlNewDecoder(strings.NewReader("<extLst>" + ws.ExtLst.Ext + "</extLst>")).
+			Decode(decodeExtLst); err != nil && err != io.EOF {
+			return err
+		}
+		for idx := 0; idx < len(decodeExtLst.Ext); idx++ {
+			ext := decodeExtLst.Ext[idx]
+			if ext.URI == ExtURIConditionalFormattings {
+				decodeCondFmts := new(decodeX14ConditionalFormattingRules)
+				_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(decodeCondFmts)
+				if condFmtsBytes, err = decodeCondFmts.deleteCfRule(delCells); err != nil {
+					return err
+				}
+				decodeExtLst.Ext[idx].Content = string(condFmtsBytes)
+				if len(decodeExtLst.Ext[idx].Content) == 57 { // empty x14:conditionalFormattings element
+					decodeExtLst.Ext = append(decodeExtLst.Ext[:idx], decodeExtLst.Ext[idx+1:]...)
+					idx--
+				}
+			}
+		}
+		sort.Slice(decodeExtLst.Ext, func(i, j int) bool {
+			return inStrSlice(worksheetExtURIPriority, decodeExtLst.Ext[i].URI, false) <
+				inStrSlice(worksheetExtURIPriority, decodeExtLst.Ext[j].URI, false)
+		})
+		extLstBytes, err = xml.Marshal(decodeExtLst)
+		ws.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}
+		if len(ws.ExtLst.Ext) == 0 {
+			ws.ExtLst = nil
+		}
+	}
+	return err
+}
+
+// deleteCfRule provides a function to delete conditional formatting rule by
+// given range reference and return the updated x14:conditionalFormattings
+// element content.
+func (r *decodeX14ConditionalFormattingRules) deleteCfRule(delCells map[int][][]int) ([]byte, error) {
+	var (
+		err      error
+		condFmts = &xlsxX14ConditionalFormattings{}
+	)
+	for _, condFmt := range r.CondFmt {
+		if condFmt.Sqref, err = deleteCellsFromSqref(condFmt.Sqref, delCells); err != nil {
+			return nil, err
+		}
+		if len(condFmt.Sqref) == 0 {
+			continue
+		}
+		x14ConditionalFormatting := xlsxX14ConditionalFormatting{
+			XMLNSXM: NameSpaceSpreadSheetExcel2006Main.Value,
+			Pivot:   condFmt.Pivot,
+			Sqref:   condFmt.Sqref,
+			ExtLst:  condFmt.ExtLst,
+		}
+		for _, rule := range condFmt.CfRule {
+			x14CfRule := &xlsxX14CfRule{
+				Type:          rule.Type,
+				Priority:      rule.Priority,
+				StopIfTrue:    rule.StopIfTrue,
+				AboveAverage:  rule.AboveAverage,
+				Percent:       rule.Percent,
+				Bottom:        rule.Bottom,
+				Operator:      rule.Operator,
+				Text:          rule.Text,
+				TimePeriod:    rule.TimePeriod,
+				Rank:          rule.Rank,
+				StdDev:        rule.StdDev,
+				EqualAverage:  rule.EqualAverage,
+				ActivePresent: rule.ActivePresent,
+				ID:            rule.ID,
+				F:             rule.F,
+				ColorScale:    rule.ColorScale,
+				Dxf:           rule.Dxf,
+				ExtLst:        rule.ExtLst,
+			}
+			if rule.DataBar != nil {
+				x14DataBar := &xlsx14DataBar{
+					MaxLength:         rule.DataBar.MaxLength,
+					MinLength:         rule.DataBar.MinLength,
+					Border:            rule.DataBar.Border,
+					ShowValue:         rule.DataBar.ShowValue,
+					Direction:         rule.DataBar.Direction,
+					BorderColor:       rule.DataBar.BorderColor,
+					NegativeFillColor: rule.DataBar.NegativeFillColor,
+					AxisColor:         rule.DataBar.AxisColor,
+				}
+				if rule.DataBar.Gradient != nil {
+					x14DataBar.Gradient = *rule.DataBar.Gradient
+				}
+				if rule.DataBar.Cfvo != nil {
+					for _, cfvo := range rule.DataBar.Cfvo {
+						x14DataBar.Cfvo = append(x14DataBar.Cfvo, &xlsxCfvo{
+							Gte:    cfvo.Gte,
+							Type:   cfvo.Type,
+							Val:    cfvo.Val,
+							ExtLst: cfvo.ExtLst,
+						})
+					}
+				}
+				x14CfRule.DataBar = x14DataBar
+			}
+			if rule.IconSet != nil {
+				x14IconSet := &xlsx14IconSet{
+					IconSet:   rule.IconSet.IconSet,
+					ShowValue: rule.IconSet.ShowValue,
+					Percent:   rule.IconSet.Percent,
+					Reverse:   rule.IconSet.Reverse,
+					Custom:    rule.IconSet.Custom,
+					CfIcon:    rule.IconSet.CfIcon,
+				}
+				if rule.IconSet.Cfvo != nil {
+					for _, cfvo := range rule.IconSet.Cfvo {
+						x14IconSet.Cfvo = append(x14IconSet.Cfvo, &xlsx14Cfvo{
+							Type:   cfvo.Type,
+							Gte:    cfvo.Gte,
+							F:      cfvo.F,
+							ExtLst: cfvo.ExtLst,
+						})
+					}
+				}
+				x14CfRule.IconSet = x14IconSet
+			}
+			x14ConditionalFormatting.CfRule = append(x14ConditionalFormatting.CfRule, x14CfRule)
+		}
+		condFmtBytes, _ := xml.Marshal(x14ConditionalFormatting)
+		condFmts.Content += string(condFmtBytes)
+	}
+	return xml.Marshal(condFmts)
 }
 
 // drawCondFmtCellIs provides a function to create conditional formatting rule
@@ -3220,19 +3454,18 @@ func drawCondFmtTimePeriod(p int, ct, ref, GUID string, format *ConditionalForma
 		Priority:   p + 1,
 		StopIfTrue: format.StopIfTrue,
 		Type:       "timePeriod",
-		Operator:   ct,
 		Formula: []string{
 			map[string]string{
-				"yesterday":      fmt.Sprintf("FLOOR(%s,1)=TODAY()-1", ref),
-				"today":          fmt.Sprintf("FLOOR(%s,1)=TODAY()", ref),
-				"tomorrow":       fmt.Sprintf("FLOOR(%s,1)=TODAY()+1", ref),
-				"last 7 days":    fmt.Sprintf("AND(TODAY()-FLOOR(%[1]s,1)<=6,FLOOR(%[1]s,1)<=TODAY())", ref),
-				"last week":      fmt.Sprintf("AND(TODAY()-ROUNDDOWN(%[1]s,0)>=(WEEKDAY(TODAY())),TODAY()-ROUNDDOWN(%[1]s,0)<(WEEKDAY(TODAY())+7))", ref),
-				"this week":      fmt.Sprintf("AND(TODAY()-ROUNDDOWN(%[1]s,0)<=WEEKDAY(TODAY())-1,ROUNDDOWN(%[1]s,0)-TODAY()>=7-WEEKDAY(TODAY()))", ref),
-				"continue week":  fmt.Sprintf("AND(ROUNDDOWN(%[1]s,0)-TODAY()>(7-WEEKDAY(TODAY())),ROUNDDOWN(%[1]s,0)-TODAY()<(15-WEEKDAY(TODAY())))", ref),
-				"last month":     fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY())-1,OR(YEAR(%[1]s)=YEAR(TODAY()),AND(MONTH(%[1]s)=1,YEAR(%[1]s)=YEAR(TODAY())-1)))", ref),
-				"this month":     fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY()),YEAR(%[1]s)=YEAR(TODAY()))", ref),
-				"continue month": fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY())+1,OR(YEAR(%[1]s)=YEAR(TODAY()),AND(MONTH(%[1]s)=12,YEAR(%[1]s)=YEAR(TODAY())+1)))", ref),
+				"yesterday": fmt.Sprintf("FLOOR(%s,1)=TODAY()-1", ref),
+				"today":     fmt.Sprintf("FLOOR(%s,1)=TODAY()", ref),
+				"tomorrow":  fmt.Sprintf("FLOOR(%s,1)=TODAY()+1", ref),
+				"last7Days": fmt.Sprintf("AND(TODAY()-FLOOR(%[1]s,1)<=6,FLOOR(%[1]s,1)<=TODAY())", ref),
+				"lastWeek":  fmt.Sprintf("AND(TODAY()-ROUNDDOWN(%[1]s,0)>=(WEEKDAY(TODAY())),TODAY()-ROUNDDOWN(%[1]s,0)<(WEEKDAY(TODAY())+7))", ref),
+				"thisWeek":  fmt.Sprintf("AND(TODAY()-ROUNDDOWN(%[1]s,0)<=WEEKDAY(TODAY())-1,ROUNDDOWN(%[1]s,0)-TODAY()>=7-WEEKDAY(TODAY()))", ref),
+				"nextWeek":  fmt.Sprintf("AND(ROUNDDOWN(%[1]s,0)-TODAY()>(7-WEEKDAY(TODAY())),ROUNDDOWN(%[1]s,0)-TODAY()<(15-WEEKDAY(TODAY())))", ref),
+				"lastMonth": fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY())-1,OR(YEAR(%[1]s)=YEAR(TODAY()),AND(MONTH(%[1]s)=1,YEAR(%[1]s)=YEAR(TODAY())-1)))", ref),
+				"thisMonth": fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY()),YEAR(%[1]s)=YEAR(TODAY()))", ref),
+				"nextMonth": fmt.Sprintf("AND(MONTH(%[1]s)=MONTH(TODAY())+1,OR(YEAR(%[1]s)=YEAR(TODAY()),AND(MONTH(%[1]s)=12,YEAR(%[1]s)=YEAR(TODAY())+1)))", ref),
 			}[ct],
 		},
 		DxfID: format.Format,
@@ -3452,16 +3685,27 @@ func drawCondFmtNoBlanks(p int, ct, ref, GUID string, format *ConditionalFormatO
 // drawCondFmtIconSet provides a function to create conditional formatting rule
 // for icon set by given priority, criteria type and format settings.
 func drawCondFmtIconSet(p int, ct, ref, GUID string, format *ConditionalFormatOptions) (*xlsxCfRule, *xlsxX14CfRule) {
-	cfRule, ok := condFmtIconSetPresets[format.IconStyle]
-	if !ok {
-		return nil, nil
+	if cfRule, ok := condFmtIconSetPresets[format.IconStyle]; ok {
+		cfRule.Priority = p + 1
+		cfRule.IconSet.IconSet = format.IconStyle
+		cfRule.IconSet.Reverse = format.ReverseIcons
+		cfRule.IconSet.ShowValue = boolPtr(!format.IconsOnly)
+		cfRule.Type = validType[format.Type]
+		return cfRule, nil
 	}
-	cfRule.Priority = p + 1
-	cfRule.IconSet.IconSet = format.IconStyle
-	cfRule.IconSet.Reverse = format.ReverseIcons
-	cfRule.IconSet.ShowValue = boolPtr(!format.IconsOnly)
-	cfRule.Type = validType[format.Type]
-	return cfRule, nil
+	if x14CfRule, ok := condFmtX14IconSetPresets[format.IconStyle]; ok {
+		x14CfRule.Type = validType[format.Type]
+		x14CfRule.Priority = p + 1
+		x14CfRule.StopIfTrue = format.StopIfTrue
+		x14CfRule.AboveAverage = boolPtr(format.AboveAverage)
+		x14CfRule.Percent = format.Percent
+		x14CfRule.ID = GUID
+		x14CfRule.IconSet.IconSet = format.IconStyle
+		x14CfRule.IconSet.Reverse = format.ReverseIcons
+		x14CfRule.IconSet.ShowValue = boolPtr(!format.IconsOnly)
+		return nil, x14CfRule
+	}
+	return nil, nil
 }
 
 // getPaletteColor provides a function to convert the RBG color by given

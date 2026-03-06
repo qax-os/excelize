@@ -246,3 +246,7 @@ func main() {
 Excel 徽标是 [Microsoft Corporation](https://aka.ms/trademarks-usage) 的商标，项目的图片是一种改编。
 
 Go gopher 由 [Renee French](https://go.dev/doc/gopher/README) 创作，遵循 [Creative Commons 4.0 Attributions license](http://creativecommons.org/licenses/by/4.0/) 创作共用授权条款。
+
+## 金牌赞助商
+
+<a href="https://www.gravityclimate.com" alt="Gravity"><img width="120" src="https://xuri.me/excelize/images/vendor/gravityclimate.com.svg" alt="Gravity"></a>

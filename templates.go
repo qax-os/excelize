@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -170,23 +170,25 @@ var worksheetExtURIPriority = []string{
 
 // Excel specifications and limits
 const (
-	MaxCellStyles        = 65430
-	MaxColumns           = 16384
-	MaxColumnWidth       = 255
-	MaxFieldLength       = 255
-	MaxFilePathLength    = 207
-	MaxFormControlValue  = 30000
-	MaxFontFamilyLength  = 31
-	MaxFontSize          = 409
-	MaxRowHeight         = 409
-	MaxSheetNameLength   = 31
-	MinColumns           = 1
-	MinFontSize          = 1
-	StreamChunkSize      = 1 << 24
-	TotalCellChars       = 32767
-	TotalRows            = 1048576
-	TotalSheetHyperlinks = 65529
-	UnzipSizeLimit       = 1000 << 24
+	MaxCellStyles           = 65430
+	MaxColumns              = 16384
+	MaxColumnWidth          = 255
+	MaxFieldLength          = 255
+	MaxFilePathLength       = 207
+	MaxFormControlValue     = 30000
+	MaxFontFamilyLength     = 31
+	MaxGraphicAltTextLength = 65535
+	MaxGraphicNameLength    = 254
+	MaxFontSize             = 409
+	MaxRowHeight            = 409
+	MaxSheetNameLength      = 31
+	MinColumns              = 1
+	MinFontSize             = 1
+	StreamChunkSize         = 1 << 24
+	TotalCellChars          = 32767
+	TotalRows               = 1048576
+	TotalSheetHyperlinks    = 65529
+	UnzipSizeLimit          = 1000 << 24
 	// pivotTableVersion should be greater than 3. One or more of the
 	// PivotTables chosen are created in a version of Excel earlier than
 	// Excel 2007 or in compatibility mode. Slicer can only be used with
@@ -288,27 +290,30 @@ var supportedChartDataLabelsPosition = map[ChartType][]ChartDataLabelPositionTyp
 }
 
 const (
-	defaultTempFileSST                    = "sharedStrings"
-	defaultXMLMetadata                    = "xl/metadata.xml"
-	defaultXMLPathCalcChain               = "xl/calcChain.xml"
-	defaultXMLPathCellImages              = "xl/cellimages.xml"
-	defaultXMLPathCellImagesRels          = "xl/_rels/cellimages.xml.rels"
-	defaultXMLPathContentTypes            = "[Content_Types].xml"
-	defaultXMLPathDocPropsApp             = "docProps/app.xml"
-	defaultXMLPathDocPropsCore            = "docProps/core.xml"
-	defaultXMLPathDocPropsCustom          = "docProps/custom.xml"
-	defaultXMLPathRels                    = "_rels/.rels"
-	defaultXMLPathSharedStrings           = "xl/sharedStrings.xml"
-	defaultXMLPathStyles                  = "xl/styles.xml"
-	defaultXMLPathTheme                   = "xl/theme/theme1.xml"
-	defaultXMLPathVolatileDeps            = "xl/volatileDependencies.xml"
-	defaultXMLPathWorkbook                = "xl/workbook.xml"
-	defaultXMLPathWorkbookRels            = "xl/_rels/workbook.xml.rels"
-	defaultXMLRdRichValuePart             = "xl/richData/rdrichvalue.xml"
-	defaultXMLRdRichValueRel              = "xl/richData/richValueRel.xml"
-	defaultXMLRdRichValueRelRels          = "xl/richData/_rels/richValueRel.xml.rels"
-	defaultXMLRdRichValueWebImagePart     = "xl/richData/rdRichValueWebImage.xml"
-	defaultXMLRdRichValueWebImagePartRels = "xl/richData/_rels/rdRichValueWebImage.xml.rels"
+	defaultTempFileSST                = "sharedStrings"
+	defaultXMLMetadata                = "xl/metadata.xml"
+	defaultXMLPathCalcChain           = "xl/calcChain.xml"
+	defaultXMLPathCellImages          = "xl/cellimages.xml"
+	defaultXMLPathCellImagesRels      = "xl/_rels/cellimages.xml.rels"
+	defaultXMLPathContentTypes        = "[Content_Types].xml"
+	defaultXMLPathDocPropsApp         = "docProps/app.xml"
+	defaultXMLPathDocPropsCore        = "docProps/core.xml"
+	defaultXMLPathDocPropsCustom      = "docProps/custom.xml"
+	defaultXMLPathRels                = "_rels/.rels"
+	defaultXMLPathSharedStrings       = "xl/sharedStrings.xml"
+	defaultXMLPathSheet               = "xl/worksheets/sheet1.xml"
+	defaultXMLPathStyles              = "xl/styles.xml"
+	defaultXMLPathTheme               = "xl/theme/theme1.xml"
+	defaultXMLPathVolatileDeps        = "xl/volatileDependencies.xml"
+	defaultXMLPathWorkbook            = "xl/workbook.xml"
+	defaultXMLPathWorkbookRels        = "xl/_rels/workbook.xml.rels"
+	defaultXMLRdRichValue             = "xl/richData/rdrichvalue.xml"
+	defaultXMLRdRichValueRel          = "xl/richData/richValueRel.xml"
+	defaultXMLRdRichValueRelRels      = "xl/richData/_rels/richValueRel.xml.rels"
+	defaultXMLRdRichValueStructure    = "xl/richData/rdrichvaluestructure.xml"
+	defaultXMLRdRichValueTypes        = "xl/richData/rdRichValueTypes.xml"
+	defaultXMLRdRichValueWebImage     = "xl/richData/rdRichValueWebImage.xml"
+	defaultXMLRdRichValueWebImageRels = "xl/richData/_rels/rdRichValueWebImage.xml.rels"
 )
 
 // IndexedColorMapping is the table of default mappings from indexed color value

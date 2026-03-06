@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -38,7 +38,8 @@ var (
 	// ErrCoordinates defined the error message on invalid coordinates tuples
 	// length.
 	ErrCoordinates = errors.New("coordinates length must be 4")
-	// ErrCustomNumFmt defined the error message on receive the empty custom number format.
+	// ErrCustomNumFmt defined the error message on receive the empty custom 
+	// number format.
 	ErrCustomNumFmt = errors.New("custom number format can not be empty")
 	// ErrDataValidationFormulaLength defined the error message for receiving a
 	// data validation formula length that exceeds the limit.
@@ -54,8 +55,23 @@ var (
 	ErrDefinedNameScope = errors.New("no defined name on the scope")
 	// ErrExistsSheet defined the error message on given sheet already exists.
 	ErrExistsSheet = errors.New("the same name sheet already exists")
-	// ErrExistsTableName defined the error message on given table already exists.
+	// ErrExistsTableName defined the error message on given table already 
+	// exists.
 	ErrExistsTableName = errors.New("the same name table already exists")
+	// ErrFillType defined the error message on receive an invalid fill type.
+	ErrFillType = errors.New("fill type value must be one of 'gradient' or 'pattern'")
+	// ErrFillGradientColor defined the error message on receive an invalid fill
+	// color for 'gradient' type.
+	ErrFillGradientColor = errors.New("fill color value must be an array of two colors for 'gradient' type")
+	// ErrFillGradientShading defined the error message on receive an invalid 
+	// fill shading for 'gradient' type.
+	ErrFillGradientShading = errors.New("fill shading value must be between 0 and 16 for 'gradient' type")
+	// ErrFillPatternColor defined the error message on receive an invalid fill
+	// color for 'pattern' type.
+	ErrFillPatternColor = errors.New("fill color value must be empty or an array of one color for 'pattern' type")
+	// ErrFillPattern defined the error message on receive an invalid fill 
+	// pattern.
+	ErrFillPattern = errors.New("fill pattern value must be between 0 and 18")
 	// ErrFontLength defined the error message on the length of the font
 	// family name overflow.
 	ErrFontLength = fmt.Errorf("the length of the font family name must be less than or equal to %d", MaxFontFamilyLength)
@@ -78,11 +94,18 @@ var (
 	// ErrMaxRowHeight defined the error message on receive an invalid row
 	// height.
 	ErrMaxRowHeight = fmt.Errorf("the height of the row must be less than or equal to %d points", MaxRowHeight)
-	// ErrMaxRows defined the error message on receive a row number exceeds maximum limit.
+	// ErrMaxRows defined the error message on receive a row number exceeds 
+	// maximum limit.
 	ErrMaxRows = errors.New("row number exceeds maximum limit")
 	// ErrNameLength defined the error message on receiving the defined name or
 	// table name length exceeds the limit.
 	ErrNameLength = fmt.Errorf("the name length exceeds the %d characters limit", MaxFieldLength)
+	// ErrMaxGraphicAltTextLength defined the error message on receiving the
+	// graphic alt text length exceeds the limit.
+	ErrMaxGraphicAltTextLength = fmt.Errorf("the alt text length exceeds the %d characters limit", MaxGraphicAltTextLength)
+	// ErrMaxGraphicNameLength defined the error message on receiving the
+	// graphic name length exceeds the limit.
+	ErrMaxGraphicNameLength = fmt.Errorf("the name length exceeds the %d characters limit", MaxGraphicNameLength)
 	// ErrOptionsUnzipSizeLimit defined the error message for receiving
 	// invalid UnzipSizeLimit and UnzipXMLSizeLimit.
 	ErrOptionsUnzipSizeLimit = errors.New("the value of UnzipSizeLimit should be greater than or equal to UnzipXMLSizeLimit")
@@ -136,15 +159,6 @@ var (
 	// ErrSparklineType defined the error message on receive the invalid
 	// sparkline Type parameters.
 	ErrSparklineType = errors.New("parameter 'Type' value must be one of 'line', 'column' or 'win_loss'")
-	// ErrStreamSetColStyle defined the error message on set column style in
-	// stream writing mode.
-	ErrStreamSetColStyle = errors.New("must call the SetColStyle function before the SetRow function")
-	// ErrStreamSetColWidth defined the error message on set column width in
-	// stream writing mode.
-	ErrStreamSetColWidth = errors.New("must call the SetColWidth function before the SetRow function")
-	// ErrStreamSetPanes defined the error message on set panes in stream
-	// writing mode.
-	ErrStreamSetPanes = errors.New("must call the SetPanes function before the SetRow function")
 	// ErrTotalSheetHyperlinks defined the error message on hyperlinks count
 	// overflow.
 	ErrTotalSheetHyperlinks = errors.New("over maximum limit hyperlinks in a worksheet")
@@ -172,8 +186,8 @@ var (
 	// ErrUnsupportedHashAlgorithm defined the error message on unsupported
 	// hash algorithm.
 	ErrUnsupportedHashAlgorithm = errors.New("unsupported hash algorithm")
-	// ErrUnsupportedNumberFormat defined the error message on unsupported number format
-	// expression.
+	// ErrUnsupportedNumberFormat defined the error message on unsupported 
+	// number format expression.
 	ErrUnsupportedNumberFormat = errors.New("unsupported number format token")
 	// ErrWorkbookFileFormat defined the error message on receive an
 	// unsupported workbook file format.
@@ -323,6 +337,12 @@ func newPivotTableRangeError(msg string) error {
 // receiving the non-ascending row number.
 func newStreamSetRowError(row int) error {
 	return fmt.Errorf("row %d has already been written", row)
+}
+
+// newStreamSetRowOrderError defined the error message on calling the SetRow
+// function before the order function.
+func newStreamSetRowOrderError(name string) error {
+	return fmt.Errorf("must call the %s function before the SetRow function", name)
 }
 
 // newUnknownFilterTokenError defined the error message on receiving a unknown

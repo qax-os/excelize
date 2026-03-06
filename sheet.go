@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -1477,6 +1477,36 @@ func (f *File) UnprotectSheet(sheet string, password ...string) error {
 	}
 	ws.SheetProtection = nil
 	return err
+}
+
+// GetSheetProtection provides a function to get worksheet protection settings
+// by given worksheet name. Note that the password in the returned will always
+// be empty.
+func (f *File) GetSheetProtection(sheet string) (SheetProtectionOptions, error) {
+	var opts SheetProtectionOptions
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return opts, err
+	}
+	if ws.SheetProtection != nil {
+		opts.AlgorithmName = ws.SheetProtection.AlgorithmName
+		opts.AutoFilter = !ws.SheetProtection.AutoFilter
+		opts.DeleteColumns = !ws.SheetProtection.DeleteColumns
+		opts.DeleteRows = !ws.SheetProtection.DeleteRows
+		opts.EditObjects = !ws.SheetProtection.Objects
+		opts.EditScenarios = !ws.SheetProtection.Scenarios
+		opts.FormatCells = !ws.SheetProtection.FormatCells
+		opts.FormatColumns = !ws.SheetProtection.FormatColumns
+		opts.FormatRows = !ws.SheetProtection.FormatRows
+		opts.InsertColumns = !ws.SheetProtection.InsertColumns
+		opts.InsertHyperlinks = !ws.SheetProtection.InsertHyperlinks
+		opts.InsertRows = !ws.SheetProtection.InsertRows
+		opts.PivotTables = !ws.SheetProtection.PivotTables
+		opts.SelectLockedCells = !ws.SheetProtection.SelectLockedCells
+		opts.SelectUnlockedCells = !ws.SheetProtection.SelectUnlockedCells
+		opts.Sort = !ws.SheetProtection.Sort
+	}
+	return opts, err
 }
 
 // checkSheetName check whether there are illegal characters in the sheet name.

@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -19,7 +19,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 )
 
 var (
@@ -328,7 +327,7 @@ func (f *File) setTableColumns(sheet string, showHeaderRow bool, x1, y1, x2 int,
 // 1. Starts with a letter or underscore (_)
 // 2. Doesn't include a space or character that isn't allowed
 func checkDefinedName(name string) error {
-	if utf8.RuneCountInString(name) > MaxFieldLength {
+	if countUTF16String(name) > MaxFieldLength {
 		return ErrNameLength
 	}
 	inCodeRange := func(code int, tbl []int) bool {

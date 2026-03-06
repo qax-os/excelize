@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -101,6 +101,20 @@ const (
 )
 
 var (
+	// wildcardTokenRE tokenizes an Excel wildcard pattern into tilde-escaped
+	// sequences, bare wildcards (* ?), or any other single character.
+	wildcardTokenRE = regexp.MustCompile(`~[*?~]|[*?]|[\s\S]`)
+	// wildcardPatternMap maps each token produced by wildcardTokenRE to its
+	// regular-expression equivalent. Tokens absent from the map are literals.
+	wildcardPatternMap = map[string]string{
+		"~*": regexp.QuoteMeta("*"),
+		"~?": regexp.QuoteMeta("?"),
+		"~~": regexp.QuoteMeta("~"),
+		"*":  ".*",
+		"?":  ".",
+	}
+	// wildcardBareTokens is the set of tokens that represent real wildcards.
+	wildcardBareTokens = map[string]bool{"*": true, "?": true}
 	// tokenPriority defined basic arithmetic operator priority
 	tokenPriority = map[string]int{
 		"^":  5,
@@ -778,6 +792,7 @@ func (fn *formulaFuncs) implicitIntersect(arg formulaArg) formulaArg {
 //	SLN
 //	SLOPE
 //	SMALL
+//	SORTBY
 //	SQRT
 //	SQRTPI
 //	STANDARDIZE
@@ -1204,12 +1219,20 @@ func calcPow(rOpd, lOpd formulaArg, opdStack *Stack) error {
 
 // calcEq evaluate equal arithmetic operations.
 func calcEq(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	if rOpd.Type == ArgString && lOpd.Type == ArgString {
+		opdStack.Push(newBoolFormulaArg(strings.EqualFold(lOpd.Value(), rOpd.Value())))
+		return nil
+	}
 	opdStack.Push(newBoolFormulaArg(rOpd.Value() == lOpd.Value()))
 	return nil
 }
 
 // calcNEq evaluate not equal arithmetic operations.
 func calcNEq(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	if rOpd.Type == ArgString && lOpd.Type == ArgString {
+		opdStack.Push(newBoolFormulaArg(!strings.EqualFold(lOpd.Value(), rOpd.Value())))
+		return nil
+	}
 	opdStack.Push(newBoolFormulaArg(rOpd.Value() != lOpd.Value()))
 	return nil
 }
@@ -1554,13 +1577,16 @@ func parseRef(ref string) (cellRef, bool, bool, error) {
 		tokens              = strings.Split(ref, "!")
 	)
 	if len(tokens) == 2 { // have a worksheet
-		cr.Sheet, cell = tokens[0], tokens[1]
+		cr.Sheet, cell = strings.TrimSuffix(strings.TrimPrefix(tokens[0], "'"), "'"), tokens[1]
 	}
 	if cr.Col, cr.Row, err = CellNameToCoordinates(cell); err != nil {
 		if cr.Col, colErr = ColumnNameToNumber(cell); colErr == nil { // cast to column
 			return cr, true, false, nil
 		}
 		if cr.Row, rowErr = strconv.Atoi(cell); rowErr == nil { // cast to row
+			if cr.Row < 1 || cr.Row > TotalRows {
+				return cr, false, false, err
+			}
 			return cr, false, true, nil
 		}
 		return cr, false, false, err
@@ -1797,7 +1823,7 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 
 		for row := valueRange[0]; row <= valueRange[1]; row++ {
 			colMax := 0
-			if row <= len(ws.SheetData.Row) {
+			if 0 < row && row <= len(ws.SheetData.Row) {
 				rowData := &ws.SheetData.Row[row-1]
 				colMax = min(valueRange[3], len(rowData.C))
 			}
@@ -1877,13 +1903,21 @@ func formulaCriteriaParser(exp formulaArg) *formulaCriteria {
 			return fc
 		}
 	}
-	if strings.Contains(val, "?") {
-		val = strings.ReplaceAll(val, "?", ".")
+	hasWildcard := false
+	pattern := wildcardTokenRE.ReplaceAllStringFunc(val, func(m string) string {
+		hasWildcard = hasWildcard || wildcardBareTokens[m]
+		if r, ok := wildcardPatternMap[m]; ok {
+			return r
+		}
+		return regexp.QuoteMeta(m)
+	})
+	if hasWildcard {
+		fc.Type, fc.Condition = criteriaRegexp, newStringFormulaArg("(?i)^"+pattern+"$")
+		return fc
 	}
-	if strings.Contains(val, "*") {
-		val = strings.ReplaceAll(val, "*", ".*")
-	}
-	fc.Type, fc.Condition = criteriaRegexp, newStringFormulaArg(val)
+	fc.Type, fc.Condition = criteriaEq, newStringFormulaArg(
+		strings.NewReplacer("~~", "~", "~*", "*", "~?", "?").Replace(val),
+	)
 	if num := fc.Condition.ToNumber(); num.Type == ArgNumber {
 		fc.Condition = num
 	}
@@ -3851,7 +3885,7 @@ func (fn *formulaFuncs) ARABIC(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "ARABIC requires 1 numeric argument")
 	}
 	text := argsList.Front().Value.(formulaArg).Value()
-	if len(text) > MaxFieldLength {
+	if countUTF16String(text) > MaxFieldLength {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	text = strings.ToUpper(text)
@@ -14068,9 +14102,9 @@ func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
 		return newStringFormulaArg(text)
 	}
 	// LEFT/RIGHT
-	if utf8.RuneCountInString(text) > numChars {
+	if countUTF16String(text) > numChars {
 		if name == "LEFT" {
-			return newStringFormulaArg(string([]rune(text)[:numChars]))
+			return newStringFormulaArg(truncateUTF16Units(text, numChars))
 		}
 		// RIGHT
 		return newStringFormulaArg(string([]rune(text)[utf8.RuneCountInString(text)-numChars:]))
@@ -14086,7 +14120,7 @@ func (fn *formulaFuncs) LEN(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "LEN requires 1 string argument")
 	}
-	return newNumberFormulaArg(float64(utf8.RuneCountInString(argsList.Front().Value.(formulaArg).Value())))
+	return newNumberFormulaArg(float64(countUTF16String(argsList.Front().Value.(formulaArg).Value())))
 }
 
 // LENB returns the number of bytes used to represent the characters in a text
@@ -14186,7 +14220,7 @@ func (fn *formulaFuncs) mid(name string, argsList *list.List) formulaArg {
 		return newStringFormulaArg(result)
 	}
 	// MID
-	textLen := utf8.RuneCountInString(text)
+	textLen := countUTF16String(text)
 	if startNum > textLen {
 		return newStringFormulaArg("")
 	}
@@ -15066,7 +15100,7 @@ func matchPattern(findText, withinText string, dbcs bool, startNum int) (int, bo
 		}
 		offset++
 	}
-	return offset, utf8.RuneCountInString(withinText) != offset-1
+	return offset, countUTF16String(withinText) != offset-1
 }
 
 // compareFormulaArg compares the left-hand sides and the right-hand sides'
@@ -19233,4 +19267,177 @@ func (fn *formulaFuncs) DISPIMG(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "DISPIMG requires 2 numeric arguments")
 	}
 	return argsList.Front().Value.(formulaArg)
+}
+
+// sortbyArgs holds the parsed arguments for the SORTBY function.
+type sortbyArgs struct {
+	array    []formulaArg
+	cols     int
+	rows     int
+	sortKeys []sortbyKey
+}
+
+// sortbyKey represents a single sort key with its associated array and order.
+type sortbyKey struct {
+	byArray   []formulaArg
+	cols      int
+	rows      int
+	ascending bool // true = ascending (1 or omitted), false = descending (-1)
+}
+
+// rowWithKeys pairs a data row with its corresponding sort key values.
+type rowWithKeys struct {
+	rowData  []formulaArg
+	sortKeys [][]formulaArg // up to 3 sets of sort keys
+}
+
+// SORTBY function sorts the contents of a range or array based on the values
+// in a corresponding range or array. The syntax of the function is:
+//
+//	SORTBY(array,by_array1,[sort_order1],[by_array2,sort_order2],[by_array3, sort_order3])
+func (fn *formulaFuncs) SORTBY(argsList *list.List) formulaArg {
+	args, errArg := prepareSortbyArgs(argsList)
+	if errArg != nil {
+		return *errArg
+	}
+	rowsWithKeys := make([]rowWithKeys, args.rows)
+	for i := 0; i < args.rows; i++ {
+		rowsWithKeys[i].rowData = args.array[i*args.cols : (i+1)*args.cols]
+		rowsWithKeys[i].sortKeys = make([][]formulaArg, len(args.sortKeys))
+		for keyIdx, sortKey := range args.sortKeys {
+			rowsWithKeys[i].sortKeys[keyIdx] = sortKey.byArray[i*sortKey.cols : (i+1)*sortKey.cols]
+		}
+	}
+	sort.Slice(rowsWithKeys, func(i, j int) bool {
+		return compareRowsForSortby(rowsWithKeys[i], rowsWithKeys[j], args.sortKeys)
+	})
+	result := make([][]formulaArg, args.rows)
+	for i, row := range rowsWithKeys {
+		result[i] = row.rowData
+	}
+	return newMatrixFormulaArg(result)
+}
+
+// checkSortbyArgs checking arguments for the formula function SORTBY.
+func checkSortbyArgs(argsList *list.List) formulaArg {
+	argsLen := argsList.Len()
+	if argsLen < 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "SORTBY requires at least 2 arguments")
+	}
+	if argsLen > 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("SORTBY takes at most 7 arguments, received %d", argsLen))
+	}
+	if argsLen != 2 && argsLen != 3 && argsLen != 5 && argsLen != 7 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("SORTBY requires 2, 3, 5, or 7 arguments, received %d", argsLen))
+	}
+	arrArg := argsList.Front().Value.(formulaArg).ToList()
+	if len(arrArg) == 0 {
+		return newErrorFormulaArg(formulaErrorVALUE, "missing first argument to SORTBY")
+	}
+	if arrArg[0].Type == ArgError {
+		return arrArg[0]
+	}
+	return newListFormulaArg(arrArg)
+}
+
+// prepareSortbyArgs prepare arguments for the formula function SORTBY.
+func prepareSortbyArgs(argsList *list.List) (sortbyArgs, *formulaArg) {
+	res := sortbyArgs{}
+	args := checkSortbyArgs(argsList)
+	if args.Type != ArgList {
+		return res, &args
+	}
+	res.array = args.List
+	argsLen := argsList.Len()
+	array := argsList.Front()
+	tempList := list.New()
+	tempList.PushBack(array.Value)
+	rmin, rmax := calcColsRowsMinMax(false, tempList)
+	cmin, cmax := calcColsRowsMinMax(true, tempList)
+	res.cols, res.rows = cmax-cmin+1, rmax-rmin+1
+	byArray := array.Next()
+	keyCount := 0
+	for byArray != nil && keyCount < 3 {
+		var key sortbyKey
+		key.byArray = byArray.Value.(formulaArg).ToList()
+		if len(key.byArray) == 0 {
+			errArg := newErrorFormulaArg(formulaErrorVALUE, "missing by_array argument to SORTBY")
+			return res, &errArg
+		}
+		if key.byArray[0].Type == ArgError {
+			return res, &key.byArray[0]
+		}
+		tempList := list.New()
+		tempList.PushBack(byArray.Value)
+		rmin, rmax := calcColsRowsMinMax(false, tempList)
+		cmin, cmax := calcColsRowsMinMax(true, tempList)
+		key.cols, key.rows = cmax-cmin+1, rmax-rmin+1
+		if key.rows != res.rows {
+			errArg := newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("by_array dimensions (%d rows) do not match array dimensions (%d rows)",
+				key.rows, res.rows))
+			return res, &errArg
+		}
+		key.ascending = true
+		nextByArray, errArg := parseSortOrderArg(byArray.Next(), &key, keyCount, argsLen)
+		if errArg != nil {
+			return res, errArg
+		}
+		byArray = nextByArray
+		res.sortKeys = append(res.sortKeys, key)
+		keyCount++
+	}
+	return res, nil
+}
+
+// parseSortOrderArg processes the optional sort_order argument for a SORTBY
+// key. It updates the key's ascending field and returns the next element in the
+// list. Returns an error if the sort_order value is invalid.
+func parseSortOrderArg(byArray *list.Element, key *sortbyKey, keyCount, argsLen int) (*list.Element, *formulaArg) {
+	if byArray == nil {
+		return nil, nil
+	}
+	sortOrderArg := byArray.Value.(formulaArg).ToNumber()
+	expectedSortOrder := false
+	if keyCount == 0 && (argsLen == 3 || argsLen == 5 || argsLen == 7) {
+		expectedSortOrder = true
+	} else if keyCount == 1 && (argsLen == 5 || argsLen == 7) {
+		expectedSortOrder = true
+	} else if keyCount == 2 && argsLen == 7 {
+		expectedSortOrder = true
+	}
+	if sortOrderArg.Type == ArgError {
+		if expectedSortOrder {
+			return byArray, &sortOrderArg
+		}
+		return byArray, nil
+	}
+	switch sortOrderArg.Number {
+	case -1:
+		key.ascending = false
+		return byArray.Next(), nil
+	case 1:
+		key.ascending = true
+		return byArray.Next(), nil
+	}
+	errArg := newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("sort_order must be 1 or -1, received %v", sortOrderArg.Number))
+	return byArray, &errArg
+}
+
+// compareRowsForSortby compares two rows using multiple sort keys.
+// Returns true if row i should come before row j.
+func compareRowsForSortby(i, j rowWithKeys, sortKeys []sortbyKey) bool {
+	for idx, sortKey := range sortKeys {
+		lhs, rhs := i.sortKeys[idx], j.sortKeys[idx]
+		for colIdx := 0; colIdx < len(lhs) && colIdx < len(rhs); colIdx++ {
+			criteria := compareFormulaArg(lhs[colIdx], rhs[colIdx], newNumberFormulaArg(matchModeMaxLess), false)
+			if criteria == criteriaEq {
+				continue
+			}
+			if sortKey.ascending {
+				return criteria == criteriaL
+			}
+			return criteria == criteriaG
+		}
+	}
+	return false
 }

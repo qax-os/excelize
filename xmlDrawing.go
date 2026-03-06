@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -433,6 +433,7 @@ type Picture struct {
 // GraphicOptions directly maps the format settings of the picture.
 type GraphicOptions struct {
 	AltText             string
+	Name                string
 	PrintObject         *bool
 	Locked              *bool
 	LockAspectRatio     bool

@@ -1,4 +1,4 @@
-// Copyright 2016 - 2025 The excelize Authors. All rights reserved. Use of
+// Copyright 2016 - 2026 The excelize Authors. All rights reserved. Use of
 // this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 //
@@ -196,16 +196,6 @@ type attrValString struct {
 	Val *string `xml:"val,attr"`
 }
 
-// aCs directly maps the a:cs element.
-type aCs struct {
-	Typeface string `xml:"typeface,attr"`
-}
-
-// aEa directly maps the a:ea element.
-type aEa struct {
-	Typeface string `xml:"typeface,attr"`
-}
-
 type xlsxCTTextFont struct {
 	Typeface    string `xml:"typeface,attr"`
 	Panose      string `xml:"panose,attr,omitempty"`
@@ -246,8 +236,8 @@ type aRPr struct {
 	U          string          `xml:"u,attr,omitempty"`
 	SolidFill  *aSolidFill     `xml:"a:solidFill"`
 	Latin      *xlsxCTTextFont `xml:"a:latin"`
-	Ea         *aEa            `xml:"a:ea"`
-	Cs         *aCs            `xml:"a:cs"`
+	Ea         *xlsxCTTextFont `xml:"a:ea"`
+	Cs         *xlsxCTTextFont `xml:"a:cs"`
 }
 
 // cDTable (Data Table) directly maps the dTable element.
@@ -386,6 +376,7 @@ type cCharts struct {
 	SplitPos     *attrValInt    `xml:"splitPos"`
 	SerLines     *attrValString `xml:"serLines"`
 	DLbls        *cDLbls        `xml:"dLbls"`
+	DropLines    *cChartLines   `xml:"dropLines"`
 	HiLowLines   *cChartLines   `xml:"hiLowLines"`
 	UpDownBars   *cUpDownBars   `xml:"upDownBars"`
 	GapWidth     *attrValInt    `xml:"gapWidth"`
@@ -603,6 +594,8 @@ type ChartNumFmt struct {
 // ChartAxis directly maps the format settings of the chart axis.
 type ChartAxis struct {
 	None              bool
+	DropLines         bool
+	HighLowLines      bool
 	MajorGridLines    bool
 	MinorGridLines    bool
 	MajorUnit         float64
