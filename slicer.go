@@ -70,6 +70,7 @@ type SlicerOptions struct {
 	DisplayHeader   *bool
 	ItemDesc        bool
 	Format          GraphicOptions
+	SelectedItems   []string
 }
 
 // AddSlicer function inserts a slicer by giving the worksheet name and slicer
@@ -480,6 +481,77 @@ func (f *File) timelineReader(timelineXML string) (*xlsxTimelines, error) {
 	return timeline, nil
 }
 
+// buildSlicerItems builds slicer cache items from pivot table cache field
+// by given pivot table options, field name, and selected items.
+func (f *File) buildSlicerItems(pivotTable *PivotTableOptions, fieldName string, selectedItems []string) ([]xlsxTabularSlicerCacheItem, error) {
+	pc, err := f.pivotCacheReader(pivotTable.pivotCacheXML)
+	if err != nil {
+		return nil, err
+	}
+
+	var sharedItems *xlsxSharedItems
+	if pc.CacheFields != nil {
+		for _, field := range pc.CacheFields.CacheField {
+			if field.Name == fieldName {
+				sharedItems = field.SharedItems
+				break
+			}
+		}
+	}
+
+	if sharedItems == nil {
+		return []xlsxTabularSlicerCacheItem{{S: true}}, nil
+	}
+
+	var allValues []string
+
+	for _, s := range sharedItems.S {
+		allValues = append(allValues, s.V)
+	}
+
+	for _, n := range sharedItems.N {
+		allValues = append(allValues, strconv.FormatFloat(n.V, 'f', -1, 64))
+	}
+
+	for _, d := range sharedItems.D {
+		_ = d
+	}
+
+	for _, b := range sharedItems.B {
+		_ = b
+	}
+
+	for range sharedItems.M {
+		allValues = append(allValues, "")
+	}
+
+	var items []xlsxTabularSlicerCacheItem
+	selectAll := len(selectedItems) == 0
+
+	for i, value := range allValues {
+		selected := selectAll
+		if !selectAll {
+			for _, sel := range selectedItems {
+				if sel == value {
+					selected = true
+					break
+				}
+			}
+		}
+
+		items = append(items, xlsxTabularSlicerCacheItem{
+			X: i,
+			S: selected,
+		})
+	}
+
+	if len(items) == 0 {
+		items = append(items, xlsxTabularSlicerCacheItem{S: true})
+	}
+
+	return items, nil
+}
+
 // addSlicerCache adds a new slicer cache by giving the slicer cache name,
 // column index, slicer, and table or pivot table options.
 func (f *File) addSlicerCache(slicerCacheName string, colIdx int, opts *SlicerOptions, table *Table, pivotTable *PivotTableOptions) error {
@@ -511,13 +583,17 @@ func (f *File) addSlicerCache(slicerCacheName string, colIdx int, opts *SlicerOp
 				{TabID: f.getSheetID(opts.TableSheet), Name: pivotTable.Name},
 			},
 		}
+		items, err := f.buildSlicerItems(pivotTable, opts.Name, opts.SelectedItems)
+		if err != nil {
+			return err
+		}
 		slicerCache.Data = &xlsxSlicerCacheData{
 			Tabular: &xlsxTabularSlicerCache{
 				PivotCacheID: pivotCacheID,
 				SortOrder:    sortOrder,
 				ShowMissing:  boolPtr(false),
 				Items: &xlsxTabularSlicerCacheItems{
-					Count: 1, I: []xlsxTabularSlicerCacheItem{{S: true}},
+					Count: len(items), I: items,
 				},
 			},
 		}
