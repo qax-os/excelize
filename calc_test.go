@@ -5739,6 +5739,47 @@ func TestCalcSUMIFSAndAVERAGEIFS(t *testing.T) {
 	}
 }
 
+func TestCalcSUMIFExactMatch(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Category", "Amount"},
+		{"text", 100},
+		{"***_***_text", 200},
+		{"text", 150},
+		{"***_text_***", 300},
+		{"TEXT", 50},
+		{"other", 400},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		`SUMIF(A2:A7,"text",B2:B7)`:           "300",
+		`COUNTIF(A2:A7,"text")`:               "3",
+		`SUMIF(A2:A7,".",B2:B7)`:              "0",
+		`SUMIF(A2:A7,".*",B2:B7)`:             "0",
+		`SUMIF(A2:A7,".?",B2:B7)`:             "0",
+		`SUMIF(A2:A7,"*text*",B2:B7)`:         "800",
+		`SUMIF(A2:A7,"text*",B2:B7)`:          "300",
+		`SUMIF(A2:A7,"*text",B2:B7)`:          "500",
+		`SUMIF(A2:A7,"*",B2:B7)`:              "1200",
+		`SUMIF(A2:A7,"othe?",B2:B7)`:          "400",
+		`SUMIF(A2:A7,"~**",B2:B7)`:            "500",
+		`COUNTIF(A2:A7,"*text*")`:             "5",
+		`COUNTIF(A2:A7,"~*")`:                 "0",
+		`COUNTIF(A2:A7,"~~")`:                 "0",
+		`COUNTIF(A2:A7,"~?")`:                 "0",
+		`COUNTIF(A2:A7,"*~**")`:               "2",
+		`COUNTIF(A2:A7,"~*~*~*_~*~*~*_text")`: "1",
+		`COUNTIF(A2:A7,"~*~*~*_text_~*~*~*")`: "1",
+		`COUNTIF(A2:A7,"~a")`:                 "0",
+		`COUNTIF(A2:A7,"<>text")`:             "3",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
 func TestCalcXIRR(t *testing.T) {
 	cellData := [][]interface{}{
 		{-100.00, 42370},
