@@ -218,6 +218,24 @@ func TestSlicer(t *testing.T) {
 	}), "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
 
+	// Test add a pivot table slicer with invalid pivot cache XML content to trigger buildSlicerItems error
+	f, err = OpenFile(workbookPath)
+	assert.NoError(t, err)
+	pivotTables, err := f.GetPivotTables("Sheet2")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, pivotTables)
+	f.Pkg.Store(pivotTables[0].pivotCacheXML, []byte("<!DOCTYPE html><html><body>Not actually XML</body></html>"))
+	err = f.AddSlicer("Sheet2", &SlicerOptions{
+		Name:       "Month",
+		Cell:       "S42",
+		TableSheet: "Sheet2",
+		TableName:  "PivotTable1",
+		Caption:    "Test Invalid XML",
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "pivotCacheDefinition")
+	assert.NoError(t, f.Close())
+
 	// Test open a workbook and get already exist slicers
 	f, err = OpenFile(workbookPath)
 	assert.NoError(t, err)
