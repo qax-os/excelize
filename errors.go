@@ -38,7 +38,7 @@ var (
 	// ErrCoordinates defined the error message on invalid coordinates tuples
 	// length.
 	ErrCoordinates = errors.New("coordinates length must be 4")
-	// ErrCustomNumFmt defined the error message on receive the empty custom 
+	// ErrCustomNumFmt defined the error message on receive the empty custom
 	// number format.
 	ErrCustomNumFmt = errors.New("custom number format can not be empty")
 	// ErrDataValidationFormulaLength defined the error message for receiving a
@@ -55,7 +55,7 @@ var (
 	ErrDefinedNameScope = errors.New("no defined name on the scope")
 	// ErrExistsSheet defined the error message on given sheet already exists.
 	ErrExistsSheet = errors.New("the same name sheet already exists")
-	// ErrExistsTableName defined the error message on given table already 
+	// ErrExistsTableName defined the error message on given table already
 	// exists.
 	ErrExistsTableName = errors.New("the same name table already exists")
 	// ErrFillType defined the error message on receive an invalid fill type.
@@ -63,13 +63,13 @@ var (
 	// ErrFillGradientColor defined the error message on receive an invalid fill
 	// color for 'gradient' type.
 	ErrFillGradientColor = errors.New("fill color value must be an array of two colors for 'gradient' type")
-	// ErrFillGradientShading defined the error message on receive an invalid 
+	// ErrFillGradientShading defined the error message on receive an invalid
 	// fill shading for 'gradient' type.
 	ErrFillGradientShading = errors.New("fill shading value must be between 0 and 16 for 'gradient' type")
 	// ErrFillPatternColor defined the error message on receive an invalid fill
 	// color for 'pattern' type.
 	ErrFillPatternColor = errors.New("fill color value must be empty or an array of one color for 'pattern' type")
-	// ErrFillPattern defined the error message on receive an invalid fill 
+	// ErrFillPattern defined the error message on receive an invalid fill
 	// pattern.
 	ErrFillPattern = errors.New("fill pattern value must be between 0 and 18")
 	// ErrFontLength defined the error message on the length of the font
@@ -94,7 +94,7 @@ var (
 	// ErrMaxRowHeight defined the error message on receive an invalid row
 	// height.
 	ErrMaxRowHeight = fmt.Errorf("the height of the row must be less than or equal to %d points", MaxRowHeight)
-	// ErrMaxRows defined the error message on receive a row number exceeds 
+	// ErrMaxRows defined the error message on receive a row number exceeds
 	// maximum limit.
 	ErrMaxRows = errors.New("row number exceeds maximum limit")
 	// ErrNameLength defined the error message on receiving the defined name or
@@ -186,7 +186,7 @@ var (
 	// ErrUnsupportedHashAlgorithm defined the error message on unsupported
 	// hash algorithm.
 	ErrUnsupportedHashAlgorithm = errors.New("unsupported hash algorithm")
-	// ErrUnsupportedNumberFormat defined the error message on unsupported 
+	// ErrUnsupportedNumberFormat defined the error message on unsupported
 	// number format expression.
 	ErrUnsupportedNumberFormat = errors.New("unsupported number format token")
 	// ErrWorkbookFileFormat defined the error message on receive an
