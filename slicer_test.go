@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"encoding/xml"
 	"fmt"
 	"math/rand"
 	"os"
@@ -718,4 +719,91 @@ func TestAddPivotCacheSlicer(t *testing.T) {
 		pivotCacheXML: pivotCacheXML,
 	})
 	assert.NoError(t, err)
+}
+
+func TestBuildSlicerItems(t *testing.T) {
+	f := NewFile()
+
+	months := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun"}
+	years := []int{2017, 2018, 2019}
+	types := []string{"Meat", "Dairy", "Beverages"}
+
+	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Sales"}))
+
+	for row := 2; row <= 20; row++ {
+		i := (row - 2) % len(months)
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), months[i]))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", row), years[i%len(years)]))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("C%d", row), types[i%len(types)]))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("D%d", row), row*100))
+	}
+
+	pivotOpts := &PivotTableOptions{
+		DataRange:       "Sheet1!A1:D20",
+		PivotTableRange: "Sheet1!F2:J15",
+		Name:            "TestPivotTable",
+		Rows:            []PivotTableField{{Data: "Month"}},
+		Columns:         []PivotTableField{{Data: "Year"}},
+		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Sum"}},
+	}
+	assert.NoError(t, f.AddPivotTable(pivotOpts))
+
+	pc, err := f.pivotCacheReader(pivotOpts.pivotCacheXML)
+	assert.NoError(t, err)
+
+	if pc.CacheFields != nil && len(pc.CacheFields.CacheField) > 0 {
+		pc.CacheFields.CacheField[0].SharedItems = &xlsxSharedItems{
+			Count: len(months),
+			S:     make([]xlsxString, len(months)),
+		}
+		for i, month := range months {
+			pc.CacheFields.CacheField[0].SharedItems.S[i] = xlsxString{V: month}
+		}
+
+		pivotCache, err := xml.Marshal(pc)
+		assert.NoError(t, err)
+		f.saveFileList(pivotOpts.pivotCacheXML, pivotCache)
+	}
+
+	items, err := f.buildSlicerItems(pivotOpts, "Month", []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, len(months), len(items))
+
+	for i, item := range items {
+		assert.True(t, item.S, "Item %d should be selected", i)
+		assert.Equal(t, i, item.X, "Item %d should have correct index", i)
+	}
+
+	selectedItems := []string{"Jan", "Mar", "May"}
+	items, err = f.buildSlicerItems(pivotOpts, "Month", selectedItems)
+	assert.NoError(t, err)
+	assert.Equal(t, len(months), len(items))
+
+	for i, item := range items {
+		expectedValue := months[i]
+		expectedSelected := false
+		for _, sel := range selectedItems {
+			if sel == expectedValue {
+				expectedSelected = true
+				break
+			}
+		}
+		assert.Equal(t, expectedSelected, item.S, "Item %d should have correct selection state", i)
+		assert.Equal(t, i, item.X, "Item %d should have correct index", i)
+	}
+
+	items, err = f.buildSlicerItems(pivotOpts, "NonExistent", []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(items))
+	assert.True(t, items[0].S)
+
+	invalidPivotCacheXML := "xl/pivotCache/invalidCache.xml"
+	f.Pkg.Store(invalidPivotCacheXML, MacintoshCyrillicCharset)
+	invalidPivotOpts := &PivotTableOptions{
+		pivotCacheXML: invalidPivotCacheXML,
+	}
+	_, err = f.buildSlicerItems(invalidPivotOpts, "Month", []string{})
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+
+	assert.NoError(t, f.Close())
 }
