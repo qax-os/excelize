@@ -500,6 +500,70 @@ func TestSlicer(t *testing.T) {
 	f.Pkg.Store("xl/slicers/slicer1.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.DeleteSlicer("Column1"), "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
+
+	// Test Slicer with SelectedItems (Pivot Table)
+	f = NewFile()
+	_, err = f.NewSheet("Sheet3")
+	assert.NoError(t, err)
+
+	data := [][]interface{}{
+		{"Product", "Sales"},
+		{"Apple", 100},
+		{"Banana", 200},
+		{"Cherry", 300},
+		{"Apple", 150},
+	}
+	for r, row := range data {
+		assert.NoError(t, f.SetSheetRow("Sheet3", fmt.Sprintf("A%d", r+1), &row))
+	}
+
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet3!A1:B5",
+		PivotTableRange: "Sheet3!D1:F5",
+		Name:            "Pivot_Products",
+		Rows:            []PivotTableField{{Data: "Product"}},
+		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Sum"}},
+	}))
+
+	assert.NoError(t, f.AddSlicer("Sheet3", &SlicerOptions{
+		Name:          "Product",
+		Cell:          "D10",
+		TableSheet:    "Sheet3",
+		TableName:     "Pivot_Products",
+		Caption:       "Product",
+		SelectedItems: nil, // ← 全选
+	}))
+
+	assert.NoError(t, f.AddSlicer("Sheet3", &SlicerOptions{
+		Name:          "Product",
+		Cell:          "H10",
+		TableSheet:    "Sheet3",
+		TableName:     "Pivot_Products",
+		Caption:       "Product Filtered",
+		SelectedItems: []string{"Apple", "Cherry"},
+	}))
+
+	assert.NoError(t, f.AddSlicer("Sheet3", &SlicerOptions{
+		Name:          "Product",
+		Cell:          "L10",
+		TableSheet:    "Sheet3",
+		TableName:     "Pivot_Products",
+		Caption:       "Product None",
+		SelectedItems: []string{"Orange"},
+	}))
+
+	slicers, err = f.GetSlicers("Sheet3")
+	assert.NoError(t, err)
+	assert.Len(t, slicers, 3)
+
+	cacheXML := "xl/slicerCaches/slicerCache4.xml"
+	if cacheBytes, ok := f.Pkg.Load(cacheXML); ok {
+		cacheContent := string(cacheBytes.([]byte))
+		assert.Contains(t, cacheContent, `<tabular pivotCacheId="`)
+		assert.Contains(t, cacheContent, `<items count="3">`)
+	}
+
+	assert.NoError(t, f.Close())
 }
 
 func TestAddSheetSlicer(t *testing.T) {
