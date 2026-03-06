@@ -690,6 +690,44 @@ func TestAddSlicerCache(t *testing.T) {
 	f.Pkg.Store(pivotCacheXML, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.addSlicerCache("Slicer1", 0, &SlicerOptions{}, nil,
 		&PivotTableOptions{pivotCacheXML: pivotCacheXML}), "XML syntax error on line 1: invalid UTF-8")
+
+	// Test error handling in addSlicerCache when buildSlicerItems fails
+	// Create a valid pivot cache XML first
+	f = NewFile()
+	validPivotCacheXML := "xl/pivotCache/pivotCacheDefinition2.xml"
+	validPivotCacheContent := []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<pivotCacheDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+	<cacheFields count="1">
+		<cacheField name="Month" numFmtId="0">
+			<sharedItems count="3">
+				<s v="Jan"/>
+				<s v="Feb"/>
+				<s v="Mar"/>
+			</sharedItems>
+		</cacheField>
+	</cacheFields>
+</pivotCacheDefinition>`)
+	f.Pkg.Store(validPivotCacheXML, validPivotCacheContent)
+
+	pivotOpts := &PivotTableOptions{
+		pivotCacheXML: validPivotCacheXML,
+		Name:          "TestPivot",
+	}
+
+	slicerOpts := &SlicerOptions{
+		Name:       "Month",
+		TableSheet: "Sheet1",
+	}
+
+	_, err := f.addPivotCacheSlicer(pivotOpts)
+	assert.NoError(t, err)
+
+	f.Pkg.Store(validPivotCacheXML, MacintoshCyrillicCharset)
+
+	err = f.addSlicerCache("Slicer1", 0, slicerOpts, nil, pivotOpts)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "XML syntax error")
+
 	assert.NoError(t, f.Close())
 }
 
