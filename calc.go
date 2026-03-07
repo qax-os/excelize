@@ -2059,7 +2059,7 @@ func (fn *formulaFuncs) besselK1(x formulaArg) float64 {
 func (fn *formulaFuncs) besselK2(x, n formulaArg) float64 {
 	tox, bkm, bk, bkp := 2/x.Number, fn.besselK0(x), fn.besselK1(x), 0.0
 	for i := 1.0; i < n.Number; i++ {
-		bkp = bkm + i*tox*bk
+		bkp = math.FMA(i*tox, bk, bkm)
 		bkm = bk
 		bk = bkp
 	}
@@ -2140,7 +2140,7 @@ func (fn *formulaFuncs) besselY1(x formulaArg) float64 {
 func (fn *formulaFuncs) besselY2(x, n formulaArg) float64 {
 	tox, bym, by, byp := 2/x.Number, fn.besselY0(x), fn.besselY1(x), 0.0
 	for i := 1.0; i < n.Number; i++ {
-		byp = i*tox*by - bym
+		byp = math.FMA(i*tox, by, -bym)
 		bym = by
 		by = byp
 	}
@@ -6424,10 +6424,10 @@ func getBetaHelperContFrac(fX, fA, fB float64) float64 {
 		apl2m := fA + 2*rm
 		d2m := rm * (fB - rm) * fX / ((apl2m - 1) * apl2m)
 		d2m1 := -(fA + rm) * (fA + fB + rm) * fX / (apl2m * (apl2m + 1))
-		a1 = (a2 + d2m*a1) * fnorm
-		b1 = (b2 + d2m*b1) * fnorm
-		a2 = a1 + d2m1*a2*fnorm
-		b2 = b1 + d2m1*b2*fnorm
+		a1 = math.FMA(d2m, a1, a2) * fnorm
+		b1 = math.FMA(d2m, b1, b2) * fnorm
+		a2 = math.FMA(d2m1*a2, fnorm, a1)
+		b2 = math.FMA(d2m1*b2, fnorm, b1)
 		if b2 != 0 {
 			fnorm = 1 / b2
 			cfnew = a2 * fnorm
@@ -6476,20 +6476,16 @@ func getLanczosSum(fZ float64) float64 {
 		sumNum = num[12]
 		sumDenom = denom[12]
 		for i := 11; i >= 0; i-- {
-			sumNum *= fZ
-			sumNum += num[i]
-			sumDenom *= fZ
-			sumDenom += denom[i]
+			sumNum = math.FMA(sumNum, fZ, num[i])
+			sumDenom = math.FMA(sumDenom, fZ, denom[i])
 		}
 	} else {
 		zInv = 1 / fZ
 		sumNum = num[0]
 		sumDenom = denom[0]
 		for i := 1; i <= 12; i++ {
-			sumNum *= zInv
-			sumNum += num[i]
-			sumDenom *= zInv
-			sumDenom += denom[i]
+			sumNum = math.FMA(sumNum, zInv, num[i])
+			sumDenom = math.FMA(sumDenom, zInv, denom[i])
 		}
 	}
 	return sumNum / sumDenom
