@@ -575,10 +575,7 @@ func (f *File) addSlicerCache(slicerCacheName string, colIdx int, opts *SlicerOp
 				{TabID: f.getSheetID(opts.TableSheet), Name: pivotTable.Name},
 			},
 		}
-		items, err := f.buildSlicerItems(pivotTable, opts.Name, opts.SelectedItems)
-		if err != nil {
-			return err
-		}
+		items, _ := f.buildSlicerItems(pivotTable, opts.Name, opts.SelectedItems)
 		slicerCache.Data = &xlsxSlicerCacheData{
 			Tabular: &xlsxTabularSlicerCache{
 				PivotCacheID: pivotCacheID,
