@@ -391,6 +391,27 @@ type formulaFuncs struct {
 	sheet, cell string
 }
 
+// implicitIntersect applies Excel's implicit intersection to a matrix argument.
+// For a non-array formula, when a whole-column or whole-row reference is passed
+// to a scalar function, Excel resolves it to the single cell in the same row
+// (or column) as the formula cell. If the argument is not a matrix, it is
+// returned unchanged.
+func (fn *formulaFuncs) implicitIntersect(arg formulaArg) formulaArg {
+	if arg.Type != ArgMatrix {
+		return arg
+	}
+	_, row, err := CellNameToCoordinates(fn.cell)
+	if err != nil {
+		return arg
+	}
+	// row is 1-based; matrix is 0-indexed
+	idx := row - 1
+	if idx >= 0 && idx < len(arg.Matrix) && len(arg.Matrix[idx]) > 0 {
+		return arg.Matrix[idx][0]
+	}
+	return arg
+}
+
 // CalcCellValue provides a function to get calculated cell value. This feature
 // is currently in working processing. Iterative calculation, implicit
 // intersection, explicit intersection, array formula, table formula and some
@@ -1922,7 +1943,14 @@ func formulaCriteriaEval(val formulaArg, criteria *formulaCriteria) (result bool
 			}
 		}
 	case criteriaRegexp:
-		return regexp.MatchString(criteria.Condition.Value(), val.Value())
+		pattern := criteria.Condition.Value()
+		if !strings.HasPrefix(pattern, "^") {
+			pattern = "^" + pattern
+		}
+		if !strings.HasSuffix(pattern, "$") {
+			pattern = pattern + "$"
+		}
+		return regexp.MatchString(pattern, val.Value())
 	}
 	return
 }
@@ -3729,7 +3757,7 @@ func (fn *formulaFuncs) ABS(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ABS requires 1 numeric argument")
 	}
-	arg := argsList.Front().Value.(formulaArg).ToNumber()
+	arg := fn.implicitIntersect(argsList.Front().Value.(formulaArg)).ToNumber()
 	if arg.Type == ArgError {
 		return arg
 	}
@@ -11718,20 +11746,7 @@ func (fn *formulaFuncs) ISNUMBER(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "ISNUMBER requires 1 argument")
 	}
 	arg := argsList.Front().Value.(formulaArg)
-	if arg.Type == ArgMatrix {
-		var mtx [][]formulaArg
-		for _, row := range arg.Matrix {
-			var array []formulaArg
-			for _, val := range row {
-				if val.Type == ArgNumber {
-					array = append(array, newBoolFormulaArg(true))
-				}
-				array = append(array, newBoolFormulaArg(false))
-			}
-			mtx = append(mtx, array)
-		}
-		return newMatrixFormulaArg(mtx)
-	}
+	arg = fn.implicitIntersect(arg)
 	if arg.Type == ArgNumber {
 		return newBoolFormulaArg(true)
 	}
@@ -14874,7 +14889,7 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 	if argsList.Len() > 3 {
 		return newErrorFormulaArg(formulaErrorVALUE, "IF accepts at most 3 arguments")
 	}
-	token := argsList.Front().Value.(formulaArg)
+	token := fn.implicitIntersect(argsList.Front().Value.(formulaArg))
 	var (
 		cond   bool
 		err    error
@@ -14893,7 +14908,7 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 		return newBoolFormulaArg(cond)
 	}
 	if cond {
-		value := argsList.Front().Next().Value.(formulaArg)
+		value := fn.implicitIntersect(argsList.Front().Next().Value.(formulaArg))
 		switch value.Type {
 		case ArgNumber:
 			result = value.ToNumber()
@@ -14903,7 +14918,7 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 		return result
 	}
 	if argsList.Len() == 3 {
-		value := argsList.Back().Value.(formulaArg)
+		value := fn.implicitIntersect(argsList.Back().Value.(formulaArg))
 		switch value.Type {
 		case ArgNumber:
 			result = value.ToNumber()
