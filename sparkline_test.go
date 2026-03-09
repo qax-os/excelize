@@ -9,10 +9,11 @@ import (
 )
 
 func TestAddSparkline(t *testing.T) {
-	f := prepareSparklineDataset()
+	f, err := prepareSparklineDataset()
+	assert.NoError(t, err)
 
 	// Set the columns widths to make the output clearer
-	style, err := f.NewStyle(`{"font":{"bold":true}}`)
+	style, err := f.NewStyle(&Style{Font: &Font{Bold: true}})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "B1", style))
 	viewOpts, err := f.GetSheetView("Sheet1", 0)
@@ -135,7 +136,7 @@ func TestAddSparkline(t *testing.T) {
 		Location:    []string{"A18"},
 		Range:       []string{"Sheet3!A2:J2"},
 		Type:        "column",
-		SeriesColor: "#E965E0",
+		SeriesColor: "E965E0",
 	}))
 
 	assert.NoError(t, f.SetCellValue("Sheet1", "B20", "A win/loss sparkline."))
@@ -214,7 +215,7 @@ func TestAddSparkline(t *testing.T) {
 		Negative: true,
 	}))
 
-	// Save spreadsheet by the given path.
+	// Save spreadsheet by the given path
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddSparkline.xlsx")))
 
 	// Test error exceptions
@@ -223,55 +224,61 @@ func TestAddSparkline(t *testing.T) {
 		Range:    []string{"Sheet2!A3:E3"},
 	}), "sheet SheetN does not exist")
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", nil), ErrParameterRequired.Error())
+	assert.Equal(t, ErrParameterRequired, f.AddSparkline("Sheet1", nil))
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
-		Range: []string{"Sheet2!A3:E3"},
-	}), ErrSparklineLocation.Error())
-
-	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+	// Test add sparkline with invalid sheet name
+	assert.Equal(t, ErrSheetNameInvalid, f.AddSparkline("Sheet:1", &SparklineOptions{
 		Location: []string{"F3"},
-	}), ErrSparklineRange.Error())
+		Range:    []string{"Sheet2!A3:E3"},
+		Type:     "win_loss",
+		Negative: true,
+	}))
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+	assert.Equal(t, ErrSparklineLocation, f.AddSparkline("Sheet1", &SparklineOptions{
+		Range: []string{"Sheet2!A3:E3"},
+	}))
+
+	assert.Equal(t, ErrSparklineRange, f.AddSparkline("Sheet1", &SparklineOptions{
+		Location: []string{"F3"},
+	}))
+
+	assert.Equal(t, ErrSparkline, f.AddSparkline("Sheet1", &SparklineOptions{
 		Location: []string{"F2", "F3"},
 		Range:    []string{"Sheet2!A3:E3"},
-	}), ErrSparkline.Error())
+	}))
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+	assert.Equal(t, ErrSparklineType, f.AddSparkline("Sheet1", &SparklineOptions{
 		Location: []string{"F3"},
 		Range:    []string{"Sheet2!A3:E3"},
 		Type:     "unknown_type",
-	}), ErrSparklineType.Error())
+	}))
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+	assert.Equal(t, ErrSparklineStyle, f.AddSparkline("Sheet1", &SparklineOptions{
 		Location: []string{"F3"},
 		Range:    []string{"Sheet2!A3:E3"},
 		Style:    -1,
-	}), ErrSparklineStyle.Error())
+	}))
 
-	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+	assert.Equal(t, ErrSparklineStyle, f.AddSparkline("Sheet1", &SparklineOptions{
 		Location: []string{"F3"},
 		Range:    []string{"Sheet2!A3:E3"},
 		Style:    -1,
-	}), ErrSparklineStyle.Error())
-
+	}))
+	// Test creating a conditional format with existing extension lists
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
-	ws.(*xlsxWorksheet).ExtLst.Ext = `<extLst>
-	    <ext x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main" uri="{05C60535-1F16-4fd2-B633-F4F36F0B64E0}">
-	        <x14:sparklineGroups
-	            xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">
-	             <x14:sparklineGroup>
-                    </x14:sparklines>
-                </x14:sparklineGroup>
-	        </x14:sparklineGroups>
-	    </ext>
-	</extLst>`
+	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:slicerList /></ext><ext uri="%s"><x14:sparklineGroups /></ext>`, ExtURISlicerListX14, ExtURISparklineGroups)}
+	assert.NoError(t, f.AddSparkline("Sheet1", &SparklineOptions{
+		Location: []string{"A3"},
+		Range:    []string{"Sheet3!A2:J2"},
+		Type:     "column",
+	}))
+	// Test creating a conditional format with invalid extension list characters
+	ws.(*xlsxWorksheet).ExtLst.Ext = fmt.Sprintf(`<ext uri="%s"><x14:sparklineGroups><x14:sparklineGroup></x14:sparklines></x14:sparklineGroup></x14:sparklineGroups></ext>`, ExtURISparklineGroups)
 	assert.EqualError(t, f.AddSparkline("Sheet1", &SparklineOptions{
 		Location: []string{"A2"},
 		Range:    []string{"Sheet3!A1:J1"},
-	}), "XML syntax error on line 6: element <sparklineGroup> closed by </sparklines>")
+	}), "XML syntax error on line 1: element <sparklineGroup> closed by </sparklines>")
 }
 
 func TestAppendSparkline(t *testing.T) {
@@ -283,7 +290,7 @@ func TestAppendSparkline(t *testing.T) {
 	assert.EqualError(t, f.appendSparkline(ws, &xlsxX14SparklineGroup{}, &xlsxX14SparklineGroups{}), "XML syntax error on line 1: invalid UTF-8")
 }
 
-func prepareSparklineDataset() *File {
+func prepareSparklineDataset() (*File, error) {
 	f := NewFile()
 	sheet2 := [][]int{
 		{-2, 2, 3, -1, 0},
@@ -299,8 +306,12 @@ func prepareSparklineDataset() *File {
 		{3, -1, 0, -2, 3, 2, 1, 0, 2, 1},
 		{0, -2, 3, 2, 1, 0, 1, 2, 3, 1},
 	}
-	f.NewSheet("Sheet2")
-	f.NewSheet("Sheet3")
+	if _, err := f.NewSheet("Sheet2"); err != nil {
+		return f, err
+	}
+	if _, err := f.NewSheet("Sheet3"); err != nil {
+		return f, err
+	}
 	for row, data := range sheet2 {
 		if err := f.SetSheetRow("Sheet2", fmt.Sprintf("A%d", row+1), &data); err != nil {
 			fmt.Println(err)
@@ -311,5 +322,5 @@ func prepareSparklineDataset() *File {
 			fmt.Println(err)
 		}
 	}
-	return f
+	return f, nil
 }

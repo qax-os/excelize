@@ -28,10 +28,10 @@ func TestSetView(t *testing.T) {
 	opts, err := f.GetSheetView("Sheet1", 0)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, opts)
-	// Test set sheet view options with invalid view index.
+	// Test set sheet view options with invalid view index
 	assert.EqualError(t, f.SetSheetView("Sheet1", 1, nil), "view index 1 out of range")
 	assert.EqualError(t, f.SetSheetView("Sheet1", -2, nil), "view index -2 out of range")
-	// Test set sheet view options on not exists worksheet.
+	// Test set sheet view options on not exists worksheet
 	assert.EqualError(t, f.SetSheetView("SheetN", 0, nil), "sheet SheetN does not exist")
 }
 
@@ -39,12 +39,12 @@ func TestGetView(t *testing.T) {
 	f := NewFile()
 	_, err := f.getSheetView("SheetN", 0)
 	assert.EqualError(t, err, "sheet SheetN does not exist")
-	// Test get sheet view options with invalid view index.
+	// Test get sheet view options with invalid view index
 	_, err = f.GetSheetView("Sheet1", 1)
 	assert.EqualError(t, err, "view index 1 out of range")
 	_, err = f.GetSheetView("Sheet1", -2)
 	assert.EqualError(t, err, "view index -2 out of range")
-	// Test get sheet view options on not exists worksheet.
+	// Test get sheet view options on not exists worksheet
 	_, err = f.GetSheetView("SheetN", 0)
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
