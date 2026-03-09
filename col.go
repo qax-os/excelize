@@ -16,6 +16,7 @@ import (
 	"encoding/xml"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/tiendc/go-deepcopy"
 	"golang.org/x/text/width"
@@ -822,26 +823,30 @@ func convertColWidthToPixels(width float64) float64 {
 // calcTextWidth calculates the column width needed to display a text based on
 // the font family, font size, font weight and italic format.
 func (fnt *Font) calcTextWidth(text string) float64 {
-	var charUnits float64
+	var lowerUnits, upperUnits, wideUnits float64
 	for _, r := range text {
 		switch width.LookupRune(r).Kind() {
 		case width.EastAsianWide, width.EastAsianFullwidth:
-			charUnits += 2.0
+			wideUnits += 2
 		default:
-			charUnits += 1.0
+			if unicode.IsUpper(r) {
+				upperUnits++
+				continue
+			}
+			lowerUnits++
 		}
 	}
-	fontSize := fnt.Size
-	if fontSize <= 0 {
-		fontSize = 11
+	sz := fnt.Size
+	if sz <= 0 {
+		sz = 11
 	}
-	factor := 1.0
+	lowerFactor, upperFactor := 1.0, 1.0
 	if fnt.Family != "" {
-		if f, ok := supportedFontWidthFactors[strings.ToLower(fnt.Family)]; ok {
-			factor = f
+		if fw, ok := supportedFontWidthFactors[strings.ToLower(fnt.Family)]; ok {
+			lowerFactor, upperFactor = fw[0], fw[1]
 		}
 	}
-	w := charUnits * (fontSize / defaultFontSize) * factor
+	w := (lowerUnits*lowerFactor + upperUnits*upperFactor + wideUnits) * (sz / defaultFontSize)
 	if fnt.Bold {
 		w *= 1.05
 	}
