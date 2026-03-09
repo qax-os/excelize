@@ -3,10 +3,10 @@ package excelize
 import (
 	"fmt"
 	"path/filepath"
-	"sync"
+	"sort"
 	"strings"
+	"sync"
 	"testing"
-	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -420,49 +420,6 @@ func TestColWidth(t *testing.T) {
 	convertRowHeightToPixels(0)
 }
 
-func TestAutoFitColWidth(t *testing.T) {
-	getCellLen := func(s string) int {
-		var cellLenSBCS, cellLenMBCS int
-		for i := range s {
-			if s[i] < 0x80 {
-				cellLenSBCS++
-			}
-		}
-
-		runeLen := utf8.RuneCountInString(s)
-		cellLenMBCS = runeLen - cellLenSBCS
-
-		return cellLenSBCS + cellLenMBCS*2
-	}
-
-	for _, c := range []string{"", "A", "a", "a你好", "你好", "あなた"} {
-		f := NewFile()
-		for i := 1; i <= 10; i++ {
-			colN, err := ColumnNumberToName(i)
-			assert.NoError(t, err)
-
-			v := strings.Repeat(c, i)
-			assert.NoError(t, f.SetCellValue("Sheet1", colN+"1", v))
-
-			assert.NoError(t, f.AutoFitColWidth("Sheet1", colN))
-
-			got, err := f.GetColWidth("Sheet1", colN)
-			assert.CallerInfo()
-			assert.NoError(t, err)
-
-			actualLen := float64(getCellLen(v)) * 1.123
-			if actualLen < defaultColWidth {
-				assert.Equal(t, defaultColWidth, got)
-			} else if actualLen >= MaxColumnWidth {
-				assert.Equal(t, float64(MaxColumnWidth), got)
-			} else {
-				assert.Equal(t, actualLen, got)
-			}
-		}
-		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAutoColWidth.xlsx")))
-	}
-}
-
 func TestGetColStyle(t *testing.T) {
 	f := NewFile()
 	styleID, err := f.GetColStyle("Sheet1", "A")
@@ -530,4 +487,70 @@ func TestRemoveCol(t *testing.T) {
 
 func TestConvertColWidthToPixels(t *testing.T) {
 	assert.Equal(t, -7.0, convertColWidthToPixels(-1))
+}
+
+func TestAutoFitColWidth(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "SUBSTITUTE(\"1 \",\" \",\"\")"))
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "A:B"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "C1", 1234567890))
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "C"))
+	styleID, err := f.NewStyle(&Style{Font: &Font{Family: "Microsoft YaHei", Bold: true, Italic: true}})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetColStyle("Sheet1", "D", styleID))
+	assert.NoError(t, f.SetCellValue("Sheet1", "D1", 1234567890))
+	assert.NoError(t, f.SetCellValue("Sheet1", "D2", "文本1234567890"))
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "D"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "E1", "text"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "E2", "文本********"))
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "E"))
+	styleID, err = f.NewStyle(&Style{Font: &Font{Size: 50}})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellStyle("Sheet1", "F1", "F1", styleID))
+	assert.NoError(t, f.SetCellValue("Sheet1", "F1", "Text"))
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "F"))
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellFormula("Sheet1", "G1", "1/0"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "G2", "1^\"text\""))
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "G:G"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "KR1", strings.Repeat("s", TotalCellChars)))
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "KR"))
+	assert.NoError(t, err)
+	width, err := f.GetColWidth("Sheet1", "KR")
+	assert.NoError(t, err)
+	assert.Equal(t, float64(MaxColumnWidth), width)
+
+	names := make([]string, 0, len(supportedFontWidthFactors))
+	for name := range supportedFontWidthFactors {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for idx, name := range names {
+		col, err := ColumnNumberToName(idx + 8)
+		assert.NoError(t, err)
+		cell := col + "1"
+		styleID, err := f.NewStyle(&Style{Font: &Font{Family: name}})
+		assert.NoError(t, err)
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, name))
+		assert.NoError(t, f.SetCellStyle("Sheet1", cell, cell, styleID))
+	}
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "H:KQ"))
+
+	assert.Equal(t, f.AutoFitColWidth("Sheet1", ""), newInvalidColumnNameError(""))
+	assert.Equal(t, f.AutoFitColWidth("SheetN", "A"), ErrSheetNotExist{"SheetN"})
+	assert.Equal(t, f.autoFitColWidth("SheetN", 1, 1, 0, &Font{}), ErrSheetNotExist{"SheetN"})
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAutoFitColWidth.xlsx")))
+
+	f = NewFile()
+	// Test auto fit column width with unsupported charset style sheet
+	f.Styles = nil
+	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AutoFitColWidth("Sheet1", "A"), "XML syntax error on line 1: invalid UTF-8")
+	// Test auto fit column width with invalid cell style ID
+	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
+		SheetData: xlsxSheetData{Row: []xlsxRow{
+			{R: 1, C: []xlsxC{{R: "A1", S: 1, T: "inlineStr", V: "Test"}}},
+		}},
+	})
+	assert.Equal(t, f.autoFitColWidth("Sheet1", 1, 1, 1, &Font{}), newInvalidStyleID(1))
 }

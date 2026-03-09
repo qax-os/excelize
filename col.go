@@ -16,18 +16,9 @@ import (
 	"encoding/xml"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/tiendc/go-deepcopy"
-)
-
-// Define the default cell size and EMU unit of measurement.
-const (
-	defaultColWidth        float64 = 9.140625
-	defaultColWidthPixels  float64 = 64
-	defaultRowHeight       float64 = 15
-	defaultRowHeightPixels float64 = 20
-	EMU                    int     = 9525
+	"golang.org/x/text/width"
 )
 
 // Cols defines an iterator to a sheet
@@ -510,15 +501,9 @@ func (f *File) SetColWidth(sheet, startCol, endCol string, width float64) error 
 	if err != nil {
 		return err
 	}
-
-	return f.setColWidth(sheet, min, max, width)
-}
-
-func (f *File) setColWidth(sheet string, min, max int, width float64) error {
 	if width > MaxColumnWidth {
 		return ErrColumnWidth
 	}
-
 	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -556,81 +541,6 @@ func (ws *xlsxWorksheet) setColWidth(minVal, maxVal int, width float64) {
 		fc.Style = c.Style
 		return fc
 	})
-}
-
-// AutoFitColWidth provides a function to autofit columns according to
-// their text content with default font size and font.
-// Note: this only works on the column with cells which not contains
-// formula cell and style with a number format.
-//
-// For example set column of column H on Sheet1:
-//
-// err = f.AutoFitColWidth("Sheet1", "H")
-//
-// Set style of columns C:F on Sheet1:
-//
-// err = f.AutoFitColWidth("Sheet1", "C:F")
-func (f *File) AutoFitColWidth(sheetName, columns string) error {
-	startColIdx, endColIdx, err := f.parseColRange(columns)
-	if err != nil {
-		return err
-	}
-
-	cols, err := f.Cols(sheetName)
-	if err != nil {
-		return err
-	}
-
-	colIdx := 1
-	for cols.Next() {
-		if colIdx >= startColIdx && colIdx <= endColIdx {
-			rowCells, _ := cols.Rows()
-			var max int
-			for i := range rowCells {
-				rowCell := rowCells[i]
-
-				// Single Byte Character Set(SBCS) is 1 holds
-				// Multi-Byte Character System(MBCS) is 2 holds
-				var cellLenSBCS, cellLenMBCS int
-				for ii := range rowCell {
-					if rowCell[ii] < 0x80 {
-						cellLenSBCS++
-					}
-				}
-
-				runeLen := utf8.RuneCountInString(rowCell)
-				cellLenMBCS = runeLen - cellLenSBCS
-
-				cellWidth := cellLenSBCS + cellLenMBCS*2
-				if cellWidth > max {
-					max = cellWidth
-				}
-			}
-
-			// The ratio of 1.123 is the best approximation I tried my best to
-			// find.
-			actualMax := float64(max) * 1.123
-
-			if actualMax < defaultColWidth {
-				actualMax = defaultColWidth
-			} else if actualMax >= MaxColumnWidth {
-				actualMax = MaxColumnWidth
-			}
-
-			if err := f.setColWidth(sheetName, colIdx, colIdx, actualMax); err != nil {
-				return err
-			}
-		}
-
-		// fast go away.
-		if colIdx == endColIdx {
-			break
-		}
-
-		colIdx++
-	}
-
-	return nil
 }
 
 // flatCols provides a method for the column's operation functions to flatten
@@ -907,4 +817,136 @@ func convertColWidthToPixels(width float64) float64 {
 	}
 	pixels = (width*maxDigitWidth + 0.5)
 	return float64(int(pixels))
+}
+
+// calcTextWidth calculates the column width needed to display a text based on
+// the font family, font size, font weight and italic format.
+func (fnt *Font) calcTextWidth(text string) float64 {
+	var charUnits float64
+	for _, r := range text {
+		switch width.LookupRune(r).Kind() {
+		case width.EastAsianWide, width.EastAsianFullwidth:
+			charUnits += 2.0
+		default:
+			charUnits += 1.0
+		}
+	}
+	fontSize := fnt.Size
+	if fontSize <= 0 {
+		fontSize = 11
+	}
+	factor := 1.0
+	if fnt.Family != "" {
+		if f, ok := supportedFontWidthFactors[strings.ToLower(fnt.Family)]; ok {
+			factor = f
+		}
+	}
+	w := charUnits * (fontSize / defaultFontSize) * factor
+	if fnt.Bold {
+		w *= 1.05
+	}
+	if fnt.Italic {
+		w *= 1.05
+	}
+	return w
+}
+
+// AutoFitColWidth provides a function to auto fit columns width according to
+// their text content with default font size and font. Not that this function
+// calculates the width of the text approximately based on the font size, font
+// family, font weight and italic format, and the actual width may be different
+// when you open the workbook in Excel. For cells containing proportional fonts
+// (where character widths may vary), symbols, or a mix of CJK and Latin
+// characters, using this function to auto fit column width may result in
+// significant discrepancies from the actual width.
+//
+// For example set column of column H on Sheet1:
+//
+//	err := f.AutoFitColWidth("Sheet1", "H")
+//
+// Set style of columns C:F on Sheet1:
+//
+//	err := f.AutoFitColWidth("Sheet1", "C:F")
+func (f *File) AutoFitColWidth(sheet, columns string) error {
+	minVal, maxVal, err := f.parseColRange(columns)
+	if err != nil {
+		return err
+	}
+	rows, err := f.GetRows(sheet)
+	if err != nil {
+		return err
+	}
+	defaultFnt := &Font{}
+	font, err := f.readDefaultFont()
+	if err != nil {
+		return err
+	}
+	if font != nil {
+		if font.Sz != nil && font.Sz.Val != nil {
+			defaultFnt.Size = *font.Sz.Val
+		}
+		if font.Name != nil && font.Name.Val != nil {
+			defaultFnt.Family = *font.Name.Val
+		}
+	}
+
+	return f.autoFitColWidth(sheet, minVal, maxVal, len(rows), defaultFnt)
+}
+
+// autoFitColWidth provides a function to auto fit columns width according to
+// their text content with default font size and font.
+func (f *File) autoFitColWidth(sheet string, from, to, rows int, defaultFnt *Font) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	for col := from; col <= to; col++ {
+		var hasValue bool
+		var width float64
+		for row := 1; row <= rows; row++ {
+			cell, _ := CoordinatesToCellName(col, row)
+			val, err := f.CalcCellValue(sheet, cell)
+			if err != nil && inStrSlice([]string{
+				formulaErrorDIV,
+				formulaErrorNAME,
+				formulaErrorNA,
+				formulaErrorNUM,
+				formulaErrorVALUE,
+				formulaErrorREF,
+				formulaErrorNULL,
+				formulaErrorSPILL,
+				formulaErrorCALC,
+				formulaErrorGETTINGDATA,
+			}, err.Error(), true) != -1 {
+				val = err.Error()
+			}
+			if val == "" {
+				continue
+			}
+			hasValue = true
+			styleID, _ := f.GetCellStyle(sheet, cell)
+			fnt := defaultFnt
+			style, err := f.GetStyle(styleID)
+			if err != nil {
+				return err
+			}
+			if style != nil && style.Font != nil {
+				fnt = style.Font
+			}
+			if w := fnt.calcTextWidth(val); w > width {
+				width = w
+			}
+		}
+		if hasValue && width > 0 {
+			width += 2
+			if width > MaxColumnWidth {
+				width = MaxColumnWidth
+			}
+			ws.setColWidth(col, col, width)
+		}
+		if col == to {
+			break
+		}
+	}
+	return nil
 }
