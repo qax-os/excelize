@@ -841,10 +841,8 @@ func (fnt *Font) calcTextWidth(text string) float64 {
 		sz = 11
 	}
 	lowerFactor, upperFactor := 1.0, 1.0
-	if fnt.Family != "" {
-		if fw, ok := supportedFontWidthFactors[strings.ToLower(fnt.Family)]; ok {
-			lowerFactor, upperFactor = fw[0], fw[1]
-		}
+	if fw, ok := supportedFontWidthFactors[strings.ToLower(fnt.Family)]; ok {
+		lowerFactor, upperFactor = fw[0], fw[1]
 	}
 	w := (lowerUnits*lowerFactor + upperUnits*upperFactor + wideUnits) * (sz / defaultFontSize)
 	if fnt.Bold {
@@ -906,7 +904,6 @@ func (f *File) autoFitColWidth(sheet string, from, to, rows int, defaultFnt *Fon
 		return err
 	}
 	for col := from; col <= to; col++ {
-		var hasValue bool
 		var width float64
 		for row := 1; row <= rows; row++ {
 			cell, _ := CoordinatesToCellName(col, row)
@@ -928,7 +925,6 @@ func (f *File) autoFitColWidth(sheet string, from, to, rows int, defaultFnt *Fon
 			if val == "" {
 				continue
 			}
-			hasValue = true
 			styleID, _ := f.GetCellStyle(sheet, cell)
 			fnt := defaultFnt
 			style, err := f.GetStyle(styleID)
@@ -942,15 +938,12 @@ func (f *File) autoFitColWidth(sheet string, from, to, rows int, defaultFnt *Fon
 				width = w
 			}
 		}
-		if hasValue && width > 0 {
+		if width > 0 {
 			width += 2
 			if width > MaxColumnWidth {
 				width = MaxColumnWidth
 			}
 			ws.setColWidth(col, col, width)
-		}
-		if col == to {
-			break
 		}
 	}
 	return nil
