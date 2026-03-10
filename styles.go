@@ -1930,7 +1930,7 @@ func (fnt *Font) newFont() *xlsxFont {
 	if idx := inStrSlice(supportedUnderlineTypes, fnt.Underline, true); idx != -1 {
 		font.U = &attrValString{Val: stringPtr(supportedUnderlineTypes[idx])}
 	}
-	if inStrSlice([]string{"baseline", "superscript", "subscript"}, fnt.VertAlign, true) != -1 {
+	if inStrSlice(supportedVertAlignTypes, fnt.VertAlign, true) != -1 {
 		font.VertAlign = &attrValString{Val: &fnt.VertAlign}
 	}
 	return &font

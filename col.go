@@ -851,7 +851,7 @@ func (fnt *Font) calcTextWidth(text string) float64 {
 	if fnt.Italic {
 		w *= 1.05
 	}
-	if inStrSlice([]string{"baseline", "superscript", "subscript"}, fnt.VertAlign, true) != -1 {
+	if inStrSlice(supportedVertAlignTypes, fnt.VertAlign, true) != -1 {
 		w *= 0.6
 	}
 	return w

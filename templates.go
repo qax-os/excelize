@@ -827,6 +827,9 @@ var supportedContentTypes = map[string]string{
 // supportedUnderlineTypes defined supported underline types.
 var supportedUnderlineTypes = []string{"none", "single", "double"}
 
+// supportedVertAlignTypes defined supported vertical align types.
+var supportedVertAlignTypes = []string{"baseline", "superscript", "subscript"}
+
 // supportedDrawingUnderlineTypes defined supported underline types in drawing
 // markup language.
 var supportedDrawingUnderlineTypes = []string{
