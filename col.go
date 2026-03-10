@@ -840,18 +840,18 @@ func (fnt *Font) calcTextWidth(text string) float64 {
 	if sz <= 0 {
 		sz = defaultFontSize
 	}
-	lowerFactor, upperFactor := 1.0, 1.0
+	lowerFactor, upperFactor, wideFactor := 1.0, 1.0, 1.0
 	if fw, ok := supportedFontWidthFactors[strings.ToLower(fnt.Family)]; ok {
-		lowerFactor, upperFactor = fw[0], fw[1]
+		lowerFactor, upperFactor, wideFactor = fw[0], fw[1], fw[2]
 	}
-	w := (lowerUnits*lowerFactor + upperUnits*upperFactor + wideUnits) * (sz / defaultFontSize)
+	w := (lowerUnits*lowerFactor + upperUnits*upperFactor + wideUnits*wideFactor) * (sz / defaultFontSize)
 	if fnt.Bold {
 		w *= 1.05
 	}
 	if fnt.Italic {
 		w *= 1.05
 	}
-	if fnt.VertAlign != "" {
+	if inStrSlice([]string{"baseline", "superscript", "subscript"}, fnt.VertAlign, true) != -1 {
 		w *= 0.6
 	}
 	return w

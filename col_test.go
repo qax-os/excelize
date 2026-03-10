@@ -495,7 +495,7 @@ func TestAutoFitColWidth(t *testing.T) {
 	assert.NoError(t, f.AutoFitColWidth("Sheet1", "A:B"))
 	assert.NoError(t, f.SetCellValue("Sheet1", "C1", 1234567890))
 	assert.NoError(t, f.AutoFitColWidth("Sheet1", "C"))
-	styleID, err := f.NewStyle(&Style{Font: &Font{Family: "Microsoft YaHei", Bold: true, Italic: true}})
+	styleID, err := f.NewStyle(&Style{Font: &Font{Family: "Microsoft YaHei", Bold: true, Italic: true, Charset: intPtr(134)}})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetColStyle("Sheet1", "D", styleID))
 	assert.NoError(t, f.SetCellValue("Sheet1", "D1", 1234567890))
