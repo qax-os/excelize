@@ -931,7 +931,6 @@ func TestGetCellRichText(t *testing.T) {
 func TestSetCellRichText(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetRowHeight("Sheet1", 1, 35))
-	assert.NoError(t, f.SetColWidth("Sheet1", "A", "A", 44))
 	richTextRun := []RichTextRun{
 		{
 			Text: "bold",
@@ -1015,10 +1014,12 @@ func TestSetCellRichText(t *testing.T) {
 	style, err := f.NewStyle(&Style{
 		Alignment: &Alignment{
 			WrapText: true,
+			Vertical: "center",
 		},
 	})
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "A"))
 
 	runs, err := f.GetCellRichText("Sheet1", "A1")
 	assert.NoError(t, err)

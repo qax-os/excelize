@@ -514,101 +514,13 @@ func TestAutoFitColWidth(t *testing.T) {
 	assert.NoError(t, f.SetCellFormula("Sheet1", "G2", "1^\"text\""))
 	assert.NoError(t, f.AutoFitColWidth("Sheet1", "G:G"))
 
-	style, err := f.NewStyle(&Style{
-		Alignment: &Alignment{
-			WrapText: true,
-			Vertical: "center",
-		},
-	})
-	assert.NoError(t, err)
-	assert.NoError(t, f.SetCellStyle("Sheet1", "H1", "H1", style))
-	richTextRun := []RichTextRun{
-		{
-			Text: "bold",
-			Font: &Font{
-				Bold:         true,
-				Color:        "2354E8",
-				ColorIndexed: 0,
-				Family:       "Times New Roman",
-			},
-		},
-		{
-			Text: " and ",
-			Font: &Font{
-				Family: "Times New Roman",
-			},
-		},
-		{
-			Text: "italic ",
-			Font: &Font{
-				Bold:   true,
-				Color:  "E83723",
-				Italic: true,
-				Family: "Times New Roman",
-			},
-		},
-		{
-			Text: "text with color and font-family, ",
-			Font: &Font{
-				Bold:   true,
-				Color:  "2354E8",
-				Family: "Times New Roman",
-			},
-		},
-		{
-			Text: "\r\nlarge text with ",
-			Font: &Font{
-				Size:  14,
-				Color: "AD23E8",
-			},
-		},
-		{
-			Text: "strike",
-			Font: &Font{
-				Color:  "E89923",
-				Strike: true,
-			},
-		},
-		{
-			Text: " superscript",
-			Font: &Font{
-				Color:     "DBC21F",
-				VertAlign: "superscript",
-			},
-		},
-		{
-			Text: " and ",
-			Font: &Font{
-				Size:      14,
-				Color:     "AD23E8",
-				VertAlign: "baseline",
-			},
-		},
-		{
-			Text: "underline",
-			Font: &Font{
-				Color:     "23E833",
-				Underline: "single",
-			},
-		},
-		{
-			Text: " subscript.",
-			Font: &Font{
-				Color:     "017505",
-				VertAlign: "subscript",
-			},
-		},
-	}
-	assert.NoError(t, f.SetCellRichText("Sheet1", "H1", richTextRun))
-	assert.NoError(t, f.AutoFitColWidth("Sheet1", "H"))
-
 	names := make([]string, 0, len(supportedFontWidthFactors))
 	for name := range supportedFontWidthFactors {
 		names = append(names, name)
 	}
 	sort.Strings(names)
 	for idx, name := range names {
-		col, err := ColumnNumberToName(idx + 9)
+		col, err := ColumnNumberToName(idx + 8)
 		assert.NoError(t, err)
 		styleID, err := f.NewStyle(&Style{Font: &Font{Family: name}})
 		assert.NoError(t, err)
@@ -616,12 +528,12 @@ func TestAutoFitColWidth(t *testing.T) {
 		assert.NoError(t, f.SetCellValue("Sheet1", col+"2", strings.ToUpper(name)))
 		assert.NoError(t, f.SetCellStyle("Sheet1", col+"1", col+"2", styleID))
 	}
-	assert.NoError(t, f.AutoFitColWidth("Sheet1", "I:KQ"))
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "H:KP"))
 
-	assert.NoError(t, f.SetCellValue("Sheet1", "KR1", strings.Repeat("s", TotalCellChars)))
-	assert.NoError(t, f.AutoFitColWidth("Sheet1", "KR"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "KQ1", strings.Repeat("s", TotalCellChars)))
+	assert.NoError(t, f.AutoFitColWidth("Sheet1", "KQ"))
 	assert.NoError(t, err)
-	width, err := f.GetColWidth("Sheet1", "KR")
+	width, err := f.GetColWidth("Sheet1", "KQ")
 	assert.NoError(t, err)
 	assert.Equal(t, float64(MaxColumnWidth), width)
 
