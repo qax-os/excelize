@@ -944,7 +944,9 @@ func (f *File) autoFitColWidth(sheet string, from, to, rows int, defaultFnt *Fon
 // their text content with font format. Not that this function calculates the
 // width of the text approximately based on the font format, currently does not
 // support merged cells. the actual width may be different when you open the
-// workbook in Office applications.
+// workbook in Office applications. This process can be relatively slow on large
+// worksheets, so this should normally only be called once per column, at the
+// end of your processing.
 //
 // For example set column of column H on Sheet1:
 //
