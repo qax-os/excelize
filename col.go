@@ -16,17 +16,10 @@ import (
 	"encoding/xml"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/tiendc/go-deepcopy"
-)
-
-// Define the default cell size and EMU unit of measurement.
-const (
-	defaultColWidth        float64 = 9.140625
-	defaultColWidthPixels  float64 = 64
-	defaultRowHeight       float64 = 15
-	defaultRowHeightPixels float64 = 20
-	EMU                    int     = 9525
+	"golang.org/x/text/width"
 )
 
 // Cols defines an iterator to a sheet
@@ -825,4 +818,164 @@ func convertColWidthToPixels(width float64) float64 {
 	}
 	pixels = (width*maxDigitWidth + 0.5)
 	return float64(int(pixels))
+}
+
+// calcTextWidth calculates the column width needed to display a text based on
+// the font family, font size, font weight and italic format.
+func (fnt *Font) calcTextWidth(text string) float64 {
+	var lowerUnits, upperUnits, wideUnits float64
+	for _, r := range text {
+		switch width.LookupRune(r).Kind() {
+		case width.EastAsianWide, width.EastAsianFullwidth:
+			wideUnits += 2
+		default:
+			if unicode.IsUpper(r) {
+				upperUnits++
+				continue
+			}
+			lowerUnits++
+		}
+	}
+	sz := fnt.Size
+	if sz <= 0 {
+		sz = defaultFontSize
+	}
+	lowerFactor, upperFactor, wideFactor := 1.0, 1.0, 1.0
+	if fw, ok := supportedFontWidthFactors[strings.ToLower(fnt.Family)]; ok {
+		lowerFactor, upperFactor, wideFactor = fw[0], fw[1], fw[2]
+	}
+	w := (lowerUnits*lowerFactor + upperUnits*upperFactor + wideUnits*wideFactor) * (sz / defaultFontSize)
+	if fnt.Bold {
+		w *= 1.05
+	}
+	if fnt.Italic {
+		w *= 1.05
+	}
+	if inStrSlice(supportedVertAlignTypes, fnt.VertAlign, true) != -1 {
+		w *= 0.6
+	}
+	return w
+}
+
+// calcRichTextWidth calculates the column width needed to display a rich text
+// based on the font format.
+func (fnt *Font) calcRichTextWidth(runs []RichTextRun) float64 {
+	var w, width float64
+	for _, run := range runs {
+		if run.Font != nil {
+			fnt = run.Font
+		}
+		if i := strings.IndexAny(run.Text, "\r\n"); i >= 0 {
+			first := run.Text[:i]
+			rest := run.Text[i+1:]
+			if w += fnt.calcTextWidth(first); w > width {
+				width = w
+			}
+			w = fnt.calcTextWidth(rest)
+			continue
+		}
+		w += fnt.calcTextWidth(run.Text)
+	}
+	if w > width {
+		width = w
+	}
+	return width
+}
+
+// autoFitColWidth provides a function to auto fit columns width according to
+// their text content with default font size and font.
+func (f *File) autoFitColWidth(sheet string, from, to, rows int, defaultFnt *Font) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	for col := from; col <= to; col++ {
+		var width float64
+		for row := 1; row <= rows; row++ {
+			cell, _ := CoordinatesToCellName(col, row)
+			val, err := f.CalcCellValue(sheet, cell)
+			if err != nil && inStrSlice([]string{
+				formulaErrorDIV,
+				formulaErrorNAME,
+				formulaErrorNA,
+				formulaErrorNUM,
+				formulaErrorVALUE,
+				formulaErrorREF,
+				formulaErrorNULL,
+				formulaErrorSPILL,
+				formulaErrorCALC,
+				formulaErrorGETTINGDATA,
+			}, err.Error(), true) != -1 {
+				val = err.Error()
+			}
+			if val == "" {
+				continue
+			}
+			styleID, _ := f.GetCellStyle(sheet, cell)
+			fnt := defaultFnt
+			style, err := f.GetStyle(styleID)
+			if err != nil {
+				return err
+			}
+			if style != nil && style.Font != nil {
+				fnt = style.Font
+			}
+			if cellType, _ := f.GetCellType(sheet, cell); cellType == CellTypeInlineString || cellType == CellTypeSharedString {
+				runs, _ := f.GetCellRichText(sheet, cell)
+				width = fnt.calcRichTextWidth(runs)
+				continue
+			}
+			if w := fnt.calcTextWidth(val); w > width {
+				width = w
+			}
+		}
+		if width > 0 {
+			width += 2
+			if width > MaxColumnWidth {
+				width = MaxColumnWidth
+			}
+			ws.setColWidth(col, col, width)
+		}
+	}
+	return nil
+}
+
+// AutoFitColWidth provides a function to auto fit columns width according to
+// their text content with font format. Not that this function calculates the
+// width of the text approximately based on the font format, currently does not
+// support merged cells. the actual width may be different when you open the
+// workbook in Office applications. This process can be relatively slow on large
+// worksheets, so this should normally only be called once per column, at the
+// end of your processing.
+//
+// For example set column of column H on Sheet1:
+//
+//	err := f.AutoFitColWidth("Sheet1", "H")
+//
+// Set style of columns C:F on Sheet1:
+//
+//	err := f.AutoFitColWidth("Sheet1", "C:F")
+func (f *File) AutoFitColWidth(sheet, columns string) error {
+	minVal, maxVal, err := f.parseColRange(columns)
+	if err != nil {
+		return err
+	}
+	rows, err := f.GetRows(sheet)
+	if err != nil {
+		return err
+	}
+	defaultFnt := &Font{}
+	font, err := f.readDefaultFont()
+	if err != nil {
+		return err
+	}
+	if font != nil {
+		if font.Sz != nil && font.Sz.Val != nil {
+			defaultFnt.Size = *font.Sz.Val
+		}
+		if font.Name != nil && font.Name.Val != nil {
+			defaultFnt.Family = *font.Name.Val
+		}
+	}
+	return f.autoFitColWidth(sheet, minVal, maxVal, len(rows), defaultFnt)
 }
