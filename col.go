@@ -838,7 +838,7 @@ func (fnt *Font) calcTextWidth(text string) float64 {
 	}
 	sz := fnt.Size
 	if sz <= 0 {
-		sz = 11
+		sz = defaultFontSize
 	}
 	lowerFactor, upperFactor := 1.0, 1.0
 	if fw, ok := supportedFontWidthFactors[strings.ToLower(fnt.Family)]; ok {
@@ -851,49 +851,35 @@ func (fnt *Font) calcTextWidth(text string) float64 {
 	if fnt.Italic {
 		w *= 1.05
 	}
+	if fnt.VertAlign != "" {
+		w *= 0.6
+	}
 	return w
 }
 
-// AutoFitColWidth provides a function to auto fit columns width according to
-// their text content with default font size and font. Not that this function
-// calculates the width of the text approximately based on the font size, font
-// family, font weight and italic format, and the actual width may be different
-// when you open the workbook in Excel. For cells containing proportional fonts
-// (where character widths may vary), symbols, or a mix of CJK and Latin
-// characters, using this function to auto fit column width may result in
-// significant discrepancies from the actual width.
-//
-// For example set column of column H on Sheet1:
-//
-//	err := f.AutoFitColWidth("Sheet1", "H")
-//
-// Set style of columns C:F on Sheet1:
-//
-//	err := f.AutoFitColWidth("Sheet1", "C:F")
-func (f *File) AutoFitColWidth(sheet, columns string) error {
-	minVal, maxVal, err := f.parseColRange(columns)
-	if err != nil {
-		return err
-	}
-	rows, err := f.GetRows(sheet)
-	if err != nil {
-		return err
-	}
-	defaultFnt := &Font{}
-	font, err := f.readDefaultFont()
-	if err != nil {
-		return err
-	}
-	if font != nil {
-		if font.Sz != nil && font.Sz.Val != nil {
-			defaultFnt.Size = *font.Sz.Val
+// calcRichTextWidth calculates the column width needed to display a rich text
+// based on the font format.
+func (fnt *Font) calcRichTextWidth(runs []RichTextRun) float64 {
+	var w, width float64
+	for _, run := range runs {
+		if run.Font != nil {
+			fnt = run.Font
 		}
-		if font.Name != nil && font.Name.Val != nil {
-			defaultFnt.Family = *font.Name.Val
+		if i := strings.IndexAny(run.Text, "\r\n"); i >= 0 {
+			first := run.Text[:i]
+			rest := run.Text[i+1:]
+			if w += fnt.calcTextWidth(first); w > width {
+				width = w
+			}
+			w = fnt.calcTextWidth(rest)
+			continue
 		}
+		w += fnt.calcTextWidth(run.Text)
 	}
-
-	return f.autoFitColWidth(sheet, minVal, maxVal, len(rows), defaultFnt)
+	if w > width {
+		width = w
+	}
+	return width
 }
 
 // autoFitColWidth provides a function to auto fit columns width according to
@@ -934,6 +920,11 @@ func (f *File) autoFitColWidth(sheet string, from, to, rows int, defaultFnt *Fon
 			if style != nil && style.Font != nil {
 				fnt = style.Font
 			}
+			if cellType, _ := f.GetCellType(sheet, cell); cellType == CellTypeInlineString || cellType == CellTypeSharedString {
+				runs, _ := f.GetCellRichText(sheet, cell)
+				width = fnt.calcRichTextWidth(runs)
+				continue
+			}
 			if w := fnt.calcTextWidth(val); w > width {
 				width = w
 			}
@@ -947,4 +938,42 @@ func (f *File) autoFitColWidth(sheet string, from, to, rows int, defaultFnt *Fon
 		}
 	}
 	return nil
+}
+
+// AutoFitColWidth provides a function to auto fit columns width according to
+// their text content with font format. Not that this function calculates the
+// width of the text approximately based on the font format, currently does not
+// support merged cells. the actual width may be different when you open the
+// workbook in Office applications.
+//
+// For example set column of column H on Sheet1:
+//
+//	err := f.AutoFitColWidth("Sheet1", "H")
+//
+// Set style of columns C:F on Sheet1:
+//
+//	err := f.AutoFitColWidth("Sheet1", "C:F")
+func (f *File) AutoFitColWidth(sheet, columns string) error {
+	minVal, maxVal, err := f.parseColRange(columns)
+	if err != nil {
+		return err
+	}
+	rows, err := f.GetRows(sheet)
+	if err != nil {
+		return err
+	}
+	defaultFnt := &Font{}
+	font, err := f.readDefaultFont()
+	if err != nil {
+		return err
+	}
+	if font != nil {
+		if font.Sz != nil && font.Sz.Val != nil {
+			defaultFnt.Size = *font.Sz.Val
+		}
+		if font.Name != nil && font.Name.Val != nil {
+			defaultFnt.Family = *font.Name.Val
+		}
+	}
+	return f.autoFitColWidth(sheet, minVal, maxVal, len(rows), defaultFnt)
 }
