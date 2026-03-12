@@ -922,7 +922,9 @@ func (f *File) autoFitColWidth(sheet string, from, to, rows int, defaultFnt *Fon
 			}
 			if cellType, _ := f.GetCellType(sheet, cell); cellType == CellTypeInlineString || cellType == CellTypeSharedString {
 				runs, _ := f.GetCellRichText(sheet, cell)
-				width = fnt.calcRichTextWidth(runs)
+				if w := fnt.calcRichTextWidth(runs); w > width {
+					width = w
+				}
 				continue
 			}
 			if w := fnt.calcTextWidth(val); w > width {
