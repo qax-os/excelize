@@ -884,63 +884,52 @@ func (fnt *Font) calcRichTextWidth(runs []RichTextRun) float64 {
 
 // autoFitColWidth provides a function to auto fit columns width according to
 // their text content with default font size and font.
-func (f *File) autoFitColWidth(sheet string, from, to, rows int, defaultFnt *Font) error {
-	ws, err := f.workSheetReader(sheet)
-	if err != nil {
-		return err
-	}
-	for col := from; col <= to; col++ {
-		var width float64
-		for row := 1; row <= rows; row++ {
-			cell, _ := CoordinatesToCellName(col, row)
-			val, err := f.CalcCellValue(sheet, cell)
-			if err != nil && inStrSlice([]string{
-				formulaErrorDIV,
-				formulaErrorNAME,
-				formulaErrorNA,
-				formulaErrorNUM,
-				formulaErrorVALUE,
-				formulaErrorREF,
-				formulaErrorNULL,
-				formulaErrorSPILL,
-				formulaErrorCALC,
-				formulaErrorGETTINGDATA,
-			}, err.Error(), true) != -1 {
-				val = err.Error()
-			}
-			if val == "" {
-				continue
-			}
-			styleID, _ := f.GetCellStyle(sheet, cell)
-			fnt := defaultFnt
-			style, err := f.GetStyle(styleID)
-			if err != nil {
-				return err
-			}
-			if style != nil && style.Font != nil {
-				fnt = style.Font
-			}
-			if cellType, _ := f.GetCellType(sheet, cell); cellType == CellTypeInlineString || cellType == CellTypeSharedString {
-				runs, _ := f.GetCellRichText(sheet, cell)
-				if w := fnt.calcRichTextWidth(runs); w > width {
-					width = w
-				}
-				continue
-			}
-			if w := fnt.calcTextWidth(val); w > width {
+func (f *File) autoFitColWidth(sheet string, col, rows int, defaultFnt *Font) (float64, error) {
+	var width float64
+	for row := 1; row <= rows; row++ {
+		cell, err := CoordinatesToCellName(col, row)
+		if err != nil {
+			return width, err
+		}
+		val, err := f.CalcCellValue(sheet, cell)
+		if err != nil && inStrSlice([]string{
+			formulaErrorDIV,
+			formulaErrorNAME,
+			formulaErrorNA,
+			formulaErrorNUM,
+			formulaErrorVALUE,
+			formulaErrorREF,
+			formulaErrorNULL,
+			formulaErrorSPILL,
+			formulaErrorCALC,
+			formulaErrorGETTINGDATA,
+		}, err.Error(), true) != -1 {
+			val = err.Error()
+		}
+		if val == "" {
+			continue
+		}
+		styleID, _ := f.GetCellStyle(sheet, cell)
+		fnt := defaultFnt
+		style, err := f.GetStyle(styleID)
+		if err != nil {
+			return width, err
+		}
+		if style != nil && style.Font != nil {
+			fnt = style.Font
+		}
+		if cellType, _ := f.GetCellType(sheet, cell); cellType == CellTypeInlineString || cellType == CellTypeSharedString {
+			runs, _ := f.GetCellRichText(sheet, cell)
+			if w := fnt.calcRichTextWidth(runs); w > width {
 				width = w
 			}
+			continue
 		}
-		if width > 0 {
-			width += 2
-			if width > MaxColumnWidth {
-				width = MaxColumnWidth
-			}
-			ws.setColWidth(col, col, width)
-			ws.setColVisible(col, col, true)
+		if w := fnt.calcTextWidth(val); w > width {
+			width = w
 		}
 	}
-	return nil
+	return width, nil
 }
 
 // AutoFitColWidth provides a function to auto fit columns width according to
@@ -982,5 +971,16 @@ func (f *File) AutoFitColWidth(sheet, columns string) error {
 			defaultFnt.Family = *font.Name.Val
 		}
 	}
-	return f.autoFitColWidth(sheet, minVal, maxVal, len(rows), defaultFnt)
+	ws, _ := f.workSheetReader(sheet)
+	for col := minVal; col <= maxVal; col++ {
+		if width, _ := f.autoFitColWidth(sheet, col, len(rows), defaultFnt); width > 0 {
+			width += 2
+			if width > MaxColumnWidth {
+				width = MaxColumnWidth
+			}
+			ws.setColVisible(col, col, true)
+			ws.setColWidth(col, col, width)
+		}
+	}
+	return err
 }

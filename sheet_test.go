@@ -819,7 +819,7 @@ func TestSheetDimension(t *testing.T) {
 		{"Sheet1", "123", "cannot convert cell \"123\" to coordinates: invalid cell name \"123\""},
 		{"Sheet1", "A:B", "cannot convert cell \"A\" to coordinates: invalid cell name \"A\""},
 		{"Sheet1", ":B10", "cannot convert cell \"\" to coordinates: invalid cell name \"\""},
-		{"Sheet1", "XFE1", "the column number must be greater than or equal to 1 and less than or equal to 16384"},
+		{"Sheet1", "XFE1", ErrColumnNumber.Error()},
 		{"Sheet1", "A1048577", "row number exceeds maximum limit"},
 		{"Sheet1", "ZZZ", "cannot convert cell \"ZZZ\" to coordinates: invalid cell name \"ZZZ\""},
 		{"SheetN", "A1", "sheet SheetN does not exist"},
