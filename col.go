@@ -935,26 +935,29 @@ func (f *File) autoFitColWidth(sheet string, from, to, rows int, defaultFnt *Fon
 				width = MaxColumnWidth
 			}
 			ws.setColWidth(col, col, width)
+			ws.setColVisible(col, col, true)
 		}
 	}
 	return nil
 }
 
 // AutoFitColWidth provides a function to auto fit columns width according to
-// their text content with font format. Not that this function calculates the
-// width of the text approximately based on the font format, currently does not
-// support merged cells. the actual width may be different when you open the
-// workbook in Office applications. This process can be relatively slow on large
-// worksheets, so this should normally only be called once per column, at the
-// end of your processing.
+// their text content with font format. If the selected range contains hidden
+// columns and those columns have content, this function will unhide the hidden
+// columns. Not that this function calculates the width of the text
+// approximately based on the font format, currently does not support merged
+// cells. the actual width may be different when you open the workbook in Office
+// applications. This process can be relatively slow on large worksheets, so
+// this should normally only be called once per column, at the end of your
+// processing.
 //
-// For example set column of column H on Sheet1:
+// For example, auto fit column width for column D on Sheet1:
 //
-//	err := f.AutoFitColWidth("Sheet1", "H")
+//	err := f.AutoFitColWidth("Sheet1", "D")
 //
-// Set style of columns C:F on Sheet1:
+// Auto fit column width for columns D to F on Sheet1:
 //
-//	err := f.AutoFitColWidth("Sheet1", "C:F")
+//	err := f.AutoFitColWidth("Sheet1", "D:F")
 func (f *File) AutoFitColWidth(sheet, columns string) error {
 	minVal, maxVal, err := f.parseColRange(columns)
 	if err != nil {
