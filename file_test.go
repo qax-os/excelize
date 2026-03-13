@@ -98,6 +98,88 @@ func TestWriteTo(t *testing.T) {
 		_, err := f.WriteTo(bufio.NewWriter(&buf))
 		assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	}
+
+	// Test non-password writes use file-backed path.
+	{
+		f := NewFile()
+		var gotWriterType string
+		f.SetZipWriter(func(w io.Writer) ZipWriter {
+			switch w.(type) {
+			case *os.File:
+				gotWriterType = "file"
+			case *bytes.Buffer:
+				gotWriterType = "buffer"
+			default:
+				gotWriterType = "other"
+			}
+			return zip.NewWriter(w)
+		})
+		var out bytes.Buffer
+		_, err := f.WriteTo(&out)
+		require.NoError(t, err)
+		assert.Equal(t, "file", gotWriterType)
+		assert.NotZero(t, out.Len())
+	}
+	// Test password writes use buffered path.
+	{
+		f := NewFile()
+		var gotWriterType string
+		f.SetZipWriter(func(w io.Writer) ZipWriter {
+			switch w.(type) {
+			case *os.File:
+				gotWriterType = "file"
+			case *bytes.Buffer:
+				gotWriterType = "buffer"
+			default:
+				gotWriterType = "other"
+			}
+			return zip.NewWriter(w)
+		})
+		var out bytes.Buffer
+		_, err := f.WriteTo(&out, Options{Password: "123"})
+		require.NoError(t, err)
+		assert.Equal(t, "buffer", gotWriterType)
+		assert.NotZero(t, out.Len())
+	}
+	// Test stream writer non-password writes use file-backed path.
+	{
+		f := NewFile()
+		sw, err := f.NewStreamWriter("Sheet1")
+		require.NoError(t, err)
+		for r := 1; r <= 64; r++ {
+			row := make([]interface{}, 64)
+			for c := 0; c < len(row); c++ {
+				row[c] = strings.Repeat("x", 512)
+			}
+			cell, err := CoordinatesToCellName(1, r)
+			require.NoError(t, err)
+			require.NoError(t, sw.SetRow(cell, row))
+		}
+		require.NoError(t, sw.Flush())
+
+		var gotWriterType string
+		f.SetZipWriter(func(w io.Writer) ZipWriter {
+			switch w.(type) {
+			case *os.File:
+				gotWriterType = "file"
+			case *bytes.Buffer:
+				gotWriterType = "buffer"
+			default:
+				gotWriterType = "other"
+			}
+			return zip.NewWriter(w)
+		})
+		_, err = f.WriteTo(io.Discard)
+		require.NoError(t, err)
+		assert.Equal(t, "file", gotWriterType)
+		require.NoError(t, f.Close())
+	}
+	// Test writeDirectToWriter returns error when the temporary directory does not exist.
+	{
+		f := NewFile()
+		_, err := f.WriteTo(io.Discard, Options{TmpDir: filepath.Join(os.TempDir(), "excelize_nonexistent_dir")})
+		assert.Error(t, err)
+	}
 }
 
 func TestClose(t *testing.T) {
@@ -144,6 +226,15 @@ func TestZip64(t *testing.T) {
 	buf.WriteString("test")
 	assert.NoError(t, f.writeZip64LFH(buf))
 
+	// Test that stale zip64Entries from a previous writeToZip call are not carried over.
+	f = NewFile()
+	f.zip64Entries = []string{"stale/entry.xml"}
+	buf.Reset()
+	zw := f.ZipWriter(buf)
+	assert.NoError(t, f.writeToZip(zw))
+	_ = zw.Close()
+	assert.Equal(t, -1, inStrSlice(f.zip64Entries, "stale/entry.xml", true))
+
 	t.Run("for_save_zip64_with_in_memory_file_over_4GB", func(t *testing.T) {
 		// Test save workbook in ZIP64 format with in memory file with size over 4GB.
 		f := NewFile()
@@ -170,6 +261,42 @@ func TestZip64(t *testing.T) {
 		_, err = f.WriteToBuffer()
 		assert.NoError(t, err)
 		assert.NoError(t, f.Close())
+	})
+
+	t.Run("write_zip64_lfh_file_patch_parity", func(t *testing.T) {
+		makeLFH := func(name string) []byte {
+			h := make([]byte, 30+len(name))
+			copy(h[0:4], []byte{0x50, 0x4b, 0x03, 0x04})
+			binary.LittleEndian.PutUint16(h[4:6], 20)
+			binary.LittleEndian.PutUint16(h[26:28], uint16(len(name)))
+			copy(h[30:], []byte(name))
+			return h
+		}
+
+		entryA := "xl/worksheets/sheet1.xml"
+		entryB := "docProps/core.xml"
+		initial := append(makeLFH(entryA), makeLFH(entryB)...)
+
+		f := NewFile()
+		f.zip64Entries = append(f.zip64Entries, entryA)
+
+		buf := bytes.NewBuffer(append([]byte(nil), initial...))
+		require.NoError(t, f.writeZip64LFH(buf))
+
+		tmp, err := os.CreateTemp("", "excelize-zip64-lfh-*")
+		require.NoError(t, err)
+		defer os.Remove(tmp.Name())
+		_, err = tmp.Write(initial)
+		require.NoError(t, err)
+		require.NoError(t, f.writeZip64LFHToFile(tmp))
+		require.NoError(t, tmp.Close())
+
+		got, err := os.ReadFile(tmp.Name())
+		require.NoError(t, err)
+		assert.Equal(t, buf.Bytes(), got)
+		assert.EqualValues(t, 45, binary.LittleEndian.Uint16(got[4:6]))
+		offsetSecond := len(makeLFH(entryA))
+		assert.EqualValues(t, 20, binary.LittleEndian.Uint16(got[offsetSecond+4:offsetSecond+6]))
 	})
 }
 
