@@ -549,7 +549,8 @@ func TestAutoFitColWidth(t *testing.T) {
 
 	assert.Equal(t, f.AutoFitColWidth("Sheet1", ""), newInvalidColumnNameError(""))
 	assert.Equal(t, f.AutoFitColWidth("SheetN", "A"), ErrSheetNotExist{"SheetN"})
-	assert.Equal(t, f.autoFitColWidth("SheetN", 1, 1, 0, &Font{}), ErrSheetNotExist{"SheetN"})
+	_, err = f.autoFitColWidth("Sheet1", TotalRows, 1, &Font{})
+	assert.Equal(t, ErrColumnNumber, err)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAutoFitColWidth.xlsx")))
 
 	f = NewFile()
@@ -563,5 +564,6 @@ func TestAutoFitColWidth(t *testing.T) {
 			{R: 1, C: []xlsxC{{R: "A1", S: 1, V: "Test"}}},
 		}},
 	})
-	assert.Equal(t, f.autoFitColWidth("Sheet1", 1, 1, 1, &Font{}), newInvalidStyleID(1))
+	_, err = f.autoFitColWidth("Sheet1", 1, 1, &Font{})
+	assert.Equal(t, err, newInvalidStyleID(1))
 }
