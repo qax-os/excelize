@@ -1581,7 +1581,7 @@ func (f *File) addSheetDrawingChart(drawingXML string, rID int, opts *GraphicOpt
 	absoluteAnchor := xdrCellAnchor{
 		EditAs: opts.Positioning,
 		Pos:    &xlsxPoint2D{},
-		Ext:    &xlsxPositiveSize2D{},
+		Ext:    &xlsxPositiveSize2D{Cx: 9280533, Cy: 6051719},
 	}
 
 	graphicFrame := xlsxGraphicFrame{
