@@ -13273,7 +13273,7 @@ func yearFracBasis4(startDate, endDate float64) (dayDiff, daysInYear float64) {
 // yearFrac is an implementation of the formula function YEARFRAC.
 func yearFrac(startDate, endDate float64, basis int) formulaArg {
 	startTime, endTime := timeFromExcelTime(startDate, false), timeFromExcelTime(endDate, false)
-	if startTime == endTime {
+	if startTime.Equal(endTime) {
 		return newNumberFormulaArg(0)
 	}
 	var dayDiff, daysInYear float64

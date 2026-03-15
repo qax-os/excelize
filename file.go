@@ -132,7 +132,7 @@ func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 		}
 		return buf.WriteTo(w)
 	}
-	return f.writeDirectToWriter(w)
+	return f.writeToWriter(w)
 }
 
 // WriteToBuffer provides a function to get bytes.Buffer from the saved file,
@@ -148,7 +148,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	if err := zw.Close(); err != nil {
 		return buf, err
 	}
-	err := f.writeZip64LFH(buf)
+	f.writeZip64LFH(buf)
 	if f.options != nil && f.options.Password != "" {
 		b, err := Encrypt(buf.Bytes(), f.options)
 		if err != nil {
@@ -157,12 +157,12 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 		buf.Reset()
 		buf.Write(b)
 	}
-	return buf, err
+	return buf, nil
 }
 
-// writeDirectToWriter writes workbook data to a temporary file first and then
-// streams to the destination writer, avoiding a full in-memory workbook copy.
-func (f *File) writeDirectToWriter(w io.Writer) (int64, error) {
+// writeToWriter writes workbook data to a temporary file first and then streams
+// to the destination writer, avoiding a full in-memory workbook copy.
+func (f *File) writeToWriter(w io.Writer) (int64, error) {
 	tmpDir := ""
 	if f.options != nil {
 		tmpDir = f.options.TmpDir
@@ -182,7 +182,7 @@ func (f *File) writeDirectToWriter(w io.Writer) (int64, error) {
 	if err := zw.Close(); err != nil {
 		return 0, err
 	}
-	if err := f.writeToFile(tmp); err != nil {
+	if err := f.writeZip64LFHToFile(tmp); err != nil {
 		return 0, err
 	}
 	if _, err := tmp.Seek(0, io.SeekStart); err != nil {
@@ -280,18 +280,11 @@ func (f *File) writeToZip(zw ZipWriter) error {
 // entries larger than 4GB. This results in a version mismatch between the
 // central directory and the local file header. As a result, opening the
 // generated workbook with spreadsheet application will prompt file corruption.
-func (f *File) writeZip64LFH(buf *bytes.Buffer) error {
+func (f *File) writeZip64LFH(buf *bytes.Buffer) {
 	if len(f.zip64Entries) == 0 {
-		return nil
+		return
 	}
-	f.patchZip64LFH(buf.Bytes())
-	return nil
-}
-
-// patchZip64LFH scans a raw ZIP byte slice and updates the version-needed
-// field in each Local File Header to 45 (ZIP64) for every entry whose name
-// appears in f.zip64Entries. The bytes are modified in place.
-func (f *File) patchZip64LFH(data []byte) {
+	data := buf.Bytes()
 	offset := 0
 	for offset < len(data) {
 		idx := bytes.Index(data[offset:], []byte{0x50, 0x4b, 0x03, 0x04})
@@ -313,9 +306,9 @@ func (f *File) patchZip64LFH(data []byte) {
 	}
 }
 
-// writeToFile updates ZIP64 local file header versions in file-backed ZIP
-// output. It patches entries recorded in f.zip64Entries in place.
-func (f *File) writeToFile(file *os.File) error {
+// writeZip64LFHToFile updates ZIP64 local file header versions in file-backed
+// ZIP output. It patches entries recorded in f.zip64Entries in place.
+func (f *File) writeZip64LFHToFile(file *os.File) error {
 	if len(f.zip64Entries) == 0 {
 		return nil
 	}

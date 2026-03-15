@@ -184,7 +184,7 @@ func TestZip64(t *testing.T) {
 	buf := new(bytes.Buffer)
 	buf.Write([]byte{0x50, 0x4b, 0x03, 0x04})
 	buf.Write(make([]byte, 20))
-	assert.NoError(t, f.writeZip64LFH(buf))
+	f.writeZip64LFH(buf)
 
 	// Test with file header less than the required 30 for the fixed header part
 	f = NewFile()
@@ -195,7 +195,7 @@ func TestZip64(t *testing.T) {
 	assert.NoError(t, binary.Write(buf, binary.LittleEndian, uint16(10)))
 	buf.Write(make([]byte, 2))
 	buf.WriteString("test")
-	assert.NoError(t, f.writeZip64LFH(buf))
+	f.writeZip64LFH(buf)
 
 	t.Run("for_save_zip64_with_in_memory_file_over_4GB", func(t *testing.T) {
 		// Test save workbook in ZIP64 format with in memory file with size over 4GB.
@@ -247,7 +247,7 @@ func TestZip64(t *testing.T) {
 	{
 		f := NewFile()
 		f.options = &Options{TmpDir: filepath.Join(os.TempDir(), "nonexistent-excelize-dir")}
-		_, err := f.writeDirectToWriter(io.Discard)
+		_, err := f.writeToWriter(io.Discard)
 		assert.Error(t, err)
 	}
 	// Test writeDirectToWriter with zw.Close() error
@@ -256,7 +256,7 @@ func TestZip64(t *testing.T) {
 		f.SetZipWriter(func(w io.Writer) ZipWriter {
 			return &errZipWriter{inner: zip.NewWriter(w), closeErr: errors.New("close error")}
 		})
-		_, err := f.writeDirectToWriter(io.Discard)
+		_, err := f.writeToWriter(io.Discard)
 		assert.EqualError(t, err, "close error")
 	}
 	// Test writeDirectToWriter with writeToFile error
@@ -273,7 +273,7 @@ func TestZip64(t *testing.T) {
 				},
 			}
 		})
-		_, err := f.writeDirectToWriter(io.Discard)
+		_, err := f.writeToWriter(io.Discard)
 		assert.Error(t, err)
 	}
 	// Test writeDirectToWriter with Seek error
@@ -289,7 +289,7 @@ func TestZip64(t *testing.T) {
 				},
 			}
 		})
-		_, err := f.writeDirectToWriter(io.Discard)
+		_, err := f.writeToWriter(io.Discard)
 		assert.Error(t, err)
 	}
 	// Test writeToZip with stream Create error
@@ -305,14 +305,14 @@ func TestZip64(t *testing.T) {
 		tmp, err := os.CreateTemp(os.TempDir(), "excelize-")
 		assert.NoError(t, err)
 		name := tmp.Name()
-		tmp.Close()
-		os.Remove(name)
+		assert.NoError(t, tmp.Close())
+		assert.NoError(t, os.Remove(name))
 		closedFile, _ := os.Open(name)
 		// Open failed, so create a real temp then close+remove to get a closed *os.File
 		tmp2, err := os.CreateTemp(os.TempDir(), "excelize-")
 		assert.NoError(t, err)
 		_ = closedFile
-		tmp2.Close()
+		assert.NoError(t, tmp2.Close())
 		os.Remove(tmp2.Name())
 		f.streams = map[string]*StreamWriter{
 			"s": {rawData: bufferedWriter{tmp: tmp2}},
@@ -341,8 +341,8 @@ func TestZip64(t *testing.T) {
 		tmp, err := os.CreateTemp(os.TempDir(), "excelize-")
 		assert.NoError(t, err)
 		os.Remove(tmp.Name())
-		tmp.Close()
-		assert.Error(t, f.writeToFile(tmp))
+		assert.NoError(t, tmp.Close())
+		assert.Error(t, f.writeZip64LFHToFile(tmp))
 	}
 	// Test writeToFile with write-only file (ReadAt error)
 	{
@@ -353,12 +353,12 @@ func TestZip64(t *testing.T) {
 		name := tmp.Name()
 		_, err = tmp.Write(make([]byte, 30))
 		assert.NoError(t, err)
-		tmp.Close()
+		assert.NoError(t, tmp.Close())
 		wo, err := os.OpenFile(name, os.O_WRONLY, 0)
 		assert.NoError(t, err)
-		assert.Error(t, f.writeToFile(wo))
-		wo.Close()
-		os.Remove(name)
+		assert.Error(t, f.writeZip64LFHToFile(wo))
+		assert.NoError(t, wo.Close())
+		assert.NoError(t, os.Remove(name))
 	}
 	// Test writeToFile with file too small for LFH header
 	{
@@ -370,9 +370,9 @@ func TestZip64(t *testing.T) {
 		copy(data, []byte{0x50, 0x4b, 0x03, 0x04})
 		_, err = tmp.Write(data)
 		assert.NoError(t, err)
-		assert.NoError(t, f.writeToFile(tmp))
-		tmp.Close()
-		os.Remove(tmp.Name())
+		assert.NoError(t, f.writeZip64LFHToFile(tmp))
+		assert.NoError(t, tmp.Close())
+		assert.NoError(t, os.Remove(tmp.Name()))
 	}
 	// Test writeToFile with filenameLen extending past EOF
 	{
@@ -385,9 +385,9 @@ func TestZip64(t *testing.T) {
 		binary.LittleEndian.PutUint16(data[26:28], 10)
 		_, err = tmp.Write(data)
 		assert.NoError(t, err)
-		assert.NoError(t, f.writeToFile(tmp))
-		tmp.Close()
-		os.Remove(tmp.Name())
+		assert.NoError(t, f.writeZip64LFHToFile(tmp))
+		assert.NoError(t, tmp.Close())
+		assert.NoError(t, os.Remove(tmp.Name()))
 	}
 	// Test writeToFile with concurrent file truncation (ReadAt fixed header error)
 	{
@@ -408,17 +408,18 @@ func TestZip64(t *testing.T) {
 				case <-done:
 					return
 				default:
-					_ = tmp.Truncate(10)
+					assert.NoError(t, tmp.Truncate(10))
 				}
 			}
 		}()
 		for range 2000 {
-			_, _ = tmp.WriteAt(data, 0)
-			_ = f.writeToFile(tmp)
+			_, err = tmp.WriteAt(data, 0)
+			assert.NoError(t, err)
+			_ = f.writeZip64LFHToFile(tmp)
 		}
 		close(done)
-		tmp.Close()
-		os.Remove(tmp.Name())
+		assert.NoError(t, tmp.Close())
+		assert.NoError(t, os.Remove(tmp.Name()))
 	}
 	// Test writeToFile with concurrent file truncation (ReadAt filename error)
 	{
@@ -438,17 +439,17 @@ func TestZip64(t *testing.T) {
 				case <-done:
 					return
 				default:
-					_ = tmp.Truncate(90035)
+					assert.NoError(t, tmp.Truncate(90035))
 				}
 			}
 		}()
 		for range 100 {
-			_ = tmp.Truncate(100000)
-			_ = f.writeToFile(tmp)
+			assert.NoError(t, tmp.Truncate(100000))
+			_ = f.writeZip64LFHToFile(tmp)
 		}
 		close(done)
-		tmp.Close()
-		os.Remove(tmp.Name())
+		assert.NoError(t, tmp.Close())
+		assert.NoError(t, os.Remove(tmp.Name()))
 	}
 	// Test writeToFile with read-only file (WriteAt error)
 	{
@@ -468,9 +469,9 @@ func TestZip64(t *testing.T) {
 		tmp.Close()
 		ro, err := os.Open(name)
 		assert.NoError(t, err)
-		assert.Error(t, f.writeToFile(ro))
-		ro.Close()
-		os.Remove(name)
+		assert.Error(t, f.writeZip64LFHToFile(ro))
+		assert.NoError(t, ro.Close())
+		assert.NoError(t, os.Remove(name))
 	}
 }
 
@@ -480,7 +481,7 @@ func TestRemoveTempFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	tmpName := tmp.Name()
-	tmp.Close()
+	assert.NoError(t, tmp.Close())
 	f := NewFile()
 	// fill the tempFiles map with non-existing (erroring on Remove) "files"
 	for i := range 1000 {
@@ -491,6 +492,6 @@ func TestRemoveTempFiles(t *testing.T) {
 	require.Error(t, f.Close())
 	if _, err := os.Stat(tmpName); err == nil {
 		t.Errorf("temp file %q still exist", tmpName)
-		os.Remove(tmpName)
+		assert.NoError(t, os.Remove(tmpName))
 	}
 }
