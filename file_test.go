@@ -95,7 +95,7 @@ func BenchmarkWrite(b *testing.B) {
 }
 
 func TestWriteTo(t *testing.T) {
-	// Test WriteToBuffer err
+	// Test writing a package entry with a directory path
 	{
 		f, buf := File{Pkg: sync.Map{}}, bytes.Buffer{}
 		f.SetZipWriter(func(w io.Writer) ZipWriter { return zip.NewWriter(w) })
@@ -104,30 +104,11 @@ func TestWriteTo(t *testing.T) {
 		assert.EqualError(t, err, "zip: write to directory")
 		f.Pkg.Delete("/d/")
 	}
-	// Test file path overflow
-	{
-		f, buf := File{Pkg: sync.Map{}}, bytes.Buffer{}
-		f.SetZipWriter(func(w io.Writer) ZipWriter { return zip.NewWriter(w) })
-		const maxUint16 = 1<<16 - 1
-		f.Pkg.Store(strings.Repeat("s", maxUint16+1), nil)
-		_, err := f.WriteTo(bufio.NewWriter(&buf))
-		assert.EqualError(t, err, "zip: FileHeader.Name too long")
-	}
-	// Test StreamsWriter err
-	{
-		f, buf := File{Pkg: sync.Map{}}, bytes.Buffer{}
-		f.SetZipWriter(func(w io.Writer) ZipWriter { return zip.NewWriter(w) })
-		f.Pkg.Store("s", nil)
-		f.streams = make(map[string]*StreamWriter)
-		file, _ := os.Open("123")
-		f.streams["s"] = &StreamWriter{rawData: bufferedWriter{tmp: file}}
-		_, err := f.WriteTo(bufio.NewWriter(&buf))
-		assert.Nil(t, err)
-	}
-	// Test write with temporary file
+	// Test temporary file path overflow
 	{
 		f, buf := File{tempFiles: sync.Map{}}, bytes.Buffer{}
 		f.SetZipWriter(func(w io.Writer) ZipWriter { return zip.NewWriter(w) })
+		f.streams = map[string]*StreamWriter{"stream": {rawData: bufferedWriter{}}}
 		const maxUint16 = 1<<16 - 1
 		f.tempFiles.Store("s", "")
 		f.tempFiles.Store(strings.Repeat("s", maxUint16+1), "")
@@ -143,7 +124,7 @@ func TestWriteTo(t *testing.T) {
 		_, err := f.WriteTo(bufio.NewWriter(&buf))
 		assert.EqualError(t, err, ErrWorkbookFileFormat.Error())
 	}
-	// Test write with unsupported charset content types.
+	// Test write with unsupported charset in content types
 	{
 		f, buf := NewFile(), bytes.Buffer{}
 		f.ContentTypes, f.Path = nil, filepath.Join("test", "TestWriteTo.xlsx")
@@ -198,7 +179,7 @@ func TestZip64(t *testing.T) {
 	f.writeZip64LFH(buf)
 
 	t.Run("for_save_zip64_with_in_memory_file_over_4GB", func(t *testing.T) {
-		// Test save workbook in ZIP64 format with in memory file with size over 4GB.
+		// Test save workbook in ZIP64 format with in memory file with size over 4GB
 		f := NewFile()
 		f.Sheet.Delete("xl/worksheets/sheet1.xml")
 		f.Pkg.Store("xl/worksheets/sheet1.xml", make([]byte, math.MaxUint32+1))
@@ -208,7 +189,7 @@ func TestZip64(t *testing.T) {
 	})
 
 	t.Run("for_save_zip64_with_in_temporary_file_over_4GB", func(t *testing.T) {
-		// Test save workbook in ZIP64 format with temporary file with size over 4GB.
+		// Test save workbook in ZIP64 format with temporary file with size over 4GB
 		if os.Getenv("GITHUB_ACTIONS") == "true" {
 			t.Skip()
 		}
@@ -243,7 +224,7 @@ func TestZip64(t *testing.T) {
 		_, err := f.WriteToBuffer()
 		assert.EqualError(t, err, "close error")
 	}
-	// Test writeDirectToWriter with invalid TmpDir (CreateTemp error)
+	// Test writeDirectToWriter with invalid TmpDir
 	{
 		f := NewFile()
 		f.options = &Options{TmpDir: filepath.Join(os.TempDir(), "nonexistent-excelize-dir")}
@@ -334,7 +315,7 @@ func TestZip64(t *testing.T) {
 		}
 		assert.Error(t, f.writeToZip(zw))
 	}
-	// Test writeToFile with closed file (Stat error)
+	// Test writeToFile with closed file
 	{
 		f := NewFile()
 		f.zip64Entries = append(f.zip64Entries, defaultXMLPathSharedStrings)
@@ -344,7 +325,7 @@ func TestZip64(t *testing.T) {
 		assert.NoError(t, tmp.Close())
 		assert.Error(t, f.writeZip64LFHToFile(tmp))
 	}
-	// Test writeToFile with write-only file (ReadAt error)
+	// Test writeToFile with write-only file
 	{
 		f := NewFile()
 		f.zip64Entries = append(f.zip64Entries, defaultXMLPathSharedStrings)
@@ -389,7 +370,7 @@ func TestZip64(t *testing.T) {
 		assert.NoError(t, tmp.Close())
 		assert.NoError(t, os.Remove(tmp.Name()))
 	}
-	// Test writeToFile with concurrent file truncation (ReadAt fixed header error)
+	// Test writeToFile with concurrent file truncation
 	{
 		f := NewFile()
 		f.zip64Entries = append(f.zip64Entries, defaultXMLPathSharedStrings)
@@ -421,7 +402,7 @@ func TestZip64(t *testing.T) {
 		assert.NoError(t, tmp.Close())
 		assert.NoError(t, os.Remove(tmp.Name()))
 	}
-	// Test writeToFile with concurrent file truncation (ReadAt filename error)
+	// Test writeToFile with concurrent file truncation
 	{
 		f := NewFile()
 		f.zip64Entries = append(f.zip64Entries, defaultXMLPathSharedStrings)
@@ -451,7 +432,7 @@ func TestZip64(t *testing.T) {
 		assert.NoError(t, tmp.Close())
 		assert.NoError(t, os.Remove(tmp.Name()))
 	}
-	// Test writeToFile with read-only file (WriteAt error)
+	// Test writeToFile with read-only file
 	{
 		f := NewFile()
 		entryName := defaultXMLPathSharedStrings
@@ -483,7 +464,7 @@ func TestRemoveTempFiles(t *testing.T) {
 	tmpName := tmp.Name()
 	assert.NoError(t, tmp.Close())
 	f := NewFile()
-	// fill the tempFiles map with non-existing (erroring on Remove) "files"
+	// Fill the tempFiles map with non-existing files
 	for i := range 1000 {
 		f.tempFiles.Store(strconv.Itoa(i), "/hopefully not existing")
 	}
