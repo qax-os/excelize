@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -111,12 +112,14 @@ func TestStreamWriter(t *testing.T) {
 	assert.NoError(t, streamWriter.rawData.Close())
 	assert.Error(t, streamWriter.Flush())
 
-	streamWriter.rawData.tmp, err = os.CreateTemp(os.TempDir(), "excelize-")
+	tmpFile, err := os.CreateTemp(os.TempDir(), "excelize-")
+	assert.NoError(t, err)
+	streamWriter.rawData.(*bufferedWriter).tmp = tmpFile
+
 	assert.NoError(t, err)
 	_, err = streamWriter.rawData.Reader()
 	assert.NoError(t, err)
-	assert.NoError(t, streamWriter.rawData.tmp.Close())
-	assert.NoError(t, os.Remove(streamWriter.rawData.tmp.Name()))
+	assert.NoError(t, streamWriter.rawData.Close())
 
 	// Test create stream writer with unsupported charset
 	file = NewFile()
@@ -152,6 +155,69 @@ func TestStreamWriter(t *testing.T) {
 	// Save spreadsheet with password.
 	assert.NoError(t, file.SaveAs(filepath.Join("test", "EncryptionTestStreamWriter.xlsx"), Options{Password: "password"}))
 	assert.NoError(t, file.Close())
+
+	// Test stream writer with target file impl
+	{
+		file = NewFile(Options{
+			StreamingTmpFile: newTestFileImpl(),
+		})
+		defer func() {
+			assert.NoError(t, file.Close())
+		}()
+
+		streamWriter, err = file.NewStreamWriter("Sheet1")
+		assert.NoError(t, err)
+		assert.NoError(t, streamWriter.SetRow("A1", []interface{}{Cell{StyleID: styleID, Value: "Data"}}))
+		assert.NoError(t, streamWriter.Flush())
+
+		// then read from the file impl
+		rows, err = file.Rows("Sheet1")
+		assert.NoError(t, err)
+		assert.True(t, rows.Next())
+		rowColumns, err := rows.Columns()
+		assert.NoError(t, err)
+		assert.Equal(t, "Data", rowColumns[0])
+
+		cellValue, err = file.GetCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, "Data", cellValue)
+	}
+}
+
+func newTestFileImpl() *testFileImpl {
+	return &testFileImpl{
+		data: []byte{},
+	}
+}
+
+type testFileImpl struct {
+	data []byte
+}
+
+func (t *testFileImpl) Close() error {
+	return nil
+}
+
+func (t *testFileImpl) Reader() (io.Reader, error) {
+	return bytes.NewReader(t.data), nil
+}
+
+func (t *testFileImpl) Sync() error {
+	return nil
+}
+
+func (t *testFileImpl) Write(p []byte) (n int, err error) {
+	t.data = append(t.data, p...)
+	return len(p), nil
+}
+
+func (t *testFileImpl) WriteString(s string) (n int, err error) {
+	t.data = append(t.data, s...)
+	return len(s), nil
+}
+
+func (t *testFileImpl) Flush() error {
+	return nil
 }
 
 func TestStreamSetColVisible(t *testing.T) {
@@ -486,38 +552,46 @@ func TestStreamWriterReader(t *testing.T) {
 	var (
 		err error
 		sw  = StreamWriter{
-			rawData: bufferedWriter{},
+			rawData: newBufferedWriter("", nil),
 		}
 	)
-	sw.rawData.tmp, err = os.CreateTemp(os.TempDir(), "excelize-")
+
+	tmpFile, err := os.CreateTemp(os.TempDir(), "excelize-")
 	assert.NoError(t, err)
-	assert.NoError(t, sw.rawData.tmp.Close())
+
+	rawData := newBufferedWriter("", nil)
+	rawData.tmp = tmpFile
+	sw.rawData = rawData
+
+	assert.NoError(t, tmpFile.Close())
 	// Test reader stat a closed temp file
 	_, err = sw.rawData.Reader()
 	assert.Error(t, err)
 	_, err = sw.getRowValues(1, 1, 1)
 	assert.Error(t, err)
-	os.Remove(sw.rawData.tmp.Name())
+	err = os.Remove(tmpFile.Name())
+	assert.NoError(t, err)
 
+	bw := newBufferedWriter("", nil)
 	sw = StreamWriter{
 		file:    NewFile(),
-		rawData: bufferedWriter{},
+		rawData: bw,
 	}
 	// Test getRowValues without expected row
-	sw.rawData.buf.WriteString("<worksheet><row r=\"1\"><c r=\"B1\"></c></row><worksheet/>")
+	bw.buf.WriteString("<worksheet><row r=\"1\"><c r=\"B1\"></c></row><worksheet/>")
 	_, err = sw.getRowValues(1, 1, 1)
 	assert.NoError(t, err)
-	sw.rawData.buf.Reset()
+	bw.buf.Reset()
 	// Test getRowValues with illegal cell reference
-	sw.rawData.buf.WriteString("<worksheet><row r=\"1\"><c r=\"A\"></c></row><worksheet/>")
+	bw.buf.WriteString("<worksheet><row r=\"1\"><c r=\"A\"></c></row><worksheet/>")
 	_, err = sw.getRowValues(1, 1, 1)
 	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), err)
-	sw.rawData.buf.Reset()
+	bw.buf.Reset()
 	// Test getRowValues with invalid c element characters
-	sw.rawData.buf.WriteString("<worksheet><row r=\"1\"><c></row><worksheet/>")
+	bw.buf.WriteString("<worksheet><row r=\"1\"><c></row><worksheet/>")
 	_, err = sw.getRowValues(1, 1, 1)
 	assert.EqualError(t, err, "XML syntax error on line 1: element <c> closed by </row>")
-	sw.rawData.buf.Reset()
+	bw.buf.Reset()
 }
 
 func TestStreamWriterGetRowElement(t *testing.T) {
