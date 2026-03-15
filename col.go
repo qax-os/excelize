@@ -550,7 +550,7 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 	var fc []xlsxCol
 	for i := col.Min; i <= col.Max; i++ {
 		var c xlsxCol
-		deepcopy.Copy(&c, col)
+		_ = deepcopy.Copy(&c, col)
 		c.Min, c.Max = i, i
 		fc = append(fc, c)
 	}
@@ -569,7 +569,7 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 				continue
 			}
 			var c xlsxCol
-			deepcopy.Copy(&c, column)
+			_ = deepcopy.Copy(&c, column)
 			c.Min, c.Max = i, i
 			fc = append(fc, c)
 		}

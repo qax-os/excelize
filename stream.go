@@ -712,30 +712,30 @@ func (sw *StreamWriter) writeSheetData() {
 		if sw.worksheet.Cols != nil {
 			_, _ = sw.rawData.WriteString("<cols>")
 			for _, col := range sw.worksheet.Cols.Col {
-				sw.rawData.WriteString(`<col min="`)
-				sw.rawData.WriteString(strconv.Itoa(col.Min))
-				sw.rawData.WriteString(`" max="`)
-				sw.rawData.WriteString(strconv.Itoa(col.Max))
-				sw.rawData.WriteString(`"`)
+				_, _ = sw.rawData.WriteString(`<col min="`)
+				_, _ = sw.rawData.WriteString(strconv.Itoa(col.Min))
+				_, _ = sw.rawData.WriteString(`" max="`)
+				_, _ = sw.rawData.WriteString(strconv.Itoa(col.Max))
+				_, _ = sw.rawData.WriteString(`"`)
 				if col.Width != nil {
-					sw.rawData.WriteString(` width="`)
-					sw.rawData.WriteString(strconv.FormatFloat(*col.Width, 'f', -1, 64))
-					sw.rawData.WriteString(`" customWidth="1"`)
+					_, _ = sw.rawData.WriteString(` width="`)
+					_, _ = sw.rawData.WriteString(strconv.FormatFloat(*col.Width, 'f', -1, 64))
+					_, _ = sw.rawData.WriteString(`" customWidth="1"`)
 				}
 				if col.Style != 0 {
-					sw.rawData.WriteString(` style="`)
-					sw.rawData.WriteString(strconv.Itoa(col.Style))
-					sw.rawData.WriteString(`"`)
+					_, _ = sw.rawData.WriteString(` style="`)
+					_, _ = sw.rawData.WriteString(strconv.Itoa(col.Style))
+					_, _ = sw.rawData.WriteString(`"`)
 				}
 				if col.Hidden {
-					sw.rawData.WriteString(` hidden="1"`)
+					_, _ = sw.rawData.WriteString(` hidden="1"`)
 				}
 				if col.OutlineLevel > 0 {
-					sw.rawData.WriteString(` outlineLevel="`)
-					sw.rawData.WriteString(strconv.FormatUint(uint64(col.OutlineLevel), 10))
-					sw.rawData.WriteString(`"`)
+					_, _ = sw.rawData.WriteString(` outlineLevel="`)
+					_, _ = sw.rawData.WriteString(strconv.FormatUint(uint64(col.OutlineLevel), 10))
+					_, _ = sw.rawData.WriteString(`"`)
 				}
-				sw.rawData.WriteString(`/>`)
+				_, _ = sw.rawData.WriteString(`/>`)
 			}
 			_, _ = sw.rawData.WriteString("</cols>")
 		}

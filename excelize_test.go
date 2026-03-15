@@ -103,7 +103,8 @@ func TestOpenFile(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = f.GetCellFormula("Sheet2", "I11")
 	assert.NoError(t, err)
-	getSharedFormula(&xlsxWorksheet{}, 0, "")
+	_, err = getSharedFormula(&xlsxWorksheet{}, 0, "")
+	assert.NoError(t, err)
 
 	// Test read cell value with given illegal rows number
 	_, err = f.GetCellValue("Sheet2", "a-1")

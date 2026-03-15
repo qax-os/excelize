@@ -148,7 +148,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	if err := zw.Close(); err != nil {
 		return buf, err
 	}
-	f.writeZip64LFH(buf)
+	err := f.writeZip64LFH(buf)
 	if f.options != nil && f.options.Password != "" {
 		b, err := Encrypt(buf.Bytes(), f.options)
 		if err != nil {
@@ -157,7 +157,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 		buf.Reset()
 		buf.Write(b)
 	}
-	return buf, nil
+	return buf, err
 }
 
 // writeDirectToWriter writes workbook data to a temporary file first and then
@@ -182,7 +182,7 @@ func (f *File) writeDirectToWriter(w io.Writer) (int64, error) {
 	if err := zw.Close(); err != nil {
 		return 0, err
 	}
-	if err := f.writeZip64LFHToFile(tmp); err != nil {
+	if err := f.writeToFile(tmp); err != nil {
 		return 0, err
 	}
 	if _, err := tmp.Seek(0, io.SeekStart); err != nil {
@@ -313,9 +313,9 @@ func (f *File) patchZip64LFH(data []byte) {
 	}
 }
 
-// writeZip64LFHToFile updates ZIP64 local file header versions in file-backed
-// ZIP output. It patches entries recorded in f.zip64Entries in place.
-func (f *File) writeZip64LFHToFile(file *os.File) error {
+// writeToFile updates ZIP64 local file header versions in file-backed ZIP
+// output. It patches entries recorded in f.zip64Entries in place.
+func (f *File) writeToFile(file *os.File) error {
 	if len(f.zip64Entries) == 0 {
 		return nil
 	}

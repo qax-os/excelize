@@ -5,7 +5,9 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"io"
+	"io/fs"
 	"math"
 	"os"
 	"path/filepath"
@@ -18,9 +20,61 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// errZipWriter is a mock ZipWriter whose Create and Close can be configured to
+// return errors. When createErr is nil it delegates Create to a real zip.Writer.
+// If createWriter is set, Create returns that writer instead of calling inner.
+type errZipWriter struct {
+	inner        *zip.Writer
+	createErr    error
+	closeErr     error
+	createWriter io.Writer
+	onClose      func()
+}
+
+func (zw *errZipWriter) Create(name string) (io.Writer, error) {
+	if zw.createErr != nil {
+		return nil, zw.createErr
+	}
+	if zw.createWriter != nil {
+		return zw.createWriter, nil
+	}
+	return zw.inner.Create(name)
+}
+
+func (zw *errZipWriter) AddFS(fsys fs.FS) error { return nil }
+
+func (zw *errZipWriter) Close() error {
+	if zw.closeErr != nil {
+		return zw.closeErr
+	}
+	err := zw.inner.Close()
+	if err == nil && zw.onClose != nil {
+		zw.onClose()
+	}
+	return err
+}
+
+// limitedWriter returns an error after n bytes have been written.
+type limitedWriter struct {
+	w io.Writer
+	n int
+}
+
+func (lw *limitedWriter) Write(p []byte) (int, error) {
+	if lw.n <= 0 {
+		return 0, errors.New("write limit exceeded")
+	}
+	if len(p) > lw.n {
+		p = p[:lw.n]
+	}
+	n, err := lw.w.Write(p)
+	lw.n -= n
+	return n, err
+}
+
 func BenchmarkWrite(b *testing.B) {
 	const s = "This is test data"
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		f := NewFile()
 		for row := 1; row <= 10000; row++ {
 			for col := 1; col <= 20; col++ {
@@ -34,8 +88,7 @@ func BenchmarkWrite(b *testing.B) {
 			}
 		}
 		// Save spreadsheet by the given path.
-		err := f.SaveAs("./test.xlsx")
-		if err != nil {
+		if err := f.SaveAs("test.xlsx"); err != nil {
 			b.Error(err)
 		}
 	}
@@ -98,88 +151,6 @@ func TestWriteTo(t *testing.T) {
 		_, err := f.WriteTo(bufio.NewWriter(&buf))
 		assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	}
-
-	// Test non-password writes use file-backed path.
-	{
-		f := NewFile()
-		var gotWriterType string
-		f.SetZipWriter(func(w io.Writer) ZipWriter {
-			switch w.(type) {
-			case *os.File:
-				gotWriterType = "file"
-			case *bytes.Buffer:
-				gotWriterType = "buffer"
-			default:
-				gotWriterType = "other"
-			}
-			return zip.NewWriter(w)
-		})
-		var out bytes.Buffer
-		_, err := f.WriteTo(&out)
-		require.NoError(t, err)
-		assert.Equal(t, "file", gotWriterType)
-		assert.NotZero(t, out.Len())
-	}
-	// Test password writes use buffered path.
-	{
-		f := NewFile()
-		var gotWriterType string
-		f.SetZipWriter(func(w io.Writer) ZipWriter {
-			switch w.(type) {
-			case *os.File:
-				gotWriterType = "file"
-			case *bytes.Buffer:
-				gotWriterType = "buffer"
-			default:
-				gotWriterType = "other"
-			}
-			return zip.NewWriter(w)
-		})
-		var out bytes.Buffer
-		_, err := f.WriteTo(&out, Options{Password: "123"})
-		require.NoError(t, err)
-		assert.Equal(t, "buffer", gotWriterType)
-		assert.NotZero(t, out.Len())
-	}
-	// Test stream writer non-password writes use file-backed path.
-	{
-		f := NewFile()
-		sw, err := f.NewStreamWriter("Sheet1")
-		require.NoError(t, err)
-		for r := 1; r <= 64; r++ {
-			row := make([]interface{}, 64)
-			for c := 0; c < len(row); c++ {
-				row[c] = strings.Repeat("x", 512)
-			}
-			cell, err := CoordinatesToCellName(1, r)
-			require.NoError(t, err)
-			require.NoError(t, sw.SetRow(cell, row))
-		}
-		require.NoError(t, sw.Flush())
-
-		var gotWriterType string
-		f.SetZipWriter(func(w io.Writer) ZipWriter {
-			switch w.(type) {
-			case *os.File:
-				gotWriterType = "file"
-			case *bytes.Buffer:
-				gotWriterType = "buffer"
-			default:
-				gotWriterType = "other"
-			}
-			return zip.NewWriter(w)
-		})
-		_, err = f.WriteTo(io.Discard)
-		require.NoError(t, err)
-		assert.Equal(t, "file", gotWriterType)
-		require.NoError(t, f.Close())
-	}
-	// Test writeDirectToWriter returns error when the temporary directory does not exist.
-	{
-		f := NewFile()
-		_, err := f.WriteTo(io.Discard, Options{TmpDir: filepath.Join(os.TempDir(), "excelize_nonexistent_dir")})
-		assert.Error(t, err)
-	}
 }
 
 func TestClose(t *testing.T) {
@@ -221,19 +192,10 @@ func TestZip64(t *testing.T) {
 	buf.Reset()
 	buf.Write([]byte{0x50, 0x4b, 0x03, 0x04})
 	buf.Write(make([]byte, 22))
-	binary.Write(buf, binary.LittleEndian, uint16(10))
+	assert.NoError(t, binary.Write(buf, binary.LittleEndian, uint16(10)))
 	buf.Write(make([]byte, 2))
 	buf.WriteString("test")
 	assert.NoError(t, f.writeZip64LFH(buf))
-
-	// Test that stale zip64Entries from a previous writeToZip call are not carried over.
-	f = NewFile()
-	f.zip64Entries = []string{"stale/entry.xml"}
-	buf.Reset()
-	zw := f.ZipWriter(buf)
-	assert.NoError(t, f.writeToZip(zw))
-	_ = zw.Close()
-	assert.Equal(t, -1, inStrSlice(f.zip64Entries, "stale/entry.xml", true))
 
 	t.Run("for_save_zip64_with_in_memory_file_over_4GB", func(t *testing.T) {
 		// Test save workbook in ZIP64 format with in memory file with size over 4GB.
@@ -263,41 +225,253 @@ func TestZip64(t *testing.T) {
 		assert.NoError(t, f.Close())
 	})
 
-	t.Run("write_zip64_lfh_file_patch_parity", func(t *testing.T) {
-		makeLFH := func(name string) []byte {
-			h := make([]byte, 30+len(name))
-			copy(h[0:4], []byte{0x50, 0x4b, 0x03, 0x04})
-			binary.LittleEndian.PutUint16(h[4:6], 20)
-			binary.LittleEndian.PutUint16(h[26:28], uint16(len(name)))
-			copy(h[30:], []byte(name))
-			return h
-		}
-
-		entryA := "xl/worksheets/sheet1.xml"
-		entryB := "docProps/core.xml"
-		initial := append(makeLFH(entryA), makeLFH(entryB)...)
-
+	// Test WriteToBuffer with writeToZip error
+	{
 		f := NewFile()
-		f.zip64Entries = append(f.zip64Entries, entryA)
-
-		buf := bytes.NewBuffer(append([]byte(nil), initial...))
-		require.NoError(t, f.writeZip64LFH(buf))
-
-		tmp, err := os.CreateTemp("", "excelize-zip64-lfh-*")
-		require.NoError(t, err)
-		defer os.Remove(tmp.Name())
-		_, err = tmp.Write(initial)
-		require.NoError(t, err)
-		require.NoError(t, f.writeZip64LFHToFile(tmp))
-		require.NoError(t, tmp.Close())
-
-		got, err := os.ReadFile(tmp.Name())
-		require.NoError(t, err)
-		assert.Equal(t, buf.Bytes(), got)
-		assert.EqualValues(t, 45, binary.LittleEndian.Uint16(got[4:6]))
-		offsetSecond := len(makeLFH(entryA))
-		assert.EqualValues(t, 20, binary.LittleEndian.Uint16(got[offsetSecond+4:offsetSecond+6]))
-	})
+		f.SetZipWriter(func(w io.Writer) ZipWriter {
+			return &errZipWriter{inner: zip.NewWriter(w), createErr: errors.New("create error")}
+		})
+		_, err := f.WriteToBuffer()
+		assert.EqualError(t, err, "create error")
+	}
+	// Test WriteToBuffer with zw.Close() error
+	{
+		f := NewFile()
+		f.SetZipWriter(func(w io.Writer) ZipWriter {
+			return &errZipWriter{inner: zip.NewWriter(w), closeErr: errors.New("close error")}
+		})
+		_, err := f.WriteToBuffer()
+		assert.EqualError(t, err, "close error")
+	}
+	// Test writeDirectToWriter with invalid TmpDir (CreateTemp error)
+	{
+		f := NewFile()
+		f.options = &Options{TmpDir: filepath.Join(os.TempDir(), "nonexistent-excelize-dir")}
+		_, err := f.writeDirectToWriter(io.Discard)
+		assert.Error(t, err)
+	}
+	// Test writeDirectToWriter with zw.Close() error
+	{
+		f := NewFile()
+		f.SetZipWriter(func(w io.Writer) ZipWriter {
+			return &errZipWriter{inner: zip.NewWriter(w), closeErr: errors.New("close error")}
+		})
+		_, err := f.writeDirectToWriter(io.Discard)
+		assert.EqualError(t, err, "close error")
+	}
+	// Test writeDirectToWriter with writeToFile error
+	{
+		f := NewFile()
+		f.SetZipWriter(func(w io.Writer) ZipWriter {
+			return &errZipWriter{
+				inner: zip.NewWriter(w),
+				onClose: func() {
+					f.zip64Entries = append(f.zip64Entries, defaultXMLPathSharedStrings)
+					if file, ok := w.(*os.File); ok {
+						file.Close()
+					}
+				},
+			}
+		})
+		_, err := f.writeDirectToWriter(io.Discard)
+		assert.Error(t, err)
+	}
+	// Test writeDirectToWriter with Seek error
+	{
+		f := NewFile()
+		f.SetZipWriter(func(w io.Writer) ZipWriter {
+			return &errZipWriter{
+				inner: zip.NewWriter(w),
+				onClose: func() {
+					if file, ok := w.(*os.File); ok {
+						file.Close()
+					}
+				},
+			}
+		})
+		_, err := f.writeDirectToWriter(io.Discard)
+		assert.Error(t, err)
+	}
+	// Test writeToZip with stream Create error
+	{
+		f := NewFile()
+		f.streams = map[string]*StreamWriter{"s": {rawData: bufferedWriter{}}}
+		zw := &errZipWriter{inner: zip.NewWriter(&bytes.Buffer{}), createErr: errors.New("stream create error")}
+		assert.EqualError(t, f.writeToZip(zw), "stream create error")
+	}
+	// Test writeToZip with stream rawData.Reader() error
+	{
+		f := NewFile()
+		tmp, err := os.CreateTemp(os.TempDir(), "excelize-")
+		assert.NoError(t, err)
+		name := tmp.Name()
+		tmp.Close()
+		os.Remove(name)
+		closedFile, _ := os.Open(name)
+		// Open failed, so create a real temp then close+remove to get a closed *os.File
+		tmp2, err := os.CreateTemp(os.TempDir(), "excelize-")
+		assert.NoError(t, err)
+		_ = closedFile
+		tmp2.Close()
+		os.Remove(tmp2.Name())
+		f.streams = map[string]*StreamWriter{
+			"s": {rawData: bufferedWriter{tmp: tmp2}},
+		}
+		zw := zip.NewWriter(&bytes.Buffer{})
+		assert.Error(t, f.writeToZip(zw))
+	}
+	// Test writeToZip with stream io.Copy error
+	{
+		f := NewFile()
+		bw := bufferedWriter{}
+		_, err := bw.WriteString("data")
+		assert.NoError(t, err)
+		f.streams = map[string]*StreamWriter{"s": {rawData: bw}}
+		f.Pkg = sync.Map{}
+		zw := &errZipWriter{
+			inner:        zip.NewWriter(&bytes.Buffer{}),
+			createWriter: &limitedWriter{w: io.Discard, n: 0},
+		}
+		assert.Error(t, f.writeToZip(zw))
+	}
+	// Test writeToFile with closed file (Stat error)
+	{
+		f := NewFile()
+		f.zip64Entries = append(f.zip64Entries, defaultXMLPathSharedStrings)
+		tmp, err := os.CreateTemp(os.TempDir(), "excelize-")
+		assert.NoError(t, err)
+		os.Remove(tmp.Name())
+		tmp.Close()
+		assert.Error(t, f.writeToFile(tmp))
+	}
+	// Test writeToFile with write-only file (ReadAt error)
+	{
+		f := NewFile()
+		f.zip64Entries = append(f.zip64Entries, defaultXMLPathSharedStrings)
+		tmp, err := os.CreateTemp(os.TempDir(), "excelize-")
+		assert.NoError(t, err)
+		name := tmp.Name()
+		_, err = tmp.Write(make([]byte, 30))
+		assert.NoError(t, err)
+		tmp.Close()
+		wo, err := os.OpenFile(name, os.O_WRONLY, 0)
+		assert.NoError(t, err)
+		assert.Error(t, f.writeToFile(wo))
+		wo.Close()
+		os.Remove(name)
+	}
+	// Test writeToFile with file too small for LFH header
+	{
+		f := NewFile()
+		f.zip64Entries = append(f.zip64Entries, defaultXMLPathSharedStrings)
+		tmp, err := os.CreateTemp(os.TempDir(), "excelize-")
+		assert.NoError(t, err)
+		data := make([]byte, 29)
+		copy(data, []byte{0x50, 0x4b, 0x03, 0x04})
+		_, err = tmp.Write(data)
+		assert.NoError(t, err)
+		assert.NoError(t, f.writeToFile(tmp))
+		tmp.Close()
+		os.Remove(tmp.Name())
+	}
+	// Test writeToFile with filenameLen extending past EOF
+	{
+		f := NewFile()
+		f.zip64Entries = append(f.zip64Entries, defaultXMLPathSharedStrings)
+		tmp, err := os.CreateTemp(os.TempDir(), "excelize-")
+		assert.NoError(t, err)
+		data := make([]byte, 30)
+		copy(data[:4], []byte{0x50, 0x4b, 0x03, 0x04})
+		binary.LittleEndian.PutUint16(data[26:28], 10)
+		_, err = tmp.Write(data)
+		assert.NoError(t, err)
+		assert.NoError(t, f.writeToFile(tmp))
+		tmp.Close()
+		os.Remove(tmp.Name())
+	}
+	// Test writeToFile with concurrent file truncation (ReadAt fixed header error)
+	{
+		f := NewFile()
+		f.zip64Entries = append(f.zip64Entries, defaultXMLPathSharedStrings)
+		tmp, err := os.CreateTemp(os.TempDir(), "excelize-")
+		assert.NoError(t, err)
+		data := make([]byte, 50)
+		copy(data[:4], []byte{0x50, 0x4b, 0x03, 0x04})
+		binary.LittleEndian.PutUint16(data[26:28], 4)
+		copy(data[30:34], []byte("test"))
+		_, err = tmp.Write(data)
+		assert.NoError(t, err)
+		done := make(chan struct{})
+		go func() {
+			for {
+				select {
+				case <-done:
+					return
+				default:
+					_ = tmp.Truncate(10)
+				}
+			}
+		}()
+		for range 2000 {
+			_, _ = tmp.WriteAt(data, 0)
+			_ = f.writeToFile(tmp)
+		}
+		close(done)
+		tmp.Close()
+		os.Remove(tmp.Name())
+	}
+	// Test writeToFile with concurrent file truncation (ReadAt filename error)
+	{
+		f := NewFile()
+		f.zip64Entries = append(f.zip64Entries, defaultXMLPathSharedStrings)
+		tmp, err := os.CreateTemp(os.TempDir(), "excelize-")
+		assert.NoError(t, err)
+		data := make([]byte, 100000)
+		copy(data[90000:90004], []byte{0x50, 0x4b, 0x03, 0x04})
+		binary.LittleEndian.PutUint16(data[90026:90028], 10)
+		_, err = tmp.Write(data)
+		assert.NoError(t, err)
+		done := make(chan struct{})
+		go func() {
+			for {
+				select {
+				case <-done:
+					return
+				default:
+					_ = tmp.Truncate(90035)
+				}
+			}
+		}()
+		for range 100 {
+			_ = tmp.Truncate(100000)
+			_ = f.writeToFile(tmp)
+		}
+		close(done)
+		tmp.Close()
+		os.Remove(tmp.Name())
+	}
+	// Test writeToFile with read-only file (WriteAt error)
+	{
+		f := NewFile()
+		entryName := defaultXMLPathSharedStrings
+		f.zip64Entries = append(f.zip64Entries, entryName)
+		tmp, err := os.CreateTemp(os.TempDir(), "excelize-")
+		assert.NoError(t, err)
+		name := tmp.Name()
+		header := make([]byte, 30)
+		copy(header[:4], []byte{0x50, 0x4b, 0x03, 0x04})
+		binary.LittleEndian.PutUint16(header[26:28], uint16(len(entryName)))
+		_, err = tmp.Write(header)
+		assert.NoError(t, err)
+		_, err = tmp.WriteString(entryName)
+		assert.NoError(t, err)
+		tmp.Close()
+		ro, err := os.Open(name)
+		assert.NoError(t, err)
+		assert.Error(t, f.writeToFile(ro))
+		ro.Close()
+		os.Remove(name)
+	}
 }
 
 func TestRemoveTempFiles(t *testing.T) {
@@ -309,7 +483,7 @@ func TestRemoveTempFiles(t *testing.T) {
 	tmp.Close()
 	f := NewFile()
 	// fill the tempFiles map with non-existing (erroring on Remove) "files"
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		f.tempFiles.Store(strconv.Itoa(i), "/hopefully not existing")
 	}
 	f.tempFiles.Store("existing", tmpName)

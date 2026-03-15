@@ -139,7 +139,7 @@ func (f *File) mergeExpandedCols(ws *xlsxWorksheet) {
 			}, ws.Cols.Col[i]); i++ {
 		}
 		var column xlsxCol
-		deepcopy.Copy(&column, ws.Cols.Col[left])
+		_ = deepcopy.Copy(&column, ws.Cols.Col[left])
 		if left < i-1 {
 			column.Max = ws.Cols.Col[i-1].Min
 		}
@@ -771,7 +771,7 @@ func (f *File) copySheet(from, to int) error {
 	}
 	f.clearCalcCache()
 	worksheet := &xlsxWorksheet{}
-	deepcopy.Copy(worksheet, sheet)
+	err = deepcopy.Copy(worksheet, sheet)
 	toSheetID := strconv.Itoa(f.getSheetID(f.GetSheetName(to)))
 	sheetXMLPath := "xl/worksheets/sheet" + toSheetID + ".xml"
 	if len(worksheet.SheetViews.SheetView) > 0 {

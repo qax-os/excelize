@@ -233,7 +233,7 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 	if rowIterator.inElement == "c" {
 		rowIterator.cellCol++
 		colCell := xlsxC{}
-		colCell.cellXMLHandler(rows.decoder, xmlElement)
+		_ = colCell.cellXMLHandler(rows.decoder, xmlElement)
 		if colCell.R != "" {
 			if rowIterator.cellCol, _, rowIterator.err = CellNameToCoordinates(colCell.R); rowIterator.err != nil {
 				return
@@ -731,7 +731,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 
 	for i, r := range ws.SheetData.Row {
 		if r.R == row {
-			deepcopy.Copy(&rowCopy, ws.SheetData.Row[i])
+			err = deepcopy.Copy(&rowCopy, ws.SheetData.Row[i])
 			ok = true
 			break
 		}
@@ -808,7 +808,7 @@ func (f *File) duplicateConditionalFormat(ws *xlsxWorksheet, sheet string, row, 
 			}
 			if len(SQRef) > 0 {
 				var cfCopy xlsxConditionalFormatting
-				deepcopy.Copy(&cfCopy, *cf)
+				_ = deepcopy.Copy(&cfCopy, *cf)
 				cfCopy.SQRef = strings.Join(SQRef, " ")
 				cfs = append(cfs, &cfCopy)
 			}
@@ -839,7 +839,7 @@ func (f *File) duplicateDataValidations(ws *xlsxWorksheet, sheet string, row, ro
 			}
 			if len(SQRef) > 0 {
 				var dvCopy xlsxDataValidation
-				deepcopy.Copy(&dvCopy, *dv)
+				_ = deepcopy.Copy(&dvCopy, *dv)
 				dvCopy.Sqref = strings.Join(SQRef, " ")
 				dvs = append(dvs, &dvCopy)
 			}
