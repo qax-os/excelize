@@ -552,7 +552,7 @@ func deleteCellsFromSqref(sqref string, delCells map[int][][]int) (string, error
 
 // isFormulaDataValidation returns whether the data validation rule is a formula.
 func (dv *xlsxInnerXML) isFormula() bool {
-	return dv != nil && !(strings.HasPrefix(dv.Content, "&quot;") && strings.HasSuffix(dv.Content, "&quot;"))
+	return dv != nil && (!strings.HasPrefix(dv.Content, "&quot;") || !strings.HasSuffix(dv.Content, "&quot;"))
 }
 
 // unescapeDataValidationFormula returns unescaped data validation formula.

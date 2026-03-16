@@ -80,7 +80,9 @@ func (f *File) SaveAs(name string, opts ...Options) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 	return f.Write(file, opts...)
 }
 
@@ -125,14 +127,11 @@ func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 			return 0, err
 		}
 	}
-	if f.options != nil && f.options.Password != "" {
-		buf, err := f.WriteToBuffer()
-		if err != nil {
-			return 0, err
-		}
-		return buf.WriteTo(w)
+	buf, err := f.WriteToBuffer()
+	if err != nil {
+		return 0, err
 	}
-	return f.writeToWriter(w)
+	return buf.WriteTo(w)
 }
 
 // WriteToBuffer provides a function to get bytes.Buffer from the saved file,
@@ -148,7 +147,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	if err := zw.Close(); err != nil {
 		return buf, err
 	}
-	f.writeZip64LFH(buf)
+	err := f.writeZip64LFH(buf)
 	if f.options != nil && f.options.Password != "" {
 		b, err := Encrypt(buf.Bytes(), f.options)
 		if err != nil {
@@ -157,43 +156,11 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 		buf.Reset()
 		buf.Write(b)
 	}
-	return buf, nil
-}
-
-// writeToWriter writes workbook data to a temporary file first and then streams
-// to the destination writer, avoiding a full in-memory workbook copy.
-func (f *File) writeToWriter(w io.Writer) (int64, error) {
-	tmpDir := ""
-	if f.options != nil {
-		tmpDir = f.options.TmpDir
-	}
-	tmp, err := os.CreateTemp(tmpDir, "excelize-")
-	if err != nil {
-		return 0, err
-	}
-	defer os.Remove(tmp.Name())
-	defer tmp.Close()
-
-	zw := f.ZipWriter(tmp)
-	if err := f.writeToZip(zw); err != nil {
-		_ = zw.Close()
-		return 0, err
-	}
-	if err := zw.Close(); err != nil {
-		return 0, err
-	}
-	if err := f.writeZip64LFHToFile(tmp); err != nil {
-		return 0, err
-	}
-	if _, err := tmp.Seek(0, io.SeekStart); err != nil {
-		return 0, err
-	}
-	return io.Copy(w, tmp)
+	return buf, err
 }
 
 // writeToZip provides a function to write to ZipWriter.
 func (f *File) writeToZip(zw ZipWriter) error {
-	f.zip64Entries = f.zip64Entries[:0]
 	f.calcChainWriter()
 	f.commentsWriter()
 	f.contentTypesWriter()
@@ -280,12 +247,11 @@ func (f *File) writeToZip(zw ZipWriter) error {
 // entries larger than 4GB. This results in a version mismatch between the
 // central directory and the local file header. As a result, opening the
 // generated workbook with spreadsheet application will prompt file corruption.
-func (f *File) writeZip64LFH(buf *bytes.Buffer) {
+func (f *File) writeZip64LFH(buf *bytes.Buffer) error {
 	if len(f.zip64Entries) == 0 {
-		return
+		return nil
 	}
-	data := buf.Bytes()
-	offset := 0
+	data, offset := buf.Bytes(), 0
 	for offset < len(data) {
 		idx := bytes.Index(data[offset:], []byte{0x50, 0x4b, 0x03, 0x04})
 		if idx == -1 {
@@ -303,66 +269,6 @@ func (f *File) writeZip64LFH(buf *bytes.Buffer) {
 			binary.LittleEndian.PutUint16(data[idx+4:idx+6], 45)
 		}
 		offset = idx + 1
-	}
-}
-
-// writeZip64LFHToFile updates ZIP64 local file header versions in file-backed
-// ZIP output. It patches entries recorded in f.zip64Entries in place.
-func (f *File) writeZip64LFHToFile(file *os.File) error {
-	if len(f.zip64Entries) == 0 {
-		return nil
-	}
-	info, err := file.Stat()
-	if err != nil {
-		return err
-	}
-	var (
-		size   = info.Size()
-		offset int64
-		sig    = []byte{0x50, 0x4b, 0x03, 0x04}
-		chunk  = make([]byte, 32*1024)
-		fixed  = make([]byte, 30)
-	)
-	for offset < size {
-		readSize := len(chunk)
-		if remain := size - offset; remain < int64(readSize) {
-			readSize = int(remain)
-		}
-		n, err := file.ReadAt(chunk[:readSize], offset)
-		if err != nil && err != io.EOF {
-			return err
-		}
-		idx := bytes.Index(chunk[:n], sig)
-		if idx == -1 {
-			if n < len(sig) {
-				break
-			}
-			offset += int64(n - len(sig) + 1)
-			continue
-		}
-		lfhOffset := offset + int64(idx)
-		if lfhOffset+30 > size {
-			break
-		}
-		if _, err = file.ReadAt(fixed, lfhOffset); err != nil {
-			return err
-		}
-		filenameLen := int64(binary.LittleEndian.Uint16(fixed[26:28]))
-		if lfhOffset+30+filenameLen > size {
-			break
-		}
-		filename := make([]byte, filenameLen)
-		if _, err = file.ReadAt(filename, lfhOffset+30); err != nil {
-			return err
-		}
-		if inStrSlice(f.zip64Entries, string(filename), true) != -1 {
-			var version [2]byte
-			binary.LittleEndian.PutUint16(version[:], 45)
-			if _, err = file.WriteAt(version[:], lfhOffset+4); err != nil {
-				return err
-			}
-		}
-		offset = lfhOffset + 1
 	}
 	return nil
 }

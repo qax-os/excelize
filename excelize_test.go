@@ -329,11 +329,15 @@ func TestOpenReader(t *testing.T) {
 	// Test unexpected EOF
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)
-	defer w.Close()
-	w.Flush()
+	defer func() {
+		assert.NoError(t, w.Close())
+	}()
+	assert.NoError(t, w.Flush())
 
 	r, _ := gzip.NewReader(&b)
-	defer r.Close()
+	defer func() {
+		assert.EqualError(t, r.Close(), "unexpected EOF")
+	}()
 
 	_, err = OpenReader(r)
 	assert.EqualError(t, err, "unexpected EOF")

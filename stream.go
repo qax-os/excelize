@@ -859,6 +859,8 @@ func (bw *bufferedWriter) Close() error {
 	if bw.tmp == nil {
 		return nil
 	}
-	defer os.Remove(bw.tmp.Name())
+	defer func() {
+		_ = os.Remove(bw.tmp.Name())
+	}()
 	return bw.tmp.Close()
 }

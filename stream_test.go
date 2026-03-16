@@ -378,7 +378,7 @@ func TestStreamSetRowNilValues(t *testing.T) {
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{nil, nil, Cell{Value: "foo"}}))
-	streamWriter.Flush()
+	assert.NoError(t, streamWriter.Flush())
 	ws, err := file.workSheetReader("Sheet1")
 	assert.NoError(t, err)
 	assert.NotEqual(t, ws.SheetData.Row[0].C[0].XMLName.Local, "c")
@@ -497,7 +497,7 @@ func TestStreamWriterReader(t *testing.T) {
 	assert.Error(t, err)
 	_, err = sw.getRowValues(1, 1, 1)
 	assert.Error(t, err)
-	os.Remove(sw.rawData.tmp.Name())
+	assert.NoError(t, os.Remove(sw.rawData.tmp.Name()))
 
 	sw = StreamWriter{
 		file:    NewFile(),

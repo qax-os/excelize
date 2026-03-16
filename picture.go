@@ -647,7 +647,7 @@ func (f *File) DeletePicture(sheet, cell string) error {
 		f.Relationships.Range(checkPicRef)
 		f.Pkg.Range(checkPicRef)
 		if !used {
-			f.Pkg.Delete(strings.Replace(rels.Target, "../", "xl/", -1))
+			f.Pkg.Delete(strings.ReplaceAll(rels.Target, "../", "xl/"))
 		}
 		f.deleteDrawingRels(drawingRels, rID)
 	}

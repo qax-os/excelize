@@ -5758,9 +5758,9 @@ func (fn *formulaFuncs) STDEVA(argsList *list.List) formulaArg {
 // calcStdevPow is part of the implementation stdev.
 func calcStdevPow(result, count float64, n, m formulaArg) (float64, float64) {
 	if result == -1 {
-		result = math.Pow(n.Number-m.Number, 2)
+		result = (n.Number - m.Number) * (n.Number - m.Number)
 	} else {
-		result += math.Pow(n.Number-m.Number, 2)
+		result += (n.Number - m.Number) * (n.Number - m.Number)
 	}
 	count++
 	return result, count
@@ -7028,7 +7028,7 @@ func calcBetainv(probability, alpha, beta, lower, upper float64) float64 {
 		beta3 = alpha1 / (alpha1 + beta1*math.Exp(y+y))
 	} else {
 		beta2, prob2 = 1/(beta1*9), beta1+beta1
-		beta2 = prob2 * math.Pow(1-beta2+prob3*math.Sqrt(beta2), 3)
+		beta2 = prob2 * (1 - beta2 + prob3*math.Sqrt(beta2)) * (1 - beta2 + prob3*math.Sqrt(beta2)) * (1 - beta2 + prob3*math.Sqrt(beta2))
 		if beta2 <= 0 {
 			beta3 = 1 - math.Exp((math.Log((1-prob1)*beta1)+logBetaNum)/beta1)
 		} else {
@@ -8162,10 +8162,10 @@ func (fn *formulaFuncs) DEVSQ(argsList *list.List) formulaArg {
 			}
 			count++
 			if count == 0 {
-				result = math.Pow(cell.Number-avg.Number, 2)
+				result = (cell.Number - avg.Number) * (cell.Number - avg.Number)
 				continue
 			}
-			result += math.Pow(cell.Number-avg.Number, 2)
+			result += (cell.Number - avg.Number) * (cell.Number - avg.Number)
 		}
 	}
 	if count == -1 {
@@ -9375,7 +9375,7 @@ func (fn *formulaFuncs) KURT(argsList *list.List) formulaArg {
 			}
 		}
 		if count > 3 {
-			return newNumberFormulaArg(summer*(count*(count+1)/((count-1)*(count-2)*(count-3))) - (3 * math.Pow(count-1, 2) / ((count - 2) * (count - 3))))
+			return newNumberFormulaArg(summer*(count*(count+1)/((count-1)*(count-2)*(count-3))) - (3 * (count - 1) * (count - 1) / ((count - 2) * (count - 3))))
 		}
 	}
 	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
@@ -9731,7 +9731,7 @@ func (fn *formulaFuncs) LOGNORMdotDIST(argsList *list.List) formulaArg {
 		return fn.NORMDIST(args)
 	}
 	return newNumberFormulaArg((1 / (math.Sqrt(2*math.Pi) * stdDev.Number * x.Number)) *
-		math.Exp(0-(math.Pow(math.Log(x.Number)-mean.Number, 2)/(2*math.Pow(stdDev.Number, 2)))))
+		math.Exp(0-((math.Log(x.Number)-mean.Number)*(math.Log(x.Number)-mean.Number)/(2*stdDev.Number*stdDev.Number))))
 }
 
 // LOGNORMDIST function calculates the Cumulative Log-Normal Distribution
@@ -9962,7 +9962,7 @@ func (fn *formulaFuncs) NORMDIST(argsList *list.List) formulaArg {
 	if cumulative.Number == 1 {
 		return newNumberFormulaArg(0.5 * (1 + math.Erf((x.Number-mean.Number)/(stdDev.Number*math.Sqrt(2)))))
 	}
-	return newNumberFormulaArg((1 / (math.Sqrt(2*math.Pi) * stdDev.Number)) * math.Exp(0-(math.Pow(x.Number-mean.Number, 2)/(2*(stdDev.Number*stdDev.Number)))))
+	return newNumberFormulaArg((1 / (math.Sqrt(2*math.Pi) * stdDev.Number)) * math.Exp(0-((x.Number-mean.Number)*(x.Number-mean.Number)/(2*(stdDev.Number*stdDev.Number)))))
 }
 
 // NORMdotINV function calculates the inverse of the Cumulative Normal
@@ -10424,7 +10424,7 @@ func (fn *formulaFuncs) pearsonProduct(name string, n int, argsList *list.List) 
 	var sum, deltaX, deltaY, x, y, length float64
 	for i := 0; i < len(array1); i++ {
 		num1, num2 := array1[i], array2[i]
-		if !(num1.Type == ArgNumber && num2.Type == ArgNumber) {
+		if num1.Type != ArgNumber || num2.Type != ArgNumber {
 			continue
 		}
 		x += num1.Number
@@ -10435,7 +10435,7 @@ func (fn *formulaFuncs) pearsonProduct(name string, n int, argsList *list.List) 
 	y /= length
 	for i := 0; i < len(array1); i++ {
 		num1, num2 := array1[i], array2[i]
-		if !(num1.Type == ArgNumber && num2.Type == ArgNumber) {
+		if num1.Type != ArgNumber || num2.Type != ArgNumber {
 			continue
 		}
 		sum += (num1.Number - x) * (num2.Number - y)
@@ -10450,7 +10450,7 @@ func (fn *formulaFuncs) pearsonProduct(name string, n int, argsList *list.List) 
 		"FORECAST.LINEAR": y + sum/deltaX*(fx.Number-x),
 		"INTERCEPT":       y - sum/deltaX*x,
 		"PEARSON":         sum / math.Sqrt(deltaX*deltaY),
-		"RSQ":             math.Pow(sum/math.Sqrt(deltaX*deltaY), 2),
+		"RSQ":             (sum / math.Sqrt(deltaX*deltaY)) * (sum / math.Sqrt(deltaX*deltaY)),
 		"SLOPE":           sum / deltaX,
 	}[name])
 }
@@ -10823,14 +10823,16 @@ func (fn *formulaFuncs) skew(name string, argsList *list.List) formulaArg {
 			if num.Type == ArgError {
 				return num
 			}
-			summer += math.Pow((num.Number-mean.Number)/stdDev.Number, 3)
+			v := (num.Number - mean.Number) / stdDev.Number
+			summer += v * v * v
 			count++
 		case ArgList, ArgMatrix:
 			for _, cell := range token.ToList() {
 				if cell.Type != ArgNumber {
 					continue
 				}
-				summer += math.Pow((cell.Number-mean.Number)/stdDev.Number, 3)
+				v := (cell.Number - mean.Number) / stdDev.Number
+				summer += v * v * v
 				count++
 			}
 		}
@@ -10962,7 +10964,7 @@ func (fn *formulaFuncs) STEYX(argsList *list.List) formulaArg {
 	var count, sumX, sumY, squareX, squareY, sigmaXY float64
 	for i := 0; i < len(array1); i++ {
 		num1, num2 := array1[i], array2[i]
-		if !(num1.Type == ArgNumber && num2.Type == ArgNumber) {
+		if num1.Type != ArgNumber || num2.Type != ArgNumber {
 			continue
 		}
 		sumX += num1.Number
@@ -15632,21 +15634,22 @@ func lookupBinarySearch(vertical bool, lookupValue, lookupArray, matchMode, sear
 			lhs = newStringFormulaArg(cell.Value())
 		}
 		result := compareFormulaArg(lhs, lookupValue, matchMode, false)
-		if result == criteriaEq {
+		switch result {
+		case criteriaEq:
 			matchIdx, wasExact = mid, true
 			if searchMode.Number == searchModeDescBinary {
 				matchIdx = count - matchIdx
 			}
 			return
-		} else if result == criteriaG {
+		case criteriaG:
 			high = mid - 1
-		} else if result == criteriaL {
+		case criteriaL:
 			matchIdx = mid
 			if cell.Type != ArgEmpty {
 				lastMatchIdx = matchIdx
 			}
 			low = mid + 1
-		} else {
+		default:
 			return -1, false
 		}
 	}
@@ -18280,7 +18283,7 @@ func (fn *formulaFuncs) rate(nper, pmt, pv, fv, t, guess formulaArg) formulaArg 
 		p0 := pmt.Number * (t1 - 1)
 		f1 := fv.Number + t1*pv.Number + p0*rt/rate
 		n1 := nper.Number * t2 * pv.Number
-		n2 := p0 * rt / math.Pow(rate, 2)
+		n2 := p0 * rt / (rate * rate)
 		f2 := math.Nextafter(n1, n1) - math.Nextafter(n2, n2)
 		f3 := (nper.Number*pmt.Number*t2*rt + p0*t.Number) / rate
 		delta := f1 / (f2 + f3)
@@ -18654,9 +18657,10 @@ func (fn *formulaFuncs) VDB(argsList *list.List) formulaArg {
 			ddbArgs.PushBack(newNumberFormulaArg(i))
 			ddbArgs.PushBack(factor)
 			term := fn.DDB(ddbArgs)
-			if i == startInt+1 {
+			switch i {
+			case startInt + 1:
 				term.Number *= math.Min(endPeriod.Number, startInt+1) - startPeriod.Number
-			} else if i == endInt {
+			case endInt:
 				term.Number *= endPeriod.Number + 1 - endInt
 			}
 			vdb.Number += term.Number

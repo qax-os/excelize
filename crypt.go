@@ -285,9 +285,10 @@ func standardEncryptionVerifier(algorithm string, blob []byte) StandardEncryptio
 		EncryptedVerifier: blob[20:36],
 		VerifierHashSize:  binary.LittleEndian.Uint32(blob[36:40]),
 	}
-	if algorithm == "RC4" {
+	switch algorithm {
+	case "RC4":
 		verifier.EncryptedVerifierHash = blob[40:60]
-	} else if algorithm == "AES" {
+	case "AES":
 		verifier.EncryptedVerifierHash = blob[40:72]
 	}
 	return verifier

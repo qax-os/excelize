@@ -7807,7 +7807,7 @@ func (nf *numberFormat) isMonthToken(i int) bool {
 			break
 		}
 	}
-	return !(timePrevious || secondsNext)
+	return !timePrevious && !secondsNext
 }
 
 // negativeHandler will be handling negative selection for a number format

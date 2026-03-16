@@ -48,7 +48,7 @@ func (f *File) deleteCalcChain(index int, cell string) error {
 	}
 	if calc != nil {
 		calc.C = xlsxCalcChainCollection(calc.C).Filter(func(c xlsxCalcChainC) bool {
-			return !((c.I == index && c.R == cell) || (c.I == index && cell == "") || (c.I == 0 && c.R == cell))
+			return (c.I != index || c.R != cell) && (c.I != index || cell != "") && (c.I != 0 || c.R != cell)
 		})
 	}
 	if len(calc.C) == 0 {
