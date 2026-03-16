@@ -9375,7 +9375,7 @@ func (fn *formulaFuncs) KURT(argsList *list.List) formulaArg {
 			}
 		}
 		if count > 3 {
-			return newNumberFormulaArg(summer*(count*(count+1)/((count-1)*(count-2)*(count-3))) - (3 * math.Pow(count-1, 2) / ((count - 2) * (count - 3))))
+			return newNumberFormulaArg(math.FMA(summer, count*(count+1)/((count-1)*(count-2)*(count-3)), -(3 * math.Pow(count-1, 2) / ((count - 2) * (count - 3)))))
 		}
 	}
 	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
