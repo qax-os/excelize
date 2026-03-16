@@ -836,7 +836,7 @@ func (f *File) addFormCtrlShape(preset formCtrlPreset, col, row int, anchor stri
 		sp.ClientData.MoveWithCells = []*string{stringPtr(""), nil, nil}[idx]
 		sp.ClientData.SizeWithCells = []*string{stringPtr(""), stringPtr(""), nil}[idx]
 	}
-	if opts.FormControl.Type == FormControlNote {
+	if opts.Type == FormControlNote {
 		sp.ClientData.MoveWithCells = stringPtr("")
 		sp.ClientData.SizeWithCells = stringPtr("")
 	}
@@ -848,7 +848,7 @@ func (f *File) addFormCtrlShape(preset formCtrlPreset, col, row int, anchor stri
 	if (opts.Type == FormControlCheckBox || opts.Type == FormControlOptionButton) && opts.Checked {
 		sp.ClientData.Checked = 1
 	}
-	if opts.FormControl.Type == FormControlCheckBox {
+	if opts.Type == FormControlCheckBox {
 		sp.ClientData.FmlaLink = opts.CellLink
 	}
 	return &sp, sp.addFormCtrl(opts)
