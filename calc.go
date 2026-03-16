@@ -9375,7 +9375,7 @@ func (fn *formulaFuncs) KURT(argsList *list.List) formulaArg {
 			}
 		}
 		if count > 3 {
-			return newNumberFormulaArg(summer*(count*(count+1)/((count-1)*(count-2)*(count-3))) - (3 * (count - 1) * (count - 1) / ((count - 2) * (count - 3))))
+			return newNumberFormulaArg(summer*(count*(count+1)/((count-1)*(count-2)*(count-3))) - (3 * math.Pow(count-1, 2) / ((count - 2) * (count - 3))))
 		}
 	}
 	return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
@@ -10823,16 +10823,14 @@ func (fn *formulaFuncs) skew(name string, argsList *list.List) formulaArg {
 			if num.Type == ArgError {
 				return num
 			}
-			v := (num.Number - mean.Number) / stdDev.Number
-			summer += v * v * v
+			summer += math.Pow((num.Number-mean.Number)/stdDev.Number, 3)
 			count++
 		case ArgList, ArgMatrix:
 			for _, cell := range token.ToList() {
 				if cell.Type != ArgNumber {
 					continue
 				}
-				v := (cell.Number - mean.Number) / stdDev.Number
-				summer += v * v * v
+				summer += math.Pow((cell.Number-mean.Number)/stdDev.Number, 3)
 				count++
 			}
 		}
