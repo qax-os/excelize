@@ -566,7 +566,9 @@ func TestDeleteSheet(t *testing.T) {
 
 func TestMoveSheet(t *testing.T) {
 	f := NewFile()
-	defer f.Close()
+	defer func() {
+		assert.NoError(t, f.Close())
+	}()
 	for i := 2; i < 6; i++ {
 		_, err := f.NewSheet("Sheet" + strconv.Itoa(i))
 		assert.NoError(t, err)

@@ -103,7 +103,8 @@ func TestOpenFile(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = f.GetCellFormula("Sheet2", "I11")
 	assert.NoError(t, err)
-	getSharedFormula(&xlsxWorksheet{}, 0, "")
+	_, err = getSharedFormula(&xlsxWorksheet{}, 0, "")
+	assert.NoError(t, err)
 
 	// Test read cell value with given illegal rows number
 	_, err = f.GetCellValue("Sheet2", "a-1")
@@ -328,11 +329,15 @@ func TestOpenReader(t *testing.T) {
 	// Test unexpected EOF
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)
-	defer w.Close()
-	w.Flush()
+	defer func() {
+		assert.NoError(t, w.Close())
+	}()
+	assert.NoError(t, w.Flush())
 
 	r, _ := gzip.NewReader(&b)
-	defer r.Close()
+	defer func() {
+		assert.EqualError(t, r.Close(), "unexpected EOF")
+	}()
 
 	_, err = OpenReader(r)
 	assert.EqualError(t, err, "unexpected EOF")
