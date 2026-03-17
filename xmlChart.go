@@ -56,10 +56,32 @@ type cChart struct {
 // title.
 type cTitle struct {
 	Tx      cTx          `xml:"tx,omitempty"`
-	Layout  string       `xml:"layout,omitempty"`
+	Layout  *cLayout     `xml:"layout,omitempty"`
 	Overlay *attrValBool `xml:"overlay"`
 	SpPr    cSpPr        `xml:"spPr,omitempty"`
 	TxPr    cTxPr        `xml:"txPr,omitempty"`
+}
+
+// cLayout (Layout) directly maps the layout element. This element specifies
+// how a chart element is positioned on the chart. When manualLayout is absent,
+// the application automatically calculates the position and dimensions.
+type cLayout struct {
+	ManualLayout *cManualLayout `xml:"manualLayout,omitempty"`
+}
+
+// cManualLayout (Manual Layout) directly maps the manualLayout element. This
+// element specifies the exact position and size of a chart element as
+// fractions of the total chart area (0.0 to 1.0).
+type cManualLayout struct {
+	LayoutTarget *attrValString `xml:"layoutTarget,omitempty"`
+	XMode        *attrValString `xml:"xMode,omitempty"`
+	YMode        *attrValString `xml:"yMode,omitempty"`
+	WMode        *attrValString `xml:"wMode,omitempty"`
+	HMode        *attrValString `xml:"hMode,omitempty"`
+	X            *attrValFloat  `xml:"x,omitempty"`
+	Y            *attrValFloat  `xml:"y,omitempty"`
+	W            *attrValFloat  `xml:"w,omitempty"`
+	H            *attrValFloat  `xml:"h,omitempty"`
 }
 
 // cTx (Chart Text) directly maps the tx element. This element specifies text
@@ -591,6 +613,25 @@ type ChartNumFmt struct {
 	SourceLinked bool
 }
 
+// ChartTitleLayout directly maps the manual layout settings for chart title
+// position. All values are expressed as fractions of the chart area (0.0
+// to 1.0). A nil Layout means automatic positioning by the application.
+type ChartTitleLayout struct {
+	Left   float64
+	Top    float64
+	Width  float64
+	Height float64
+}
+
+// ChartTitle directly maps the format settings of the chart title.
+type ChartTitle struct {
+	Name    []RichTextRun
+	Overlay bool
+	Fill    Fill
+	Border  ChartLine
+	Layout  *ChartTitleLayout
+}
+
 // ChartAxis directly maps the format settings of the chart axis.
 type ChartAxis struct {
 	None              bool
@@ -650,7 +691,7 @@ type Chart struct {
 	Format       GraphicOptions
 	Dimension    ChartDimension
 	Legend       ChartLegend
-	Title        []RichTextRun
+	Title        ChartTitle
 	VaryColors   *bool
 	XAxis        ChartAxis
 	YAxis        ChartAxis

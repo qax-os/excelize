@@ -64,7 +64,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		Lang:           &attrValString{Val: stringPtr("en-US")},
 		RoundedCorners: &attrValBool{Val: boolPtr(false)},
 		Chart: cChart{
-			Title: f.drawPlotAreaTitles(opts.Title, ""),
+			Title: f.drawPlotAreaTitles(&opts.Title, ""),
 			View3D: &cView3D{
 				RotX:        &attrValInt{Val: intPtr(chartView3DRotX[opts.Type])},
 				RotY:        &attrValInt{Val: intPtr(chartView3DRotY[opts.Type])},
@@ -1126,7 +1126,7 @@ func (f *File) drawPlotAreaCatAx(pa *cPlotArea, opts *Chart) []*cAxs {
 		NumFmt:        &cNumFmt{FormatCode: "General"},
 		MajorTickMark: &attrValString{Val: stringPtr("none")},
 		MinorTickMark: &attrValString{Val: stringPtr("none")},
-		Title:         f.drawPlotAreaTitles(opts.XAxis.Title, ""),
+		Title:         f.drawPlotAreaTitles(&ChartTitle{Name: opts.XAxis.Title}, ""),
 		TickLblPos:    &attrValString{Val: stringPtr(tickLblPosVal[opts.XAxis.TickLabelPosition])},
 		SpPr:          f.drawPlotAreaSpPr(),
 		TxPr:          f.drawPlotAreaTxPr(&opts.XAxis),
@@ -1183,7 +1183,7 @@ func (f *File) drawPlotAreaValAx(pa *cPlotArea, opts *Chart) []*cAxs {
 		},
 		Delete: &attrValBool{Val: boolPtr(opts.YAxis.None)},
 		AxPos:  &attrValString{Val: stringPtr(valAxPos[opts.YAxis.ReverseOrder])},
-		Title:  f.drawPlotAreaTitles(opts.YAxis.Title, "horz"),
+		Title:  f.drawPlotAreaTitles(&ChartTitle{Name: opts.YAxis.Title}, "horz"),
 		NumFmt: &cNumFmt{
 			FormatCode: chartValAxNumFmtFormatCode[opts.Type],
 		},
@@ -1289,24 +1289,46 @@ func drawChartFont(fnt *Font, r *aRPr) {
 }
 
 // drawPlotAreaTitles provides a function to draw the c:title element.
-func (f *File) drawPlotAreaTitles(runs []RichTextRun, vert string) *cTitle {
-	if len(runs) == 0 {
+func (f *File) drawPlotAreaTitles(title *ChartTitle, vert string) *cTitle {
+	if title == nil || len(title.Name) == 0 {
 		return nil
 	}
-	title := &cTitle{Tx: cTx{Rich: &cRich{}}, Overlay: &attrValBool{Val: boolPtr(false)}}
-	for _, run := range runs {
+	ct := &cTitle{Tx: cTx{Rich: &cRich{}}, Overlay: &attrValBool{Val: boolPtr(title.Overlay)}}
+	for _, run := range title.Name {
 		r := &aR{T: run.Text}
 		drawChartFont(run.Font, &r.RPr)
-		title.Tx.Rich.P = append(title.Tx.Rich.P, aP{
+		ct.Tx.Rich.P = append(ct.Tx.Rich.P, aP{
 			PPr:        &aPPr{DefRPr: aRPr{}},
 			R:          r,
 			EndParaRPr: &aEndParaRPr{Lang: "en-US", AltLang: "en-US"},
 		})
 	}
 	if vert == "horz" {
-		title.Tx.Rich.BodyPr = aBodyPr{Rot: -5400000, Vert: vert}
+		ct.Tx.Rich.BodyPr = aBodyPr{Rot: -5400000, Vert: vert}
 	}
-	return title
+	spPr := f.drawShapeFill(title.Fill, nil)
+	if ln := f.drawChartLn(&title.Border); ln != nil {
+		if spPr == nil {
+			spPr = &cSpPr{}
+		}
+		spPr.Ln = ln
+	}
+	if spPr != nil {
+		ct.SpPr = *spPr
+	}
+	if layout := title.Layout; layout != nil {
+		ct.Layout = &cLayout{ManualLayout: &cManualLayout{
+			XMode: &attrValString{Val: stringPtr("edge")},
+			YMode: &attrValString{Val: stringPtr("edge")},
+			WMode: &attrValString{Val: stringPtr("edge")},
+			HMode: &attrValString{Val: stringPtr("edge")},
+			X:     &attrValFloat{Val: &layout.Left},
+			Y:     &attrValFloat{Val: &layout.Top},
+			W:     &attrValFloat{Val: &layout.Width},
+			H:     &attrValFloat{Val: &layout.Height},
+		}}
+	}
+	return ct
 }
 
 // drawPlotAreaDTable provides a function to draw the c:dTable element.
