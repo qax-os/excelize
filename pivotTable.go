@@ -224,6 +224,21 @@ func (f *File) parseFormatPivotTableSet(opts *PivotTableOptions) (*xlsxWorksheet
 	if opts.CompactData && opts.ClassicLayout {
 		return nil, "", ErrPivotTableClassicLayout
 	}
+	var colDataFields, rowDataFields []string
+	for _, f := range opts.Filter {
+		if inPivotTableField(opts.Columns, f.Data) != -1 {
+			colDataFields = append(colDataFields, f.Data)
+		}
+		if inPivotTableField(opts.Rows, f.Data) != -1 {
+			rowDataFields = append(rowDataFields, f.Data)
+		}
+	}
+	if len(colDataFields) > 0 {
+		return dataSheet, pivotTableSheetPath, newPivotTableColFieldsError(colDataFields)
+	}
+	if len(rowDataFields) > 0 {
+		return dataSheet, pivotTableSheetPath, newPivotTableRowFieldsError(rowDataFields)
+	}
 	return dataSheet, pivotTableSheetPath, err
 }
 

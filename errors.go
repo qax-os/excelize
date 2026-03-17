@@ -321,6 +321,18 @@ func newNotWorksheetError(name string) error {
 	return fmt.Errorf("sheet %s is not a worksheet", name)
 }
 
+// newPivotTableColFieldsError defined the error message on same data field
+// appears both in the pivot table column fields and filter fields.
+func newPivotTableColFieldsError(data []string) error {
+	return fmt.Errorf("data fields %s appear both in the pivot table column fields and filter fields", strings.Join(data, ", "))
+}
+
+// newPivotTableRowFieldsError defined the error message on same data field
+// appears both in the pivot table row fields and filter fields.
+func newPivotTableRowFieldsError(data []string) error {
+	return fmt.Errorf("data fields %s appear both in the pivot table row fields and filter fields", strings.Join(data, ", "))
+}
+
 // newPivotTableDataRangeError defined the error message on receiving the
 // invalid pivot table data range.
 func newPivotTableDataRangeError(msg string) error {
