@@ -620,15 +620,15 @@ func (opts *Chart) parseSeries() error {
 
 // parseTitle parse the title settings of the chart with default value.
 func (opts *Chart) parseTitle() {
-	for i := range opts.Title.Name {
-		if opts.Title.Name[i].Font == nil {
-			opts.Title.Name[i].Font = &Font{}
+	for i := range opts.Title {
+		if opts.Title[i].Font == nil {
+			opts.Title[i].Font = &Font{}
 		}
-		if opts.Title.Name[i].Font.Color == "" {
-			opts.Title.Name[i].Font.Color = "595959"
+		if opts.Title[i].Font.Color == "" {
+			opts.Title[i].Font.Color = "595959"
 		}
-		if opts.Title.Name[i].Font.Size == 0 {
-			opts.Title.Name[i].Font.Size = 14
+		if opts.Title[i].Font.Size == 0 {
+			opts.Title[i].Font.Size = 14
 		}
 	}
 }

@@ -623,8 +623,9 @@ type ChartTitleLayout struct {
 	Height float64
 }
 
-// ChartTitle directly maps the format settings of the chart title.
-type ChartTitle struct {
+// chartTitle is an internal helper that collects chart title options for use
+// in drawPlotAreaTitles.
+type chartTitle struct {
 	Name    []RichTextRun
 	Overlay bool
 	Fill    Fill
@@ -691,7 +692,11 @@ type Chart struct {
 	Format       GraphicOptions
 	Dimension    ChartDimension
 	Legend       ChartLegend
-	Title        ChartTitle
+	Title        []RichTextRun
+	TitleOverlay bool
+	TitleFill    Fill
+	TitleBorder  ChartLine
+	TitleLayout  *ChartTitleLayout
 	VaryColors   *bool
 	XAxis        ChartAxis
 	YAxis        ChartAxis

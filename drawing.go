@@ -64,7 +64,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		Lang:           &attrValString{Val: stringPtr("en-US")},
 		RoundedCorners: &attrValBool{Val: boolPtr(false)},
 		Chart: cChart{
-			Title: f.drawPlotAreaTitles(&opts.Title, ""),
+			Title: f.drawPlotAreaTitles(&chartTitle{Name: opts.Title, Overlay: opts.TitleOverlay, Fill: opts.TitleFill, Border: opts.TitleBorder, Layout: opts.TitleLayout}, ""),
 			View3D: &cView3D{
 				RotX:        &attrValInt{Val: intPtr(chartView3DRotX[opts.Type])},
 				RotY:        &attrValInt{Val: intPtr(chartView3DRotY[opts.Type])},
@@ -1126,7 +1126,7 @@ func (f *File) drawPlotAreaCatAx(pa *cPlotArea, opts *Chart) []*cAxs {
 		NumFmt:        &cNumFmt{FormatCode: "General"},
 		MajorTickMark: &attrValString{Val: stringPtr("none")},
 		MinorTickMark: &attrValString{Val: stringPtr("none")},
-		Title:         f.drawPlotAreaTitles(&ChartTitle{Name: opts.XAxis.Title}, ""),
+		Title:         f.drawPlotAreaTitles(&chartTitle{Name: opts.XAxis.Title}, ""),
 		TickLblPos:    &attrValString{Val: stringPtr(tickLblPosVal[opts.XAxis.TickLabelPosition])},
 		SpPr:          f.drawPlotAreaSpPr(),
 		TxPr:          f.drawPlotAreaTxPr(&opts.XAxis),
@@ -1183,7 +1183,7 @@ func (f *File) drawPlotAreaValAx(pa *cPlotArea, opts *Chart) []*cAxs {
 		},
 		Delete: &attrValBool{Val: boolPtr(opts.YAxis.None)},
 		AxPos:  &attrValString{Val: stringPtr(valAxPos[opts.YAxis.ReverseOrder])},
-		Title:  f.drawPlotAreaTitles(&ChartTitle{Name: opts.YAxis.Title}, "horz"),
+		Title:  f.drawPlotAreaTitles(&chartTitle{Name: opts.YAxis.Title}, "horz"),
 		NumFmt: &cNumFmt{
 			FormatCode: chartValAxNumFmtFormatCode[opts.Type],
 		},
@@ -1289,7 +1289,7 @@ func drawChartFont(fnt *Font, r *aRPr) {
 }
 
 // drawPlotAreaTitles provides a function to draw the c:title element.
-func (f *File) drawPlotAreaTitles(title *ChartTitle, vert string) *cTitle {
+func (f *File) drawPlotAreaTitles(title *chartTitle, vert string) *cTitle {
 	if title == nil || len(title.Name) == 0 {
 		return nil
 	}
