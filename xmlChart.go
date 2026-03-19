@@ -56,8 +56,8 @@ type cChart struct {
 // title.
 type cTitle struct {
 	Tx      cTx          `xml:"tx,omitempty"`
-	Layout  *cLayout     `xml:"layout,omitempty"`
 	Overlay *attrValBool `xml:"overlay"`
+	Layout  *cLayout     `xml:"layout,omitempty"`
 	SpPr    cSpPr        `xml:"spPr,omitempty"`
 	TxPr    cTxPr        `xml:"txPr,omitempty"`
 }
@@ -73,15 +73,16 @@ type cLayout struct {
 // element specifies the exact position and size of a chart element as
 // fractions of the total chart area (0.0 to 1.0).
 type cManualLayout struct {
-	LayoutTarget *attrValString `xml:"layoutTarget,omitempty"`
-	XMode        *attrValString `xml:"xMode,omitempty"`
-	YMode        *attrValString `xml:"yMode,omitempty"`
-	WMode        *attrValString `xml:"wMode,omitempty"`
-	HMode        *attrValString `xml:"hMode,omitempty"`
-	X            *attrValFloat  `xml:"x,omitempty"`
-	Y            *attrValFloat  `xml:"y,omitempty"`
-	W            *attrValFloat  `xml:"w,omitempty"`
-	H            *attrValFloat  `xml:"h,omitempty"`
+	LayoutTarget *attrValString `xml:"layoutTarget"`
+	XMode        *attrValString `xml:"xMode"`
+	YMode        *attrValString `xml:"yMode"`
+	WMode        *attrValString `xml:"wMode"`
+	HMode        *attrValString `xml:"hMode"`
+	X            *attrValFloat  `xml:"x"`
+	Y            *attrValFloat  `xml:"y"`
+	W            *attrValFloat  `xml:"w"`
+	H            *attrValFloat  `xml:"h"`
+	ExtLst       *xlsxExtLst    `xml:"extLst"`
 }
 
 // cTx (Chart Text) directly maps the tx element. This element specifies text
