@@ -52,6 +52,13 @@ import (
 // and the default setting is false (represents ascending).
 //
 // Format specifies the format of the slicer, this setting is optional.
+//
+// SelectedItems option is used to specify the default selected items in a
+// slicer. It is currently only supported for slicers in pivot tables. The
+// selected items must fall within the range of items selected in the pivot
+// table. If the pivot table is created using the AddPivotTable function, the
+// same field must also have its selected item range specified at the time the
+// pivot table is created.
 type SlicerOptions struct {
 	slicerXML       string
 	slicerCacheXML  string
@@ -481,67 +488,47 @@ func (f *File) timelineReader(timelineXML string) (*xlsxTimelines, error) {
 	return timeline, nil
 }
 
-// buildSlicerItems builds slicer cache items from pivot table cache field
-// by given pivot table options, field name, and selected items.
-func (f *File) buildSlicerItems(pivotTable *PivotTableOptions, fieldName string, selectedItems []string) ([]xlsxTabularSlicerCacheItem, error) {
+// buildSlicerItems builds slicer cache items from pivot table cache field by
+// given pivot table options, field name, and selected items.
+func (f *File) buildSlicerItems(pivotTable *PivotTableOptions, opts *SlicerOptions) ([]xlsxTabularSlicerCacheItem, error) {
+	var (
+		i           int
+		sharedItems *xlsxSharedItems
+		items       []xlsxTabularSlicerCacheItem
+	)
 	pc, err := f.pivotCacheReader(pivotTable.pivotCacheXML)
 	if err != nil {
-		return nil, err
+		return items, err
 	}
-
-	var sharedItems *xlsxSharedItems
 	if pc.CacheFields != nil {
 		for _, field := range pc.CacheFields.CacheField {
-			if field.Name == fieldName {
+			if field != nil && field.Name == opts.Name {
 				sharedItems = field.SharedItems
 				break
 			}
 		}
 	}
-
 	if sharedItems == nil {
 		return []xlsxTabularSlicerCacheItem{{S: true}}, nil
 	}
-
-	var allValues []string
-
-	for _, s := range sharedItems.S {
-		allValues = append(allValues, s.V)
-	}
-
-	for _, n := range sharedItems.N {
-		allValues = append(allValues, strconv.FormatFloat(n.V, 'f', -1, 64))
-	}
-
-	for range sharedItems.M {
-		allValues = append(allValues, "")
-	}
-
-	var items []xlsxTabularSlicerCacheItem
-	selectAll := len(selectedItems) == 0
-
-	for i, value := range allValues {
-		selected := selectAll
-		if !selectAll {
-			for _, sel := range selectedItems {
-				if sel == value {
-					selected = true
-					break
-				}
-			}
+	for _, item := range sharedItems.Items {
+		switch item.XMLName.Local {
+		case "m":
+			items = append(items, xlsxTabularSlicerCacheItem{X: i, S: inStrSlice(opts.SelectedItems, "", true) != -1})
+		case "b":
+			items = append(items, xlsxTabularSlicerCacheItem{X: i, S: inStrSlice(opts.SelectedItems, item.V, false) != -1})
+		case "n", "e", "s", "d":
+			items = append(items, xlsxTabularSlicerCacheItem{X: i, S: inStrSlice(opts.SelectedItems, item.V, true) != -1})
 		}
-
-		items = append(items, xlsxTabularSlicerCacheItem{
-			X: i,
-			S: selected,
-		})
+		i++
 	}
-
+	if err = sharedItems.checkSelectedItems(opts.Name, opts.SelectedItems); err != nil {
+		return items, err
+	}
 	if len(items) == 0 {
 		items = append(items, xlsxTabularSlicerCacheItem{S: true})
 	}
-
-	return items, nil
+	return items, err
 }
 
 // addSlicerCache adds a new slicer cache by giving the slicer cache name,
@@ -575,7 +562,10 @@ func (f *File) addSlicerCache(slicerCacheName string, colIdx int, opts *SlicerOp
 				{TabID: f.getSheetID(opts.TableSheet), Name: pivotTable.Name},
 			},
 		}
-		items, _ := f.buildSlicerItems(pivotTable, opts.Name, opts.SelectedItems)
+		items, err := f.buildSlicerItems(pivotTable, opts)
+		if err != nil {
+			return err
+		}
 		slicerCache.Data = &xlsxSlicerCacheData{
 			Tabular: &xlsxTabularSlicerCache{
 				PivotCacheID: pivotCacheID,
