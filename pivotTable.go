@@ -501,7 +501,6 @@ func (f *File) addPivotSharedItems(opts *PivotTableOptions, coordinates []int, f
 		fields = opts.Columns
 	case "rows":
 		fields = opts.Rows
-	default:
 	}
 	fieldsIndex, err := f.getPivotFieldsIndex(fields, opts)
 	if err != nil {
