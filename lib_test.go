@@ -384,8 +384,10 @@ func TestReadBytes(t *testing.T) {
 }
 
 func TestUnzipToTemp(t *testing.T) {
-	os.Setenv("TMPDIR", "test")
-	defer os.Unsetenv("TMPDIR")
+	assert.NoError(t, os.Setenv("TMPDIR", "test"))
+	defer func() {
+		assert.NoError(t, os.Unsetenv("TMPDIR"))
+	}()
 	assert.NoError(t, os.Chmod(os.TempDir(), 0o444))
 	f := NewFile()
 	data := []byte("PK\x03\x040000000PK\x01\x0200000" +

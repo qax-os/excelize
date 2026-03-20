@@ -1207,7 +1207,7 @@ func TestCalcCellValue(t *testing.T) {
 		"NEGBINOM.DIST(6,12,0.5,FALSE)":  "0.047210693359375",
 		"NEGBINOM.DIST(12,12,0.5,FALSE)": "0.0805901288986206",
 		"NEGBINOM.DIST(15,12,0.5,FALSE)": "0.057564377784729",
-		"NEGBINOM.DIST(12,12,0.5,TRUE)":  "0.580590128898621",
+		"NEGBINOM.DIST(12,12,0.5,TRUE)":  "0.58059012889862",
 		"NEGBINOM.DIST(15,12,0.5,TRUE)":  "0.778965830802917",
 		// NEGBINOMDIST
 		"NEGBINOMDIST(6,12,0.5)":  "0.047210693359375",
@@ -5778,6 +5778,28 @@ func TestCalcSUMIFExactMatch(t *testing.T) {
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
 	}
+	cellData = [][]interface{}{
+		{"Category", "Amount"},
+		{"text", 10},
+		{"***text", 20},
+		{"text ***", 30},
+		{"TEXT", 40},
+		{5, 50},
+		{5.5, 60},
+	}
+	f = prepareCalcData(cellData)
+	for formula, expected := range map[string]string{
+		`SUMIF(A2:A7,"text",B2:B7)`:  "50",
+		`SUMIF(A2:A7,"*text",B2:B7)`: "70",
+		`SUMIF(A2:A7,"text*",B2:B7)`: "80",
+		`SUMIF(A2:A7,5,B2:B7)`:       "50",
+		`COUNTIF(A2:A7,"tex?")`:      "2",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
 }
 
 func TestCalcXIRR(t *testing.T) {
@@ -7005,4 +7027,50 @@ func TestCalcTrendGrowthMultipleRegressionPart2(t *testing.T) {
 func TestCalcTrendGrowthRegression(t *testing.T) {
 	mtx := [][]float64{}
 	calcTrendGrowthRegression(false, false, 0, 0, 0, 0, 0, mtx, mtx, mtx, mtx)
+}
+
+func TestCalcImplicitIntersect(t *testing.T) {
+	f := NewFile()
+	for cell, value := range map[string]interface{}{
+		"A1": -5, "A2": 10, "A3": -3, "A4": "text", "A5": 7, "D1": 1, "D2": 0, "D3": 1,
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
+	}
+	for cell, expected := range map[string]string{
+		"B1": "5", "B2": "10", "B3": "3", "B5": "7",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", cell, "ABS(A1:A5)"))
+		result, err := f.CalcCellValue("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
+	}
+	for cell, expected := range map[string]string{
+		"C1": "TRUE", "C2": "TRUE", "C3": "TRUE", "C4": "FALSE", "C5": "TRUE",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", cell, "ISNUMBER(A1:A5)"))
+		result, err := f.CalcCellValue("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
+	}
+	for cell, expected := range map[string]string{
+		"E1": "yes", "E2": "no", "E3": "yes",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", cell, "IF(D1:D3,\"yes\",\"no\")"))
+		result, err := f.CalcCellValue("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
+	}
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B10", "ABS(A1:A5)"))
+	_, err := f.CalcCellValue("Sheet1", "B10")
+	assert.NoError(t, err)
+	result, err := formulaCriteriaEval(newStringFormulaArg("text"), &formulaCriteria{
+		Type:      criteriaRegexp,
+		Condition: newStringFormulaArg("text"),
+	})
+	assert.NoError(t, err)
+	assert.True(t, result)
+	fn := formulaFuncs{}
+	assert.Equal(t, ArgMatrix, fn.implicitIntersect(
+		newMatrixFormulaArg([][]formulaArg{{newNumberFormulaArg(1)}})).Type,
+	)
 }

@@ -256,6 +256,24 @@ func TestPivotTable(t *testing.T) {
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 		Data:            []PivotTableField{{Data: "Sales", Subtotal: "-", Name: strings.Repeat("s", MaxFieldLength+1)}},
 	}))
+	// Test with same data field appears both in the pivot table column fields and filter fields
+	assert.Equal(t, newPivotTableColFieldsError([]string{"Type"}), f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!G2:M34",
+		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
+		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
+		Data:            []PivotTableField{{Data: "Sales"}},
+		Filter:          []PivotTableField{{Data: "Type"}},
+	}))
+	// Test with same data field appears both in the pivot table row fields and filter fields
+	assert.Equal(t, newPivotTableRowFieldsError([]string{"Month"}), f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!G2:M34",
+		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
+		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
+		Data:            []PivotTableField{{Data: "Sales"}},
+		Filter:          []PivotTableField{{Data: "Month"}},
+	}))
 	// Test delete pivot table
 	pivotTables, err = f.GetPivotTables("Sheet1")
 	assert.Len(t, pivotTables, 7)
