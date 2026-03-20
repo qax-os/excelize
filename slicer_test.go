@@ -158,6 +158,7 @@ func TestSlicer(t *testing.T) {
 	assert.Equal(t, "Sheet2", slicers[0].TableSheet)
 	assert.Equal(t, "PivotTable1", slicers[0].TableName)
 	assert.Equal(t, "Month", slicers[0].Caption)
+	assert.Equal(t, []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov"}, slicers[0].SelectedItems)
 	assert.Equal(t, "Month 1", slicers[1].Name)
 	assert.Equal(t, "K42", slicers[1].Cell)
 	assert.Equal(t, "Sheet2", slicers[1].TableSheet)
@@ -618,6 +619,8 @@ func TestAddSlicerCache(t *testing.T) {
 	f.Pkg.Store(pivotCacheXML, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.addSlicerCache("Slicer1", 0, &SlicerOptions{}, nil,
 		&PivotTableOptions{pivotCacheXML: pivotCacheXML}), "XML syntax error on line 1: invalid UTF-8")
+	// Test get slicer selected items with unsupported charset
+	assert.EqualError(t, f.extractSlicerSelectedItems(pivotCacheXML, &xlsxSlicerCacheDefinition{}, &SlicerOptions{}), "XML syntax error on line 1: invalid UTF-8")
 	// Test add slicer items with unsupported charset
 	_, err := f.buildSlicerItems(&PivotTableOptions{pivotCacheXML: pivotCacheXML}, nil)
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")

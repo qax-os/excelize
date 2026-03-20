@@ -938,6 +938,7 @@ func (f *File) extractPivotTableSlicer(slicerCache *xlsxSlicerCacheDefinition, o
 		return err
 	}
 	if slicerCache.PivotTables != nil {
+		var pivotCacheXML string
 		for _, pt := range slicerCache.PivotTables.PivotTable {
 			opt.TableName = pt.Name
 			for sheetName, sheetPivotTables := range pivotTables {
@@ -945,11 +946,38 @@ func (f *File) extractPivotTableSlicer(slicerCache *xlsxSlicerCacheDefinition, o
 					if opt.TableName == pivotTable.Name {
 						opt.TableSheet = sheetName
 					}
+					if pt.Name == pivotTable.Name {
+						pivotCacheXML = pivotTable.pivotCacheXML
+					}
 				}
 			}
 		}
 		if slicerCache.Data != nil && slicerCache.Data.Tabular != nil {
 			opt.ItemDesc = slicerCache.Data.Tabular.SortOrder == "descending"
+		}
+		err = f.extractSlicerSelectedItems(pivotCacheXML, slicerCache, opt)
+	}
+	return err
+}
+
+// extractSlicerSelectedItems extract selected items of slicer from pivot cache
+// by giving pivot cache XML, slicer cache definition, and slicer options.
+func (f *File) extractSlicerSelectedItems(pivotCacheXML string, slicerCache *xlsxSlicerCacheDefinition, opt *SlicerOptions) error {
+	pc, err := f.pivotCacheReader(pivotCacheXML)
+	if err != nil {
+		return err
+	}
+	if slicerCache.Data != nil && slicerCache.Data.Tabular != nil && slicerCache.Data.Tabular.Items != nil {
+		for _, item := range slicerCache.Data.Tabular.Items.I {
+			if pc.CacheFields != nil && item.S {
+				for _, field := range pc.CacheFields.CacheField {
+					if field != nil && field.Name == slicerCache.SourceName && field.SharedItems != nil && field.SharedItems.Count > 0 {
+						if item.X < len(field.SharedItems.Items) {
+							opt.SelectedItems = append(opt.SelectedItems, field.SharedItems.Items[item.X].V)
+						}
+					}
+				}
+			}
 		}
 	}
 	return err
