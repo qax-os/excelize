@@ -120,81 +120,45 @@ type xlsxCacheField struct {
 // those values that are referenced in multiple places across all the
 // PivotTable parts.
 type xlsxSharedItems struct {
-	ContainsSemiMixedTypes bool           `xml:"containsSemiMixedTypes,attr,omitempty"`
-	ContainsNonDate        bool           `xml:"containsNonDate,attr,omitempty"`
-	ContainsDate           bool           `xml:"containsDate,attr,omitempty"`
-	ContainsString         bool           `xml:"containsString,attr,omitempty"`
-	ContainsBlank          bool           `xml:"containsBlank,attr,omitempty"`
-	ContainsMixedTypes     bool           `xml:"containsMixedTypes,attr,omitempty"`
-	ContainsNumber         bool           `xml:"containsNumber,attr,omitempty"`
-	ContainsInteger        bool           `xml:"containsInteger,attr,omitempty"`
-	MinValue               float64        `xml:"minValue,attr,omitempty"`
-	MaxValue               float64        `xml:"maxValue,attr,omitempty"`
-	MinDate                string         `xml:"minDate,attr,omitempty"`
-	MaxDate                string         `xml:"maxDate,attr,omitempty"`
-	Count                  int            `xml:"count,attr"`
-	LongText               bool           `xml:"longText,attr,omitempty"`
-	M                      []xlsxMissing  `xml:"m"`
-	N                      []xlsxNumber   `xml:"n"`
-	B                      []xlsxBoolean  `xml:"b"`
-	E                      []xlsxError    `xml:"e"`
-	S                      []xlsxString   `xml:"s"`
-	D                      []xlsxDateTime `xml:"d"`
+	ContainsSemiMixedTypes *bool            `xml:"containsSemiMixedTypes,attr"`
+	ContainsNonDate        *bool            `xml:"containsNonDate,attr"`
+	ContainsDate           bool             `xml:"containsDate,attr,omitempty"`
+	ContainsString         *bool            `xml:"containsString,attr"`
+	ContainsBlank          bool             `xml:"containsBlank,attr,omitempty"`
+	ContainsMixedTypes     bool             `xml:"containsMixedTypes,attr,omitempty"`
+	ContainsNumber         bool             `xml:"containsNumber,attr,omitempty"`
+	ContainsInteger        bool             `xml:"containsInteger,attr,omitempty"`
+	MinValue               float64          `xml:"minValue,attr,omitempty"`
+	MaxValue               float64          `xml:"maxValue,attr,omitempty"`
+	MinDate                string           `xml:"minDate,attr,omitempty"`
+	MaxDate                string           `xml:"maxDate,attr,omitempty"`
+	Count                  int              `xml:"count,attr"`
+	LongText               bool             `xml:"longText,attr,omitempty"`
+	Items                  []xlsxSharedItem `xml:",any"`
 }
 
-// xlsxMissing represents a value that was not specified.
-type xlsxMissing struct{}
-
-// xlsxNumber represents a numeric value in the PivotTable.
-type xlsxNumber struct {
-	V    float64     `xml:"v,attr"`
-	U    bool        `xml:"u,attr,omitempty"`
-	F    bool        `xml:"f,attr,omitempty"`
-	C    string      `xml:"c,attr,omitempty"`
-	Cp   int         `xml:"cp,attr,omitempty"`
-	In   int         `xml:"in,attr,omitempty"`
-	Bc   string      `xml:"bc,attr,omitempty"`
-	Fc   string      `xml:"fc,attr,omitempty"`
-	I    bool        `xml:"i,attr,omitempty"`
-	Un   bool        `xml:"un,attr,omitempty"`
-	St   bool        `xml:"st,attr,omitempty"`
-	B    bool        `xml:"b,attr,omitempty"`
-	Tpls *xlsxTuples `xml:"tpls"`
-	X    *attrValInt `xml:"x"`
+// xlsxSharedItem represents a shared item in the pivot table cache field.
+type xlsxSharedItem struct {
+	XMLName xml.Name
+	V       string      `xml:"v,attr,omitempty"`
+	U       bool        `xml:"u,attr,omitempty"`
+	F       bool        `xml:"f,attr,omitempty"`
+	C       string      `xml:"c,attr,omitempty"`
+	Cp      int         `xml:"cp,attr,omitempty"`
+	In      int         `xml:"in,attr,omitempty"`
+	Bc      string      `xml:"bc,attr,omitempty"`
+	Fc      string      `xml:"fc,attr,omitempty"`
+	I       bool        `xml:"i,attr,omitempty"`
+	Un      bool        `xml:"un,attr,omitempty"`
+	St      bool        `xml:"st,attr,omitempty"`
+	B       bool        `xml:"b,attr,omitempty"`
+	Tpls    *xlsxTuples `xml:"tpls"`
+	X       *attrValInt `xml:"x"`
 }
 
 // xlsxTuples represents members for the OLAP sheet data entry, also known as
 // a tuple.
 type xlsxTuples struct{}
-
-// xlsxBoolean represents a boolean value for an item in the PivotTable.
-type xlsxBoolean struct{}
-
-// xlsxError represents an error value. The use of this item indicates that an
-// error value is present in the PivotTable source. The error is recorded in
-// the value attribute.
-type xlsxError struct{}
-
-// xlsxString represents a character value in a PivotTable.
-type xlsxString struct {
-	V    string      `xml:"v,attr"`
-	U    bool        `xml:"u,attr,omitempty"`
-	F    bool        `xml:"f,attr,omitempty"`
-	C    string      `xml:"c,attr,omitempty"`
-	Cp   int         `xml:"cp,attr,omitempty"`
-	In   int         `xml:"in,attr,omitempty"`
-	Bc   string      `xml:"bc,attr,omitempty"`
-	Fc   string      `xml:"fc,attr,omitempty"`
-	I    bool        `xml:"i,attr,omitempty"`
-	Un   bool        `xml:"un,attr,omitempty"`
-	St   bool        `xml:"st,attr,omitempty"`
-	B    bool        `xml:"b,attr,omitempty"`
-	Tpls *xlsxTuples `xml:"tpls"`
-	X    *attrValInt `xml:"x"`
-}
-
-// xlsxDateTime represents a date-time value in the PivotTable.
-type xlsxDateTime struct{}
 
 // xlsxFieldGroup represents the collection of properties for a field group.
 type xlsxFieldGroup struct{}

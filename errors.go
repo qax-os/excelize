@@ -339,6 +339,12 @@ func newPivotTableDataRangeError(msg string) error {
 	return fmt.Errorf("parameter 'DataRange' parsing error: %s", msg)
 }
 
+// newPivotTableSelectedItemError defined the error message on receiving the
+// invalid pivot table selected item.
+func newPivotTableSelectedItemError(item, field string) error {
+	return fmt.Errorf("selected item %s does not exist in pivot table field %s", item, field)
+}
+
 // newPivotTableRangeError defined the error message on receiving the invalid
 // pivot table range.
 func newPivotTableRangeError(msg string) error {
