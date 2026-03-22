@@ -1781,3 +1781,18 @@ func shiftCell(val string, dCol, dRow int) string {
 	}
 	return strings.Join(parts, ":")
 }
+
+// SetCellEmbedFormula provides a function to set EMBED formula on the cell.
+// This is a convenience function for setting object embedding formulas in Excel cells.
+// For example:
+//
+//	err := f.SetCellEmbedFormula("Sheet1", "A1", "Package")
+//
+// This will set the formula =EMBED("Package","") in cell A1.
+func (f *File) SetCellEmbedFormula(sheet, cell, objectType string) error {
+	if objectType == "" {
+		objectType = "Package"
+	}
+	formula := fmt.Sprintf("EMBED(\"%s\",\"\")", objectType)
+	return f.SetCellFormula(sheet, cell, formula)
+}
