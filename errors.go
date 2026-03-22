@@ -219,6 +219,12 @@ func newCellNameToCoordinatesError(cell string, err error) error {
 	return fmt.Errorf("cannot convert cell %q to coordinates: %v", cell, err)
 }
 
+// newChartTitleError defined the error message on receiving the invalid chart
+// title parameters.
+func newChartTitleError(name string) error {
+	return fmt.Errorf("chart title field %s value must be an integer from 0 to 100", name)
+}
+
 // newCoordinatesToCellNameError defined the error message on converts [X, Y]
 // coordinates to alpha-numeric cell name.
 func newCoordinatesToCellNameError(col, row int) error {

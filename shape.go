@@ -419,7 +419,7 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 	}
 	if *opts.Line.Width != 1 {
 		shape.SpPr.Ln = xlsxLineProperties{
-			W: f.ptToEMUs(*opts.Line.Width),
+			W: ptToEMUs(*opts.Line.Width),
 		}
 	}
 	if opts.Fill.Transparency > 0 {

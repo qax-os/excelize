@@ -56,22 +56,22 @@ type cChart struct {
 // title.
 type cTitle struct {
 	Tx      cTx          `xml:"tx,omitempty"`
+	Layout  *cLayout     `xml:"layout"`
 	Overlay *attrValBool `xml:"overlay"`
-	Layout  *cLayout     `xml:"layout,omitempty"`
 	SpPr    cSpPr        `xml:"spPr,omitempty"`
 	TxPr    cTxPr        `xml:"txPr,omitempty"`
+	ExtLst  *xlsxExtLst  `xml:"extLst"`
 }
 
 // cLayout (Layout) directly maps the layout element. This element specifies
-// how a chart element is positioned on the chart. When manualLayout is absent,
-// the application automatically calculates the position and dimensions.
+// specifies how the chart element is placed on the chart.
 type cLayout struct {
-	ManualLayout *cManualLayout `xml:"manualLayout,omitempty"`
+	ManualLayout *cManualLayout `xml:"manualLayout"`
+	ExtLst       *xlsxExtLst    `xml:"extLst"`
 }
 
 // cManualLayout (Manual Layout) directly maps the manualLayout element. This
-// element specifies the exact position and size of a chart element as
-// fractions of the total chart area (0.0 to 1.0).
+// element specifies the exact position of a chart element.
 type cManualLayout struct {
 	LayoutTarget *attrValString `xml:"layoutTarget"`
 	XMode        *attrValString `xml:"xMode"`
@@ -614,26 +614,6 @@ type ChartNumFmt struct {
 	SourceLinked bool
 }
 
-// ChartTitleLayout directly maps the manual layout settings for chart title
-// position. All values are expressed as fractions of the chart area (0.0
-// to 1.0). A nil Layout means automatic positioning by the application.
-type ChartTitleLayout struct {
-	Left   float64
-	Top    float64
-	Width  float64
-	Height float64
-}
-
-// chartTitle is an internal helper that collects chart title options for use
-// in drawPlotAreaTitles.
-type chartTitle struct {
-	Name    []RichTextRun
-	Overlay bool
-	Fill    Fill
-	Border  ChartLine
-	Layout  *ChartTitleLayout
-}
-
 // ChartAxis directly maps the format settings of the chart axis.
 type ChartAxis struct {
 	None              bool
@@ -652,7 +632,7 @@ type ChartAxis struct {
 	Font              Font
 	LogBase           float64
 	NumFmt            ChartNumFmt
-	Title             []RichTextRun
+	Title             ChartTitle
 	axID              int
 }
 
@@ -693,11 +673,7 @@ type Chart struct {
 	Format       GraphicOptions
 	Dimension    ChartDimension
 	Legend       ChartLegend
-	Title        []RichTextRun
-	TitleOverlay bool
-	TitleFill    Fill
-	TitleBorder  ChartLine
-	TitleLayout  *ChartTitleLayout
+	Title        ChartTitle
 	VaryColors   *bool
 	XAxis        ChartAxis
 	YAxis        ChartAxis
@@ -710,6 +686,18 @@ type Chart struct {
 	GapWidth     *uint
 	Overlap      *int
 	order        int
+}
+
+// ChartTitle directly maps the format settings of the chart title.
+type ChartTitle struct {
+	Fill      Fill
+	Border    ChartLine
+	Paragraph []RichTextRun
+	OffsetX   int
+	OffsetY   int
+	Width     int
+	Height    int
+	Overlay   bool
 }
 
 // ChartLegend directly maps the format settings of the chart legend.
