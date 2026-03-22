@@ -170,16 +170,10 @@ func newFile() *File {
 // reader.
 func (f *File) checkOpenReaderOptions() error {
 	if f.options.UnzipSizeLimit == 0 {
-		f.options.UnzipSizeLimit = UnzipSizeLimit
-		if f.options.UnzipXMLSizeLimit > f.options.UnzipSizeLimit {
-			f.options.UnzipSizeLimit = f.options.UnzipXMLSizeLimit
-		}
+		f.options.UnzipSizeLimit = max(f.options.UnzipXMLSizeLimit, UnzipSizeLimit)
 	}
 	if f.options.UnzipXMLSizeLimit == 0 {
-		f.options.UnzipXMLSizeLimit = StreamChunkSize
-		if f.options.UnzipSizeLimit < f.options.UnzipXMLSizeLimit {
-			f.options.UnzipXMLSizeLimit = f.options.UnzipSizeLimit
-		}
+		f.options.UnzipXMLSizeLimit = min(f.options.UnzipSizeLimit, StreamChunkSize)
 	}
 	if f.options.UnzipXMLSizeLimit > f.options.UnzipSizeLimit {
 		return ErrOptionsUnzipSizeLimit

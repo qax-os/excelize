@@ -16,25 +16,26 @@ func TestPivotTable(t *testing.T) {
 	month := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
 	year := []int{2017, 2018, 2019}
 	types := []string{"Meat", "Dairy", "Beverages", "Produce"}
+	revenue := []int{3217, 4512, 3891, 4738, 3054, 4265, 3643, 4901, 3378, 4126}
 	region := []string{"East", "West", "North", "South"}
-	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Sales", "Region"}))
+	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Revenue", "Region"}))
 	for row := 2; row < 32; row++ {
-		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), month[rand.Intn(12)]))
-		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", row), year[rand.Intn(3)]))
-		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("C%d", row), types[rand.Intn(4)]))
-		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("D%d", row), rand.Intn(5000)))
-		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("E%d", row), region[rand.Intn(4)]))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), month[(row-2)%len(month)]))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", row), year[(row-2)%len(year)]))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("C%d", row), types[(row-2)%len(types)]))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("D%d", row), revenue[(row-2)%len(revenue)]))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("E%d", row), region[(row-2)%len(region)]))
 	}
 	expected := &PivotTableOptions{
 		pivotTableXML:       "xl/pivotTables/pivotTable1.xml",
 		pivotCacheXML:       "xl/pivotCache/pivotCacheDefinition1.xml",
 		DataRange:           "Sheet1!A1:E31",
-		PivotTableRange:     "Sheet1!G2:M34",
+		PivotTableRange:     "Sheet1!G4:M30",
 		Name:                "PivotTable1",
 		Rows:                []PivotTableField{{Data: "Month", ShowAll: true, DefaultSubtotal: true}, {Data: "Year"}},
 		Filter:              []PivotTableField{{Data: "Region"}},
 		Columns:             []PivotTableField{{Data: "Type", ShowAll: true, InsertBlankRow: true, DefaultSubtotal: true}},
-		Data:                []PivotTableField{{Data: "Sales", Subtotal: "Sum", Name: "Summarize by Sum", NumFmt: 38}},
+		Data:                []PivotTableField{{Data: "Revenue", Subtotal: "Sum", Name: "Summarize by Sum", NumFmt: 38}},
 		RowGrandTotals:      true,
 		ColGrandTotals:      true,
 		ShowDrill:           true,
@@ -56,10 +57,10 @@ func TestPivotTable(t *testing.T) {
 	// Use different order of coordinate tests
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
-		PivotTableRange: "Sheet1!U34:O2",
+		PivotTableRange: "Sheet1!U29:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Average", Name: "Summarize by Average"}},
+		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "Average", Name: "Summarize by Average"}},
 		RowGrandTotals:  true,
 		ColGrandTotals:  true,
 		ShowDrill:       true,
@@ -75,10 +76,10 @@ func TestPivotTable(t *testing.T) {
 
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
-		PivotTableRange: "Sheet1!W2:AC34",
+		PivotTableRange: "Sheet1!W2:AC28",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Region"}},
-		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Count", Name: "Summarize by Count"}},
+		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "Count", Name: "Summarize by Count"}},
 		RowGrandTotals:  true,
 		ColGrandTotals:  true,
 		ShowDrill:       true,
@@ -88,10 +89,10 @@ func TestPivotTable(t *testing.T) {
 	}))
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
-		PivotTableRange: "Sheet1!G42:W55",
+		PivotTableRange: "Sheet1!G42:X57",
 		Rows:            []PivotTableField{{Data: "Month"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Year"}},
-		Data:            []PivotTableField{{Data: "Sales", Subtotal: "CountNums", Name: "Summarize by CountNums"}},
+		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "CountNums", Name: "Summarize by CountNums"}},
 		RowGrandTotals:  true,
 		ColGrandTotals:  true,
 		ShowDrill:       true,
@@ -101,9 +102,9 @@ func TestPivotTable(t *testing.T) {
 	}))
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
-		PivotTableRange: "Sheet1!AE2:AG33",
+		PivotTableRange: "Sheet1!AE2:AH28",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
-		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Max", Name: "Summarize by Max"}, {Data: "Sales", Subtotal: "Average", Name: "Average of Sales"}},
+		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "Max", Name: "Summarize by Max"}, {Data: "Revenue", Subtotal: "Average", Name: "Average of Sales"}},
 		RowGrandTotals:  true,
 		ColGrandTotals:  true,
 		ShowDrill:       true,
@@ -114,7 +115,7 @@ func TestPivotTable(t *testing.T) {
 	// Create pivot table with empty subtotal field name and specified style
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:           "Sheet1!A1:E31",
-		PivotTableRange:     "Sheet1!AJ2:AP135",
+		PivotTableRange:     "Sheet1!AJ4:AK30",
 		Rows:                []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Filter:              []PivotTableField{{Data: "Region"}},
 		Columns:             []PivotTableField{},
@@ -131,10 +132,10 @@ func TestPivotTable(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
-		PivotTableRange: "Sheet2!A1:AN17",
+		PivotTableRange: "Sheet2!A1:AV17",
 		Rows:            []PivotTableField{{Data: "Month"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Type", DefaultSubtotal: true}, {Data: "Year"}},
-		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Min", Name: "Summarize by Min", NumFmt: 32}},
+		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "Min", Name: "Summarize by Min", NumFmt: 32}},
 		RowGrandTotals:  true,
 		ColGrandTotals:  true,
 		ShowDrill:       true,
@@ -151,10 +152,10 @@ func TestPivotTable(t *testing.T) {
 
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
-		PivotTableRange: "Sheet2!A20:AR60",
+		PivotTableRange: "Sheet2!A20:S47",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Type"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Year"}},
-		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Product", Name: "Summarize by Product", NumFmt: 32}},
+		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "Product", Name: "Summarize by Product", NumFmt: 32}},
 		RowGrandTotals:  true,
 		ColGrandTotals:  true,
 		ShowDrill:       true,
@@ -171,16 +172,37 @@ func TestPivotTable(t *testing.T) {
 	}))
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "dataRange",
-		PivotTableRange: "Sheet2!A65:AJ100",
+		PivotTableRange: "Sheet2!A65:T93",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Type"}},
-		Data:            []PivotTableField{{Data: "Sales", Subtotal: "Sum", Name: "Sum of Sales", NumFmt: -1}, {Data: "Sales", Subtotal: "Average", Name: "Average of Sales", NumFmt: 38}},
+		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "Sum", Name: "Sum of Sales", NumFmt: -1}, {Data: "Revenue", Subtotal: "Average", Name: "Average of Sales", NumFmt: 38}},
 		RowGrandTotals:  true,
 		ColGrandTotals:  true,
 		ShowDrill:       true,
 		ShowRowHeaders:  true,
 		ShowColHeaders:  true,
 		ShowLastColumn:  true,
+	}))
+	// Create pivot table with selected items
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!AM4:AQ12",
+		Rows: []PivotTableField{
+			{Data: "Month", SelectedItems: []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov"}},
+		},
+		Filter:              []PivotTableField{{Data: "Year", SelectedItems: []string{"2017", "2018"}}},
+		Columns:             []PivotTableField{{Data: "Type", SelectedItems: []string{"Meat", "Dairy", "Beverages"}}},
+		Data:                []PivotTableField{{Data: "Revenue", Subtotal: "Sum", Name: "Summarize by Sum"}},
+		RowGrandTotals:      true,
+		ColGrandTotals:      true,
+		ShowDrill:           true,
+		ShowError:           true,
+		ShowRowHeaders:      true,
+		ShowColHeaders:      true,
+		ShowLastColumn:      true,
+		FieldPrintTitles:    true,
+		ItemPrintTitles:     true,
+		PivotTableStyleName: "PivotStyleLight16",
 	}))
 
 	// Test empty pivot table options
@@ -197,7 +219,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales"}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
 	}))
 	// Test the data range of the worksheet that is not declared
 	assert.Equal(t, newPivotTableDataRangeError("parameter is invalid"), f.AddPivotTable(&PivotTableOptions{
@@ -205,7 +227,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales"}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
 	}))
 	// Test the worksheet declared in the data range does not exist
 	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.AddPivotTable(&PivotTableOptions{
@@ -213,7 +235,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales"}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
 	}))
 	// Test the pivot table range of the worksheet that is not declared
 	assert.Equal(t, newPivotTableRangeError("parameter is invalid"), f.AddPivotTable(&PivotTableOptions{
@@ -221,7 +243,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales"}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
 	}))
 	// Test the worksheet declared in the pivot table range does not exist
 	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.AddPivotTable(&PivotTableOptions{
@@ -229,7 +251,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "SheetN!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales"}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
 	}))
 	// Test not exists worksheet in data range
 	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.AddPivotTable(&PivotTableOptions{
@@ -237,7 +259,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales"}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
 	}))
 	// Test invalid row number in data range
 	assert.Equal(t, newPivotTableDataRangeError(newCellNameToCoordinatesError("A0", newInvalidCellNameError("A0")).Error()), f.AddPivotTable(&PivotTableOptions{
@@ -245,7 +267,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales"}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
 	}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPivotTable1.xlsx")))
 	// Test with field names that exceed the length limit and invalid subtotal
@@ -254,7 +276,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!G2:M34",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales", Subtotal: "-", Name: strings.Repeat("s", MaxFieldLength+1)}},
+		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "-", Name: strings.Repeat("s", MaxFieldLength+1)}},
 	}))
 	// Test with same data field appears both in the pivot table column fields and filter fields
 	assert.Equal(t, newPivotTableColFieldsError([]string{"Type"}), f.AddPivotTable(&PivotTableOptions{
@@ -262,7 +284,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!G2:M34",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales"}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
 		Filter:          []PivotTableField{{Data: "Type"}},
 	}))
 	// Test with same data field appears both in the pivot table row fields and filter fields
@@ -271,16 +293,43 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!G2:M34",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales"}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
+		Filter:          []PivotTableField{{Data: "Month"}},
+	}))
+	// Test with selected items not in the pivot table filters field
+	assert.Equal(t, newPivotTableSelectedItemError("x", "Month"), f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!G2:M34",
+		Rows:            []PivotTableField{{Data: "Year"}},
+		Columns:         []PivotTableField{{Data: "Type"}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
+		Filter:          []PivotTableField{{Data: "Month", SelectedItems: []string{"x"}}},
+	}))
+	// Test with selected items not in the pivot table columns field
+	assert.Equal(t, newPivotTableSelectedItemError("x", "Type"), f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!G2:M34",
+		Rows:            []PivotTableField{{Data: "Year"}},
+		Columns:         []PivotTableField{{Data: "Type", SelectedItems: []string{"x"}}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
+		Filter:          []PivotTableField{{Data: "Month"}},
+	}))
+	// Test with selected items not in the pivot table rows field
+	assert.Equal(t, newPivotTableSelectedItemError("x", "Year"), f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!G2:M34",
+		Rows:            []PivotTableField{{Data: "Year", SelectedItems: []string{"x"}}},
+		Columns:         []PivotTableField{{Data: "Type"}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
 		Filter:          []PivotTableField{{Data: "Month"}},
 	}))
 	// Test delete pivot table
 	pivotTables, err = f.GetPivotTables("Sheet1")
-	assert.Len(t, pivotTables, 7)
+	assert.Len(t, pivotTables, 8)
 	assert.NoError(t, err)
 	assert.NoError(t, f.DeletePivotTable("Sheet1", "PivotTable1"))
 	pivotTables, err = f.GetPivotTables("Sheet1")
-	assert.Len(t, pivotTables, 6)
+	assert.Len(t, pivotTables, 7)
 	assert.NoError(t, err)
 
 	// Test add pivot table with invalid sheet name
@@ -309,6 +358,8 @@ func TestPivotTable(t *testing.T) {
 	// Test get table fields order with empty data range
 	_, err = f.getTableFieldsOrder(&PivotTableOptions{})
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
+	// Test add pivot table shared items with empty data range
+	assert.EqualError(t, f.addPivotSharedItems(&PivotTableOptions{}, []int{1, 0, 1, 1}, "filters"), "parameter 'DataRange' parsing error: parameter is required")
 	// Test add pivot cache with empty data range
 	assert.EqualError(t, f.addPivotCache(&PivotTableOptions{}), "parameter 'DataRange' parsing error: parameter is required")
 	// Test add pivot table with empty options
@@ -321,14 +372,14 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!U34:O2",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-		Data:            []PivotTableField{{Data: "Sales"}},
+		Data:            []PivotTableField{{Data: "Revenue"}},
 	}), `parameter 'DataRange' parsing error: parameter is invalid`)
 	// Test get pivot fields index with empty data range
 	_, err = f.getPivotFieldsIndex([]PivotTableField{}, &PivotTableOptions{})
 	assert.EqualError(t, err, `parameter 'DataRange' parsing error: parameter is required`)
 	// Test add pivot table with unsupported charset content types.
 	f = NewFile()
-	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Sales", "Region"}))
+	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Revenue", "Region"}))
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.AddPivotTable(&PivotTableOptions{
@@ -381,6 +432,80 @@ func TestPivotTable(t *testing.T) {
 	_, err = f.GetPivotTables("Sheet1")
 	assert.Equal(t, err, newUnsupportedPivotCacheSourceType("external"))
 	assert.NoError(t, f.Close())
+
+	t.Run("shared_items_with_mixed_types", func(t *testing.T) {
+		f := NewFile()
+		for r, row := range [][]interface{}{
+			{"Type", "Value"},
+			{"Blank"},
+			{"Blank"},
+			{"Integer", 100},
+			{"Integer", 100},
+			{"Float", 0.01},
+			{"Float", 0.01},
+			{"Boolean", true},
+			{"Boolean", true},
+			{"String", "text"},
+			{"String", "text"},
+			{"Error"},
+			{"Error"},
+			{"Formula1"},
+			{"Formula1"},
+			{"Formula2"},
+			{"Formula2"},
+			{"FormulaError"},
+			{"FormulaError"},
+			{"InlineString"},
+			{"InlineString"},
+		} {
+			assert.NoError(t, f.SetSheetRow("Sheet1", fmt.Sprintf("A%d", r+1), &row))
+		}
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B12", "1/0"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B13", "1/0"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B14", "1+1"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B15", "1+1"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B16", "_xlfn.TEXTAFTER(\"ab\", \"a\")"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B17", "_xlfn.TEXTAFTER(\"ab\", \"a\")"))
+
+		ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+		assert.True(t, ok)
+		ws.(*xlsxWorksheet).SheetData.Row[17].C = append(ws.(*xlsxWorksheet).SheetData.Row[17].C, xlsxC{R: "B18", T: "e", V: formulaErrorVALUE})
+		ws.(*xlsxWorksheet).SheetData.Row[18].C = append(ws.(*xlsxWorksheet).SheetData.Row[18].C, xlsxC{R: "B19", T: "e", V: formulaErrorVALUE})
+		ws.(*xlsxWorksheet).SheetData.Row[19].C = append(ws.(*xlsxWorksheet).SheetData.Row[19].C, xlsxC{R: "B20", T: "inlineStr", IS: &xlsxSI{T: &xlsxT{Val: "inline string"}}})
+		ws.(*xlsxWorksheet).SheetData.Row[20].C = append(ws.(*xlsxWorksheet).SheetData.Row[20].C, xlsxC{R: "B21", T: "inlineStr", IS: &xlsxSI{T: &xlsxT{Val: "inline string"}}})
+
+		selectedItems := []string{"", "100", "0.01", "true", "text", "#DIV/0!", "2"}
+		assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
+			DataRange:           "Sheet1!A1:B21",
+			PivotTableRange:     "Sheet1!D4:E12",
+			Rows:                []PivotTableField{{Data: "Type"}},
+			Data:                []PivotTableField{{Data: "Type", Subtotal: "Count", Name: "Count of Type"}},
+			Filter:              []PivotTableField{{Data: "Value", SelectedItems: selectedItems}},
+			RowGrandTotals:      true,
+			ColGrandTotals:      true,
+			ShowDrill:           true,
+			ShowRowHeaders:      true,
+			ShowColHeaders:      true,
+			ShowLastColumn:      true,
+			ShowError:           true,
+			FieldPrintTitles:    true,
+			ItemPrintTitles:     true,
+			PivotTableStyleName: "PivotStyleLight16",
+		}))
+		pivotTables, err = f.GetPivotTables("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, pivotTables, 1)
+		assert.Equal(t, selectedItems, pivotTables[0].Filter[0].SelectedItems)
+		assert.NoError(t, f.AddSlicer("Sheet1", &SlicerOptions{
+			Name:          "Value",
+			Cell:          "G2",
+			TableSheet:    "Sheet1",
+			TableName:     "PivotTable1",
+			Caption:       "Value",
+			SelectedItems: []string{"true"},
+		}))
+		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPivotTable3.xlsx")))
+	})
 }
 
 func TestPivotTableDataRange(t *testing.T) {
@@ -500,6 +625,13 @@ func TestAddPivotColFields(t *testing.T) {
 		DataRange: "Sheet1!A1:A1",
 		Columns:   []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 	}), `parameter 'DataRange' parsing error: parameter is invalid`)
+}
+
+func TestExtractPivotSharedItems(t *testing.T) {
+	f := NewFile()
+	assert.Equal(t, newCoordinatesToCellNameError(0, 1), f.buildPivotSharedItems(&PivotTableOptions{}, 0, []int{0, 0, 0, 1}, PivotTableField{}))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "1/0"))
+	assert.NoError(t, f.buildPivotSharedItems(&PivotTableOptions{items: map[string][]*xlsxItem{}, sharedItems: map[string]xlsxSharedItems{}, pivotSheetName: "Sheet1"}, 0, []int{1, 0, 1, 1}, PivotTableField{}))
 }
 
 func TestGetPivotFieldsOrder(t *testing.T) {
