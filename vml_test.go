@@ -189,6 +189,7 @@ func TestFormControl(t *testing.T) {
 			Checked: true, Format: GraphicOptions{
 				PrintObject: boolPtr(false), Positioning: "oneCell",
 			},
+			Width: 140, Height: 60,
 		},
 		{
 			Cell: "A6", Type: FormControlCheckBox, Text: "Check Box 2",
@@ -201,11 +202,11 @@ func TestFormControl(t *testing.T) {
 			Cell: "A8", Type: FormControlOptionButton, Text: "Option Button 2",
 		},
 		{
-			Cell: "D3", Type: FormControlGroupBox, Text: "Group Box 1",
+			Cell: "D9", Type: FormControlGroupBox, Text: "Group Box 1",
 			Width: 140, Height: 60,
 		},
 		{
-			Cell: "A9", Type: FormControlLabel, Text: "Label 1", Width: 140,
+			Cell: "A10", Type: FormControlLabel, Text: "Label 1", Width: 140,
 		},
 		{
 			Cell: "C5", Type: FormControlSpinButton, Width: 40, Height: 60,

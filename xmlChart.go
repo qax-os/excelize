@@ -56,10 +56,33 @@ type cChart struct {
 // title.
 type cTitle struct {
 	Tx      cTx          `xml:"tx,omitempty"`
-	Layout  string       `xml:"layout,omitempty"`
+	Layout  *cLayout     `xml:"layout"`
 	Overlay *attrValBool `xml:"overlay"`
 	SpPr    cSpPr        `xml:"spPr,omitempty"`
 	TxPr    cTxPr        `xml:"txPr,omitempty"`
+	ExtLst  *xlsxExtLst  `xml:"extLst"`
+}
+
+// cLayout (Layout) directly maps the layout element. This element specifies
+// specifies how the chart element is placed on the chart.
+type cLayout struct {
+	ManualLayout *cManualLayout `xml:"manualLayout"`
+	ExtLst       *xlsxExtLst    `xml:"extLst"`
+}
+
+// cManualLayout (Manual Layout) directly maps the manualLayout element. This
+// element specifies the exact position of a chart element.
+type cManualLayout struct {
+	LayoutTarget *attrValString `xml:"layoutTarget"`
+	XMode        *attrValString `xml:"xMode"`
+	YMode        *attrValString `xml:"yMode"`
+	WMode        *attrValString `xml:"wMode"`
+	HMode        *attrValString `xml:"hMode"`
+	X            *attrValFloat  `xml:"x"`
+	Y            *attrValFloat  `xml:"y"`
+	W            *attrValFloat  `xml:"w"`
+	H            *attrValFloat  `xml:"h"`
+	ExtLst       *xlsxExtLst    `xml:"extLst"`
 }
 
 // cTx (Chart Text) directly maps the tx element. This element specifies text
@@ -609,7 +632,7 @@ type ChartAxis struct {
 	Font              Font
 	LogBase           float64
 	NumFmt            ChartNumFmt
-	Title             []RichTextRun
+	Title             ChartTitle
 	axID              int
 }
 
@@ -650,7 +673,7 @@ type Chart struct {
 	Format       GraphicOptions
 	Dimension    ChartDimension
 	Legend       ChartLegend
-	Title        []RichTextRun
+	Title        ChartTitle
 	VaryColors   *bool
 	XAxis        ChartAxis
 	YAxis        ChartAxis
@@ -663,6 +686,18 @@ type Chart struct {
 	GapWidth     *uint
 	Overlap      *int
 	order        int
+}
+
+// ChartTitle directly maps the format settings of the chart title.
+type ChartTitle struct {
+	Fill      Fill
+	Border    ChartLine
+	Paragraph []RichTextRun
+	OffsetX   int
+	OffsetY   int
+	Width     int
+	Height    int
+	Overlay   bool
 }
 
 // ChartLegend directly maps the format settings of the chart legend.
