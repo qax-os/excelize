@@ -157,24 +157,16 @@ type xlsxBlipFill struct {
 	Stretch xlsxStretch `xml:"a:stretch"`
 }
 
-// xlsxLineProperties specifies the width of a line in EMUs. This simple type
-// has a minimum value of greater than or equal to 0. This simple type has a
-// maximum value of less than or equal to 20116800.
-type xlsxLineProperties struct {
-	W         int           `xml:"w,attr,omitempty"`
-	SolidFill *xlsxInnerXML `xml:"a:solidFill"`
-}
-
 // xlsxSpPr directly maps the spPr (Shape Properties). This element specifies
 // the visual shape properties that can be applied to a picture. These are the
 // same properties that are allowed to describe the visual properties of a shape
 // but are used here to describe the visual appearance of a picture within a
 // document.
 type xlsxSpPr struct {
-	Xfrm      xlsxXfrm           `xml:"a:xfrm"`
-	PrstGeom  xlsxPrstGeom       `xml:"a:prstGeom"`
-	SolidFill *aSolidFill        `xml:"a:solidFill"`
-	Ln        xlsxLineProperties `xml:"a:ln"`
+	Xfrm      xlsxXfrm     `xml:"a:xfrm"`
+	PrstGeom  xlsxPrstGeom `xml:"a:prstGeom"`
+	SolidFill *aSolidFill  `xml:"a:solidFill"`
+	Ln        *aLn         `xml:"a:ln"`
 }
 
 // xlsxPic elements encompass the definition of pictures within the DrawingML
@@ -457,12 +449,6 @@ type Shape struct {
 	Height    uint
 	Format    GraphicOptions
 	Fill      Fill
-	Line      ShapeLine
+	Line      LineOptions
 	Paragraph []RichTextRun
-}
-
-// ShapeLine directly maps the line settings of the shape.
-type ShapeLine struct {
-	Color string
-	Width *float64
 }

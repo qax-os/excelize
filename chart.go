@@ -82,34 +82,34 @@ const (
 	StockOpenHighLowClose
 )
 
-// ChartDashType is the type of supported chart dash types.
-type ChartDashType byte
+// LineDashType is the type of supported line dash types.
+type LineDashType byte
 
-// This section defines the currently supported chart dash types enumeration.
+// This section defines the currently supported line dash types enumeration.
 const (
-	ChartDashUnset ChartDashType = iota
-	ChartDashSolid
-	ChartDashDot
-	ChartDashDash
-	ChartDashLgDash
-	ChartDashSashDot
-	ChartDashLgDashDot
-	ChartDashLgDashDotDot
-	ChartDashSysDash
-	ChartDashSysDot
-	ChartDashSysDashDot
-	ChartDashSysDashDotDot
+	LineDashUnset LineDashType = iota
+	LineDashSolid
+	LineDashDot
+	LineDashDash
+	LineDashLgDash
+	LineDashSashDot
+	LineDashLgDashDot
+	LineDashLgDashDotDot
+	LineDashSysDash
+	LineDashSysDot
+	LineDashSysDashDot
+	LineDashSysDashDotDot
 )
 
-// ChartLineType is the type of supported chart line types.
-type ChartLineType byte
+// LineType is the type of supported line types.
+type LineType byte
 
-// This section defines the currently supported chart line types enumeration.
+// This section defines the currently supported line types enumeration.
 const (
-	ChartLineUnset ChartLineType = iota
-	ChartLineSolid
-	ChartLineNone
-	ChartLineAutomatic
+	LineUnset LineType = iota
+	LineSolid
+	LineNone
+	LineAutomatic
 )
 
 // ChartTickLabelPositionType is the type of supported chart tick label position
@@ -586,7 +586,9 @@ func parseChartOptions(opts *Chart) (*Chart, error) {
 	if opts.Legend.Position == "" {
 		opts.Legend.Position = defaultChartLegendPosition
 	}
-	opts.parseTitle()
+	if err := opts.parseTitle(); err != nil {
+		return opts, err
+	}
 	if opts.Fill.Transparency < 0 || 100 < opts.Fill.Transparency {
 		return opts, ErrTransparency
 	}
@@ -619,18 +621,31 @@ func (opts *Chart) parseSeries() error {
 }
 
 // parseTitle parse the title settings of the chart with default value.
-func (opts *Chart) parseTitle() {
-	for i := range opts.Title {
-		if opts.Title[i].Font == nil {
-			opts.Title[i].Font = &Font{}
+func (opts *Chart) parseTitle() error {
+	if opts.Title.OffsetX < 0 || 100 < opts.Title.OffsetX {
+		return newChartTitleError("OffsetX")
+	}
+	if opts.Title.OffsetY < 0 || 100 < opts.Title.OffsetY {
+		return newChartTitleError("OffsetY")
+	}
+	if opts.Title.Width < 0 || 100 < opts.Title.Width {
+		return newChartTitleError("Width")
+	}
+	if opts.Title.Height < 0 || 100 < opts.Title.Height {
+		return newChartTitleError("Height")
+	}
+	for i := range opts.Title.Paragraph {
+		if opts.Title.Paragraph[i].Font == nil {
+			opts.Title.Paragraph[i].Font = &Font{}
 		}
-		if opts.Title[i].Font.Color == "" {
-			opts.Title[i].Font.Color = "595959"
+		if opts.Title.Paragraph[i].Font.Color == "" {
+			opts.Title.Paragraph[i].Font.Color = "595959"
 		}
-		if opts.Title[i].Font.Size == 0 {
-			opts.Title[i].Font.Size = 14
+		if opts.Title.Paragraph[i].Font.Size == 0 {
+			opts.Title.Paragraph[i].Font.Size = 14
 		}
 	}
+	return nil
 }
 
 // AddChart provides the method to add chart in a sheet by given chart format
@@ -683,9 +698,11 @@ func (opts *Chart) parseTitle() {
 //	                Values:     "Sheet1!$B$4:$D$4",
 //	            },
 //	        },
-//	        Title: []excelize.RichTextRun{
-//	            {
-//	                Text: "Fruit 3D Clustered Column Chart",
+//	        Title: excelize.ChartTitle{
+//	            Paragraph: []excelize.RichTextRun{
+//	                {
+//	                    Text: "Fruit 3D Clustered Column Chart",
+//	                },
 //	            },
 //	        },
 //	        Legend: excelize.ChartLegend{
@@ -1130,9 +1147,11 @@ func (opts *Chart) parseTitle() {
 //	            LockAspectRatio: false,
 //	            Locked:          &disable,
 //	        },
-//	        Title: []excelize.RichTextRun{
-//	            {
-//	                Text: "Clustered Column - Line Chart",
+//	        Title: excelize.ChartTitle{
+//	            Paragraph: []excelize.RichTextRun{
+//	                {
+//	                    Text: "Clustered Column - Line Chart",
+//	                },
 //	            },
 //	        },
 //	        Legend: excelize.ChartLegend{
@@ -1337,7 +1356,7 @@ func (f *File) countCharts() int {
 // ptToEMUs provides a function to convert pt to EMUs, 1 pt = 12700 EMUs. The
 // range of pt is 0.25pt - 999pt. If the value of pt is outside the range, the
 // default EMUs will be returned.
-func (f *File) ptToEMUs(pt float64) int {
+func ptToEMUs(pt float64) int {
 	if 0.25 > pt || pt > 999 {
 		return 25400
 	}

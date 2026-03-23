@@ -165,9 +165,11 @@ func main() {
                 Categories: "Sheet1!$B$1:$D$1",
                 Values:     "Sheet1!$B$4:$D$4",
             }},
-        Title: []excelize.RichTextRun{
-            {
-                Text: "Fruit 3D Clustered Column Chart",
+        Title: excelize.ChartTitle{
+            Paragraph: []excelize.RichTextRun{
+                {
+                    Text: "Fruit 3D Clustered Column Chart",
+                },
             },
         },
     }); err != nil {

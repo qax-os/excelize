@@ -64,7 +64,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		Lang:           &attrValString{Val: stringPtr("en-US")},
 		RoundedCorners: &attrValBool{Val: boolPtr(false)},
 		Chart: cChart{
-			Title: f.drawPlotAreaTitles(opts.Title, ""),
+			Title: opts.Title.drawPlotAreaTitles(""),
 			View3D: &cView3D{
 				RotX:        &attrValInt{Val: intPtr(chartView3DRotX[opts.Type])},
 				RotY:        &attrValInt{Val: intPtr(chartView3DRotY[opts.Type])},
@@ -89,7 +89,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 			SolidFill: &aSolidFill{
 				SchemeClr: &aSchemeClr{Val: "bg1"},
 			},
-			Ln: f.drawChartLn(&opts.Border),
+			Ln: opts.Border.drawChartLn(),
 		},
 		PrintSettings: &cPrintSettings{
 			PageMargins: &cPageMargins{
@@ -102,7 +102,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 			},
 		},
 	}
-	xlsxChartSpace.SpPr = f.drawShapeFill(opts.Fill, xlsxChartSpace.SpPr)
+	xlsxChartSpace.SpPr = opts.Fill.drawShapeFill(xlsxChartSpace.SpPr)
 	plotAreaFunc := map[ChartType]func(pa *cPlotArea, opts *Chart) *cPlotArea{
 		Area:                        f.drawBaseChart,
 		AreaStacked:                 f.drawBaseChart,
@@ -163,7 +163,7 @@ func (f *File) addChart(opts *Chart, comboCharts []*Chart) {
 		StockOpenHighLowClose:       f.drawStockChart,
 	}
 	xlsxChartSpace.Chart.drawChartLegend(opts)
-	xlsxChartSpace.Chart.PlotArea.SpPr = f.drawShapeFill(opts.PlotArea.Fill, xlsxChartSpace.Chart.PlotArea.SpPr)
+	xlsxChartSpace.Chart.PlotArea.SpPr = opts.PlotArea.Fill.drawShapeFill(xlsxChartSpace.Chart.PlotArea.SpPr)
 	xlsxChartSpace.Chart.PlotArea.DTable = f.drawPlotAreaDTable(opts)
 	addChart := func(c, p *cPlotArea) {
 		immutable, mutable := reflect.ValueOf(c).Elem(), reflect.ValueOf(p).Elem()
@@ -222,7 +222,7 @@ func (f *File) drawBaseChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	if *c[0].BarDir.Val, ok = plotAreaChartBarDir[opts.Type]; !ok {
 		c[0].BarDir = nil
 		if opts.XAxis.DropLines {
-			c[0].DropLines = &cChartLines{}
+			c[0].DropLines = &cLines{}
 		}
 	}
 	catAx := f.drawPlotAreaCatAx(pa, opts)
@@ -484,10 +484,10 @@ func (f *File) drawLineChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		ValAx: f.drawPlotAreaValAx(pa, opts),
 	}
 	if opts.XAxis.DropLines {
-		plotArea.LineChart[0].DropLines = &cChartLines{}
+		plotArea.LineChart[0].DropLines = &cLines{}
 	}
 	if opts.XAxis.HighLowLines {
-		plotArea.LineChart[0].HiLowLines = &cChartLines{}
+		plotArea.LineChart[0].HiLowLines = &cLines{}
 	}
 	return plotArea
 }
@@ -513,7 +513,7 @@ func (f *File) drawLine3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		ValAx: f.drawPlotAreaValAx(pa, opts),
 	}
 	if opts.XAxis.DropLines {
-		plotArea.Line3DChart[0].DropLines = &cChartLines{}
+		plotArea.Line3DChart[0].DropLines = &cLines{}
 	}
 	return plotArea
 }
@@ -727,14 +727,14 @@ func (f *File) drawStockChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		DateAx: f.drawPlotAreaCatAx(pa, opts),
 	}
 	if opts.Type == StockHighLowClose {
-		plotArea.StockChart[0].HiLowLines = &cChartLines{}
+		plotArea.StockChart[0].HiLowLines = &cLines{}
 	}
 	if opts.Type == StockOpenHighLowClose {
-		plotArea.StockChart[0].HiLowLines = &cChartLines{}
+		plotArea.StockChart[0].HiLowLines = &cLines{}
 		plotArea.StockChart[0].UpDownBars = &cUpDownBars{
 			GapWidth: &attrValString{Val: stringPtr("150")},
-			UpBars:   &cChartLines{f.drawShapeFill(opts.PlotArea.UpBars.Fill, &cSpPr{Ln: f.drawChartLn(&opts.PlotArea.UpBars.Border)})},
-			DownBars: &cChartLines{f.drawShapeFill(opts.PlotArea.DownBars.Fill, &cSpPr{Ln: f.drawChartLn(&opts.PlotArea.UpBars.Border)})},
+			UpBars:   &cLines{opts.PlotArea.UpBars.Fill.drawShapeFill(&cSpPr{Ln: opts.PlotArea.UpBars.Border.drawChartLn()})},
+			DownBars: &cLines{opts.PlotArea.DownBars.Fill.drawShapeFill(&cSpPr{Ln: opts.PlotArea.DownBars.Border.drawChartLn()})},
 		}
 	}
 	ser := *plotArea.StockChart[0].Ser
@@ -835,7 +835,7 @@ func (f *File) drawChartSeries(opts *Chart) *[]cSer {
 
 // drawShapeFill provides a function to draw the a:solidFill element by given
 // fill format sets.
-func (f *File) drawShapeFill(fill Fill, spPr *cSpPr) *cSpPr {
+func (fill *Fill) drawShapeFill(spPr *cSpPr) *cSpPr {
 	if fill.Type == "pattern" && fill.Pattern == 1 {
 		if spPr == nil {
 			spPr = &cSpPr{}
@@ -858,23 +858,23 @@ func (f *File) drawShapeFill(fill Fill, spPr *cSpPr) *cSpPr {
 // format sets.
 func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 	spPr := &cSpPr{SolidFill: &aSolidFill{SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa((opts.order+i)%6+1)}}}
-	spPr = f.drawShapeFill(opts.Series[i].Fill, spPr)
+	spPr = opts.Series[i].Fill.drawShapeFill(spPr)
 	solid := &cSpPr{
 		Ln: &aLn{
-			W:         f.ptToEMUs(opts.Series[i].Line.Width),
+			W:         ptToEMUs(opts.Series[i].Line.Width),
 			Cap:       "rnd", // rnd, sq, flat
 			SolidFill: spPr.SolidFill,
 		},
 	}
-	if opts.Series[i].Line.Dash != ChartDashUnset {
-		solid.Ln.PrstDash = &attrValString{Val: stringPtr(chartDashTypes[opts.Series[i].Line.Dash])}
+	if opts.Series[i].Line.Dash != LineDashUnset {
+		solid.Ln.PrstDash = &attrValString{Val: stringPtr(LineDashTypes[opts.Series[i].Line.Dash])}
 	}
 	noLn := &cSpPr{Ln: &aLn{NoFill: &attrValString{}}}
-	if chartSeriesSpPr, ok := map[ChartType]map[ChartLineType]*cSpPr{
-		Line:                  {ChartLineUnset: solid, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: solid},
-		Scatter:               {ChartLineUnset: noLn, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: noLn},
-		StockHighLowClose:     {ChartLineUnset: noLn, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: noLn},
-		StockOpenHighLowClose: {ChartLineUnset: noLn, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: noLn},
+	if chartSeriesSpPr, ok := map[ChartType]map[LineType]*cSpPr{
+		Line:                  {LineUnset: solid, LineSolid: solid, LineNone: noLn, LineAutomatic: solid},
+		Scatter:               {LineUnset: noLn, LineSolid: solid, LineNone: noLn, LineAutomatic: noLn},
+		StockHighLowClose:     {LineUnset: noLn, LineSolid: solid, LineNone: noLn, LineAutomatic: noLn},
+		StockOpenHighLowClose: {LineUnset: noLn, LineSolid: solid, LineNone: noLn, LineAutomatic: noLn},
 	}[opts.Type]; ok {
 		return chartSeriesSpPr[opts.Series[i].Line.Type]
 	}
@@ -916,7 +916,7 @@ func (f *File) drawChartSeriesDPt(i int, opts *Chart) []*cDPt {
 		spPr := &cSpPr{}
 		dpt = append(dpt, &cDPt{
 			IDx:  &attrValInt{Val: intPtr(opts.Series[i].DataPoint[j].Index)},
-			SpPr: f.drawShapeFill(opts.Series[i].DataPoint[j].Fill, spPr),
+			SpPr: opts.Series[i].DataPoint[j].Fill.drawShapeFill(spPr),
 		})
 	}
 	chartSeriesDPt := map[ChartType][]*cDPt{Doughnut: dpt, Pie: dpt, Pie3D: dpt}
@@ -977,9 +977,9 @@ func (f *File) drawChartSeriesMarker(i int, opts *Chart) *cMarker {
 			SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa(i+1)},
 		}, Ln: &aLn{W: 9252}}
 	}
-	marker.SpPr = f.drawShapeFill(opts.Series[i].Marker.Fill, marker.SpPr)
+	marker.SpPr = opts.Series[i].Marker.Fill.drawShapeFill(marker.SpPr)
 	if marker.SpPr != nil && marker.SpPr.Ln != nil {
-		marker.SpPr.Ln = f.drawChartLn(&opts.Series[i].Marker.Border)
+		marker.SpPr.Ln = opts.Series[i].Marker.Border.drawChartLn()
 	}
 	chartSeriesMarker := map[ChartType]*cMarker{
 		Scatter:               marker,
@@ -1098,7 +1098,7 @@ func (f *File) drawChartSeriesDLbls(i int, opts *Chart) *cDLbls {
 		}
 	}
 	dLbl := opts.Series[i].DataLabel
-	dLbls.SpPr = f.drawShapeFill(dLbl.Fill, dLbls.SpPr)
+	dLbls.SpPr = dLbl.Fill.drawShapeFill(dLbls.SpPr)
 	dLbls.TxPr = &cTxPr{BodyPr: aBodyPr{}, P: aP{PPr: &aPPr{DefRPr: aRPr{}}}}
 	drawChartFont(&dLbl.Font, &dLbls.TxPr.P.PPr.DefRPr)
 	return dLbls
@@ -1126,7 +1126,7 @@ func (f *File) drawPlotAreaCatAx(pa *cPlotArea, opts *Chart) []*cAxs {
 		NumFmt:        &cNumFmt{FormatCode: "General"},
 		MajorTickMark: &attrValString{Val: stringPtr("none")},
 		MinorTickMark: &attrValString{Val: stringPtr("none")},
-		Title:         f.drawPlotAreaTitles(opts.XAxis.Title, ""),
+		Title:         opts.XAxis.Title.drawPlotAreaTitles(""),
 		TickLblPos:    &attrValString{Val: stringPtr(tickLblPosVal[opts.XAxis.TickLabelPosition])},
 		SpPr:          f.drawPlotAreaSpPr(),
 		TxPr:          f.drawPlotAreaTxPr(&opts.XAxis),
@@ -1141,10 +1141,10 @@ func (f *File) drawPlotAreaCatAx(pa *cPlotArea, opts *Chart) []*cAxs {
 		ax.NumFmt = numFmt
 	}
 	if opts.XAxis.MajorGridLines {
-		ax.MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+		ax.MajorGridlines = &cLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if opts.XAxis.MinorGridLines {
-		ax.MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+		ax.MinorGridlines = &cLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if opts.XAxis.TickLabelSkip != 0 {
 		ax.TickLblSkip = &attrValInt{Val: intPtr(opts.XAxis.TickLabelSkip)}
@@ -1183,7 +1183,7 @@ func (f *File) drawPlotAreaValAx(pa *cPlotArea, opts *Chart) []*cAxs {
 		},
 		Delete: &attrValBool{Val: boolPtr(opts.YAxis.None)},
 		AxPos:  &attrValString{Val: stringPtr(valAxPos[opts.YAxis.ReverseOrder])},
-		Title:  f.drawPlotAreaTitles(opts.YAxis.Title, "horz"),
+		Title:  opts.YAxis.Title.drawPlotAreaTitles("horz"),
 		NumFmt: &cNumFmt{
 			FormatCode: chartValAxNumFmtFormatCode[opts.Type],
 		},
@@ -1200,10 +1200,10 @@ func (f *File) drawPlotAreaValAx(pa *cPlotArea, opts *Chart) []*cAxs {
 		ax.NumFmt = numFmt
 	}
 	if opts.YAxis.MajorGridLines {
-		ax.MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+		ax.MajorGridlines = &cLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if opts.YAxis.MinorGridLines {
-		ax.MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+		ax.MinorGridlines = &cLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if pos, ok := tickLblPosNone[opts.Type]; ok {
 		ax.TickLblPos.Val = stringPtr(pos)
@@ -1289,16 +1289,24 @@ func drawChartFont(fnt *Font, r *aRPr) {
 }
 
 // drawPlotAreaTitles provides a function to draw the c:title element.
-func (f *File) drawPlotAreaTitles(runs []RichTextRun, vert string) *cTitle {
-	if len(runs) == 0 {
+func (ct *ChartTitle) drawPlotAreaTitles(vert string) *cTitle {
+	if ct == nil || len(ct.Paragraph) == 0 {
 		return nil
 	}
-	title := &cTitle{Tx: cTx{Rich: &cRich{}}, Overlay: &attrValBool{Val: boolPtr(false)}}
-	for _, run := range runs {
+	title := &cTitle{
+		Tx:      cTx{Rich: &cRich{}},
+		Layout:  ct.drawTitlesManualLayout(),
+		Overlay: &attrValBool{Val: boolPtr(ct.Overlay)},
+	}
+	for _, run := range ct.Paragraph {
 		r := &aR{T: run.Text}
 		drawChartFont(run.Font, &r.RPr)
 		title.Tx.Rich.P = append(title.Tx.Rich.P, aP{
-			PPr:        &aPPr{DefRPr: aRPr{}},
+			PPr: &aPPr{DefRPr: aRPr{
+				Latin: &xlsxCTTextFont{Typeface: "+mn-lt"},
+				Ea:    &xlsxCTTextFont{Typeface: "+mn-ea"},
+				Cs:    &xlsxCTTextFont{Typeface: "+mn-cs"},
+			}},
 			R:          r,
 			EndParaRPr: &aEndParaRPr{Lang: "en-US", AltLang: "en-US"},
 		})
@@ -1306,7 +1314,43 @@ func (f *File) drawPlotAreaTitles(runs []RichTextRun, vert string) *cTitle {
 	if vert == "horz" {
 		title.Tx.Rich.BodyPr = aBodyPr{Rot: -5400000, Vert: vert}
 	}
+	spPr := ct.Fill.drawShapeFill(nil)
+	if ln := ct.Border.drawChartLn(); ln != nil {
+		if spPr == nil {
+			spPr = &cSpPr{}
+		}
+		spPr.Ln = ln
+	}
+	if spPr != nil {
+		title.SpPr = *spPr
+	}
 	return title
+}
+
+// drawTitlesManualLayout provides a function to draw the c:manualLayout
+// element.
+func (ct *ChartTitle) drawTitlesManualLayout() *cLayout {
+	if ct.OffsetX+ct.OffsetY+ct.Width+ct.Height == 0 {
+		return nil
+	}
+	layout := &cLayout{ManualLayout: &cManualLayout{}}
+	if ct.OffsetX > 0 {
+		layout.ManualLayout.XMode = &attrValString{Val: stringPtr("edge")}
+		layout.ManualLayout.X = &attrValFloat{Val: float64Ptr(float64(ct.OffsetX) / 100)}
+	}
+	if ct.OffsetY > 0 {
+		layout.ManualLayout.YMode = &attrValString{Val: stringPtr("edge")}
+		layout.ManualLayout.Y = &attrValFloat{Val: float64Ptr(float64(ct.OffsetY) / 100)}
+	}
+	if ct.Width > 0 {
+		layout.ManualLayout.WMode = &attrValString{Val: stringPtr("edge")}
+		layout.ManualLayout.W = &attrValFloat{Val: float64Ptr(float64(ct.Width) / 100)}
+	}
+	if ct.Height > 0 {
+		layout.ManualLayout.HMode = &attrValString{Val: stringPtr("edge")}
+		layout.ManualLayout.H = &attrValFloat{Val: float64Ptr(float64(ct.Height) / 100)}
+	}
+	return layout
 }
 
 // drawPlotAreaDTable provides a function to draw the c:dTable element.
@@ -1391,19 +1435,19 @@ func (f *File) drawPlotAreaTxPr(opts *ChartAxis) *cTxPr {
 }
 
 // drawChartLn provides a function to draw the a:ln element.
-func (f *File) drawChartLn(opts *ChartLine) *aLn {
+func (l *LineOptions) drawChartLn() *aLn {
 	ln := &aLn{
-		W:    f.ptToEMUs(opts.Width),
+		W:    ptToEMUs(l.Width),
 		Cap:  "flat",
 		Cmpd: "sng",
 		Algn: "ctr",
 	}
-	if opts.Dash != ChartDashUnset {
-		ln.PrstDash = &attrValString{Val: stringPtr(chartDashTypes[opts.Dash])}
+	if l.Dash != LineDashUnset {
+		ln.PrstDash = &attrValString{Val: stringPtr(LineDashTypes[l.Dash])}
 	}
-	switch opts.Type {
-	case ChartLineSolid:
-		ln.SolidFill = f.drawShapeFill(opts.Fill, &cSpPr{
+	switch l.Type {
+	case LineSolid:
+		ln.SolidFill = l.Fill.drawShapeFill(&cSpPr{
 			SolidFill: &aSolidFill{
 				SchemeClr: &aSchemeClr{
 					Val: "tx1",
@@ -1417,7 +1461,7 @@ func (f *File) drawChartLn(opts *ChartLine) *aLn {
 			},
 		}).SolidFill
 		return ln
-	case ChartLineNone:
+	case LineNone:
 		ln.NoFill = &attrValString{}
 		return ln
 	default:
