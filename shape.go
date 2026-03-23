@@ -31,8 +31,8 @@ func parseShapeOptions(opts *Shape) (*Shape, error) {
 	if opts.Height == 0 {
 		opts.Height = defaultShapeSize
 	}
-	if opts.Line.Width == nil {
-		opts.Line.Width = float64Ptr(defaultShapeLineWidth)
+	if opts.Line.Width == 0 {
+		opts.Line.Width = defaultLineWidth
 	}
 	if opts.Fill.Transparency < 0 || 100 < opts.Fill.Transparency {
 		return opts, ErrTransparency
@@ -50,12 +50,17 @@ func parseShapeOptions(opts *Shape) (*Shape, error) {
 // name and shape format set (such as offset, scale, aspect ratio setting and
 // print settings). For example, add text box (rect shape) in Sheet1:
 //
-//	lineWidth := 1.2
-//	err := f.AddShape("Sheet1",
-//	    &excelize.Shape{
-//	        Cell: "G6",
-//	        Type: "rect",
-//	        Line: excelize.ShapeLine{Color: "4286F4", Width: &lineWidth},
+//		lineWidth := 1.2
+//		err := f.AddShape("Sheet1",
+//		    &excelize.Shape{
+//		        Cell: "G6",
+//		        Type: "rect",
+//		        Line: excelize.LineOptions{
+//					Fill:  excelize.Fill{
+//						Type: "pattern", Color: []string{"4286F4"}, Pattern: 1,
+//					},
+//					Width: lineWidth,
+//			},
 //	        Fill: excelize.Fill{Color: []string{"8EB9FF"}, Pattern: 1},
 //	        Paragraph: []excelize.RichTextRun{
 //	            {
@@ -366,9 +371,12 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 	if err != nil {
 		return err
 	}
-	var solidColor string
+	var shapeColor, lineColor string
 	if len(opts.Fill.Color) == 1 {
-		solidColor = strings.ReplaceAll(strings.ToUpper(opts.Fill.Color[0]), "#", "")
+		shapeColor = strings.ReplaceAll(strings.ToUpper(opts.Fill.Color[0]), "#", "")
+	}
+	if len(opts.Line.Fill.Color) == 1 {
+		lineColor = strings.ReplaceAll(strings.ToUpper(opts.Line.Fill.Color[0]), "#", "")
 	}
 	shape := xdrSp{
 		Macro: opts.Macro,
@@ -394,8 +402,8 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 			},
 		},
 		Style: &xdrStyle{
-			LnRef:     setShapeRef(opts.Line.Color, 2),
-			FillRef:   setShapeRef(solidColor, 1),
+			LnRef:     setShapeRef(lineColor, 2),
+			FillRef:   setShapeRef(shapeColor, 1),
 			EffectRef: setShapeRef("", 0),
 			FontRef: &aFontRef{
 				Idx: "minor",
@@ -417,15 +425,11 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 	if len(opts.Format.Name) > 0 {
 		shape.NvSpPr.CNvPr.Name = opts.Format.Name
 	}
-	if *opts.Line.Width != 1 {
-		shape.SpPr.Ln = xlsxLineProperties{
-			W: ptToEMUs(*opts.Line.Width),
-		}
-	}
+	shape.SpPr.Ln = opts.Line.drawChartLn()
 	if opts.Fill.Transparency > 0 {
 		val := (100 - opts.Fill.Transparency) * 1000
 		shape.SpPr.SolidFill = &aSolidFill{SrgbClr: &aSrgbClr{
-			Val:   stringPtr(solidColor),
+			Val:   stringPtr(shapeColor),
 			Alpha: &attrValInt{Val: &val},
 		}}
 	}

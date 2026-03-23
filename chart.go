@@ -82,34 +82,34 @@ const (
 	StockOpenHighLowClose
 )
 
-// ChartDashType is the type of supported chart dash types.
-type ChartDashType byte
+// LineDashType is the type of supported line dash types.
+type LineDashType byte
 
-// This section defines the currently supported chart dash types enumeration.
+// This section defines the currently supported line dash types enumeration.
 const (
-	ChartDashUnset ChartDashType = iota
-	ChartDashSolid
-	ChartDashDot
-	ChartDashDash
-	ChartDashLgDash
-	ChartDashSashDot
-	ChartDashLgDashDot
-	ChartDashLgDashDotDot
-	ChartDashSysDash
-	ChartDashSysDot
-	ChartDashSysDashDot
-	ChartDashSysDashDotDot
+	LineDashUnset LineDashType = iota
+	LineDashSolid
+	LineDashDot
+	LineDashDash
+	LineDashLgDash
+	LineDashSashDot
+	LineDashLgDashDot
+	LineDashLgDashDotDot
+	LineDashSysDash
+	LineDashSysDot
+	LineDashSysDashDot
+	LineDashSysDashDotDot
 )
 
-// ChartLineType is the type of supported chart line types.
-type ChartLineType byte
+// LineType is the type of supported line types.
+type LineType byte
 
-// This section defines the currently supported chart line types enumeration.
+// This section defines the currently supported line types enumeration.
 const (
-	ChartLineUnset ChartLineType = iota
-	ChartLineSolid
-	ChartLineNone
-	ChartLineAutomatic
+	LineUnset LineType = iota
+	LineSolid
+	LineNone
+	LineAutomatic
 )
 
 // ChartTickLabelPositionType is the type of supported chart tick label position

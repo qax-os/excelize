@@ -168,9 +168,9 @@ func TestAddChart(t *testing.T) {
 			Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37",
 			Marker: ChartMarker{
 				Fill: Fill{Type: "pattern", Color: []string{"FFFFFF"}, Pattern: 1},
-				Border: ChartLine{
-					Type:  ChartLineSolid,
-					Dash:  ChartDashDot,
+				Border: LineOptions{
+					Type:  LineSolid,
+					Dash:  LineDashDot,
 					Fill:  Fill{Type: "pattern", Color: []string{"#FFFF00"}, Pattern: 1},
 					Width: 1,
 				},
@@ -190,7 +190,7 @@ func TestAddChart(t *testing.T) {
 		{Name: "Sheet1!$A$34", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$34:$D$34"},
 		{Name: "Sheet1!$A$35", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$35:$D$35"},
 		{Name: "Sheet1!$A$36", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$36:$D$36"},
-		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Line: ChartLine{Dash: ChartDashDash, Width: 0.25}},
+		{Name: "Sheet1!$A$37", Categories: "Sheet1!$B$29:$D$29", Values: "Sheet1!$B$37:$D$37", Line: LineOptions{Dash: LineDashDash, Width: 0.25}},
 	}
 	series3 := []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37"}}
 	series4 := []ChartSeries{{Name: "Sheet1!$A$30", Categories: "Sheet1!$A$30:$D$37", Values: "Sheet1!$B$30:$B$37", DataPoint: []ChartDataPoint{
@@ -233,9 +233,9 @@ func TestAddChart(t *testing.T) {
 		sheetName, cell string
 		opts            *Chart
 	}{
-		{sheetName: "Sheet1", cell: "Q1", opts: &Chart{Type: Col, Series: series, Format: format, Legend: ChartLegend{Position: "none", ShowLegendKey: true}, Title: ChartTitle{Fill: Fill{Type: "pattern", Color: []string{"EEEEEE"}, Pattern: 1}, Border: ChartLine{Type: ChartLineSolid, Dash: ChartDashDot, Width: 1}, Paragraph: []RichTextRun{{Text: "2D Column Chart", Font: &Font{Size: 11, Family: "Calibri"}}}, OffsetX: 10, OffsetY: 5, Width: 80, Height: 10}, PlotArea: plotArea, Border: ChartLine{Type: ChartLineNone}, ShowBlanksAs: "zero", XAxis: ChartAxis{Font: Font{Bold: true, Italic: true, Underline: "dbl", Family: "Times New Roman", Size: 15, Strike: true, Color: "000000"}, Title: ChartTitle{Fill: Fill{Type: "gradient", Pattern: 1}, Border: ChartLine{Type: ChartLineSolid, Dash: ChartDashDot, Width: 1}, Paragraph: []RichTextRun{{Text: "Primary Horizontal Axis Title"}}}}, YAxis: ChartAxis{Font: Font{Bold: false, Italic: false, Underline: "sng", Color: "777777"}, Title: ChartTitle{Paragraph: []RichTextRun{{Text: "Primary Vertical Axis Title", Font: &Font{Color: "777777", Bold: true, Italic: true, Size: 12}}}}}}},
-		{sheetName: "Sheet1", cell: "W1", opts: &Chart{Type: ColStacked, Series: series, Format: format, Legend: legend, Title: ChartTitle{Paragraph: []RichTextRun{{Text: "2D Stacked Column Chart"}}}, PlotArea: plotArea, Fill: Fill{Type: "pattern", Pattern: 1}, Border: ChartLine{Type: ChartLineAutomatic}, ShowBlanksAs: "zero", GapWidth: uintPtr(10), Overlap: intPtr(100)}},
-		{sheetName: "Sheet1", cell: "Q16", opts: &Chart{Type: ColPercentStacked, Series: series, Format: format, Legend: legend, Title: ChartTitle{Paragraph: []RichTextRun{{Text: "100% Stacked Column Chart"}}}, PlotArea: plotArea, Fill: Fill{Type: "pattern", Color: []string{"EEEEEE"}, Pattern: 1}, Border: ChartLine{Type: ChartLineSolid, Width: 2}, ShowBlanksAs: "zero", XAxis: ChartAxis{Alignment: Alignment{Vertical: "wordArtVertRtl", TextRotation: 0}}}},
+		{sheetName: "Sheet1", cell: "Q1", opts: &Chart{Type: Col, Series: series, Format: format, Legend: ChartLegend{Position: "none", ShowLegendKey: true}, Title: ChartTitle{Fill: Fill{Type: "pattern", Color: []string{"EEEEEE"}, Pattern: 1}, Border: LineOptions{Type: LineSolid, Dash: LineDashDot, Width: 1}, Paragraph: []RichTextRun{{Text: "2D Column Chart", Font: &Font{Size: 11, Family: "Calibri"}}}, OffsetX: 10, OffsetY: 5, Width: 80, Height: 10}, PlotArea: plotArea, Border: LineOptions{Type: LineNone}, ShowBlanksAs: "zero", XAxis: ChartAxis{Font: Font{Bold: true, Italic: true, Underline: "dbl", Family: "Times New Roman", Size: 15, Strike: true, Color: "000000"}, Title: ChartTitle{Fill: Fill{Type: "gradient", Pattern: 1}, Border: LineOptions{Type: LineSolid, Dash: LineDashDot, Width: 1}, Paragraph: []RichTextRun{{Text: "Primary Horizontal Axis Title"}}}}, YAxis: ChartAxis{Font: Font{Bold: false, Italic: false, Underline: "sng", Color: "777777"}, Title: ChartTitle{Paragraph: []RichTextRun{{Text: "Primary Vertical Axis Title", Font: &Font{Color: "777777", Bold: true, Italic: true, Size: 12}}}}}}},
+		{sheetName: "Sheet1", cell: "W1", opts: &Chart{Type: ColStacked, Series: series, Format: format, Legend: legend, Title: ChartTitle{Paragraph: []RichTextRun{{Text: "2D Stacked Column Chart"}}}, PlotArea: plotArea, Fill: Fill{Type: "pattern", Pattern: 1}, Border: LineOptions{Type: LineAutomatic}, ShowBlanksAs: "zero", GapWidth: uintPtr(10), Overlap: intPtr(100)}},
+		{sheetName: "Sheet1", cell: "Q16", opts: &Chart{Type: ColPercentStacked, Series: series, Format: format, Legend: legend, Title: ChartTitle{Paragraph: []RichTextRun{{Text: "100% Stacked Column Chart"}}}, PlotArea: plotArea, Fill: Fill{Type: "pattern", Color: []string{"EEEEEE"}, Pattern: 1}, Border: LineOptions{Type: LineSolid, Width: 2}, ShowBlanksAs: "zero", XAxis: ChartAxis{Alignment: Alignment{Vertical: "wordArtVertRtl", TextRotation: 0}}}},
 		{sheetName: "Sheet1", cell: "W16", opts: &Chart{Type: Col3DClustered, Series: series, Format: format, Legend: ChartLegend{Position: "bottom", ShowLegendKey: false, Font: &Font{Size: 10}}, Title: ChartTitle{Paragraph: []RichTextRun{{Text: "3D Clustered Column Chart"}}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
 		{sheetName: "Sheet1", cell: "Q30", opts: &Chart{Type: Col3DStacked, Series: series, Format: format, Legend: legend, Title: ChartTitle{Paragraph: []RichTextRun{{Text: "3D Stacked Column Chart"}}}, PlotArea: plotArea, ShowBlanksAs: "zero", XAxis: ChartAxis{Alignment: Alignment{Vertical: "vert", TextRotation: 0}}}},
 		{sheetName: "Sheet1", cell: "W30", opts: &Chart{Type: Col3DPercentStacked, Series: series, Format: format, Legend: legend, Title: ChartTitle{Paragraph: []RichTextRun{{Text: "3D 100% Stacked Column Chart"}}}, PlotArea: plotArea, ShowBlanksAs: "zero"}},
@@ -401,11 +401,11 @@ func TestAddChart(t *testing.T) {
 			XAxis:  ChartAxis{NumFmt: ChartNumFmt{CustomNumFmt: "d-mmm-yy"}},
 			PlotArea: ChartPlotArea{
 				UpBars: ChartUpDownBar{
-					Border: ChartLine{Type: ChartLineNone},
+					Border: LineOptions{Type: LineNone},
 					Fill:   Fill{Type: "pattern", Color: []string{"00B050"}, Pattern: 1},
 				},
 				DownBars: ChartUpDownBar{
-					Border: ChartLine{Type: ChartLineNone},
+					Border: LineOptions{Type: LineNone},
 					Fill:   Fill{Type: "pattern", Color: []string{"FF0000"}, Pattern: 1},
 				},
 			},

@@ -222,7 +222,7 @@ func (f *File) drawBaseChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 	if *c[0].BarDir.Val, ok = plotAreaChartBarDir[opts.Type]; !ok {
 		c[0].BarDir = nil
 		if opts.XAxis.DropLines {
-			c[0].DropLines = &cChartLines{}
+			c[0].DropLines = &cLines{}
 		}
 	}
 	catAx := f.drawPlotAreaCatAx(pa, opts)
@@ -484,10 +484,10 @@ func (f *File) drawLineChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		ValAx: f.drawPlotAreaValAx(pa, opts),
 	}
 	if opts.XAxis.DropLines {
-		plotArea.LineChart[0].DropLines = &cChartLines{}
+		plotArea.LineChart[0].DropLines = &cLines{}
 	}
 	if opts.XAxis.HighLowLines {
-		plotArea.LineChart[0].HiLowLines = &cChartLines{}
+		plotArea.LineChart[0].HiLowLines = &cLines{}
 	}
 	return plotArea
 }
@@ -513,7 +513,7 @@ func (f *File) drawLine3DChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		ValAx: f.drawPlotAreaValAx(pa, opts),
 	}
 	if opts.XAxis.DropLines {
-		plotArea.Line3DChart[0].DropLines = &cChartLines{}
+		plotArea.Line3DChart[0].DropLines = &cLines{}
 	}
 	return plotArea
 }
@@ -727,14 +727,14 @@ func (f *File) drawStockChart(pa *cPlotArea, opts *Chart) *cPlotArea {
 		DateAx: f.drawPlotAreaCatAx(pa, opts),
 	}
 	if opts.Type == StockHighLowClose {
-		plotArea.StockChart[0].HiLowLines = &cChartLines{}
+		plotArea.StockChart[0].HiLowLines = &cLines{}
 	}
 	if opts.Type == StockOpenHighLowClose {
-		plotArea.StockChart[0].HiLowLines = &cChartLines{}
+		plotArea.StockChart[0].HiLowLines = &cLines{}
 		plotArea.StockChart[0].UpDownBars = &cUpDownBars{
 			GapWidth: &attrValString{Val: stringPtr("150")},
-			UpBars:   &cChartLines{opts.PlotArea.UpBars.Fill.drawShapeFill(&cSpPr{Ln: opts.PlotArea.UpBars.Border.drawChartLn()})},
-			DownBars: &cChartLines{opts.PlotArea.DownBars.Fill.drawShapeFill(&cSpPr{Ln: opts.PlotArea.DownBars.Border.drawChartLn()})},
+			UpBars:   &cLines{opts.PlotArea.UpBars.Fill.drawShapeFill(&cSpPr{Ln: opts.PlotArea.UpBars.Border.drawChartLn()})},
+			DownBars: &cLines{opts.PlotArea.DownBars.Fill.drawShapeFill(&cSpPr{Ln: opts.PlotArea.DownBars.Border.drawChartLn()})},
 		}
 	}
 	ser := *plotArea.StockChart[0].Ser
@@ -866,15 +866,15 @@ func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 			SolidFill: spPr.SolidFill,
 		},
 	}
-	if opts.Series[i].Line.Dash != ChartDashUnset {
-		solid.Ln.PrstDash = &attrValString{Val: stringPtr(chartDashTypes[opts.Series[i].Line.Dash])}
+	if opts.Series[i].Line.Dash != LineDashUnset {
+		solid.Ln.PrstDash = &attrValString{Val: stringPtr(LineDashTypes[opts.Series[i].Line.Dash])}
 	}
 	noLn := &cSpPr{Ln: &aLn{NoFill: &attrValString{}}}
-	if chartSeriesSpPr, ok := map[ChartType]map[ChartLineType]*cSpPr{
-		Line:                  {ChartLineUnset: solid, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: solid},
-		Scatter:               {ChartLineUnset: noLn, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: noLn},
-		StockHighLowClose:     {ChartLineUnset: noLn, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: noLn},
-		StockOpenHighLowClose: {ChartLineUnset: noLn, ChartLineSolid: solid, ChartLineNone: noLn, ChartLineAutomatic: noLn},
+	if chartSeriesSpPr, ok := map[ChartType]map[LineType]*cSpPr{
+		Line:                  {LineUnset: solid, LineSolid: solid, LineNone: noLn, LineAutomatic: solid},
+		Scatter:               {LineUnset: noLn, LineSolid: solid, LineNone: noLn, LineAutomatic: noLn},
+		StockHighLowClose:     {LineUnset: noLn, LineSolid: solid, LineNone: noLn, LineAutomatic: noLn},
+		StockOpenHighLowClose: {LineUnset: noLn, LineSolid: solid, LineNone: noLn, LineAutomatic: noLn},
 	}[opts.Type]; ok {
 		return chartSeriesSpPr[opts.Series[i].Line.Type]
 	}
@@ -1141,10 +1141,10 @@ func (f *File) drawPlotAreaCatAx(pa *cPlotArea, opts *Chart) []*cAxs {
 		ax.NumFmt = numFmt
 	}
 	if opts.XAxis.MajorGridLines {
-		ax.MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+		ax.MajorGridlines = &cLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if opts.XAxis.MinorGridLines {
-		ax.MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+		ax.MinorGridlines = &cLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if opts.XAxis.TickLabelSkip != 0 {
 		ax.TickLblSkip = &attrValInt{Val: intPtr(opts.XAxis.TickLabelSkip)}
@@ -1200,10 +1200,10 @@ func (f *File) drawPlotAreaValAx(pa *cPlotArea, opts *Chart) []*cAxs {
 		ax.NumFmt = numFmt
 	}
 	if opts.YAxis.MajorGridLines {
-		ax.MajorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+		ax.MajorGridlines = &cLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if opts.YAxis.MinorGridLines {
-		ax.MinorGridlines = &cChartLines{SpPr: f.drawPlotAreaSpPr()}
+		ax.MinorGridlines = &cLines{SpPr: f.drawPlotAreaSpPr()}
 	}
 	if pos, ok := tickLblPosNone[opts.Type]; ok {
 		ax.TickLblPos.Val = stringPtr(pos)
@@ -1435,18 +1435,18 @@ func (f *File) drawPlotAreaTxPr(opts *ChartAxis) *cTxPr {
 }
 
 // drawChartLn provides a function to draw the a:ln element.
-func (l *ChartLine) drawChartLn() *aLn {
+func (l *LineOptions) drawChartLn() *aLn {
 	ln := &aLn{
 		W:    ptToEMUs(l.Width),
 		Cap:  "flat",
 		Cmpd: "sng",
 		Algn: "ctr",
 	}
-	if l.Dash != ChartDashUnset {
-		ln.PrstDash = &attrValString{Val: stringPtr(chartDashTypes[l.Dash])}
+	if l.Dash != LineDashUnset {
+		ln.PrstDash = &attrValString{Val: stringPtr(LineDashTypes[l.Dash])}
 	}
 	switch l.Type {
-	case ChartLineSolid:
+	case LineSolid:
 		ln.SolidFill = l.Fill.drawShapeFill(&cSpPr{
 			SolidFill: &aSolidFill{
 				SchemeClr: &aSchemeClr{
@@ -1461,7 +1461,7 @@ func (l *ChartLine) drawChartLn() *aLn {
 			},
 		}).SolidFill
 		return ln
-	case ChartLineNone:
+	case LineNone:
 		ln.NoFill = &attrValString{}
 		return ln
 	default:

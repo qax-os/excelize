@@ -181,8 +181,9 @@ type aSrgbClr struct {
 // specifies a solid color fill. The shape is filled entirely with the specified
 // color.
 type aSolidFill struct {
-	SchemeClr *aSchemeClr `xml:"a:schemeClr"`
-	SrgbClr   *aSrgbClr   `xml:"a:srgbClr"`
+	SchemeClr *aSchemeClr    `xml:"a:schemeClr"`
+	SrgbClr   *aSrgbClr      `xml:"a:srgbClr"`
+	PrstClr   *attrValString `xml:"a:prstClr"`
 }
 
 // aSchemeClr (Scheme Color) directly maps the a:schemeClr element. This
@@ -315,6 +316,7 @@ type aLn struct {
 	Round     string         `xml:"a:round,omitempty"`
 	SolidFill *aSolidFill    `xml:"a:solidFill"`
 	PrstDash  *attrValString `xml:"a:prstDash"`
+	PrstClr   *xlsxInnerXML  `xml:"a:prstClr"`
 }
 
 // cTxPr (Text Properties) directly maps the txPr element. This element
@@ -399,8 +401,8 @@ type cCharts struct {
 	SplitPos     *attrValInt    `xml:"splitPos"`
 	SerLines     *attrValString `xml:"serLines"`
 	DLbls        *cDLbls        `xml:"dLbls"`
-	DropLines    *cChartLines   `xml:"dropLines"`
-	HiLowLines   *cChartLines   `xml:"hiLowLines"`
+	DropLines    *cLines        `xml:"dropLines"`
+	HiLowLines   *cLines        `xml:"hiLowLines"`
 	UpDownBars   *cUpDownBars   `xml:"upDownBars"`
 	GapWidth     *attrValInt    `xml:"gapWidth"`
 	Shape        *attrValString `xml:"shape"`
@@ -416,8 +418,8 @@ type cAxs struct {
 	Scaling        *cScaling      `xml:"scaling"`
 	Delete         *attrValBool   `xml:"delete"`
 	AxPos          *attrValString `xml:"axPos"`
-	MajorGridlines *cChartLines   `xml:"majorGridlines"`
-	MinorGridlines *cChartLines   `xml:"minorGridlines"`
+	MajorGridlines *cLines        `xml:"majorGridlines"`
+	MinorGridlines *cLines        `xml:"minorGridlines"`
 	Title          *cTitle        `xml:"title"`
 	NumFmt         *cNumFmt       `xml:"numFmt"`
 	MajorTickMark  *attrValString `xml:"majorTickMark"`
@@ -442,13 +444,13 @@ type cAxs struct {
 // the up and down bars.
 type cUpDownBars struct {
 	GapWidth *attrValString `xml:"gapWidth"`
-	UpBars   *cChartLines   `xml:"upBars"`
-	DownBars *cChartLines   `xml:"downBars"`
+	UpBars   *cLines        `xml:"upBars"`
+	DownBars *cLines        `xml:"downBars"`
 	ExtLst   *xlsxExtLst    `xml:"extLst"`
 }
 
-// cChartLines directly maps the chart lines content model.
-type cChartLines struct {
+// cLines directly maps the chart lines content model.
+type cLines struct {
 	SpPr *cSpPr `xml:"spPr"`
 }
 
@@ -646,7 +648,7 @@ type ChartDimension struct {
 // and down bars.
 type ChartUpDownBar struct {
 	Fill   Fill
-	Border ChartLine
+	Border LineOptions
 }
 
 // ChartPlotArea directly maps the format settings of the plot area.
@@ -679,7 +681,7 @@ type Chart struct {
 	YAxis        ChartAxis
 	PlotArea     ChartPlotArea
 	Fill         Fill
-	Border       ChartLine
+	Border       LineOptions
 	ShowBlanksAs string
 	BubbleSize   int
 	HoleSize     int
@@ -691,7 +693,7 @@ type Chart struct {
 // ChartTitle directly maps the format settings of the chart title.
 type ChartTitle struct {
 	Fill      Fill
-	Border    ChartLine
+	Border    LineOptions
 	Paragraph []RichTextRun
 	OffsetX   int
 	OffsetY   int
@@ -709,16 +711,16 @@ type ChartLegend struct {
 
 // ChartMarker directly maps the format settings of the chart marker.
 type ChartMarker struct {
-	Border ChartLine
+	Border LineOptions
 	Fill   Fill
 	Symbol string
 	Size   int
 }
 
-// ChartLine directly maps the format settings of the chart line.
-type ChartLine struct {
-	Type   ChartLineType
-	Dash   ChartDashType
+// LineOptions directly maps the format settings of the chart line.
+type LineOptions struct {
+	Type   LineType
+	Dash   LineDashType
 	Fill   Fill
 	Smooth bool
 	Width  float64
@@ -746,7 +748,7 @@ type ChartSeries struct {
 	Sizes             string
 	Fill              Fill
 	Legend            ChartLegend
-	Line              ChartLine
+	Line              LineOptions
 	Marker            ChartMarker
 	DataLabel         ChartDataLabel
 	DataLabelPosition ChartDataLabelPositionType

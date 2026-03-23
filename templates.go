@@ -204,7 +204,7 @@ const (
 	defaultChartLegendPosition  = "bottom"
 	defaultChartShowBlanksAs    = "gap"
 	defaultShapeSize            = 160
-	defaultShapeLineWidth       = 1
+	defaultLineWidth            = 1
 	defaultColWidth             = 9.140625
 	defaultColWidthPixels       = 64.0
 	defaultRowHeight            = 15.0
@@ -263,19 +263,19 @@ var chartDataLabelsPositionTypes = map[ChartDataLabelPositionType]string{
 	ChartDataLabelsPositionAbove:      "t",
 }
 
-// chartDashTypes defined supported preset chart dash types.
-var chartDashTypes = map[ChartDashType]string{
-	ChartDashSolid:         "solid",
-	ChartDashDot:           "dot",
-	ChartDashDash:          "dash",
-	ChartDashLgDash:        "lgDash",
-	ChartDashSashDot:       "dashDot",
-	ChartDashLgDashDot:     "lgDashDot",
-	ChartDashLgDashDotDot:  "lgDashDotDot",
-	ChartDashSysDash:       "sysDash",
-	ChartDashSysDot:        "sysDot",
-	ChartDashSysDashDot:    "sysDashDot",
-	ChartDashSysDashDotDot: "sysDashDotDot",
+// LineDashTypes defined supported preset chart dash types.
+var LineDashTypes = map[LineDashType]string{
+	LineDashSolid:         "solid",
+	LineDashDot:           "dot",
+	LineDashDash:          "dash",
+	LineDashLgDash:        "lgDash",
+	LineDashSashDot:       "dashDot",
+	LineDashLgDashDot:     "lgDashDot",
+	LineDashLgDashDotDot:  "lgDashDotDot",
+	LineDashSysDash:       "sysDash",
+	LineDashSysDot:        "sysDot",
+	LineDashSysDashDot:    "sysDashDot",
+	LineDashSysDashDotDot: "sysDashDotDot",
 }
 
 // supportedChartDataLabelsPosition defined supported chart data labels position

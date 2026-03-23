@@ -688,7 +688,7 @@ func (f *File) addDrawingSlicer(sheet, slicerName string, ns xml.Attr, opts *Sli
 			PrstGeom: xlsxPrstGeom{
 				Prst: "rect",
 			},
-			Ln: xlsxLineProperties{W: 1, SolidFill: &xlsxInnerXML{Content: "<a:prstClr val=\"black\"/>"}},
+			Ln: &aLn{W: 1, SolidFill: &aSolidFill{PrstClr: &attrValString{Val: stringPtr("black")}}},
 		},
 		TxBody: &xdrTxBody{
 			BodyPr: &aBodyPr{VertOverflow: "clip", HorzOverflow: "clip"},
