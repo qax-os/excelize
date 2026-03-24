@@ -1658,6 +1658,7 @@ func (f *File) GetStyle(idx int) (*Style, error) {
 	f.mu.Lock()
 	s, err := f.stylesReader()
 	if err != nil {
+		f.mu.Unlock()
 		return style, err
 	}
 	f.mu.Unlock()
@@ -1763,6 +1764,7 @@ func (f *File) GetConditionalStyle(idx int) (*Style, error) {
 	f.mu.Lock()
 	s, err := f.stylesReader()
 	if err != nil {
+		f.mu.Unlock()
 		return style, err
 	}
 	f.mu.Unlock()
