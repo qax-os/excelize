@@ -3619,26 +3619,10 @@ func (fn *formulaFuncs) IMSQRT(argsList *list.List) formulaArg {
 	}
 	a, b := real(inumber), imag(inumber)
 	mod := math.Hypot(a, b)
-	var re, im float64
-	if a >= 0 {
-		re = math.Sqrt((mod + a) / 2)
-		if re != 0 {
-			imDiv := b / (2 * re)
-			imSqrt := math.Sqrt((mod - a) / 2)
-			if b < 0 {
-				imSqrt = -imSqrt
-			}
-			im = (imDiv + imSqrt) / 2
-		}
-		return newStringFormulaArg(cmplx2str(complex(re, im), value[len(value)-1:]))
-	}
-	im = math.Sqrt((mod - a) / 2)
-	if b < 0 {
-		im = -im
-	}
-	if im != 0 {
-		re = b / (2 * im)
-	}
+	sqrtMod := math.Sqrt(mod)
+	arg := math.Atan2(b, a)
+	re := sqrtMod * math.Cos(arg/2)
+	im := sqrtMod * math.Sin(arg/2)
 	return newStringFormulaArg(cmplx2str(complex(re, im), value[len(value)-1:]))
 }
 
@@ -7562,7 +7546,7 @@ func getLogGamma(fZ float64) float64 {
 
 // getLowRegIGamma returns lower regularized incomplete gamma function.
 func getLowRegIGamma(fA, fX float64) float64 {
-	lnFactor := fA*math.Log(fX) - fX - getLogGamma(fA)
+	lnFactor := math.FMA(fA, math.Log(fX), -fX) - getLogGamma(fA)
 	factor := math.Exp(lnFactor)
 	if fX > fA+1 {
 		return 1 - factor*getGammaContFraction(fA, fX)
@@ -7574,6 +7558,9 @@ func getLowRegIGamma(fA, fX float64) float64 {
 func getChiSqDistCDF(fX, fDF float64) float64 {
 	if fX <= 0 {
 		return 0
+	}
+	if fDF == 1 {
+		return math.Erf(math.Sqrt(fX / 2))
 	}
 	return getLowRegIGamma(fDF/2, fX/2)
 }
