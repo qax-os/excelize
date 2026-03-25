@@ -400,38 +400,19 @@ func (f *File) getFromStringItem(index int) string {
 	return f.getFromStringItem(index)
 }
 
-type ReaderContent interface {
-	io.Reader
-	io.ReaderAt
-}
-
-// contentReader returns reader by given path in the zip from memory data
+// xmlDecoder creates XML decoder by given path in the zip from memory data
 // or system temporary file.
-func (f *File) contentReader(name string) (bool, ReaderContent, *os.File, int64, error) {
+func (f *File) xmlDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
 	var (
 		content  []byte
 		err      error
 		tempFile *os.File
 	)
 	if content = f.readXML(name); len(content) > 0 {
-		return false, bytes.NewReader(content), tempFile, int64(len(content)), err
+		return false, f.xmlNewDecoder(bytes.NewReader(content)), tempFile, err
 	}
-
 	tempFile, err = f.readTemp(name)
-
-	fileStat, err := tempFile.Stat()
-	if err != nil {
-		return true, tempFile, tempFile, 0, fmt.Errorf("failed to get file stat: %w", err)
-	}
-
-	return true, tempFile, tempFile, fileStat.Size(), err
-}
-
-// xmlDecoder creates XML decoder by given path in the zip from memory data
-// or system temporary file.
-func (f *File) xmlDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
-	needClose, reader, tempFile, _, err := f.contentReader(name)
-	return needClose, f.xmlNewDecoder(reader), tempFile, err
+	return true, f.xmlNewDecoder(tempFile), tempFile, err
 }
 
 // SetRowHeight provides a function to set the height of a single row. If the
