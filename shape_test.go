@@ -40,11 +40,16 @@ func TestAddShape(t *testing.T) {
 
 	// Test add first shape for given sheet
 	f = NewFile()
-	lineWidth := 1.2
+	width := 1.2
 	shape2 := Shape{
 		Cell: "A1",
 		Type: "ellipseRibbon",
-		Line: ShapeLine{Color: "4286F4", Width: &lineWidth},
+		Line: LineOptions{
+			Fill: Fill{
+				Type: "pattern", Color: []string{"4286F4"}, Pattern: 1,
+			},
+			Width: width,
+		},
 		Fill: Fill{Color: []string{"8EB9FF"}, Transparency: 60},
 		Format: GraphicOptions{
 			AltText:     "Shape",

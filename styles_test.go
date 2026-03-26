@@ -386,7 +386,7 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	t.Run("with_unordered_sqref", func(t *testing.T) {
 		f := NewFile()
 		condFmt := []ConditionalFormatOptions{{Type: "cell", Criteria: "greater than", Value: "6"}}
-		f.SetConditionalFormat("Sheet1", "A5:A10 A15:A20 A3:A4", condFmt)
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "A5:A10 A15:A20 A3:A4", condFmt))
 		assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A7"))
 		condFmts, err := f.GetConditionalFormats("Sheet1")
 		assert.NoError(t, err)
@@ -397,7 +397,7 @@ func TestUnsetConditionalFormat(t *testing.T) {
 	t.Run("with_unordered_sqref_in_extLst", func(t *testing.T) {
 		f := NewFile()
 		condFmt := []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "3Stars"}}
-		f.SetConditionalFormat("Sheet1", "A5:A10 A15:A20 A3:A4", condFmt)
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "A5:A10 A15:A20 A3:A4", condFmt))
 		assert.NoError(t, f.UnsetConditionalFormat("Sheet1", "A7"))
 		condFmts, err := f.GetConditionalFormats("Sheet1")
 		assert.NoError(t, err)

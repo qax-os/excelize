@@ -307,8 +307,6 @@ func TestCalcCellValue(t *testing.T) {
 		"IMCOT(COMPLEX(1,-1))": "0.217621561854403+0.868014142895925i",
 		// IMCSC
 		"IMCSC(\"j\")": "-0.850918128239322j",
-		// IMCSCH
-		"IMCSCH(COMPLEX(1,-1))": "0.303931001628426+0.621518017170428i",
 		// IMDIV
 		"IMDIV(\"5+2i\",\"1+i\")":          "3.5-1.5i",
 		"IMDIV(\"2+2i\",\"2+i\")":          "1.2+0.4i",
@@ -341,9 +339,10 @@ func TestCalcCellValue(t *testing.T) {
 		"IMSEC(COMPLEX(1,-1))": "0.498337030555187-0.591083841721045i",
 		// IMSECH
 		"IMSECH(0.5)":           "0.886818883970074",
-		"IMSECH(\"3+0.5i\")":    "0.0873665779621303-0.0474925494901607i",
+		"IMSECH(\"3+0.5i\")":    "0.0873665779621302-0.0474925494901607i",
 		"IMSECH(\"2-i\")":       "0.151176298265577+0.226973675393722i",
 		"IMSECH(COMPLEX(1,-1))": "0.498337030555187+0.591083841721045i",
+		"IMCSCH(COMPLEX(1,-1))": "0.303931001628426+0.621518017170429i",
 		// IMSIN
 		"IMSIN(0.5)":           "0.479425538604203",
 		"IMSIN(\"3+0.5i\")":    "0.15913058529844-0.515880442452527i",
@@ -356,9 +355,9 @@ func TestCalcCellValue(t *testing.T) {
 		"IMSINH(\"2-i\")":       "1.95960104142161-3.16577851321617i",
 		"IMSINH(COMPLEX(1,-1))": "0.634963914784736-1.29845758141598i",
 		// IMSQRT
-		"IMSQRT(\"i\")":     "0.707106781186548+0.707106781186548i",
+		"IMSQRT(\"i\")":     "0.707106781186548+0.707106781186547i",
 		"IMSQRT(\"2-i\")":   "1.45534669022535-0.343560749722512i",
-		"IMSQRT(\"5+2i\")":  "2.27872385417085+0.438842116902254i",
+		"IMSQRT(\"5+2i\")":  "2.27872385417085+0.438842116902255i",
 		"IMSQRT(6)":         "2.44948974278318",
 		"IMSQRT(\"-2-4i\")": "1.11178594050284-1.79890743994787i",
 		// IMSUB
@@ -1058,6 +1057,7 @@ func TestCalcCellValue(t *testing.T) {
 		"CHIINV(0.75,1)": "0.101531044267622",
 		"CHIINV(0.1,2)":  "4.60517018598809",
 		"CHIINV(0.8,2)":  "0.446287102628419",
+		"CHIINV(0.25,3)": "4.10834493563232",
 		// CHISQ.DIST
 		"CHISQ.DIST(0,2,TRUE)":        "0",
 		"CHISQ.DIST(4,1,TRUE)":        "0.954499736103642",
@@ -1067,6 +1067,9 @@ func TestCalcCellValue(t *testing.T) {
 		"CHISQ.DIST(2,3,FALSE)":       "0.207553748710297",
 		"CHISQ.DIST(1425,1,FALSE)":    "3.88315098887099E-312",
 		"CHISQ.DIST(3,2,TRUE)":        "0.77686983985157",
+		"CHISQ.DIST(8,2,TRUE)":        "0.981684361111266",
+		"CHISQ.DIST(8,3,TRUE)":        "0.953988294310769",
+		"CHISQ.DIST(10,4,TRUE)":       "0.959572318005487",
 		// CHISQ.DIST.RT
 		"CHISQ.DIST.RT(0.5,3)": "0.918891411654676",
 		"CHISQ.DIST.RT(8,3)":   "0.0460117056892314",
@@ -1078,6 +1081,7 @@ func TestCalcCellValue(t *testing.T) {
 		"CHISQ.INV(0.1,2)":  "0.210721031315653",
 		"CHISQ.INV(0.8,2)":  "3.2188758248682",
 		"CHISQ.INV(0.25,3)": "1.21253290304567",
+		"CHISQ.INV(0.5,1)":  "0.454936423119573",
 		// CHISQ.INV.RT
 		"CHISQ.INV.RT(0.75,1)": "0.101531044267622",
 		"CHISQ.INV.RT(0.1,2)":  "4.60517018598809",
@@ -1170,8 +1174,9 @@ func TestCalcCellValue(t *testing.T) {
 		"GAMMALN(4.5)":    "2.45373657084244",
 		"GAMMALN(INT(1))": "0",
 		// GAMMALN.PRECISE
-		"GAMMALN.PRECISE(0.4)": "0.796677817701784",
-		"GAMMALN.PRECISE(4.5)": "2.45373657084244",
+		"GAMMALN.PRECISE(0.4)":  "0.796677817701784",
+		"GAMMALN.PRECISE(0.75)": "0.203280951431295",
+		"GAMMALN.PRECISE(4.5)":  "2.45373657084244",
 		// GAUSS
 		"GAUSS(-5)":    "-0.499999713348428",
 		"GAUSS(0)":     "0",
@@ -1249,8 +1254,9 @@ func TestCalcCellValue(t *testing.T) {
 		"NEGBINOM.DIST(6,12,0.5,FALSE)":  "0.047210693359375",
 		"NEGBINOM.DIST(12,12,0.5,FALSE)": "0.0805901288986206",
 		"NEGBINOM.DIST(15,12,0.5,FALSE)": "0.057564377784729",
-		"NEGBINOM.DIST(12,12,0.5,TRUE)":  "0.580590128898621",
+		"NEGBINOM.DIST(12,12,0.5,TRUE)":  "0.58059012889862",
 		"NEGBINOM.DIST(15,12,0.5,TRUE)":  "0.778965830802917",
+		"NEGBINOM.DIST(6,12,0.5,TRUE)":   "0.118942260742188",
 		// NEGBINOMDIST
 		"NEGBINOMDIST(6,12,0.5)":  "0.047210693359375",
 		"NEGBINOMDIST(12,12,0.5)": "0.0805901288986206",
@@ -5781,6 +5787,69 @@ func TestCalcSUMIFSAndAVERAGEIFS(t *testing.T) {
 	}
 }
 
+func TestCalcSUMIFExactMatch(t *testing.T) {
+	cellData := [][]interface{}{
+		{"Category", "Amount"},
+		{"text", 100},
+		{"***_***_text", 200},
+		{"text", 150},
+		{"***_text_***", 300},
+		{"TEXT", 50},
+		{"other", 400},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		`SUMIF(A2:A7,"text",B2:B7)`:           "300",
+		`COUNTIF(A2:A7,"text")`:               "3",
+		`SUMIF(A2:A7,".",B2:B7)`:              "0",
+		`SUMIF(A2:A7,".*",B2:B7)`:             "0",
+		`SUMIF(A2:A7,".?",B2:B7)`:             "0",
+		`SUMIF(A2:A7,"*text*",B2:B7)`:         "800",
+		`SUMIF(A2:A7,"text*",B2:B7)`:          "300",
+		`SUMIF(A2:A7,"*text",B2:B7)`:          "500",
+		`SUMIF(A2:A7,"*",B2:B7)`:              "1200",
+		`SUMIF(A2:A7,"othe?",B2:B7)`:          "400",
+		`SUMIF(A2:A7,"~**",B2:B7)`:            "500",
+		`COUNTIF(A2:A7,"*text*")`:             "5",
+		`COUNTIF(A2:A7,"~*")`:                 "0",
+		`COUNTIF(A2:A7,"~~")`:                 "0",
+		`COUNTIF(A2:A7,"~?")`:                 "0",
+		`COUNTIF(A2:A7,"*~**")`:               "2",
+		`COUNTIF(A2:A7,"~*~*~*_~*~*~*_text")`: "1",
+		`COUNTIF(A2:A7,"~*~*~*_text_~*~*~*")`: "1",
+		`COUNTIF(A2:A7,"~a")`:                 "0",
+		`COUNTIF(A2:A7,"<>text")`:             "3",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	cellData = [][]interface{}{
+		{"Category", "Amount"},
+		{"text", 10},
+		{"***text", 20},
+		{"text ***", 30},
+		{"TEXT", 40},
+		{5, 50},
+		{5.5, 60},
+	}
+	f = prepareCalcData(cellData)
+	for formula, expected := range map[string]string{
+		`SUMIF(A2:A7,"text",B2:B7)`:  "50",
+		`SUMIF(A2:A7,"*text",B2:B7)`: "70",
+		`SUMIF(A2:A7,"text*",B2:B7)`: "80",
+		`SUMIF(A2:A7,5,B2:B7)`:       "50",
+		`COUNTIF(A2:A7,"tex?")`:      "2",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
 func TestCalcXIRR(t *testing.T) {
 	cellData := [][]interface{}{
 		{-100.00, 42370},
@@ -7006,6 +7075,52 @@ func TestCalcTrendGrowthMultipleRegressionPart2(t *testing.T) {
 func TestCalcTrendGrowthRegression(t *testing.T) {
 	mtx := [][]float64{}
 	calcTrendGrowthRegression(false, false, 0, 0, 0, 0, 0, mtx, mtx, mtx, mtx)
+}
+
+func TestCalcImplicitIntersect(t *testing.T) {
+	f := NewFile()
+	for cell, value := range map[string]interface{}{
+		"A1": -5, "A2": 10, "A3": -3, "A4": "text", "A5": 7, "D1": 1, "D2": 0, "D3": 1,
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
+	}
+	for cell, expected := range map[string]string{
+		"B1": "5", "B2": "10", "B3": "3", "B5": "7",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", cell, "ABS(A1:A5)"))
+		result, err := f.CalcCellValue("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
+	}
+	for cell, expected := range map[string]string{
+		"C1": "TRUE", "C2": "TRUE", "C3": "TRUE", "C4": "FALSE", "C5": "TRUE",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", cell, "ISNUMBER(A1:A5)"))
+		result, err := f.CalcCellValue("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
+	}
+	for cell, expected := range map[string]string{
+		"E1": "yes", "E2": "no", "E3": "yes",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", cell, "IF(D1:D3,\"yes\",\"no\")"))
+		result, err := f.CalcCellValue("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
+	}
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B10", "ABS(A1:A5)"))
+	_, err := f.CalcCellValue("Sheet1", "B10")
+	assert.NoError(t, err)
+	result, err := formulaCriteriaEval(newStringFormulaArg("text"), &formulaCriteria{
+		Type:      criteriaRegexp,
+		Condition: newStringFormulaArg("text"),
+	})
+	assert.NoError(t, err)
+	assert.True(t, result)
+	fn := formulaFuncs{}
+	assert.Equal(t, ArgMatrix, fn.implicitIntersect(
+		newMatrixFormulaArg([][]formulaArg{{newNumberFormulaArg(1)}})).Type,
+	)
 }
 
 func TestCalcEqArray(t *testing.T) {

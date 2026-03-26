@@ -967,7 +967,7 @@ func TestAdjustFormula(t *testing.T) {
 		// Test adjust array formula with invalid range reference
 		formulaType, ref = STCellFormulaTypeArray, "E1:E2"
 		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "XFD1:XFD1", FormulaOpts{Ref: &ref, Type: &formulaType}))
-		assert.EqualError(t, f.InsertCols("Sheet1", "A", 1), "the column number must be greater than or equal to 1 and less than or equal to 16384")
+		assert.Equal(t, ErrColumnNumber, f.InsertCols("Sheet1", "A", 1))
 	})
 }
 
@@ -1271,7 +1271,7 @@ func TestAdjustDrawings(t *testing.T) {
 	f, err = OpenFile(wb)
 	assert.NoError(t, err)
 	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(xml.Header+fmt.Sprintf(`<wsDr xmlns="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"><oneCellAnchor><from><col>%d</col><row>0</row></from><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"></mc:AlternateContent><clientData/></oneCellAnchor></wsDr>`, MaxColumns)))
-	assert.EqualError(t, f.InsertCols("Sheet1", "A", 1), "the column number must be greater than or equal to 1 and less than or equal to 16384")
+	assert.Equal(t, ErrColumnNumber, f.InsertCols("Sheet1", "A", 1))
 }
 
 func TestAdjustDefinedNames(t *testing.T) {
