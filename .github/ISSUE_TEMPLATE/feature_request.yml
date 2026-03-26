@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest an idea for this project
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If you are reporting a new issue, make sure that we do not have any duplicates already open. You can ensure this by searching the issue list for this repository. If there is a duplicate, please close your issue and add a comment to the existing issue instead.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the feature that you would like added
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Any other context or screenshots about the feature request here?
+
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: Validations
+      description: Before submitting the issue, please make sure you do the following
+      options:
+        - label: Check that there isn't already an issue that requests the same feature to avoid creating a duplicate.
+          required: true
