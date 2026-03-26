@@ -3345,10 +3345,12 @@ func (fn *formulaFuncs) IMCSCH(argsList *list.List) formulaArg {
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	num := 1 / cmplx.Sinh(inumber)
-	if cmplx.IsInf(num) {
+	x, y := real(inumber), imag(inumber)
+	denom := (math.Cosh(2*x) - math.Cos(2*y)) / 2
+	if denom == 0 {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
+	num := complex(math.Sinh(x)*math.Cos(y)/denom, -(math.Cosh(x)*math.Sin(y))/denom)
 	return newStringFormulaArg(cmplx2str(num, value[len(value)-1:]))
 }
 
@@ -3562,7 +3564,12 @@ func (fn *formulaFuncs) IMSECH(argsList *list.List) formulaArg {
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(1/cmplx.Cosh(inumber), value[len(value)-1:]))
+	a, b := real(inumber), imag(inumber)
+	cosb := math.Cos(b)
+	sinha := math.Sinh(a)
+	denom := cosb*cosb + sinha*sinha
+	result := complex(math.Cosh(a)*cosb/denom, -sinha*math.Sin(b)/denom)
+	return newStringFormulaArg(cmplx2str(result, value[len(value)-1:]))
 }
 
 // IMSIN function returns the Sine of a supplied complex number. The syntax of
@@ -3610,7 +3617,13 @@ func (fn *formulaFuncs) IMSQRT(argsList *list.List) formulaArg {
 	if err != nil {
 		return newErrorFormulaArg(formulaErrorNUM, err.Error())
 	}
-	return newStringFormulaArg(cmplx2str(cmplx.Sqrt(inumber), value[len(value)-1:]))
+	a, b := real(inumber), imag(inumber)
+	mod := math.Hypot(a, b)
+	sqrtMod := math.Sqrt(mod)
+	arg := math.Atan2(b, a)
+	re := sqrtMod * math.Cos(arg/2)
+	im := sqrtMod * math.Sin(arg/2)
+	return newStringFormulaArg(cmplx2str(complex(re, im), value[len(value)-1:]))
 }
 
 // IMSUB function calculates the difference between two complex numbers
@@ -7127,7 +7140,7 @@ func incompleteGamma(a, x float64) float64 {
 		}
 		summer += math.Pow(x, float64(n)) / divisor
 	}
-	return math.Pow(x, a) * math.Exp(0-x) * summer
+	return math.Exp(math.FMA(a, math.Log(x), -x)) * summer
 }
 
 // binomCoeff implement binomial coefficient calculation.
@@ -7533,7 +7546,7 @@ func getLogGamma(fZ float64) float64 {
 
 // getLowRegIGamma returns lower regularized incomplete gamma function.
 func getLowRegIGamma(fA, fX float64) float64 {
-	lnFactor := fA*math.Log(fX) - fX - getLogGamma(fA)
+	lnFactor := math.FMA(fA, math.Log(fX), -fX) - getLogGamma(fA)
 	factor := math.Exp(lnFactor)
 	if fX > fA+1 {
 		return 1 - factor*getGammaContFraction(fA, fX)
@@ -7545,6 +7558,9 @@ func getLowRegIGamma(fA, fX float64) float64 {
 func getChiSqDistCDF(fX, fDF float64) float64 {
 	if fX <= 0 {
 		return 0
+	}
+	if fDF == 1 {
+		return math.Erf(math.Sqrt(fX / 2))
 	}
 	return getLowRegIGamma(fDF/2, fX/2)
 }
