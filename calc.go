@@ -7255,19 +7255,20 @@ func binominv(n, p, alpha float64) float64 {
 	q, i, sum, maxVal := 1-p, 0.0, 0.0, 0.0
 	n = math.Floor(n)
 	if q > p {
-		factor := math.Pow(q, n)
-		sum = factor
+		logFactor := n * math.Log(q)
+		sum = math.Exp(logFactor)
 		for i = 0; i < n && sum < alpha; i++ {
-			factor *= (n - i) / (i + 1) * p / q
-			sum += factor
+			logFactor += math.Log(n-i) - math.Log(i+1) + math.Log(p) - math.Log(q)
+			sum += math.Exp(logFactor)
 		}
 		return i
 	}
-	factor := math.Pow(p, n)
+	logFactor := n * math.Log(p)
+	factor := math.Exp(logFactor)
 	sum, maxVal = 1-factor, n
 	for i = 0; i < maxVal && sum >= alpha; i++ {
-		factor *= (n - i) / (i + 1) * q / p
-		sum -= factor
+		logFactor += math.Log(n-i) - math.Log(i+1) + math.Log(q) - math.Log(p)
+		sum -= math.Exp(logFactor)
 	}
 	return n - i
 }
