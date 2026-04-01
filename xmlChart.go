@@ -610,6 +610,15 @@ type cPageMargins struct {
 	T      float64 `xml:"t,attr"`
 }
 
+// LineOptions directly maps the format settings of the line.
+type LineOptions struct {
+	Type   LineType
+	Dash   LineDashType
+	Fill   Fill
+	Smooth bool
+	Width  float64
+}
+
 // ChartNumFmt directly maps the number format settings of the chart.
 type ChartNumFmt struct {
 	CustomNumFmt string
@@ -715,15 +724,6 @@ type ChartMarker struct {
 	Fill   Fill
 	Symbol string
 	Size   int
-}
-
-// LineOptions directly maps the format settings of the chart line.
-type LineOptions struct {
-	Type   LineType
-	Dash   LineDashType
-	Fill   Fill
-	Smooth bool
-	Width  float64
 }
 
 // ChartDataLabel directly maps the format settings of the chart labels.
