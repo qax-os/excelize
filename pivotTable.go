@@ -90,6 +90,10 @@ type PivotTableOptions struct {
 // NumFmt specifies the number format ID of the data field, this filed only
 // accepts built-in number format ID and does not support custom number format
 // expression currently.
+//
+// SelectedItems specifies the default selected items in a pivot table field.
+// The selected items must be values within the cell range referenced by that
+// field.
 type PivotTableField struct {
 	Compact         bool
 	Data            string
@@ -107,7 +111,7 @@ type PivotTableField struct {
 // options. Note that the same fields can not in Columns, Rows and Filter
 // fields at the same time.
 //
-// For example, create a pivot table on the range reference Sheet1!G2:M34 with
+// For example, create a pivot table on the range reference Sheet1!G4:M31 with
 // the range reference Sheet1!A1:E31 as the data source, summarize by sum for
 // revenue:
 //
@@ -127,13 +131,17 @@ type PivotTableField struct {
 //	        }
 //	    }()
 //	    // Create some data in a sheet
-//	    month := []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+//	    month := []string{"Jan", "Feb", "Mar", "Apr", "May",
+//	        "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
 //	    year := []int{2017, 2018, 2019}
 //	    types := []string{"Meat", "Dairy", "Beverages", "Produce"}
 //	    revenue := []int{3217, 4512, 3891, 4738, 3054, 4265, 3643, 4901, 3378, 4126}
 //	    region := []string{"East", "West", "North", "South"}
-//	    if err := f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Revenue", "Region"}); err != nil {
+//	    if err := f.SetSheetRow(
+//	        "Sheet1", "A1", &[]string{"Month", "Year", "Type", "Revenue", "Region"},
+//	    ); err != nil {
 //	        fmt.Println(err)
+//	        return
 //	    }
 //	    for row := 2; row < 32; row++ {
 //	        f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), month[(row-2)%len(month)])
@@ -144,19 +152,27 @@ type PivotTableField struct {
 //	    }
 //	    if err := f.AddPivotTable(&excelize.PivotTableOptions{
 //	        DataRange:       "Sheet1!A1:E31",
-//	        PivotTableRange: "Sheet1!G2:M34",
-//	        Rows:            []excelize.PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
-//	        Filter:          []excelize.PivotTableField{{Data: "Region"}},
-//	        Columns:         []excelize.PivotTableField{{Data: "Type", DefaultSubtotal: true}},
-//	        Data:            []excelize.PivotTableField{{Data: "Revenue", Name: "Summarize", Subtotal: "Sum"}},
-//	        RowGrandTotals:  true,
-//	        ColGrandTotals:  true,
-//	        ShowDrill:       true,
-//	        ShowRowHeaders:  true,
-//	        ShowColHeaders:  true,
-//	        ShowLastColumn:  true,
+//	        PivotTableRange: "Sheet1!G4:M30",
+//	        Rows: []excelize.PivotTableField{
+//	            {Data: "Month", DefaultSubtotal: true}, {Data: "Year"},
+//	        },
+//	        Filter: []excelize.PivotTableField{
+//	            {Data: "Region"}},
+//	        Columns: []excelize.PivotTableField{
+//	            {Data: "Type", DefaultSubtotal: true},
+//	        },
+//	        Data: []excelize.PivotTableField{
+//	            {Data: "Revenue", Name: "Summarize", Subtotal: "Sum"},
+//	        },
+//	        RowGrandTotals: true,
+//	        ColGrandTotals: true,
+//	        ShowDrill:      true,
+//	        ShowRowHeaders: true,
+//	        ShowColHeaders: true,
+//	        ShowLastColumn: true,
 //	    }); err != nil {
 //	        fmt.Println(err)
+//	        return
 //	    }
 //	    if err := f.SaveAs("Book1.xlsx"); err != nil {
 //	        fmt.Println(err)
