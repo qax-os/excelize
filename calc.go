@@ -8470,8 +8470,7 @@ func (fn *formulaFuncs) GAMMALN(argsList *list.List) formulaArg {
 	if x.Number <= 0 {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
-	v, _ := math.Lgamma(x.Number)
-	return newNumberFormulaArg(v)
+	return newNumberFormulaArg(math.Log(math.Gamma(x.Number)))
 }
 
 // GAMMALNdotPRECISE function returns the natural logarithm of the Gamma
