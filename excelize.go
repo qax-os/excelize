@@ -121,6 +121,17 @@ type Options struct {
 	LongDatePattern   string
 	LongTimePattern   string
 	CultureInfo       CultureName
+	// StreamingChunkSize is the number of bytes of XML data accumulated in
+	// memory before a streaming worksheet spills to a temp file. A smaller
+	// value reduces peak memory usage at the cost of more disk I/O. Zero
+	// means use the default (StreamChunkSize = 16 MiB).
+	StreamingChunkSize int
+	// StreamingBufSize is the size of the bufio.Writer used for all disk
+	// writes after the StreamingChunkSize threshold is crossed. Larger values
+	// reduce write syscall counts at the cost of slightly more memory. The
+	// measured inflection point on NVMe and HDD alike is 128 KiB. Zero means
+	// use the default (defaultBioSize = 128 KiB).
+	StreamingBufSize int
 }
 
 // OpenFile take the name of a spreadsheet file and returns a populated
