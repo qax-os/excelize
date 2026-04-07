@@ -215,3 +215,41 @@ func TestBioSizeIOProfile(t *testing.T) {
 		os.Remove(f.Name())
 	}
 }
+
+// BenchmarkStringCellClean and BenchmarkStringCellSpecial measure the
+// writeEscaped fast path (no special chars) vs slow path (has <, >, &, etc.).
+func BenchmarkStringCellClean(b *testing.B) {
+	row := make([]interface{}, 50)
+	for i := range row {
+		row[i] = "normal cell content without special chars"
+	}
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		file := NewFile()
+		sw, _ := file.NewStreamWriter("Sheet1")
+		for rowID := 1; rowID <= 10000; rowID++ {
+			cell, _ := CoordinatesToCellName(1, rowID)
+			_ = sw.SetRow(cell, row)
+		}
+		_ = sw.Flush()
+		_ = file.Close()
+	}
+}
+
+func BenchmarkStringCellSpecial(b *testing.B) {
+	row := make([]interface{}, 50)
+	for i := range row {
+		row[i] = "content with <special> & \"chars\""
+	}
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		file := NewFile()
+		sw, _ := file.NewStreamWriter("Sheet1")
+		for rowID := 1; rowID <= 10000; rowID++ {
+			cell, _ := CoordinatesToCellName(1, rowID)
+			_ = sw.SetRow(cell, row)
+		}
+		_ = sw.Flush()
+		_ = file.Close()
+	}
+}
