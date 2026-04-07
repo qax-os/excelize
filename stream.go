@@ -633,6 +633,35 @@ func writeCellStart(buf *bufferedWriter, colName, rowStr string, style int) {
 	}
 }
 
+// writeEscaped writes s to buf with XML escaping. If s contains none of the
+// five XML special characters (<, >, &, ", \r) it is written directly without
+// any allocation. Otherwise it falls back to xml.EscapeText.
+func writeEscaped(buf *bufferedWriter, s string) {
+	// Fast path: scan for characters that need escaping.
+	last := 0
+	for i := 0; i < len(s); i++ {
+		var esc string
+		switch s[i] {
+		case '<':
+			esc = "&lt;"
+		case '>':
+			esc = "&gt;"
+		case '&':
+			esc = "&amp;"
+		case '"':
+			esc = "&#34;"
+		case '\r':
+			esc = "&#xD;"
+		default:
+			continue
+		}
+		_, _ = buf.WriteString(s[last:i])
+		_, _ = buf.WriteString(esc)
+		last = i + 1
+	}
+	_, _ = buf.WriteString(s[last:])
+}
+
 // writeNumericCell writes a complete cell element for numeric types (int, uint,
 // float, bool) directly to the buffer, bypassing xlsxC and eliminating all
 // per-cell heap allocations. Returns (true, nil) if handled, (false, nil) if
@@ -844,7 +873,7 @@ func writeCell(buf *bufferedWriter, c *xlsxC, colName, rowStr string) {
 			// (digits, '.', '-', '+', 'E', 'e'), skip XML escaping
 			_, _ = buf.WriteString(c.V)
 		} else {
-			_ = xml.EscapeText(buf, []byte(c.V))
+			writeEscaped(buf, c.V)
 		}
 		_, _ = buf.WriteString(`</v>`)
 	}
