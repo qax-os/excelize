@@ -442,6 +442,11 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 			}
 			continue
 		}
+		// Fast path for plain strings and []byte: write inline string XML
+		// directly, bypassing xlsxC/xlsxSI/trimCellValue entirely.
+		if wrote := sw.writeStringCell(val, columnNames[colIdx], rowStr, style); wrote {
+			continue
+		}
 		// Slow path: complex types go through xlsxC
 		c.XMLSpace = xml.Attr{}
 		c.T = ""
@@ -740,6 +745,50 @@ func (sw *StreamWriter) writeNumericCell(val interface{}, colName, rowStr string
 		return false, nil
 	}
 	return true, nil
+}
+
+// writeStringCell writes a complete inline-string cell element directly to the
+// buffer for plain string and []byte values, bypassing xlsxC, xlsxSI,
+// trimCellValue, bstrMarshal, and xml.EscapeText entirely. This eliminates
+// ~6 heap allocations per string cell.
+//
+// It handles the xml:space="preserve" attribute (when leading/trailing
+// whitespace is present) and XML escaping via writeEscaped. Values containing
+// the bstr escape pattern "_xHHHH_" fall through to the slow path since they
+// need special encoding.
+//
+// Returns true if the value was handled, false if the caller should use the
+// slow path.
+func (sw *StreamWriter) writeStringCell(val interface{}, colName, rowStr string, style int) bool {
+	var s string
+	switch v := val.(type) {
+	case string:
+		s = v
+	case []byte:
+		s = string(v)
+	default:
+		return false
+	}
+	// Values containing the bstr escape pattern need bstrMarshal — fall through.
+	// Values exceeding TotalCellChars need truncation via trimCellValue — fall through.
+	if strings.Contains(s, "_x") || len(s) > TotalCellChars {
+		return false
+	}
+	buf := &sw.rawData
+	writeCellStart(buf, colName, rowStr, style)
+	_, _ = buf.WriteString(` t="inlineStr"><is><t`)
+	// Check for leading/trailing whitespace that needs xml:space="preserve"
+	if len(s) > 0 {
+		first, last := s[0], s[len(s)-1]
+		if first == ' ' || first == '\t' || first == '\n' || first == '\r' ||
+			last == ' ' || last == '\t' || last == '\n' || last == '\r' {
+			_, _ = buf.WriteString(` xml:space="preserve"`)
+		}
+	}
+	_, _ = buf.WriteString(`>`)
+	writeEscaped(buf, s)
+	_, _ = buf.WriteString(`</t></is></c>`)
+	return true
 }
 
 // setCellTime provides a function to set number of a cell with a time.
