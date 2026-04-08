@@ -17,6 +17,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"reflect"
 	"strconv"
@@ -122,7 +123,10 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 		return nil, ErrSheetNotExist{sheet}
 	}
 	chunkSize := f.options.StreamingChunkSize
-	if chunkSize <= 0 {
+	switch {
+	case chunkSize < 0:
+		chunkSize = math.MaxInt // never spill to disk
+	case chunkSize == 0:
 		chunkSize = StreamChunkSize
 	}
 	bufSize := f.options.StreamingBufSize
@@ -1111,6 +1115,31 @@ func (bw *bufferedWriter) Bytes() []byte {
 		return nil
 	}
 	return bw.buf.Bytes()
+}
+
+// CopyTo efficiently copies all buffered data to w. For in-memory buffers
+// this is a simple WriteTo. For temp files this uses a large read buffer to
+// minimize syscalls (one read per bioSize bytes instead of per 32 KB).
+func (bw *bufferedWriter) CopyTo(w io.Writer) (int64, error) {
+	if bw.tmp == nil {
+		return io.Copy(w, bytes.NewReader(bw.buf.Bytes()))
+	}
+	if err := bw.Flush(); err != nil {
+		return 0, err
+	}
+	if _, err := bw.tmp.Seek(0, 0); err != nil {
+		return 0, err
+	}
+	// Use a large read buffer to batch Pread syscalls. Without this,
+	// io.Copy uses 32 KB reads, generating thousands of syscalls for
+	// large worksheets (e.g. 100 MB XML → 3000+ syscalls). A 256 KB
+	// buffer reduces that to ~400.
+	readBufSize := 256 * 1024
+	if bw.bioSize > readBufSize {
+		readBufSize = bw.bioSize
+	}
+	br := bufio.NewReaderSize(bw.tmp, readBufSize)
+	return io.Copy(w, br)
 }
 
 // Reader provides read-access to the underlying buffer/file.

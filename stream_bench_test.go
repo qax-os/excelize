@@ -253,3 +253,68 @@ func BenchmarkStringCellSpecial(b *testing.B) {
 		_ = file.Close()
 	}
 }
+
+// writeExcelBenchWithOpts is like writeExcelBench but accepts Options.
+func writeExcelBenchWithOpts(data [][]string, out io.Writer, opts Options) error {
+	file := NewFile(opts)
+	if len(data) == 0 {
+		return nil
+	}
+	sw, err := file.NewStreamWriter("Sheet1")
+	if err != nil {
+		return err
+	}
+	lineInterface := make([]interface{}, len(data[0]))
+	for excelLineNum, line := range data {
+		lineInterface = lineInterface[:0]
+		for x := range line {
+			lineInterface = append(lineInterface, line[x])
+		}
+		cell, _ := CoordinatesToCellName(1, excelLineNum+1)
+		if err = sw.SetRow(cell, lineInterface); err != nil {
+			return err
+		}
+	}
+	if err = sw.Flush(); err != nil {
+		return err
+	}
+	_, err = file.WriteTo(out)
+	return err
+}
+
+func BenchmarkCompressionLevels(b *testing.B) {
+	const rows, cols = 50000, 20
+	data := make([][]string, rows)
+	for x := range data {
+		data[x] = make([]string, cols)
+		for y := range data[x] {
+			data[x][y] = "test value " + strconv.Itoa(x*cols+y)
+		}
+	}
+
+	for _, tc := range []struct {
+		name  string
+		comp  Compression
+		chunk int // StreamingChunkSize; 0 = default
+	}{
+		{"Default", CompressionDefault, 0},
+		{"BestSpeed", CompressionBestSpeed, 0},
+		{"None", CompressionNone, 0},
+		{"Default/InMemory", CompressionDefault, -1},
+		{"BestSpeed/InMemory", CompressionBestSpeed, -1},
+		{"None/InMemory", CompressionNone, -1},
+	} {
+		b.Run(tc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for n := 0; n < b.N; n++ {
+				b.StopTimer()
+				buf := bytes.Buffer{}
+				buf.Reset()
+				b.StartTimer()
+				if err := writeExcelBenchWithOpts(data, &buf, Options{Compression: tc.comp, StreamingChunkSize: tc.chunk}); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}

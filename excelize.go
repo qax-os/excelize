@@ -13,7 +13,6 @@
 package excelize
 
 import (
-	"archive/zip"
 	"bytes"
 	"encoding/xml"
 	"io"
@@ -24,6 +23,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/klauspost/compress/flate"
+	"github.com/klauspost/compress/zip"
 	"golang.org/x/net/html/charset"
 )
 
@@ -72,6 +73,28 @@ type ZipWriter interface {
 	AddFS(fsys fs.FS) error
 	Close() error
 }
+
+// Compression defines the compression level for the ZIP archive used to store
+// the spreadsheet.
+type Compression int
+
+const (
+	// CompressionDefault uses standard deflate compression (the default).
+	// This produces the smallest files but uses more CPU and memory during
+	// Save/WriteTo.
+	CompressionDefault Compression = iota
+	// CompressionNone disables ZIP compression entirely. The spreadsheet
+	// parts are stored uncompressed. This significantly reduces CPU time and
+	// memory usage during Save/WriteTo at the cost of larger output files
+	// (typically 5-10× larger). Recommended for memory-constrained
+	// environments (e.g. AWS Lambda) or when the output will be compressed
+	// by another layer (e.g. gzip transport, S3 transfer acceleration).
+	CompressionNone
+	// CompressionBestSpeed uses the fastest deflate compression level. This
+	// is a good middle ground: roughly 2× faster than default compression
+	// with only moderately larger output.
+	CompressionBestSpeed
+)
 
 // Options define the options for opening and reading the spreadsheet.
 //
@@ -124,7 +147,10 @@ type Options struct {
 	// StreamingChunkSize is the number of bytes of XML data accumulated in
 	// memory before a streaming worksheet spills to a temp file. A smaller
 	// value reduces peak memory usage at the cost of more disk I/O. Zero
-	// means use the default (StreamChunkSize = 16 MiB).
+	// means use the default (StreamChunkSize = 16 MiB). Set to -1 to
+	// disable temp files entirely (all data stays in memory); this
+	// eliminates disk I/O overhead and can be significantly faster when
+	// sufficient memory is available.
 	StreamingChunkSize int
 	// StreamingBufSize is the size of the bufio.Writer used for all disk
 	// writes after the StreamingChunkSize threshold is crossed. Larger values
@@ -132,6 +158,12 @@ type Options struct {
 	// measured inflection point on NVMe and HDD alike is 128 KiB. Zero means
 	// use the default (defaultBioSize = 128 KiB).
 	StreamingBufSize int
+	// Compression specifies the compression level for the output ZIP
+	// archive. The default (CompressionDefault) uses standard deflate. Use
+	// CompressionNone in memory-constrained environments like AWS Lambda to
+	// eliminate compressor overhead, or CompressionBestSpeed for a balance
+	// of speed and size.
+	Compression Compression
 }
 
 // OpenFile take the name of a spreadsheet file and returns a populated
@@ -256,6 +288,31 @@ func (f *File) CharsetTranscoder(fn func(charset string, input io.Reader) (rdr i
 
 // SetZipWriter set user defined zip writer function for saving the workbook.
 func (f *File) SetZipWriter(fn func(io.Writer) ZipWriter) *File { f.ZipWriter = fn; return f }
+
+// configureZipCompression applies the Compression option to the zip writer.
+// It is a no-op for the default compression level or for custom ZipWriter
+// implementations that are not *zip.Writer.
+func (f *File) configureZipCompression(zw ZipWriter) {
+	if f.options == nil || f.options.Compression == CompressionDefault {
+		return
+	}
+	zipW, ok := zw.(*zip.Writer)
+	if !ok {
+		return
+	}
+	var level int
+	switch f.options.Compression {
+	case CompressionNone:
+		level = flate.NoCompression
+	case CompressionBestSpeed:
+		level = flate.BestSpeed
+	default:
+		return
+	}
+	zipW.RegisterCompressor(zip.Deflate, func(out io.Writer) (io.WriteCloser, error) {
+		return flate.NewWriter(out, level)
+	})
+}
 
 // Creates new XML decoder with charset reader.
 func (f *File) xmlNewDecoder(rdr io.Reader) (ret *xml.Decoder) {

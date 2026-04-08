@@ -12,7 +12,6 @@
 package excelize
 
 import (
-	"archive/zip"
 	"bytes"
 	"container/list"
 	"encoding/xml"
@@ -27,6 +26,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf16"
+
+	"github.com/klauspost/compress/zip"
 )
 
 // ReadZipReader extract spreadsheet with given options.
