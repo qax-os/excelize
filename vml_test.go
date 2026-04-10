@@ -83,6 +83,30 @@ func TestAddComment(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 
+func TestAddCommentExistingAuthorID(t *testing.T) {
+	// Regression: AddComment defaulted authorID to 0 when the author already
+	// existed in the list, misattributing comments to whichever author was at
+	// index 0 instead of the correct one.
+	f := NewFile()
+
+	assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "A1", Author: "Alice", Paragraph: []RichTextRun{{Text: "pre-existing"}}}))
+	assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "B1", Author: "Bob", Paragraph: []RichTextRun{{Text: "first"}}}))
+	assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "C1", Author: "Bob", Paragraph: []RichTextRun{{Text: "second"}}}))
+	assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "D1", Author: "Bob", Paragraph: []RichTextRun{{Text: "third"}}}))
+
+	comments, err := f.GetComments("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, comments, 4)
+
+	for _, c := range comments {
+		if c.Cell == "A1" {
+			assert.Equal(t, "Alice", c.Author)
+		} else {
+			assert.Equal(t, "Bob", c.Author, "cell %s should have author Bob, got %s", c.Cell, c.Author)
+		}
+	}
+}
+
 func TestDeleteComment(t *testing.T) {
 	f, err := prepareTestBook1()
 	if !assert.NoError(t, err) {
