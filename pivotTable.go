@@ -152,7 +152,7 @@ type PivotTableField struct {
 //	    }
 //	    if err := f.AddPivotTable(&excelize.PivotTableOptions{
 //	        DataRange:       "Sheet1!A1:E31",
-//	        PivotTableRange: "Sheet1!G4:M30",
+//	        PivotTableRange: "Sheet1!G4:M31",
 //	        Rows: []excelize.PivotTableField{
 //	            {Data: "Month", DefaultSubtotal: true}, {Data: "Year"},
 //	        },

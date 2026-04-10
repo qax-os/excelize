@@ -30,7 +30,7 @@ func TestPivotTable(t *testing.T) {
 		pivotTableXML:       "xl/pivotTables/pivotTable1.xml",
 		pivotCacheXML:       "xl/pivotCache/pivotCacheDefinition1.xml",
 		DataRange:           "Sheet1!A1:E31",
-		PivotTableRange:     "Sheet1!G4:M30",
+		PivotTableRange:     "Sheet1!G4:M31",
 		Name:                "PivotTable1",
 		Rows:                []PivotTableField{{Data: "Month", ShowAll: true, DefaultSubtotal: true}, {Data: "Year"}},
 		Filter:              []PivotTableField{{Data: "Region"}},
