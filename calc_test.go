@@ -25,8 +25,8 @@ func prepareCalcData(cellData [][]interface{}) *File {
 func TestCalcCellValue(t *testing.T) {
 	cellData := [][]interface{}{
 		{1, 4, nil, "Month", "Team", "Sales"},
-		{2, 5, nil, "Jan", "North 1", 36693},
-		{3, nil, nil, "Jan", "North 2", 22100},
+		{2, 5, nil, "Jan", "North 1", 36693, 4},
+		{3, nil, nil, "Jan", "North 2", 22100, 2},
 		{0, nil, nil, "Jan", "South 1", 53321},
 		{nil, nil, nil, "Jan", "South 2", 34440},
 		{nil, nil, nil, "Feb", "North 1", 29889},
@@ -1110,8 +1110,20 @@ func TestCalcCellValue(t *testing.T) {
 		// FORECAST.LINEAR
 		"FORECAST.LINEAR(7,A1:A7,B1:B7)": "4",
 		// FREQUENCY
-		"SUM(FREQUENCY(A2,B2))":       "1",
-		"SUM(FREQUENCY(A1:A5,B1:B2))": "4",
+		"SUM(FREQUENCY(A2,B2))":                            "1",
+		"SUM(FREQUENCY(A1:A5,B1:B2))":                      "4",
+		"INDEX(FREQUENCY(A1:A4,G2:G3),1,1)":                "1",
+		"INDEX(FREQUENCY(A1:A4,G2:G3),2,1)":                "3",
+		"INDEX(FREQUENCY(A1:A4,G2:G3),3,1)":                "0",
+		"INDEX(FREQUENCY(A1:B4,F2:G3),1,1)":                "0",
+		"INDEX(FREQUENCY(A1:B4,F2:G3),2,1)":                "2",
+		"INDEX(FREQUENCY(A1:B4,F2:G3),3,1)":                "1",
+		"INDEX(FREQUENCY(A1:B4,F2:G3),4,1)":                "3",
+		"INDEX(FREQUENCY(A1:B4,F2:G3),5,1)":                "0",
+		"INDEX(FREQUENCY({0,1,4,5,11,10,6},{2,4,10}),1,1)": "2",
+		"INDEX(FREQUENCY({0,1,4,5,11,10,6},{2,4,10}),2,1)": "1",
+		"INDEX(FREQUENCY({0,1,4,5,11,10,6},{2,4,10}),3,1)": "3",
+		"INDEX(FREQUENCY({0,1,4,5,11,10,6},{2,4,10}),4,1)": "1",
 		// GAMMA
 		"GAMMA(0.1)":     "9.51350769866873",
 		"GAMMA(INT(1))":  "1",

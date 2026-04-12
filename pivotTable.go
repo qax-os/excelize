@@ -111,7 +111,7 @@ type PivotTableField struct {
 // options. Note that the same fields can not in Columns, Rows and Filter
 // fields at the same time.
 //
-// For example, create a pivot table on the range reference Sheet1!G4:M31 with
+// For example, create a pivot table on the range reference Sheet1!G4:M30 with
 // the range reference Sheet1!A1:E31 as the data source, summarize by sum for
 // revenue:
 //
