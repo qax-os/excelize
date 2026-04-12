@@ -12,7 +12,6 @@
 package excelize
 
 import (
-	"archive/zip"
 	"bytes"
 	"container/list"
 	"encoding/xml"
@@ -27,6 +26,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf16"
+
+	"github.com/klauspost/compress/zip"
 )
 
 // ReadZipReader extract spreadsheet with given options.
@@ -105,7 +106,7 @@ func (f *File) readXML(name string) []byte {
 		return content.([]byte)
 	}
 	if content, ok := f.streams[name]; ok {
-		return content.rawData.buf.Bytes()
+		return content.rawData.Bytes()
 	}
 	return []byte{}
 }
@@ -225,6 +226,28 @@ func ColumnNameToNumber(name string) (int, error) {
 	return col, nil
 }
 
+// columnNames is a precomputed lookup table of column names for all valid
+// column numbers (1 to MaxColumns). This eliminates per-call allocations
+// in ColumnNumberToName.
+var columnNames = func() []string {
+	names := make([]string, MaxColumns+1)
+	for i := 1; i <= MaxColumns; i++ {
+		num := i
+		l := 0
+		for n := num; n > 0; n = (n - 1) / 26 {
+			l++
+		}
+		buf := make([]byte, l)
+		for num > 0 {
+			l--
+			buf[l] = byte((num-1)%26 + 'A')
+			num = (num - 1) / 26
+		}
+		names[i] = string(buf)
+	}
+	return names
+}()
+
 // ColumnNumberToName provides a function to convert the integer to Excel
 // sheet column title.
 //
@@ -235,18 +258,7 @@ func ColumnNumberToName(num int) (string, error) {
 	if num < MinColumns || num > MaxColumns {
 		return "", ErrColumnNumber
 	}
-	estimatedLength := 0
-	for n := num; n > 0; n = (n - 1) / 26 {
-		estimatedLength++
-	}
-
-	result := make([]byte, estimatedLength)
-	for num > 0 {
-		estimatedLength--
-		result[estimatedLength] = byte((num-1)%26 + 'A')
-		num = (num - 1) / 26
-	}
-	return string(result), nil
+	return columnNames[num], nil
 }
 
 // CellNameToCoordinates converts alphanumeric cell name to [X, Y] coordinates
@@ -282,14 +294,16 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	if row > TotalRows {
 		return "", ErrMaxRows
 	}
-	sign := ""
+	colName, err := ColumnNumberToName(col)
+	if err != nil {
+		return "", err
+	}
 	for _, a := range abs {
 		if a {
-			sign = "$"
+			return "$" + colName + "$" + strconv.Itoa(row), nil
 		}
 	}
-	colName, err := ColumnNumberToName(col)
-	return sign + colName + sign + strconv.Itoa(row), err
+	return colName + strconv.Itoa(row), nil
 }
 
 // rangeRefToCoordinates provides a function to convert range reference to a
