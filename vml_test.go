@@ -83,6 +83,28 @@ func TestAddComment(t *testing.T) {
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 }
 
+func TestAddCommentMultipleSameAuthor(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.AddComment("Sheet1", Comment{
+		Cell: "A1", Author: "User1",
+		Paragraph: []RichTextRun{{Text: "comment1"}},
+	}))
+	assert.NoError(t, f.AddComment("Sheet1", Comment{
+		Cell: "B1", Author: "User2",
+		Paragraph: []RichTextRun{{Text: "comment2"}},
+	}))
+	assert.NoError(t, f.AddComment("Sheet1", Comment{
+		Cell: "C1", Author: "User2",
+		Paragraph: []RichTextRun{{Text: "comment3"}},
+	}))
+	comments, err := f.GetComments("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, comments, 3)
+	assert.Equal(t, "User1", comments[0].Author)
+	assert.Equal(t, "User2", comments[1].Author)
+	assert.Equal(t, "User2", comments[2].Author)
+}
+
 func TestDeleteComment(t *testing.T) {
 	f, err := prepareTestBook1()
 	if !assert.NoError(t, err) {

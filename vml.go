@@ -282,9 +282,11 @@ func (f *File) addComment(commentsXML string, opts vmlOptions) error {
 	if inStrSlice(cmts.cells, opts.Comment.Cell, true) != -1 {
 		return newAddCommentError(opts.Comment.Cell)
 	}
-	if inStrSlice(cmts.Authors.Author, opts.Author, true) == -1 {
+	if idx := inStrSlice(cmts.Authors.Author, opts.Author, true); idx == -1 {
 		cmts.Authors.Author = append(cmts.Authors.Author, opts.Author)
 		authorID = len(cmts.Authors.Author) - 1
+	} else {
+		authorID = idx
 	}
 	defaultFont, err := f.GetDefaultFont()
 	if err != nil {
