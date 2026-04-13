@@ -275,18 +275,16 @@ func (f *File) addComment(commentsXML string, opts vmlOptions) error {
 	if err != nil {
 		return err
 	}
-	var authorID int
 	if cmts == nil {
 		cmts = &xlsxComments{Authors: xlsxAuthor{Author: []string{opts.Author}}}
 	}
 	if inStrSlice(cmts.cells, opts.Comment.Cell, true) != -1 {
 		return newAddCommentError(opts.Comment.Cell)
 	}
-	if idx := inStrSlice(cmts.Authors.Author, opts.Author, true); idx == -1 {
+	authorID := inStrSlice(cmts.Authors.Author, opts.Author, true)
+	if authorID == -1 {
 		cmts.Authors.Author = append(cmts.Authors.Author, opts.Author)
 		authorID = len(cmts.Authors.Author) - 1
-	} else {
-		authorID = idx
 	}
 	defaultFont, err := f.GetDefaultFont()
 	if err != nil {
