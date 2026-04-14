@@ -836,11 +836,12 @@ func (f *File) drawChartSeries(opts *Chart) *[]cSer {
 // drawShapeFill provides a function to draw the a:solidFill element by given
 // fill format sets.
 func (fill *Fill) drawShapeFill(spPr *cSpPr) *cSpPr {
-	if fill.Type == "pattern" && fill.Pattern == 1 {
-		if spPr == nil {
-			spPr = &cSpPr{}
-		}
-		if len(fill.Color) == 1 {
+	if spPr == nil {
+		spPr = &cSpPr{}
+	}
+	spPr.SolidFill = nil
+	if fill.Type == "pattern" {
+		if fill.Pattern == 1 && len(fill.Color) == 1 {
 			spPr.SolidFill = &aSolidFill{SrgbClr: &aSrgbClr{Val: stringPtr(strings.TrimPrefix(fill.Color[0], "#"))}}
 			if fill.Transparency > 0 {
 				val := (100 - fill.Transparency) * 1000
@@ -848,7 +849,6 @@ func (fill *Fill) drawShapeFill(spPr *cSpPr) *cSpPr {
 			}
 			return spPr
 		}
-		spPr.SolidFill = nil
 		spPr.NoFill = stringPtr("")
 	}
 	return spPr
@@ -878,7 +878,7 @@ func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
 	}[opts.Type]; ok {
 		return chartSeriesSpPr[opts.Series[i].Line.Type]
 	}
-	if spPr.SolidFill.SrgbClr != nil {
+	if spPr.SolidFill != nil && spPr.SolidFill.SrgbClr != nil || spPr.NoFill != nil {
 		return spPr
 	}
 	return nil
@@ -1316,9 +1316,6 @@ func (ct *ChartTitle) drawPlotAreaTitles(vert string) *cTitle {
 	}
 	spPr := ct.Fill.drawShapeFill(nil)
 	if ln := ct.Border.drawChartLn(); ln != nil {
-		if spPr == nil {
-			spPr = &cSpPr{}
-		}
 		spPr.Ln = ln
 	}
 	if spPr != nil {

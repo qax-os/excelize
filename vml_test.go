@@ -81,28 +81,27 @@ func TestAddComment(t *testing.T) {
 	comments, err = f.GetComments("SheetN")
 	assert.Len(t, comments, 0)
 	assert.EqualError(t, err, "sheet SheetN does not exist")
-}
 
-func TestAddCommentMultipleSameAuthor(t *testing.T) {
-	f := NewFile()
-	assert.NoError(t, f.AddComment("Sheet1", Comment{
-		Cell: "A1", Author: "User1",
-		Paragraph: []RichTextRun{{Text: "comment1"}},
-	}))
-	assert.NoError(t, f.AddComment("Sheet1", Comment{
-		Cell: "B1", Author: "User2",
-		Paragraph: []RichTextRun{{Text: "comment2"}},
-	}))
-	assert.NoError(t, f.AddComment("Sheet1", Comment{
-		Cell: "C1", Author: "User2",
-		Paragraph: []RichTextRun{{Text: "comment3"}},
-	}))
-	comments, err := f.GetComments("Sheet1")
-	assert.NoError(t, err)
-	assert.Len(t, comments, 3)
-	assert.Equal(t, "User1", comments[0].Author)
-	assert.Equal(t, "User2", comments[1].Author)
-	assert.Equal(t, "User2", comments[2].Author)
+	t.Run("with_existing_author_id", func(t *testing.T) {
+		f := NewFile()
+		defer func() {
+			assert.NoError(t, f.Close())
+		}()
+		assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "A1", Author: "Alice", Paragraph: []RichTextRun{{Text: "pre-existing"}}}))
+		assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "B1", Author: "Bob", Paragraph: []RichTextRun{{Text: "first"}}}))
+		assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "C1", Author: "Bob", Paragraph: []RichTextRun{{Text: "second"}}}))
+		assert.NoError(t, f.AddComment("Sheet1", Comment{Cell: "D1", Author: "Bob", Paragraph: []RichTextRun{{Text: "third"}}}))
+		comments, err := f.GetComments("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, comments, 4)
+		for _, c := range comments {
+			if c.Cell == "A1" {
+				assert.Equal(t, "Alice", c.Author)
+				continue
+			}
+			assert.Equal(t, "Bob", c.Author, "cell %s should have author Bob, got %s", c.Cell, c.Author)
+		}
+	})
 }
 
 func TestDeleteComment(t *testing.T) {
