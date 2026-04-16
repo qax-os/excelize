@@ -442,6 +442,101 @@ func (f *File) GetSheetIndex(sheet string) (int, error) {
 	return -1, nil
 }
 
+// GetSheetStats returns the statistics for a worksheet including row count,
+// column count, cell count, and maximum cell reference. For sheets written
+// using StreamWriter, returns stats captured during Flush(). For sheets read
+// from files or written with SetCellValue, returns nil - use CalculateSheetStats
+// to compute stats by iterating over the sheet data (results are cached).
+//
+// Example:
+//
+//	// For streaming writes:
+//	sw, _ := f.NewStreamWriter("Sheet1")
+//	// ... write data ...
+//	sw.Flush()
+//	stats := f.GetSheetStats("Sheet1")
+//
+//	// For reading existing files:
+//	f, _ := excelize.OpenFile("Book1.xlsx")
+//	stats, _ := f.CalculateSheetStats("Sheet1")
+func (f *File) GetSheetStats(sheet string) *SheetStats {
+	if f.sheetStats == nil {
+		return nil
+	}
+	return f.sheetStats[sheet]
+}
+
+// CalculateSheetStats computes statistics for a worksheet by iterating over
+// all rows and cells. This works for any sheet (read from file or written
+// programmatically). Returns row count, column count, cell count, and the
+// maximum cell reference. The result is cached, so subsequent calls return
+// immediately without re-iterating.
+//
+// Note: This method iterates over the entire sheet on first call, which may
+// be slow for very large worksheets. For sheets written with StreamWriter,
+// GetSheetStats returns cached stats without iteration.
+//
+// Example:
+//
+//	f, _ := excelize.OpenFile("Book1.xlsx")
+//	stats, err := f.CalculateSheetStats("Sheet1")
+//	if err != nil {
+//	    return err
+//	}
+//	fmt.Printf("Rows: %d, Cols: %d, Cells: %d\n", stats.Rows, stats.Cols, stats.Cells)
+func (f *File) CalculateSheetStats(sheet string) (*SheetStats, error) {
+	// Return cached stats if available
+	if f.sheetStats != nil {
+		if stats, ok := f.sheetStats[sheet]; ok {
+			return stats, nil
+		}
+	}
+
+	rows, err := f.Rows(sheet)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	stats := &SheetStats{}
+	rowNum, maxCol := 0, 0
+
+	for rows.Next() {
+		rowNum++
+		row, err := rows.Columns()
+		if err != nil {
+			return nil, err
+		}
+		for i, cell := range row {
+			if cell != "" {
+				stats.Cells++
+				if i+1 > maxCol {
+					maxCol = i + 1
+				}
+			}
+		}
+	}
+
+	if err := rows.Error(); err != nil {
+		return nil, err
+	}
+
+	stats.Rows = rowNum
+	stats.Cols = maxCol
+	if rowNum > 0 && maxCol > 0 {
+		colName, _ := ColumnNumberToName(maxCol)
+		stats.MaxCell = colName + strconv.Itoa(rowNum)
+	}
+
+	// Cache the result
+	if f.sheetStats == nil {
+		f.sheetStats = make(map[string]*SheetStats)
+	}
+	f.sheetStats[sheet] = stats
+
+	return stats, nil
+}
+
 // GetSheetMap provides a function to get worksheets, chart sheets, dialog
 // sheets ID and name map of the workbook. For example:
 //

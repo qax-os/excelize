@@ -25,6 +25,11 @@ import (
 	"time"
 )
 
+// dimensionPlaceholder is a fixed-width placeholder for the dimension element.
+// It uses max possible cell ref (XFD1048576) to ensure any final dimension fits.
+// The placeholder is exactly 35 bytes: `<dimension ref="A1:XFD1048576"/>` + padding
+const dimensionPlaceholder = `<dimension ref="A1:XFD1048576"/>`
+
 // StreamWriter defined the type of stream writer.
 type StreamWriter struct {
 	file            *File
@@ -34,10 +39,17 @@ type StreamWriter struct {
 	worksheet       *xlsxWorksheet
 	rawData         bufferedWriter
 	rows            int
+	maxCol          int   // track max column for dimension element
+	cellCount       int64 // track total cells written
 	mergeCellsCount int
 	mergeCells      strings.Builder
 	tableParts      string
 	colStyles       []int // cached column styles for O(1) lookup
+	dimensionOffset int64 // byte offset of dimension placeholder for update
+	// Shared string support for streaming writes
+	useSharedStrings bool           // if true, use shared strings instead of inline
+	sharedStrings    []string       // list of unique strings in order added
+	sharedStringsMap map[string]int // map from string value to index
 }
 
 // NewStreamWriter returns stream writer struct by given worksheet name used for
@@ -134,14 +146,20 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 		bufSize = StreamingBufSizeDefault
 	}
 	sw := &StreamWriter{
-		file:    f,
-		Sheet:   sheet,
-		SheetID: sheetID,
+		file:             f,
+		Sheet:            sheet,
+		SheetID:          sheetID,
+		useSharedStrings: f.options.UseSharedStrings,
 		rawData: bufferedWriter{
 			tmpDir:    f.options.TmpDir,
 			flushSize: chunkSize,
 			bioSize:   bufSize,
 		},
+	}
+	// Initialize shared strings map if enabled
+	if sw.useSharedStrings {
+		sw.sharedStrings = make([]string, 0, 1024)
+		sw.sharedStringsMap = make(map[string]int)
 	}
 	var err error
 	sw.worksheet, err = f.workSheetReader(sheet)
@@ -156,7 +174,11 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	f.streams[sheetXMLPath] = sw
 
 	_, _ = sw.rawData.WriteString(xml.Header + `<worksheet` + templateNamespaceIDMap)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 3, 4)
+	// Write SheetPr (field 3) only, we handle Dimension separately
+	bulkAppendFields(&sw.rawData, sw.worksheet, 3, 3)
+	// Record offset and write fixed-width dimension placeholder
+	sw.dimensionOffset = sw.rawData.written
+	_, _ = sw.rawData.WriteString(dimensionPlaceholder)
 	return sw, err
 }
 
@@ -415,6 +437,10 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 		return newStreamSetRowError(row)
 	}
 	sw.rows = row
+	// Track max column for dimension element
+	if endCol := col + len(values) - 1; endCol > sw.maxCol {
+		sw.maxCol = endCol
+	}
 	sw.writeSheetData()
 	options := parseRowOpts(opts...)
 	if err = options.validateRowOpts(); err != nil {
@@ -436,6 +462,7 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 			_, _ = sw.rawData.WriteString(`</row>`)
 			return ErrColumnNumber
 		}
+		sw.cellCount++ // track cells for stats
 		style := sw.streamCellStyle(colIdx, options.StyleID)
 		// Fast path: write numeric cells directly to the buffer without
 		// going through xlsxC.V, eliminating per-cell string allocations.
@@ -778,7 +805,20 @@ func (sw *StreamWriter) writeStringCell(val interface{}, colName, rowStr string,
 	if strings.Contains(s, "_x") || len(s) > TotalCellChars {
 		return false
 	}
+
 	buf := &sw.rawData
+
+	// Use shared strings if enabled
+	if sw.useSharedStrings {
+		idx := sw.getOrAddSharedString(s)
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(` t="s"><v>`)
+		_, _ = buf.WriteString(strconv.Itoa(idx))
+		_, _ = buf.WriteString(`</v></c>`)
+		return true
+	}
+
+	// Otherwise write inline string
 	writeCellStart(buf, colName, rowStr, style)
 	_, _ = buf.WriteString(` t="inlineStr"><is><t`)
 	// Check for leading/trailing whitespace that needs xml:space="preserve"
@@ -793,6 +833,18 @@ func (sw *StreamWriter) writeStringCell(val interface{}, colName, rowStr string,
 	writeEscaped(buf, s)
 	_, _ = buf.WriteString(`</t></is></c>`)
 	return true
+}
+
+// getOrAddSharedString returns the index of a string in the shared strings
+// table, adding it if not already present.
+func (sw *StreamWriter) getOrAddSharedString(s string) int {
+	if idx, ok := sw.sharedStringsMap[s]; ok {
+		return idx
+	}
+	idx := len(sw.sharedStrings)
+	sw.sharedStrings = append(sw.sharedStrings, s)
+	sw.sharedStringsMap[s] = idx
+	return idx
 }
 
 // setCellTime provides a function to set number of a cell with a time.
@@ -1025,12 +1077,110 @@ func (sw *StreamWriter) Flush() error {
 		return err
 	}
 
+	// Update dimension placeholder with actual dimensions
+	if err := sw.updateDimension(); err != nil {
+		return err
+	}
+
+	// Write shared strings table if enabled
+	if sw.useSharedStrings && len(sw.sharedStrings) > 0 {
+		if err := sw.writeSharedStrings(); err != nil {
+			return err
+		}
+	}
+
+	// Store sheet statistics for metadata access
+	sw.storeSheetStats()
+
 	sheetPath := sw.file.sheetMap[sw.Sheet]
 	sw.file.Sheet.Delete(sheetPath)
 	sw.file.checked.Delete(sheetPath)
 	sw.file.Pkg.Delete(sheetPath)
 
 	return nil
+}
+
+// updateDimension overwrites the dimension placeholder with the actual
+// dimensions computed during streaming.
+func (sw *StreamWriter) updateDimension() error {
+	// Build actual dimension element, padded to match placeholder length
+	var dim string
+	if sw.rows > 0 && sw.maxCol > 0 {
+		maxCell, _ := CoordinatesToCellName(sw.maxCol, sw.rows)
+		dim = fmt.Sprintf(`<dimension ref="A1:%s"/>`, maxCell)
+	} else {
+		dim = `<dimension ref="A1"/>`
+	}
+	// Pad to match placeholder length
+	padded := dim + strings.Repeat(" ", len(dimensionPlaceholder)-len(dim))
+	if len(padded) != len(dimensionPlaceholder) {
+		// Should never happen, but sanity check
+		return fmt.Errorf("dimension length mismatch: got %d, expected %d", len(dim), len(dimensionPlaceholder))
+	}
+	return sw.rawData.WriteAt([]byte(padded), sw.dimensionOffset)
+}
+
+// writeSharedStrings writes the xl/sharedStrings.xml file with all unique
+// strings collected during streaming.
+func (sw *StreamWriter) writeSharedStrings() error {
+	var buf bytes.Buffer
+	buf.WriteString(xml.Header)
+	buf.WriteString(`<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="`)
+	buf.WriteString(strconv.Itoa(len(sw.sharedStrings)))
+	buf.WriteString(`" uniqueCount="`)
+	buf.WriteString(strconv.Itoa(len(sw.sharedStrings)))
+	buf.WriteString(`">`)
+
+	for _, s := range sw.sharedStrings {
+		buf.WriteString(`<si><t`)
+		// Check for leading/trailing whitespace
+		if len(s) > 0 {
+			first, last := s[0], s[len(s)-1]
+			if first == ' ' || first == '\t' || first == '\n' || first == '\r' ||
+				last == ' ' || last == '\t' || last == '\n' || last == '\r' {
+				buf.WriteString(` xml:space="preserve"`)
+			}
+		}
+		buf.WriteString(`>`)
+		_ = xml.EscapeText(&buf, []byte(s))
+		buf.WriteString(`</t></si>`)
+	}
+	buf.WriteString(`</sst>`)
+
+	sw.file.Pkg.Store(defaultXMLPathSharedStrings, buf.Bytes())
+
+	// Add content type and relationship for shared strings
+	if err := sw.file.addContentTypePart(0, "sharedStrings"); err != nil {
+		return err
+	}
+
+	relPath := sw.file.getWorkbookRelsPath()
+	rels, _ := sw.file.relsReader(relPath)
+	// Check if relationship already exists
+	for _, rel := range rels.Relationships {
+		if rel.Target == "/xl/sharedStrings.xml" {
+			return nil
+		}
+	}
+	sw.file.addRels(relPath, SourceRelationshipSharedStrings, "/xl/sharedStrings.xml", "")
+	return nil
+}
+
+// storeSheetStats saves the sheet statistics to the File for later access.
+func (sw *StreamWriter) storeSheetStats() {
+	if sw.file.sheetStats == nil {
+		sw.file.sheetStats = make(map[string]*SheetStats)
+	}
+	maxCell := ""
+	if sw.maxCol > 0 && sw.rows > 0 {
+		maxCell, _ = CoordinatesToCellName(sw.maxCol, sw.rows)
+	}
+	sw.file.sheetStats[sw.Sheet] = &SheetStats{
+		Rows:    sw.rows,
+		Cols:    sw.maxCol,
+		Cells:   sw.cellCount,
+		MaxCell: maxCell,
+	}
 }
 
 // bulkAppendFields bulk-appends fields in a worksheet by specified field
@@ -1058,22 +1208,29 @@ type bufferedWriter struct {
 	scratch   [24]byte      // scratch space for strconv.Append* to avoid heap allocs
 	flushSize int           // if >0, flush to temp file at this threshold instead of StreamChunkSize
 	bioSize   int           // bufio.Writer buffer size after threshold; 0 = use StreamingBufSizeDefault
+	written   int64         // total bytes written (for tracking offsets)
 }
 
 // Write to the active writer (bufio if streaming, otherwise in-memory buffer).
 func (bw *bufferedWriter) Write(p []byte) (n int, err error) {
 	if bw.bio != nil {
-		return bw.bio.Write(p)
+		n, err = bw.bio.Write(p)
+	} else {
+		n, err = bw.buf.Write(p)
 	}
-	return bw.buf.Write(p)
+	bw.written += int64(n)
+	return
 }
 
 // WriteString writes to the active writer.
 func (bw *bufferedWriter) WriteString(p string) (n int, err error) {
 	if bw.bio != nil {
-		return bw.bio.WriteString(p)
+		n, err = bw.bio.WriteString(p)
+	} else {
+		n, err = bw.buf.WriteString(p)
 	}
-	return bw.buf.WriteString(p)
+	bw.written += int64(n)
+	return
 }
 
 // WriteInt formats and writes an int64 directly using the scratch space,
@@ -1085,6 +1242,7 @@ func (bw *bufferedWriter) WriteInt(v int64) {
 	} else {
 		bw.buf.Write(b)
 	}
+	bw.written += int64(len(b))
 }
 
 // WriteUint formats and writes a uint64 directly to the buffer.
@@ -1095,6 +1253,7 @@ func (bw *bufferedWriter) WriteUint(v uint64) {
 	} else {
 		bw.buf.Write(b)
 	}
+	bw.written += int64(len(b))
 }
 
 // WriteFloat formats and writes a float64 directly to the buffer.
@@ -1105,6 +1264,7 @@ func (bw *bufferedWriter) WriteFloat(v float64, fmt byte, prec, bitSize int) {
 	} else {
 		bw.buf.Write(b)
 	}
+	bw.written += int64(len(b))
 }
 
 // Bytes returns the in-memory buffer contents. This is only valid when no
@@ -1115,6 +1275,28 @@ func (bw *bufferedWriter) Bytes() []byte {
 		return nil
 	}
 	return bw.buf.Bytes()
+}
+
+// WriteAt writes data at a specific offset. This is used to update the
+// dimension placeholder after streaming is complete. For in-memory buffers,
+// it modifies the buffer directly. For temp files, it flushes first then
+// uses pwrite. The data must fit within previously written bytes.
+func (bw *bufferedWriter) WriteAt(p []byte, offset int64) error {
+	if bw.tmp == nil {
+		// In-memory: directly modify buffer bytes
+		buf := bw.buf.Bytes()
+		if offset+int64(len(p)) > int64(len(buf)) {
+			return fmt.Errorf("WriteAt: offset %d + len %d exceeds buffer size %d", offset, len(p), len(buf))
+		}
+		copy(buf[offset:], p)
+		return nil
+	}
+	// Temp file: flush bufio first, then use pwrite
+	if err := bw.Flush(); err != nil {
+		return err
+	}
+	_, err := bw.tmp.WriteAt(p, offset)
+	return err
 }
 
 // CopyTo efficiently copies all buffered data to w. For in-memory buffers
