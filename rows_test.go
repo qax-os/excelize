@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
@@ -147,6 +148,92 @@ func TestRowsError(t *testing.T) {
 	_, err = f.Rows("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 	assert.NoError(t, f.Close())
+}
+
+func TestRowsFast(t *testing.T) {
+	// Test requires FastReadMode
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
+	_, err = f.RowsFast("Sheet1")
+	assert.Equal(t, ErrParameterInvalid, err)
+	assert.NoError(t, f.Close())
+
+	// Test with FastReadMode enabled
+	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{FastReadMode: true})
+	assert.NoError(t, err)
+
+	// Test sheet not exist
+	_, err = f.RowsFast("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+
+	// Test normal iteration
+	rows, err := f.RowsFast("Sheet1")
+	assert.NoError(t, err)
+
+	var rowCount int
+	var allRows [][]string
+	for rows.Next() {
+		rowCount++
+		// Copy the row since it's reused
+		row := rows.Row()
+		rowCopy := make([]string, len(row))
+		copy(rowCopy, row)
+		allRows = append(allRows, rowCopy)
+	}
+	assert.NoError(t, rows.Close())
+	assert.True(t, rowCount > 0, "Expected at least one row")
+
+	// Verify RowNum returns correct row number
+	rows, err = f.RowsFast("Sheet1")
+	assert.NoError(t, err)
+	expectedRow := 1
+	for rows.Next() {
+		assert.Equal(t, expectedRow, rows.RowNum())
+		expectedRow++
+	}
+	assert.NoError(t, rows.Close())
+	assert.NoError(t, f.Close())
+
+	// Test with file containing shared strings
+	f = NewFile()
+	sw, err := f.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	testData := [][]interface{}{
+		{"Name", "Age", "City"},
+		{"Alice", 30, "NYC"},
+		{"Bob", 25, "LA"},
+	}
+	for i, row := range testData {
+		cell, _ := CoordinatesToCellName(1, i+1)
+		assert.NoError(t, sw.SetRow(cell, row))
+	}
+	assert.NoError(t, sw.Flush())
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRowsFast.xlsx")))
+	assert.NoError(t, f.Close())
+
+	// Read back with RowsFast
+	f, err = OpenFile(filepath.Join("test", "TestRowsFast.xlsx"), Options{FastReadMode: true})
+	assert.NoError(t, err)
+	rows, err = f.RowsFast("Sheet1")
+	assert.NoError(t, err)
+
+	var results [][]string
+	for rows.Next() {
+		row := rows.Row()
+		rowCopy := make([]string, len(row))
+		copy(rowCopy, row)
+		results = append(results, rowCopy)
+	}
+	assert.NoError(t, rows.Close())
+	assert.NoError(t, f.Close())
+
+	assert.Equal(t, 3, len(results))
+	assert.Equal(t, []string{"Name", "Age", "City"}, results[0])
+	assert.Equal(t, []string{"Alice", "30", "NYC"}, results[1])
+	assert.Equal(t, []string{"Bob", "25", "LA"}, results[2])
+
+	// Clean up
+	assert.NoError(t, os.Remove(filepath.Join("test", "TestRowsFast.xlsx")))
 }
 
 func TestRowHeight(t *testing.T) {
