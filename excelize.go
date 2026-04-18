@@ -135,7 +135,12 @@ func OpenFile(filename string, opts ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	f, err := OpenReader(file, opts...)
+	fi, err := file.Stat()
+	if err != nil {
+		_ = file.Close()
+		return nil, err
+	}
+	f, err := OpenReaderAt(file, fi.Size(), opts...)
 	if err != nil {
 		if closeErr := file.Close(); closeErr != nil {
 			return f, closeErr
@@ -193,7 +198,7 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 	if err = f.checkOpenReaderOptions(); err != nil {
 		return nil, err
 	}
-	if bytes.Contains(b, oleIdentifier) {
+	if len(b) >= 8 && bytes.Equal(b[:8], oleIdentifier) {
 		if b, err = Decrypt(b, f.options); err != nil {
 			return nil, ErrWorkbookFileFormat
 		}
@@ -204,6 +209,62 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 			return nil, ErrWorkbookPassword
 		}
 		return nil, err
+	}
+	file, sheetCount, err := f.ReadZipReader(zr)
+	if err != nil {
+		return nil, err
+	}
+	f.SheetCount = sheetCount
+	for k, v := range file {
+		f.Pkg.Store(k, v)
+	}
+	if f.CalcChain, err = f.calcChainReader(); err != nil {
+		return f, err
+	}
+	if f.sheetMap, err = f.getSheetMap(); err != nil {
+		return f, err
+	}
+	if f.Styles, err = f.stylesReader(); err != nil {
+		return f, err
+	}
+	f.Theme, err = f.themeReader()
+	return f, err
+}
+
+// OpenReaderAt read data stream from io.ReaderAt and return a populated
+// spreadsheet file.
+func OpenReaderAt(r io.ReaderAt, size int64, opts ...Options) (*File, error) {
+	f := newFile()
+	f.options = f.getOptions(opts...)
+	if err := f.checkOpenReaderOptions(); err != nil {
+		return nil, err
+	}
+	header := make([]byte, 8)
+	if _, err := r.ReadAt(header, 0); err != nil {
+		return nil, err
+	}
+	var zr *zip.Reader
+	if bytes.Equal(header, oleIdentifier) {
+		b, err := io.ReadAll(io.NewSectionReader(r, 0, size))
+		if err != nil {
+			return nil, err
+		}
+		if b, err = Decrypt(b, f.options); err != nil {
+			return nil, ErrWorkbookFileFormat
+		}
+		zr, err = zip.NewReader(bytes.NewReader(b), int64(len(b)))
+		if err != nil {
+			if len(f.options.Password) > 0 {
+				return nil, ErrWorkbookPassword
+			}
+			return nil, err
+		}
+	} else {
+		var err error
+		zr, err = zip.NewReader(r, size)
+		if err != nil {
+			return nil, err
+		}
 	}
 	file, sheetCount, err := f.ReadZipReader(zr)
 	if err != nil {
@@ -547,7 +608,7 @@ func (f *File) UpdateLinkedValue() error {
 func (f *File) AddVBAProject(file []byte) error {
 	var err error
 	// Check vbaProject.bin exists first.
-	if !bytes.Contains(file, oleIdentifier) {
+	if len(file) < 8 || !bytes.Equal(file[:8], oleIdentifier) {
 		return ErrAddVBAProject
 	}
 	rels, err := f.relsReader(f.getWorkbookRelsPath())
