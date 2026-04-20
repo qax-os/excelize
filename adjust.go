@@ -414,6 +414,17 @@ func (f *File) adjustFormulaOperand(sheet, sheetN string, keepRelative bool, tok
 	return operand, err
 }
 
+// isExternalSheetReference returns true for workbook-qualified sheet
+// references such as [Book1.xlsx]Sheet1!A1.
+func isExternalSheetReference(ref string) bool {
+	bang := strings.Index(ref, "!")
+	if bang == -1 {
+		return false
+	}
+	open, close := strings.Index(ref, "["), strings.Index(ref, "]")
+	return open != -1 && close > open && close < bang
+}
+
 // adjustFormulaRef returns adjusted formula by giving adjusting direction and
 // the base number of column or row, and offset.
 func (f *File) adjustFormulaRef(sheet, sheetN, formula string, keepRelative bool, dir adjustDirection, num, offset int) (string, error) {
@@ -437,7 +448,7 @@ func (f *File) adjustFormulaRef(sheet, sheetN, formula string, keepRelative bool
 				val += token.TValue
 				continue
 			}
-			if strings.ContainsAny(token.TValue, "[]") {
+			if strings.ContainsAny(token.TValue, "[]") && !isExternalSheetReference(token.TValue) {
 				val += token.TValue
 				continue
 			}
