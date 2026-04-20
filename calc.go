@@ -1627,6 +1627,9 @@ func (cr *cellRange) prepareCellRange(col, row bool, cellRef cellRef) error {
 // characters and default sheet name.
 func (f *File) parseReference(ctx *calcContext, sheet, reference string) (formulaArg, error) {
 	reference = strings.ReplaceAll(reference, "$", "")
+	if result, is3D, err := f.parse3DRef(ctx, reference); is3D {
+		return result, err
+	}
 	ranges, cellRanges, cellRefs := strings.Split(reference, ":"), list.New(), list.New()
 	if len(ranges) > 1 {
 		var cr cellRange
@@ -1664,6 +1667,113 @@ func (f *File) parseReference(ctx *calcContext, sheet, reference string) (formul
 	}
 	cellRefs.PushBack(cellRef)
 	return f.rangeResolver(ctx, cellRefs, cellRanges)
+}
+
+// parse3DRef detects a 3D reference of the form
+//
+//	[']Sheet1['] : [']Sheet2['] ! CellOrRange
+//
+// and expands it across the workbook-order sheet range. On a 3D hit it
+// returns the expanded matrix as a formulaArg, is3D=true, and any
+// evaluation error encountered. On a non-3D reference it returns
+// is3D=false and callers fall through to the regular 2D parse path.
+func (f *File) parse3DRef(ctx *calcContext, reference string) (formulaArg, bool, error) {
+	sheet1, sheet2, innerRef, ok := split3DRef(reference)
+	if !ok {
+		return formulaArg{}, false, nil
+	}
+	sheets, err := f.expand3DSheetRange(sheet1, sheet2)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorREF, formulaErrorREF), true, errors.New(formulaErrorREF)
+	}
+	var matrix [][]formulaArg
+	for _, sn := range sheets {
+		sub, subErr := f.parseReference(ctx, sn, innerRef)
+		if subErr != nil {
+			return sub, true, subErr
+		}
+		switch sub.Type {
+		case ArgMatrix:
+			matrix = append(matrix, sub.Matrix...)
+		default:
+			matrix = append(matrix, []formulaArg{sub})
+		}
+	}
+	return newMatrixFormulaArg(matrix), true, nil
+}
+
+// split3DRef parses `sheet1:sheet2!ref` with optional single-quote
+// quoting of sheet names. Returns (sheet1, sheet2, innerRef, true) on a
+// 3D shape; otherwise returns ok=false.
+func split3DRef(reference string) (sheet1, sheet2, innerRef string, ok bool) {
+	bang := strings.Index(reference, "!")
+	if bang < 0 || bang == len(reference)-1 {
+		return
+	}
+	left, right := reference[:bang], reference[bang+1:]
+	s1, rest, ok := readSheetToken(left)
+	if !ok || len(rest) < 2 || rest[0] != ':' {
+		return "", "", "", false
+	}
+	s2, rest, ok := readSheetToken(rest[1:])
+	if !ok || rest != "" {
+		return "", "", "", false
+	}
+	if s1 == "" || s2 == "" {
+		return "", "", "", false
+	}
+	return s1, s2, right, true
+}
+
+// readSheetToken reads a [quoted] sheet name from the front of s and
+// returns (name, remaining, ok). A quoted name may contain `:` or `!`.
+// Doubled single-quote escapes for embedded quotes are not supported
+// and return ok=false.
+func readSheetToken(s string) (name, rest string, ok bool) {
+	if s == "" {
+		return "", "", false
+	}
+	if s[0] == '\'' {
+		end := strings.IndexByte(s[1:], '\'')
+		if end < 0 {
+			return "", "", false
+		}
+		if end+2 < len(s) && s[end+2] == '\'' {
+			return "", "", false
+		}
+		return s[1 : 1+end], s[end+2:], true
+	}
+	for i, r := range s {
+		if r == ':' {
+			return s[:i], s[i:], true
+		}
+		if r == '!' || r == '\'' {
+			return "", "", false
+		}
+	}
+	return s, "", true
+}
+
+// expand3DSheetRange returns the workbook-order slice of sheet names
+// from sheet1 to sheet2 inclusive. Returns an error if either sheet is
+// missing, or if sheet1's index is greater than sheet2's in workbook
+// order. Callers surface the error as a #REF! formulaArg. Sheet lookup
+// is case-insensitive (GetSheetIndex uses strings.EqualFold); the
+// returned names preserve the workbook's stored casing.
+func (f *File) expand3DSheetRange(sheet1, sheet2 string) ([]string, error) {
+	i1, err := f.GetSheetIndex(sheet1)
+	if err != nil || i1 < 0 {
+		return nil, fmt.Errorf("sheet %q not found", sheet1)
+	}
+	i2, err := f.GetSheetIndex(sheet2)
+	if err != nil || i2 < 0 {
+		return nil, fmt.Errorf("sheet %q not found", sheet2)
+	}
+	if i1 > i2 {
+		return nil, fmt.Errorf("sheet range %q:%q reversed in workbook order", sheet1, sheet2)
+	}
+	names := f.GetSheetList()
+	return names[i1 : i2+1], nil
 }
 
 // prepareValueRange prepare value range.
