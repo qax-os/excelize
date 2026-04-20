@@ -229,7 +229,15 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 // getOptions provides a function to parse the optional settings for open
 // and reading spreadsheet.
 func (f *File) getOptions(opts ...Options) *Options {
+	// options can be nil when newFile() has just run and no caller has yet
+	// supplied any explicit options (e.g. OpenReader(r) without opts), so
+	// downstream reads of `.RawCellValue` etc. would nil-deref. Anchor the
+	// return value to an empty Options in that case so subsequent access
+	// is always safe; explicit opts still override as before.
 	options := f.options
+	if options == nil {
+		options = &Options{}
+	}
 	for _, opt := range opts {
 		options = &opt
 	}
