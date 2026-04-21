@@ -214,8 +214,7 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 		output, _ := xml.Marshal(ws)
 		f.saveFileList(name, f.replaceNameSpaceBytes(name, output))
 	}
-	var colIterator columnXMLIterator
-	colIterator.cols.sheetXML = f.readBytes(name)
+	colIterator := columnXMLIterator{cols: Cols{f: f, sheetXML: f.readBytes(name)}}
 	decoder := f.xmlNewDecoder(bytes.NewReader(colIterator.cols.sheetXML))
 	for {
 		token, _ := decoder.Token()
@@ -230,7 +229,6 @@ func (f *File) Cols(sheet string) (*Cols, error) {
 			}
 		case xml.EndElement:
 			if xmlElement.Name.Local == "sheetData" {
-				colIterator.cols.f = f
 				colIterator.cols.sheet = sheet
 				return &colIterator.cols, nil
 			}

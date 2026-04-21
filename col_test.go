@@ -86,6 +86,24 @@ func TestCols(t *testing.T) {
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="2"><c r="A" t="inlineStr"><is><t>B</t></is></c></row></sheetData></worksheet>`))
 	_, err = f.Cols("Sheet1")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
+
+	t.Run("with_invalid_worksheet_xml", func(t *testing.T) {
+		f := NewFile()
+		f.Sheet.Delete("xl/worksheets/sheet1.xml")
+		f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet><sheetData><row r="1"><c r="A1"><v>1</v></c></row><row r="2"><c r="A"2><v>2</v></c></row></sheetData></worksheet>`))
+		cols, err := f.Cols("Sheet1")
+		assert.NoError(t, err)
+		cnt := 0
+		row := []string{}
+		for cols.Next() {
+			cnt++
+			row, err = cols.Rows()
+			assert.NoError(t, err)
+		}
+		assert.Equal(t, 1, cnt)
+		assert.Equal(t, []string{"1"}, row)
+		assert.NoError(t, f.Close())
+	})
 }
 
 func TestColumnsIterator(t *testing.T) {
