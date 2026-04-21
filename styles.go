@@ -2086,7 +2086,9 @@ func newFills(style *Style, fg bool) *xlsxFill {
 		var pattern xlsxPatternFill
 		pattern.PatternType = styleFillPatterns[style.Fill.Pattern]
 		if len(style.Fill.Color) < 1 {
-			fill.PatternFill = &pattern
+			if style.Fill.Pattern == 0 {
+				fill.PatternFill = &pattern
+			}
 			break
 		}
 		if fg {
