@@ -164,6 +164,38 @@ func TestGetColsError(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestColsIteratorRetainsFilePointer(t *testing.T) {
+	// Regression for #2299: when worksheet XML is truncated before the
+	// </sheetData> close element, the SAX loop in Cols falls through to
+	// the final return. Prior to #2300 the *File pointer was only wired
+	// into the iterator inside the sheetData EndElement branch, so this
+	// path returned a Cols whose f field was nil, and a subsequent
+	// Cols.Rows call would nil-dereference on cols.f.getOptions. Make
+	// sure the iterator carries a live *File regardless of where the
+	// parse exits.
+	f := NewFile()
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	// Missing </sheetData> and </worksheet> close tags simulate the
+	// truncation seen by the fuzzer in #2299.
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(
+		`<worksheet xmlns="%s"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>v</t></is></c></row>`,
+		NameSpaceSpreadSheet.Value)))
+	f.checked = sync.Map{}
+
+	cols, err := f.Cols("Sheet1")
+	require.NoError(t, err)
+	require.NotNil(t, cols)
+	assert.NotNil(t, cols.f, "cols.f must be set even when sheetData close element is missing")
+
+	// Walking the iterator must not panic, even though the XML is truncated.
+	assert.NotPanics(t, func() {
+		for cols.Next() {
+			_, _ = cols.Rows()
+		}
+	})
+	assert.NoError(t, f.Close())
+}
+
 func TestColsRows(t *testing.T) {
 	f := NewFile()
 
