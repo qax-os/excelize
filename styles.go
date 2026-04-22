@@ -1523,33 +1523,45 @@ func (f *File) extractFills(fl *xlsxFill, s *xlsxStyleSheet, style *Style) {
 	if fl != nil {
 		var fill Fill
 		if fl.GradientFill != nil {
-			fill.Type = "gradient"
-			for shading, variants := range styleFillVariants() {
-				if fl.GradientFill.Bottom == variants.Bottom &&
-					fl.GradientFill.Degree == variants.Degree &&
-					fl.GradientFill.Left == variants.Left &&
-					fl.GradientFill.Right == variants.Right &&
-					fl.GradientFill.Top == variants.Top &&
-					fl.GradientFill.Type == variants.Type {
-					fill.Shading = shading
-					break
-				}
-			}
-			for _, stop := range fl.GradientFill.Stop {
-				fill.Color = append(fill.Color, f.getThemeColor(&stop.Color))
-			}
+			f.extractGradientFill(fl.GradientFill, &fill)
 		}
 		if fl.PatternFill != nil {
-			fill.Type = "pattern"
-			fill.Pattern = inStrSlice(styleFillPatterns, fl.PatternFill.PatternType, false)
-			if fl.PatternFill.BgColor != nil {
-				fill.Color = []string{f.getThemeColor(fl.PatternFill.BgColor)}
-			}
-			if fl.PatternFill.FgColor != nil {
-				fill.Color = []string{f.getThemeColor(fl.PatternFill.FgColor)}
-			}
+			f.extractPatternFill(fl.PatternFill, &fill)
 		}
 		style.Fill = fill
+	}
+}
+
+// extractGradientFill provides a function to extract gradient fill styles
+// settings by given gradient fill definition.
+func (f *File) extractGradientFill(gf *xlsxGradientFill, fill *Fill) {
+	fill.Type = "gradient"
+	for shading, variants := range styleFillVariants() {
+		if gf.Bottom == variants.Bottom &&
+			gf.Degree == variants.Degree &&
+			gf.Left == variants.Left &&
+			gf.Right == variants.Right &&
+			gf.Top == variants.Top &&
+			gf.Type == variants.Type {
+			fill.Shading = shading
+			break
+		}
+	}
+	for _, stop := range gf.Stop {
+		fill.Color = append(fill.Color, f.getThemeColor(&stop.Color))
+	}
+}
+
+// extractPatternFill provides a function to extract pattern fill styles
+// settings by given pattern fill definition.
+func (f *File) extractPatternFill(pf *xlsxPatternFill, fill *Fill) {
+	fill.Type = "pattern"
+	fill.Pattern = inStrSlice(styleFillPatterns, pf.PatternType, false)
+	if pf.BgColor != nil && !pf.BgColor.Auto {
+		fill.Color = []string{f.getThemeColor(pf.BgColor)}
+	}
+	if pf.FgColor != nil && !pf.FgColor.Auto {
+		fill.Color = []string{f.getThemeColor(pf.FgColor)}
 	}
 }
 
@@ -2086,9 +2098,17 @@ func newFills(style *Style, fg bool) *xlsxFill {
 		var pattern xlsxPatternFill
 		pattern.PatternType = styleFillPatterns[style.Fill.Pattern]
 		if len(style.Fill.Color) < 1 {
-			if style.Fill.Pattern == 0 {
-				fill.PatternFill = &pattern
+			if style.Fill.Pattern == 1 {
+				if pattern.FgColor == nil {
+					pattern.FgColor = new(xlsxColor)
+				}
+				pattern.FgColor.Auto = true
+				if pattern.BgColor == nil {
+					pattern.BgColor = new(xlsxColor)
+				}
+				pattern.BgColor.Auto = true
 			}
+			fill.PatternFill = &pattern
 			break
 		}
 		if fg {
