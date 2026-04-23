@@ -17,14 +17,29 @@ import (
 	"strconv"
 )
 
-// Recalc evaluates every formula in the workbook and persists each
-// result into the cell's cached <v>/<t> via RecalcCell. The <f>
-// element and any shared-formula grouping are preserved. Typical use:
+// RecalcOptions narrows the scope of Recalc.
+type RecalcOptions struct {
+	// Sheet limits recalc to a single worksheet when non-empty. An
+	// empty value recalculates every formula in the workbook.
+	Sheet string
+	// Ref limits recalc to cells inside the given A1-style range
+	// (e.g. B2:D10). Requires Sheet to be set.
+	Ref string
+}
+
+// Recalc evaluates every formula in scope and persists each result
+// into the cell's cached <v>/<t> via RecalcCell. The <f> element and
+// any shared-formula grouping are preserved. Typical use:
 //
 //	f, _ := excelize.OpenFile(path)
 //	defer f.Close()
 //	_ = f.Recalc()
 //	_ = f.Save()
+//
+// Scope is controlled by an optional RecalcOptions value. The default
+// (no options) walks the whole workbook. Setting Sheet narrows to one
+// worksheet; setting Ref (requires Sheet) narrows further to an A1
+// range.
 //
 // Dependency resolution uses the same recursive evaluator as
 // CalcCellValue, so chained formulas across sheets converge in a
@@ -36,23 +51,14 @@ import (
 // fmt.Errorf("<sheet>!<cell>: %w", err); Recalc returns the joined
 // collection via errors.Join so errors.Is / errors.As descend into
 // the underlying causes. Cells that did compute are still persisted.
-func (f *File) Recalc() error {
-	type target struct{ sheet, cell string }
-	var cells []target
-	for _, sn := range f.GetSheetList() {
-		ws, err := f.workSheetReader(sn)
-		if err != nil {
-			return err
-		}
-		for r := range ws.SheetData.Row {
-			row := &ws.SheetData.Row[r]
-			for i := range row.C {
-				if row.C[i].F == nil {
-					continue
-				}
-				cells = append(cells, target{sheet: sn, cell: row.C[i].R})
-			}
-		}
+func (f *File) Recalc(opts ...RecalcOptions) error {
+	var o RecalcOptions
+	if len(opts) > 0 {
+		o = opts[0]
+	}
+	cells, err := f.collectRecalcCells(o)
+	if err != nil {
+		return err
 	}
 	f.clearCalcCache()
 	var failures []error
@@ -63,6 +69,64 @@ func (f *File) Recalc() error {
 	}
 	f.clearCalcCache()
 	return errors.Join(failures...)
+}
+
+// recalcTarget identifies a formula cell scheduled for recalculation.
+type recalcTarget struct{ sheet, cell string }
+
+// collectRecalcCells walks the workbook and returns every formula
+// cell inside the scope specified by RecalcOptions. The workbook is
+// walked in sheet-list order; within a sheet, cells are visited by
+// row then column. Ref is parsed relative to Sheet's origin.
+func (f *File) collectRecalcCells(o RecalcOptions) ([]recalcTarget, error) {
+	if o.Ref != "" && o.Sheet == "" {
+		return nil, fmt.Errorf("recalc: Ref requires Sheet: %w", ErrParameterRequired)
+	}
+	var sheets []string
+	if o.Sheet != "" {
+		if idx, err := f.GetSheetIndex(o.Sheet); err != nil || idx < 0 {
+			return nil, fmt.Errorf("recalc: sheet %q not found", o.Sheet)
+		}
+		sheets = []string{o.Sheet}
+	} else {
+		sheets = f.GetSheetList()
+	}
+	inScope := func(_, _ int) bool { return true }
+	if o.Ref != "" {
+		coords, err := rangeRefToCoordinates(o.Ref)
+		if err != nil {
+			return nil, fmt.Errorf("recalc: invalid Ref: %w", err)
+		}
+		_ = sortCoordinates(coords)
+		colStart, rowStart, colEnd, rowEnd := coords[0], coords[1], coords[2], coords[3]
+		inScope = func(col, row int) bool {
+			return col >= colStart && col <= colEnd && row >= rowStart && row <= rowEnd
+		}
+	}
+	var cells []recalcTarget
+	for _, sn := range sheets {
+		ws, err := f.workSheetReader(sn)
+		if err != nil {
+			return nil, err
+		}
+		for r := range ws.SheetData.Row {
+			row := &ws.SheetData.Row[r]
+			for i := range row.C {
+				if row.C[i].F == nil {
+					continue
+				}
+				col, rowNum, cellErr := CellNameToCoordinates(row.C[i].R)
+				if cellErr != nil {
+					continue
+				}
+				if !inScope(col, rowNum) {
+					continue
+				}
+				cells = append(cells, recalcTarget{sheet: sn, cell: row.C[i].R})
+			}
+		}
+	}
+	return cells, nil
 }
 
 // RecalcCell evaluates the formula in the given cell and persists the

@@ -214,3 +214,38 @@ func TestRecalcNonASCIISheetName(t *testing.T) {
 	assert.NoError(t, f.Recalc())
 	assert.Equal(t, "9", cellXML(t, f, "Bérénice", "A2").V)
 }
+
+func TestRecalcSheetScope(t *testing.T) {
+	f := NewFile()
+	_, err := f.NewSheet("Other")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellInt("Sheet1", "A1", 1))
+	assert.NoError(t, f.SetCellInt("Other", "A1", 1))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "A1+A1"))
+	assert.NoError(t, f.SetCellFormula("Other", "A2", "A1+A1"))
+
+	assert.NoError(t, f.Recalc(RecalcOptions{Sheet: "Other"}))
+
+	assert.Empty(t, cellXML(t, f, "Sheet1", "A2").V, "Sheet1 cache untouched")
+	assert.Equal(t, "2", cellXML(t, f, "Other", "A2").V)
+}
+
+func TestRecalcRefScope(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellInt("Sheet1", "A1", 1))
+	assert.NoError(t, f.SetCellInt("Sheet1", "B1", 1))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "A1+A1"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B2", "B1+B1"))
+
+	assert.NoError(t, f.Recalc(RecalcOptions{Sheet: "Sheet1", Ref: "A1:A10"}))
+
+	assert.Equal(t, "2", cellXML(t, f, "Sheet1", "A2").V)
+	assert.Empty(t, cellXML(t, f, "Sheet1", "B2").V, "B2 out of scope")
+}
+
+func TestRecalcOptionRejects(t *testing.T) {
+	f := NewFile()
+	assert.ErrorContains(t, f.Recalc(RecalcOptions{Ref: "A1:B2"}), "requires Sheet")
+	assert.ErrorContains(t, f.Recalc(RecalcOptions{Sheet: "Nope"}), `"Nope"`)
+	assert.ErrorContains(t, f.Recalc(RecalcOptions{Sheet: "Sheet1", Ref: "not-a-range"}), "invalid Ref")
+}
