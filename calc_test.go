@@ -7094,3 +7094,75 @@ func TestCalcImplicitIntersect(t *testing.T) {
 		newMatrixFormulaArg([][]formulaArg{{newNumberFormulaArg(1)}})).Type,
 	)
 }
+
+func TestCalc3DRef(t *testing.T) {
+	// setup builds a workbook with four sheets `Jan`, `Feb`, `Mar`, `Apr`
+	// (creation order = workbook order) and fills A1 / A2 / B1 with
+	// predictable values on each so range shapes can be asserted.
+	setup := func() *File {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetName("Sheet1", "Jan"))
+		_, err := f.NewSheet("Feb")
+		assert.NoError(t, err)
+		_, err = f.NewSheet("Mar")
+		assert.NoError(t, err)
+		_, err = f.NewSheet("Apr")
+		assert.NoError(t, err)
+		for i, sn := range []string{"Jan", "Feb", "Mar", "Apr"} {
+			base := int64(i + 1)
+			assert.NoError(t, f.SetCellInt(sn, "A1", base*10))
+			assert.NoError(t, f.SetCellInt(sn, "A2", base))
+			assert.NoError(t, f.SetCellInt(sn, "B1", base*100))
+		}
+		return f
+	}
+
+	cases := map[string]string{
+		// Single cell per sheet across the whole range.
+		"SUM(Jan:Apr!A1)":   "100", // 10+20+30+40
+		"SUM(Jan:Apr!$A$1)": "100",
+		"SUM(Jan:Mar!A1)":   "60",
+		"SUM(Feb:Apr!A1)":   "90",
+		"SUM(Jan:Jan!A1)":   "10", // degenerate single-sheet range
+		// Multi-cell ranges on each sheet.
+		"SUM(Jan:Apr!A1:A2)": "110", // (10+1)+(20+2)+(30+3)+(40+4)
+		"SUM(Jan:Apr!A1:B1)": "1100",
+		// Other aggregates.
+		"AVERAGE(Jan:Apr!A1)": "25",
+		"MIN(Jan:Apr!A1)":     "10",
+		"MAX(Jan:Apr!A1)":     "40",
+		"COUNT(Jan:Apr!A1)":   "4",
+		"COUNTA(Jan:Apr!A1)":  "4",
+		"PRODUCT(Jan:Apr!A1)": "240000",
+		// Error paths.
+		"SUM(Apr:Jan!A1)": "#REF!", // reversed order
+		"SUM(Jan:Xyz!A1)": "#REF!", // missing end sheet
+		"SUM(Xyz:Mar!A1)": "#REF!", // missing start sheet
+	}
+	for formula, expected := range cases {
+		f := setup()
+		assert.NoError(t, f.SetCellFormula("Jan", "Z1", formula))
+		result, _ := f.CalcCellValue("Jan", "Z1")
+		assert.Equal(t, expected, result, formula)
+	}
+
+	// Non-ASCII sheet names must work unquoted, matching Excel's
+	// behaviour. Uses the month-name shape common in European workbooks.
+	t.Run("non-ascii sheet names", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetSheetName("Sheet1", "Jänner"))
+		_, err := f.NewSheet("Februar")
+		assert.NoError(t, err)
+		_, err = f.NewSheet("März")
+		assert.NoError(t, err)
+		_, err = f.NewSheet("Dezember")
+		assert.NoError(t, err)
+		for i, sn := range []string{"Jänner", "Februar", "März", "Dezember"} {
+			assert.NoError(t, f.SetCellInt(sn, "M40", int64((i+1)*100)))
+		}
+		assert.NoError(t, f.SetCellFormula("Jänner", "A1", "SUM(Jänner:Dezember!$M$40)"))
+		result, err := f.CalcCellValue("Jänner", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, "1000", result)
+	})
+}
