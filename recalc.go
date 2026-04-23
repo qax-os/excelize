@@ -11,7 +11,59 @@
 
 package excelize
 
-import "strconv"
+import (
+	"errors"
+	"fmt"
+	"strconv"
+)
+
+// Recalc evaluates every formula in the workbook and persists each
+// result into the cell's cached <v>/<t> via RecalcCell. The <f>
+// element and any shared-formula grouping are preserved. Typical use:
+//
+//	f, _ := excelize.OpenFile(path)
+//	defer f.Close()
+//	_ = f.Recalc()
+//	_ = f.Save()
+//
+// Dependency resolution uses the same recursive evaluator as
+// CalcCellValue, so chained formulas across sheets converge in a
+// single pass. Circular references are bounded by the workbook's
+// MaxCalcIterations option, matching existing calc engine behaviour.
+//
+// When any formula cannot be evaluated, Recalc continues with the
+// remaining cells. Each failure is wrapped as
+// fmt.Errorf("<sheet>!<cell>: %w", err); Recalc returns the joined
+// collection via errors.Join so errors.Is / errors.As descend into
+// the underlying causes. Cells that did compute are still persisted.
+func (f *File) Recalc() error {
+	type target struct{ sheet, cell string }
+	var cells []target
+	for _, sn := range f.GetSheetList() {
+		ws, err := f.workSheetReader(sn)
+		if err != nil {
+			return err
+		}
+		for r := range ws.SheetData.Row {
+			row := &ws.SheetData.Row[r]
+			for i := range row.C {
+				if row.C[i].F == nil {
+					continue
+				}
+				cells = append(cells, target{sheet: sn, cell: row.C[i].R})
+			}
+		}
+	}
+	f.clearCalcCache()
+	var failures []error
+	for _, t := range cells {
+		if err := f.RecalcCell(t.sheet, t.cell); err != nil {
+			failures = append(failures, fmt.Errorf("%s!%s: %w", t.sheet, t.cell, err))
+		}
+	}
+	f.clearCalcCache()
+	return errors.Join(failures...)
+}
 
 // RecalcCell evaluates the formula in the given cell and persists the
 // typed result into its cached <v>/<t> pair. The cell's <f> element,

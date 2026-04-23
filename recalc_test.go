@@ -146,3 +146,71 @@ func TestRecalcCellRoundTrip(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "6", value)
 }
+
+func TestRecalcChainedAcrossSheet(t *testing.T) {
+	// A1 = 5, A2 = A1*2, A3 = A2+A1, A4 = SUM(A1:A3), plus a second
+	// sheet with its own chain. One Recalc call covers everything.
+	f := NewFile()
+	_, err := f.NewSheet("Other")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellInt("Sheet1", "A1", 5))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "A1*2"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "A2+A1"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A4", "SUM(A1:A3)"))
+	assert.NoError(t, f.SetCellInt("Other", "A1", 7))
+	assert.NoError(t, f.SetCellFormula("Other", "A2", "A1*3"))
+
+	assert.NoError(t, f.Recalc())
+
+	assert.Equal(t, "10", cellXML(t, f, "Sheet1", "A2").V)
+	assert.Equal(t, "15", cellXML(t, f, "Sheet1", "A3").V)
+	assert.Equal(t, "30", cellXML(t, f, "Sheet1", "A4").V)
+	assert.Equal(t, "21", cellXML(t, f, "Other", "A2").V)
+}
+
+func TestRecalcIdempotent(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellInt("Sheet1", "A1", 7))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "A1*3"))
+	assert.NoError(t, f.Recalc())
+	first := cellXML(t, f, "Sheet1", "A2").V
+	assert.NoError(t, f.Recalc())
+	assert.Equal(t, first, cellXML(t, f, "Sheet1", "A2").V)
+	assert.Equal(t, "21", first)
+}
+
+func TestRecalcWorkbookWithoutFormulas(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellInt("Sheet1", "A1", 42))
+	assert.NoError(t, f.Recalc())
+}
+
+func TestRecalcAggregatesFailures(t *testing.T) {
+	// An unsupported function on one cell must not prevent other cells
+	// from being recalculated. The returned error is the join of
+	// per-cell failures, each wrapped as "sheet!cell: <cause>".
+	f := NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "NONEXISTENTFUNC(1)"))
+	assert.NoError(t, f.SetCellInt("Sheet1", "B1", 10))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B2", "B1*2"))
+
+	err := f.Recalc()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Sheet1!A1:")
+	// Joined error exposes causes via Unwrap() []error.
+	unwrapped, ok := err.(interface{ Unwrap() []error })
+	if assert.True(t, ok, "expected errors.Join result") {
+		assert.Len(t, unwrapped.Unwrap(), 1)
+	}
+	// Working cell was still recalculated.
+	assert.Equal(t, "20", cellXML(t, f, "Sheet1", "B2").V)
+}
+
+func TestRecalcNonASCIISheetName(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetSheetName("Sheet1", "Bérénice"))
+	assert.NoError(t, f.SetCellInt("Bérénice", "A1", 3))
+	assert.NoError(t, f.SetCellFormula("Bérénice", "A2", "A1*A1"))
+	assert.NoError(t, f.Recalc())
+	assert.Equal(t, "9", cellXML(t, f, "Bérénice", "A2").V)
+}
