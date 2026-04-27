@@ -414,15 +414,15 @@ func (f *File) adjustFormulaOperand(sheet, sheetN string, keepRelative bool, tok
 	return operand, err
 }
 
-// isExternalSheetReference returns true for workbook-qualified sheet
-// references such as [Book1.xlsx]Sheet1!A1.
+// isExternalSheetReference returns true for workbook-qualified sheet references
+// such as [Book1.xlsx]Sheet1!A1.
 func isExternalSheetReference(ref string) bool {
-	bang := strings.Index(ref, "!")
-	if bang == -1 {
+	idx := strings.Index(ref, "!")
+	if idx == -1 {
 		return false
 	}
 	open, close := strings.Index(ref, "["), strings.Index(ref, "]")
-	return open != -1 && close > open && close < bang
+	return open != -1 && close > open && close < idx
 }
 
 // adjustFormulaRef returns adjusted formula by giving adjusting direction and
