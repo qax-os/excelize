@@ -135,12 +135,8 @@ func OpenFile(filename string, opts ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	fi, err := file.Stat()
-	if err != nil {
-		_ = file.Close()
-		return nil, err
-	}
-	f, err := OpenReaderAt(file, fi.Size(), opts...)
+	fi, _ := file.Stat()
+	f, err := openReaderAt(file, fi.Size(), opts...)
 	if err != nil {
 		if closeErr := file.Close(); closeErr != nil {
 			return f, closeErr
@@ -193,47 +189,12 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	f := newFile()
-	f.options = f.getOptions(opts...)
-	if err = f.checkOpenReaderOptions(); err != nil {
-		return nil, err
-	}
-	if len(b) >= 8 && bytes.Equal(b[:8], oleIdentifier) {
-		if b, err = Decrypt(b, f.options); err != nil {
-			return nil, ErrWorkbookFileFormat
-		}
-	}
-	zr, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
-	if err != nil {
-		if len(f.options.Password) > 0 {
-			return nil, ErrWorkbookPassword
-		}
-		return nil, err
-	}
-	file, sheetCount, err := f.ReadZipReader(zr)
-	if err != nil {
-		return nil, err
-	}
-	f.SheetCount = sheetCount
-	for k, v := range file {
-		f.Pkg.Store(k, v)
-	}
-	if f.CalcChain, err = f.calcChainReader(); err != nil {
-		return f, err
-	}
-	if f.sheetMap, err = f.getSheetMap(); err != nil {
-		return f, err
-	}
-	if f.Styles, err = f.stylesReader(); err != nil {
-		return f, err
-	}
-	f.Theme, err = f.themeReader()
-	return f, err
+	return openReaderAt(bytes.NewReader(b), int64(len(b)), opts...)
 }
 
-// OpenReaderAt read data stream from io.ReaderAt and return a populated
+// openReaderAt read data stream from io.ReaderAt and return a populated
 // spreadsheet file.
-func OpenReaderAt(r io.ReaderAt, size int64, opts ...Options) (*File, error) {
+func openReaderAt(r io.ReaderAt, size int64, opts ...Options) (*File, error) {
 	f := newFile()
 	f.options = f.getOptions(opts...)
 	if err := f.checkOpenReaderOptions(); err != nil {
@@ -241,30 +202,22 @@ func OpenReaderAt(r io.ReaderAt, size int64, opts ...Options) (*File, error) {
 	}
 	header := make([]byte, 8)
 	if _, err := r.ReadAt(header, 0); err != nil {
-		return nil, err
+		return nil, zip.ErrFormat
 	}
-	var zr *zip.Reader
 	if bytes.Equal(header, oleIdentifier) {
-		b, err := io.ReadAll(io.NewSectionReader(r, 0, size))
+		b, _ := io.ReadAll(io.NewSectionReader(r, 0, size))
+		b, err := Decrypt(b, f.options)
 		if err != nil {
-			return nil, err
-		}
-		if b, err = Decrypt(b, f.options); err != nil {
 			return nil, ErrWorkbookFileFormat
 		}
-		zr, err = zip.NewReader(bytes.NewReader(b), int64(len(b)))
-		if err != nil {
-			if len(f.options.Password) > 0 {
-				return nil, ErrWorkbookPassword
-			}
-			return nil, err
+		r, size = bytes.NewReader(b), int64(len(b))
+	}
+	zr, err := zip.NewReader(r, size)
+	if err != nil {
+		if len(f.options.Password) > 0 {
+			return nil, ErrWorkbookPassword
 		}
-	} else {
-		var err error
-		zr, err = zip.NewReader(r, size)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 	file, sheetCount, err := f.ReadZipReader(zr)
 	if err != nil {
