@@ -810,6 +810,16 @@ func TestAdjustFormula(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "SUM(D:F)", formula)
 	})
+	t.Run("for_external_sheet_name_with_spaces", func(t *testing.T) {
+		f := NewFile()
+		formula := "SUMIFS('[1]Sheet 1'!$L:$L,'[1]Sheet 1'!$B:$B,A1)"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", formula))
+		assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
+		result, err := f.GetCellFormula("Sheet1", "B2")
+		assert.NoError(t, err)
+		assert.Equal(t, "SUMIFS('[1]Sheet 1'!$L:$L,'[1]Sheet 1'!$B:$B,A2)", result)
+		assert.NoError(t, f.Close())
+	})
 	t.Run("for_all_worksheet_cells_with_rows_insert", func(t *testing.T) {
 		f := NewFile()
 		_, err := f.NewSheet("Sheet2")
