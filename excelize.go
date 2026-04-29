@@ -135,7 +135,8 @@ func OpenFile(filename string, opts ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
-	f, err := OpenReader(file, opts...)
+	fi, _ := file.Stat()
+	f, err := openReaderAt(file, fi.Size(), opts...)
 	if err != nil {
 		if closeErr := file.Close(); closeErr != nil {
 			return f, closeErr
@@ -188,17 +189,30 @@ func OpenReader(r io.Reader, opts ...Options) (*File, error) {
 	if err != nil {
 		return nil, err
 	}
+	return openReaderAt(bytes.NewReader(b), int64(len(b)), opts...)
+}
+
+// openReaderAt read data stream from io.ReaderAt and return a populated
+// spreadsheet file.
+func openReaderAt(r io.ReaderAt, size int64, opts ...Options) (*File, error) {
 	f := newFile()
 	f.options = f.getOptions(opts...)
-	if err = f.checkOpenReaderOptions(); err != nil {
+	if err := f.checkOpenReaderOptions(); err != nil {
 		return nil, err
 	}
-	if bytes.Contains(b, oleIdentifier) {
-		if b, err = Decrypt(b, f.options); err != nil {
+	header := make([]byte, 8)
+	if _, err := r.ReadAt(header, 0); err != nil {
+		return nil, zip.ErrFormat
+	}
+	if bytes.Equal(header, oleIdentifier) {
+		b, _ := io.ReadAll(io.NewSectionReader(r, 0, size))
+		b, err := Decrypt(b, f.options)
+		if err != nil {
 			return nil, ErrWorkbookFileFormat
 		}
+		r, size = bytes.NewReader(b), int64(len(b))
 	}
-	zr, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
+	zr, err := zip.NewReader(r, size)
 	if err != nil {
 		if len(f.options.Password) > 0 {
 			return nil, ErrWorkbookPassword
@@ -547,7 +561,7 @@ func (f *File) UpdateLinkedValue() error {
 func (f *File) AddVBAProject(file []byte) error {
 	var err error
 	// Check vbaProject.bin exists first.
-	if !bytes.Contains(file, oleIdentifier) {
+	if len(file) < 8 || !bytes.Equal(file[:8], oleIdentifier) {
 		return ErrAddVBAProject
 	}
 	rels, err := f.relsReader(f.getWorkbookRelsPath())
