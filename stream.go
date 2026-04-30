@@ -12,6 +12,7 @@
 package excelize
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/xml"
 	"fmt"
@@ -35,6 +36,7 @@ type StreamWriter struct {
 	mergeCellsCount int
 	mergeCells      strings.Builder
 	tableParts      string
+	colStyles       []int // cached column styles for O(1) lookup
 }
 
 // NewStreamWriter returns stream writer struct by given worksheet name used for
@@ -119,11 +121,23 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	if sheetID == -1 {
 		return nil, ErrSheetNotExist{sheet}
 	}
+	chunkSize := f.options.StreamingChunkSize
+	if chunkSize <= 0 {
+		chunkSize = StreamChunkSize
+	}
+	bufSize := f.options.StreamingBufSize
+	if bufSize <= 0 {
+		bufSize = StreamingBufSizeDefault
+	}
 	sw := &StreamWriter{
 		file:    f,
 		Sheet:   sheet,
 		SheetID: sheetID,
-		rawData: bufferedWriter{tmpDir: f.options.TmpDir},
+		rawData: bufferedWriter{
+			tmpDir:    f.options.TmpDir,
+			flushSize: chunkSize,
+			bioSize:   bufSize,
+		},
 	}
 	var err error
 	sw.worksheet, err = f.workSheetReader(sheet)
@@ -331,50 +345,53 @@ type RowOpts struct {
 	OutlineLevel int
 }
 
-// marshalAttrs prepare attributes of the row.
-func (r *RowOpts) marshalAttrs() (strings.Builder, error) {
-	var (
-		err   error
-		attrs strings.Builder
-	)
+// validateRowOpts checks RowOpts for validity without writing anything.
+func (r *RowOpts) validateRowOpts() error {
 	if r == nil {
-		return attrs, err
+		return nil
 	}
 	if r.Height > MaxRowHeight {
-		err = ErrMaxRowHeight
-		return attrs, err
+		return ErrMaxRowHeight
 	}
 	if r.OutlineLevel > 7 {
-		err = ErrOutlineLevel
-		return attrs, err
+		return ErrOutlineLevel
+	}
+	return nil
+}
+
+// marshalAttrs prepare attributes of the row and writes them directly to the
+// given bufferedWriter, avoiding intermediate allocations. Caller must call
+// validateRowOpts first.
+func (r *RowOpts) marshalAttrs(w *bufferedWriter) {
+	if r == nil {
+		return
 	}
 	if r.StyleID > 0 {
-		attrs.WriteString(` s="`)
-		attrs.WriteString(strconv.Itoa(r.StyleID))
-		attrs.WriteString(`" customFormat="1"`)
+		w.WriteString(` s="`)
+		w.WriteString(strconv.Itoa(r.StyleID))
+		w.WriteString(`" customFormat="1"`)
 	}
 	if r.Height > 0 {
-		attrs.WriteString(` ht="`)
-		attrs.WriteString(strconv.FormatFloat(r.Height, 'f', -1, 64))
-		attrs.WriteString(`" customHeight="1"`)
+		w.WriteString(` ht="`)
+		w.WriteString(strconv.FormatFloat(r.Height, 'f', -1, 64))
+		w.WriteString(`" customHeight="1"`)
 	}
 	if r.OutlineLevel > 0 {
-		attrs.WriteString(` outlineLevel="`)
-		attrs.WriteString(strconv.Itoa(r.OutlineLevel))
-		attrs.WriteString(`"`)
+		w.WriteString(` outlineLevel="`)
+		w.WriteString(strconv.Itoa(r.OutlineLevel))
+		w.WriteString(`"`)
 	}
 	if r.Hidden {
-		attrs.WriteString(` hidden="1"`)
+		w.WriteString(` hidden="1"`)
 	}
-	return attrs, err
 }
 
 // parseRowOpts provides a function to parse the optional settings for
 // *StreamWriter.SetRow.
-func parseRowOpts(opts ...RowOpts) *RowOpts {
-	options := &RowOpts{}
+func parseRowOpts(opts ...RowOpts) RowOpts {
+	var options RowOpts
 	for _, opt := range opts {
-		options = &opt
+		options = opt
 	}
 	return options
 }
@@ -396,24 +413,47 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 	sw.rows = row
 	sw.writeSheetData()
 	options := parseRowOpts(opts...)
-	attrs, err := options.marshalAttrs()
-	if err != nil {
+	if err = options.validateRowOpts(); err != nil {
 		return err
 	}
+	rowStr := strconv.Itoa(row)
 	_, _ = sw.rawData.WriteString(`<row r="`)
-	_, _ = sw.rawData.WriteString(strconv.Itoa(row))
+	_, _ = sw.rawData.WriteString(rowStr)
 	_, _ = sw.rawData.WriteString(`"`)
-	_, _ = sw.rawData.WriteString(attrs.String())
+	options.marshalAttrs(&sw.rawData)
 	_, _ = sw.rawData.WriteString(`>`)
+	var c xlsxC
 	for i, val := range values {
 		if val == nil {
 			continue
 		}
-		ref, err := CoordinatesToCellName(col+i, row)
-		if err != nil {
-			return err
+		colIdx := col + i
+		if colIdx < MinColumns || colIdx > MaxColumns {
+			_, _ = sw.rawData.WriteString(`</row>`)
+			return ErrColumnNumber
 		}
-		c := xlsxC{R: ref, S: sw.worksheet.prepareCellStyle(col+i, row, options.StyleID)}
+		style := sw.streamCellStyle(colIdx, options.StyleID)
+		// Fast path: write numeric cells directly to the buffer without
+		// going through xlsxC.V, eliminating per-cell string allocations.
+		if wrote, err := sw.writeNumericCell(val, columnNames[colIdx], rowStr, style); wrote {
+			if err != nil {
+				_, _ = sw.rawData.WriteString(`</row>`)
+				return err
+			}
+			continue
+		}
+		// Fast path for plain strings and []byte: write inline string XML
+		// directly, bypassing xlsxC/xlsxSI/trimCellValue entirely.
+		if wrote := sw.writeStringCell(val, columnNames[colIdx], rowStr, style); wrote {
+			continue
+		}
+		// Slow path: complex types go through xlsxC
+		c.XMLSpace = xml.Attr{}
+		c.T = ""
+		c.V = ""
+		c.F = nil
+		c.IS = nil
+		c.S = style
 		var s int
 		if v, ok := val.(Cell); ok {
 			s, val = v.StyleID, v.Value
@@ -429,7 +469,7 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 			_, _ = sw.rawData.WriteString(`</row>`)
 			return err
 		}
-		writeCell(&sw.rawData, c)
+		writeCell(&sw.rawData, &c, columnNames[colIdx], rowStr)
 	}
 	_, _ = sw.rawData.WriteString(`</row>`)
 	return sw.rawData.Sync()
@@ -572,6 +612,185 @@ func setCellFormula(c *xlsxC, formula string) {
 	}
 }
 
+// streamCellStyle returns the effective style for a cell in streaming mode.
+// It uses the cached column styles array for O(1) lookup instead of scanning
+// the column definitions on every cell.
+func (sw *StreamWriter) streamCellStyle(col, style int) int {
+	if style != 0 {
+		return style
+	}
+	if sw.colStyles != nil && col < len(sw.colStyles) {
+		return sw.colStyles[col]
+	}
+	return style
+}
+
+// writeCellStart writes the opening <c> tag with ref and optional style attribute.
+func writeCellStart(buf *bufferedWriter, colName, rowStr string, style int) {
+	_, _ = buf.WriteString(`<c r="`)
+	_, _ = buf.WriteString(colName)
+	_, _ = buf.WriteString(rowStr)
+	_, _ = buf.WriteString(`"`)
+	if style != 0 {
+		_, _ = buf.WriteString(` s="`)
+		buf.WriteInt(int64(style))
+		_, _ = buf.WriteString(`"`)
+	}
+}
+
+// writeEscaped writes s to buf with XML escaping. If s contains none of the
+// five XML special characters (<, >, &, ", \r) it is written directly without
+// any allocation. Otherwise it falls back to xml.EscapeText.
+func writeEscaped(buf *bufferedWriter, s string) {
+	// Fast path: scan for characters that need escaping.
+	last := 0
+	for i := 0; i < len(s); i++ {
+		var esc string
+		switch s[i] {
+		case '<':
+			esc = "&lt;"
+		case '>':
+			esc = "&gt;"
+		case '&':
+			esc = "&amp;"
+		case '"':
+			esc = "&#34;"
+		case '\r':
+			esc = "&#xD;"
+		default:
+			continue
+		}
+		_, _ = buf.WriteString(s[last:i])
+		_, _ = buf.WriteString(esc)
+		last = i + 1
+	}
+	_, _ = buf.WriteString(s[last:])
+}
+
+// writeNumericCell writes a complete cell element for numeric types (int, uint,
+// float, bool) directly to the buffer, bypassing xlsxC and eliminating all
+// per-cell heap allocations. Returns (true, nil) if handled, (false, nil) if
+// the value type needs the slow path.
+func (sw *StreamWriter) writeNumericCell(val interface{}, colName, rowStr string, style int) (bool, error) {
+	buf := &sw.rawData
+	switch v := val.(type) {
+	case int:
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(`><v>`)
+		buf.WriteInt(int64(v))
+		_, _ = buf.WriteString(`</v></c>`)
+	case int8:
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(`><v>`)
+		buf.WriteInt(int64(v))
+		_, _ = buf.WriteString(`</v></c>`)
+	case int16:
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(`><v>`)
+		buf.WriteInt(int64(v))
+		_, _ = buf.WriteString(`</v></c>`)
+	case int32:
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(`><v>`)
+		buf.WriteInt(int64(v))
+		_, _ = buf.WriteString(`</v></c>`)
+	case int64:
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(`><v>`)
+		buf.WriteInt(v)
+		_, _ = buf.WriteString(`</v></c>`)
+	case uint:
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(`><v>`)
+		buf.WriteUint(uint64(v))
+		_, _ = buf.WriteString(`</v></c>`)
+	case uint8:
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(`><v>`)
+		buf.WriteUint(uint64(v))
+		_, _ = buf.WriteString(`</v></c>`)
+	case uint16:
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(`><v>`)
+		buf.WriteUint(uint64(v))
+		_, _ = buf.WriteString(`</v></c>`)
+	case uint32:
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(`><v>`)
+		buf.WriteUint(uint64(v))
+		_, _ = buf.WriteString(`</v></c>`)
+	case uint64:
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(`><v>`)
+		buf.WriteUint(v)
+		_, _ = buf.WriteString(`</v></c>`)
+	case float32:
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(`><v>`)
+		buf.WriteFloat(float64(v), 'f', -1, 32)
+		_, _ = buf.WriteString(`</v></c>`)
+	case float64:
+		writeCellStart(buf, colName, rowStr, style)
+		_, _ = buf.WriteString(`><v>`)
+		buf.WriteFloat(v, 'f', -1, 64)
+		_, _ = buf.WriteString(`</v></c>`)
+	case bool:
+		writeCellStart(buf, colName, rowStr, style)
+		if v {
+			_, _ = buf.WriteString(` t="b"><v>1</v></c>`)
+		} else {
+			_, _ = buf.WriteString(` t="b"><v>0</v></c>`)
+		}
+	default:
+		return false, nil
+	}
+	return true, nil
+}
+
+// writeStringCell writes a complete inline-string cell element directly to the
+// buffer for plain string and []byte values, bypassing xlsxC, xlsxSI,
+// trimCellValue, bstrMarshal, and xml.EscapeText entirely. This eliminates
+// ~6 heap allocations per string cell.
+//
+// It handles the xml:space="preserve" attribute (when leading/trailing
+// whitespace is present) and XML escaping via writeEscaped. Values containing
+// the bstr escape pattern "_xHHHH_" fall through to the slow path since they
+// need special encoding.
+//
+// Returns true if the value was handled, false if the caller should use the
+// slow path.
+func (sw *StreamWriter) writeStringCell(val interface{}, colName, rowStr string, style int) bool {
+	var s string
+	switch v := val.(type) {
+	case string:
+		s = v
+	case []byte:
+		s = string(v)
+	default:
+		return false
+	}
+	// Values containing the bstr escape pattern need bstrMarshal — fall through.
+	// Values exceeding TotalCellChars need truncation via trimCellValue — fall through.
+	if strings.Contains(s, "_x") || len(s) > TotalCellChars {
+		return false
+	}
+	buf := &sw.rawData
+	writeCellStart(buf, colName, rowStr, style)
+	_, _ = buf.WriteString(` t="inlineStr"><is><t`)
+	// Check for leading/trailing whitespace that needs xml:space="preserve"
+	if len(s) > 0 {
+		first, last := s[0], s[len(s)-1]
+		if first == ' ' || first == '\t' || first == '\n' || first == '\r' ||
+			last == ' ' || last == '\t' || last == '\n' || last == '\r' {
+			_, _ = buf.WriteString(` xml:space="preserve"`)
+		}
+	}
+	_, _ = buf.WriteString(`>`)
+	writeEscaped(buf, s)
+	_, _ = buf.WriteString(`</t></is></c>`)
+	return true
+}
+
 // setCellTime provides a function to set number of a cell with a time.
 func (sw *StreamWriter) setCellTime(c *xlsxC, val time.Time) error {
 	var date1904, isNum bool
@@ -593,8 +812,26 @@ func (sw *StreamWriter) setCellTime(c *xlsxC, val time.Time) error {
 func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
 	var err error
 	switch val := val.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		setCellIntFunc(c, val)
+	case int:
+		c.T, c.V = "", strconv.FormatInt(int64(val), 10)
+	case int8:
+		c.T, c.V = "", strconv.FormatInt(int64(val), 10)
+	case int16:
+		c.T, c.V = "", strconv.FormatInt(int64(val), 10)
+	case int32:
+		c.T, c.V = "", strconv.FormatInt(int64(val), 10)
+	case int64:
+		c.T, c.V = "", strconv.FormatInt(val, 10)
+	case uint:
+		c.T, c.V = "", strconv.FormatUint(uint64(val), 10)
+	case uint8:
+		c.T, c.V = "", strconv.FormatUint(uint64(val), 10)
+	case uint16:
+		c.T, c.V = "", strconv.FormatUint(uint64(val), 10)
+	case uint32:
+		c.T, c.V = "", strconv.FormatUint(uint64(val), 10)
+	case uint64:
+		c.T, c.V = "", strconv.FormatUint(val, 10)
 	case float32:
 		c.setCellFloat(float64(val), -1, 32)
 	case float64:
@@ -646,8 +883,10 @@ func setCellIntFunc(c *xlsxC, val interface{}) {
 	}
 }
 
-// writeCell constructs a cell XML and writes it to the buffer.
-func writeCell(buf *bufferedWriter, c xlsxC) {
+// writeCell constructs a cell XML and writes it to the buffer. The colName and
+// rowStr parameters provide the pre-computed cell reference components to avoid
+// per-cell string allocation.
+func writeCell(buf *bufferedWriter, c *xlsxC, colName, rowStr string) {
 	_, _ = buf.WriteString(`<c`)
 	if c.XMLSpace.Value != "" {
 		_, _ = buf.WriteString(` xml:`)
@@ -657,7 +896,8 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 		_, _ = buf.WriteString(`"`)
 	}
 	_, _ = buf.WriteString(` r="`)
-	_, _ = buf.WriteString(c.R)
+	_, _ = buf.WriteString(colName)
+	_, _ = buf.WriteString(rowStr)
 	_, _ = buf.WriteString(`"`)
 	if c.S != 0 {
 		_, _ = buf.WriteString(` s="`)
@@ -677,7 +917,13 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 	}
 	if c.V != "" {
 		_, _ = buf.WriteString(`<v>`)
-		_ = xml.EscapeText(buf, []byte(c.V))
+		if c.T == "" || c.T == "b" {
+			// Numeric and boolean values contain only safe characters
+			// (digits, '.', '-', '+', 'E', 'e'), skip XML escaping
+			_, _ = buf.WriteString(c.V)
+		} else {
+			writeEscaped(buf, c.V)
+		}
 		_, _ = buf.WriteString(`</v>`)
 	}
 	if c.IS != nil {
@@ -710,6 +956,15 @@ func (sw *StreamWriter) writeSheetData() {
 	if !sw.sheetWritten {
 		bulkAppendFields(&sw.rawData, sw.worksheet, 5, 6)
 		if sw.worksheet.Cols != nil {
+			// Build column style cache for O(1) per-cell style lookup
+			sw.colStyles = make([]int, MaxColumns+1)
+			for _, col := range sw.worksheet.Cols.Col {
+				if col.Style != 0 {
+					for i := col.Min; i <= col.Max; i++ {
+						sw.colStyles[i] = col.Style
+					}
+				}
+			}
 			_, _ = sw.rawData.WriteString("<cols>")
 			for _, col := range sw.worksheet.Cols.Col {
 				_, _ = sw.rawData.WriteString(`<col min="`)
@@ -786,24 +1041,76 @@ func bulkAppendFields(w io.Writer, ws *xlsxWorksheet, from, to int) {
 	}
 }
 
-// bufferedWriter uses a temp file to store an extended buffer. Writes are
-// always made to an in-memory buffer, which will always succeed. The buffer
-// is written to the temp file with Sync, which may return an error.
-// Therefore, Sync should be periodically called and the error checked.
+// bufferedWriter uses a temp file to store an extended buffer. Initially all
+// writes go to an in-memory bytes.Buffer. Once the buffer exceeds the flush
+// threshold, it is drained to a temp file and all subsequent writes flow
+// through a fixed-size bufio.Writer wrapping the temp file. This bounds peak
+// memory to ~bioSize regardless of total data size. Default bioSize is StreamingBufSizeDefault.
 type bufferedWriter struct {
-	tmpDir string
-	tmp    *os.File
-	buf    bytes.Buffer
+	tmpDir    string
+	tmp       *os.File
+	buf       bytes.Buffer  // used before temp file is created
+	bio       *bufio.Writer // used after temp file is created
+	scratch   [24]byte      // scratch space for strconv.Append* to avoid heap allocs
+	flushSize int           // if >0, flush to temp file at this threshold instead of StreamChunkSize
+	bioSize   int           // bufio.Writer buffer size after threshold; 0 = use StreamingBufSizeDefault
 }
 
-// Write to the in-memory buffer. The error is always nil.
+// Write to the active writer (bufio if streaming, otherwise in-memory buffer).
 func (bw *bufferedWriter) Write(p []byte) (n int, err error) {
+	if bw.bio != nil {
+		return bw.bio.Write(p)
+	}
 	return bw.buf.Write(p)
 }
 
-// WriteString write to the in-memory buffer. The error is always nil.
+// WriteString writes to the active writer.
 func (bw *bufferedWriter) WriteString(p string) (n int, err error) {
+	if bw.bio != nil {
+		return bw.bio.WriteString(p)
+	}
 	return bw.buf.WriteString(p)
+}
+
+// WriteInt formats and writes an int64 directly using the scratch space,
+// avoiding a heap-allocated string.
+func (bw *bufferedWriter) WriteInt(v int64) {
+	b := strconv.AppendInt(bw.scratch[:0], v, 10)
+	if bw.bio != nil {
+		bw.bio.Write(b)
+	} else {
+		bw.buf.Write(b)
+	}
+}
+
+// WriteUint formats and writes a uint64 directly to the buffer.
+func (bw *bufferedWriter) WriteUint(v uint64) {
+	b := strconv.AppendUint(bw.scratch[:0], v, 10)
+	if bw.bio != nil {
+		bw.bio.Write(b)
+	} else {
+		bw.buf.Write(b)
+	}
+}
+
+// WriteFloat formats and writes a float64 directly to the buffer.
+func (bw *bufferedWriter) WriteFloat(v float64, fmt byte, prec, bitSize int) {
+	b := strconv.AppendFloat(bw.scratch[:0], v, fmt, prec, bitSize)
+	if bw.bio != nil {
+		bw.bio.Write(b)
+	} else {
+		bw.buf.Write(b)
+	}
+}
+
+// Bytes returns the in-memory buffer contents. This is only valid when no
+// temp file has been created (i.e. for small worksheets). Once streaming to
+// disk, this returns nil.
+func (bw *bufferedWriter) Bytes() []byte {
+	if bw.tmp != nil {
+		return nil
+	}
+	return bw.buf.Bytes()
 }
 
 // Reader provides read-access to the underlying buffer/file.
@@ -823,10 +1130,18 @@ func (bw *bufferedWriter) Reader() (io.Reader, error) {
 }
 
 // Sync will write the in-memory buffer to a temp file, if the in-memory
-// buffer has grown large enough. Any error will be returned.
+// buffer has grown large enough. Once the temp file is created, all
+// subsequent writes go through the bufio.Writer and the bytes.Buffer is
+// released.
 func (bw *bufferedWriter) Sync() (err error) {
-	// Try to use local storage
-	if bw.buf.Len() < StreamChunkSize {
+	// Already streaming to disk via bufio.Writer — it flushes automatically
+	// when its internal buffer is full. Nothing to do here; the final Flush()
+	// call will drain any remaining bytes. Forcing a flush on every SetRow
+	// would defeat the purpose of the buffer entirely.
+	if bw.bio != nil {
+		return nil
+	}
+	if bw.buf.Len() < bw.flushSize {
 		return nil
 	}
 	if bw.tmp == nil {
@@ -836,26 +1151,47 @@ func (bw *bufferedWriter) Sync() (err error) {
 			return nil
 		}
 	}
-	return bw.Flush()
+	// Drain the in-memory buffer to the temp file
+	if _, err = bw.buf.WriteTo(bw.tmp); err != nil {
+		return err
+	}
+	// Release the bytes.Buffer backing array entirely
+	bw.buf = bytes.Buffer{}
+	// Switch to bufio.Writer for all future writes
+	bw.bio = bufio.NewWriterSize(bw.tmp, bw.bioSize)
+	return nil
 }
 
-// Flush the entire in-memory buffer to the temp file, if a temp file is being
-// used.
+// Flush ensures all buffered data is written to the temp file.
 func (bw *bufferedWriter) Flush() error {
 	if bw.tmp == nil {
 		return nil
+	}
+	if bw.bio != nil {
+		return bw.bio.Flush()
 	}
 	_, err := bw.buf.WriteTo(bw.tmp)
 	if err != nil {
 		return err
 	}
-	bw.buf.Reset()
+	bw.buf = bytes.Buffer{}
 	return nil
+}
+
+// Reset clears all buffered data (in-memory and bufio) without closing the
+// temp file. Used primarily in tests.
+func (bw *bufferedWriter) Reset() {
+	bw.buf.Reset()
+	if bw.bio != nil {
+		bw.bio.Reset(&bw.buf) // detach from temp file
+		bw.bio = nil
+	}
 }
 
 // Close the underlying temp file and reset the in-memory buffer.
 func (bw *bufferedWriter) Close() error {
 	bw.buf.Reset()
+	bw.bio = nil
 	if bw.tmp == nil {
 		return nil
 	}

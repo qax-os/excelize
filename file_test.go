@@ -164,7 +164,7 @@ func TestWriteTo(t *testing.T) {
 		f := NewFile()
 		f.streams = make(map[string]*StreamWriter)
 		sw := &StreamWriter{}
-		sw.rawData.buf.WriteString("test data")
+		sw.rawData.WriteString("test data")
 		f.streams["s"] = sw
 		f.SetZipWriter(func(w io.Writer) ZipWriter {
 			return &errZipWriter{
