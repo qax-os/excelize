@@ -573,6 +573,16 @@ func TestNewStyle(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 0, styleID)
 	})
+
+	t.Run("for_solid_fill_style_without_color", func(t *testing.T) {
+		f := NewFile()
+		expected := Style{Fill: Fill{Pattern: 1, Type: "pattern"}}
+		styleID, err := f.NewStyle(&expected)
+		assert.NoError(t, err)
+		style, err := f.GetStyle(styleID)
+		assert.NoError(t, err)
+		assert.Equal(t, expected.Fill, style.Fill)
+	})
 }
 
 func TestConditionalStyle(t *testing.T) {

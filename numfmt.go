@@ -44,7 +44,7 @@ type numberFormat struct {
 	ap, localCode, result, value, valueSectionType                           string
 	switchArgument, currencyString                                           string
 	fracHolder, fracPadding, intHolder, intPadding, expBaseLen               int
-	percent                                                                  int
+	percent, scalingFactor, scalingStart                                     int
 	useCommaSep, useFraction, usePointer, usePositive, useScientificNotation bool
 }
 
@@ -5307,48 +5307,98 @@ func (nf *numberFormat) getNumberPartLen() (int, int) {
 	return intLen, fracLen
 }
 
+// getLastDigitIdx returns the last digit placeholder token index in the number
+// format code section.
+func (nf *numberFormat) getLastDigitIdx() int {
+	items := nf.section[nf.sectionIdx].Items
+	lastDigitIdx := -1
+	for i, token := range items {
+		if token.TType == nfp.TokenTypeZeroPlaceHolder || token.TType == nfp.TokenTypeHashPlaceHolder {
+			lastDigitIdx = i
+		}
+	}
+	return lastDigitIdx
+}
+
 // getNumberFmtConf generate the number format padding and placeholder
 // configurations.
 func (nf *numberFormat) getNumberFmtConf() {
-	for _, token := range nf.section[nf.sectionIdx].Items {
-		if token.TType == nfp.TokenTypeHashPlaceHolder {
-			if nf.usePointer {
-				nf.fracHolder += len(token.TValue)
-				continue
-			}
-			nf.intHolder += len(token.TValue)
-		}
-		if token.TType == nfp.TokenTypeExponential {
-			nf.useScientificNotation = true
-		}
-		if token.TType == nfp.TokenTypeThousandsSeparator {
-			nf.useCommaSep = true
-		}
-		if token.TType == nfp.TokenTypePercent {
-			nf.percent += len(token.TValue)
-		}
-		if token.TType == nfp.TokenTypeDecimalPoint {
-			nf.usePointer = true
-		}
-		if token.TType == nfp.TokenTypeFraction {
-			nf.useFraction = true
-		}
-		if token.TType == nfp.TokenTypeSwitchArgument {
-			nf.switchArgument = token.TValue
-		}
-		if token.TType == nfp.TokenTypeZeroPlaceHolder {
-			nf.intHolder = 0
-			if nf.usePointer {
-				if nf.useScientificNotation {
-					nf.expBaseLen += len(token.TValue)
-					continue
-				}
-				nf.fracPadding += len(token.TValue)
-				continue
-			}
-			nf.intPadding += len(token.TValue)
-		}
+	items := nf.section[nf.sectionIdx].Items
+	lastDigitIdx := nf.getLastDigitIdx()
+	for i, token := range items {
+		nf.applyNumberFmtToken(i, token, lastDigitIdx)
 	}
+}
+
+// applyNumberFmtToken applies a single token to the number format padding and
+// placeholder configurations.
+func (nf *numberFormat) applyNumberFmtToken(i int, token nfp.Token, lastDigitIdx int) {
+	switch token.TType {
+	case nfp.TokenTypeHashPlaceHolder:
+		nf.applyHashPlaceHolderToken(token)
+	case nfp.TokenTypeExponential:
+		nf.useScientificNotation = true
+	case nfp.TokenTypeThousandsSeparator:
+		nf.applyThousandsSeparatorToken(i, token, lastDigitIdx)
+	case nfp.TokenTypeLiteral:
+		nf.applyLiteralToken(i, token, lastDigitIdx)
+	case nfp.TokenTypePercent:
+		nf.percent += len(token.TValue)
+	case nfp.TokenTypeDecimalPoint:
+		nf.usePointer = true
+	case nfp.TokenTypeFraction:
+		nf.useFraction = true
+	case nfp.TokenTypeSwitchArgument:
+		nf.switchArgument = token.TValue
+	case nfp.TokenTypeZeroPlaceHolder:
+		nf.applyZeroPlaceHolderToken(token)
+	}
+}
+
+// applyHashPlaceHolderToken applies a hash placeholder token to the number
+// format padding and placeholder configurations.
+func (nf *numberFormat) applyHashPlaceHolderToken(token nfp.Token) {
+	if nf.usePointer {
+		nf.fracHolder += len(token.TValue)
+		return
+	}
+	nf.intHolder += len(token.TValue)
+}
+
+// applyThousandsSeparatorToken applies a thousands separator token to the
+// number format padding and placeholder configurations.
+func (nf *numberFormat) applyThousandsSeparatorToken(i int, token nfp.Token, lastDigitIdx int) {
+	if i > lastDigitIdx {
+		if nf.scalingFactor == 0 {
+			nf.scalingStart = i
+		}
+		nf.scalingFactor++
+		return
+	}
+	nf.useCommaSep = true
+}
+
+// applyLiteralToken applies a literal token to the number format padding and
+// placeholder configurations.
+func (nf *numberFormat) applyLiteralToken(i int, token nfp.Token, lastDigitIdx int) {
+	if token.TValue == "," && i > lastDigitIdx && nf.scalingFactor > 0 {
+		nf.scalingFactor++
+	}
+}
+
+// applyZeroPlaceHolderToken applies a zero placeholder token to the number
+// format padding and placeholder configurations.
+func (nf *numberFormat) applyZeroPlaceHolderToken(token nfp.Token) {
+	nf.intHolder = 0
+	if nf.usePointer {
+		if nf.useScientificNotation {
+			nf.expBaseLen += len(token.TValue)
+			return
+		}
+		nf.fracPadding += len(token.TValue)
+		return
+	}
+	nf.intPadding += len(token.TValue)
 }
 
 // handleDigitsLiteral apply digit placeholder tokens for the number literal.
@@ -5411,6 +5461,9 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 			result += nf.currencyString
 		}
 		if token.TType == nfp.TokenTypeLiteral {
+			if nf.scalingFactor > 0 && idx >= nf.scalingStart && token.TValue == "," {
+				continue
+			}
 			result += token.TValue
 		}
 		if token.TType == nfp.TokenTypeDigitalPlaceHolder && idx > lastNonFractionPartDigital {
@@ -5515,6 +5568,9 @@ func (nf *numberFormat) printBigNumber(decimal float64, fracLen int) string {
 // numeric.
 func (nf *numberFormat) numberHandler() string {
 	nf.getNumberFmtConf()
+	if nf.scalingFactor > 0 {
+		nf.number /= math.Pow(1000, float64(nf.scalingFactor))
+	}
 	var (
 		num             = nf.number
 		intLen, fracLen = nf.getNumberPartLen()

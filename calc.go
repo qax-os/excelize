@@ -8255,29 +8255,35 @@ func (fn *formulaFuncs) FORECASTdotLINEAR(argsList *list.List) formulaArg {
 	return fn.pearsonProduct("FORECAST.LINEAR", 3, argsList)
 }
 
-// matrixToSortedColumnList convert matrix formula arguments to a ascending
-// order list by column.
-func matrixToSortedColumnList(arg formulaArg) formulaArg {
+type sortedItem struct {
+	idx    int
+	number float64
+}
+
+// matrixToSortedColumnList flattens matrix formula arguments into a slice of
+// numeric values, then sorts that slice in ascending order by number. Matrix
+// traversal is row-major.
+func matrixToSortedColumnList(arg formulaArg) ([]sortedItem, *formulaArg) {
 	var (
-		mtx  []formulaArg
+		mtx  []sortedItem
 		cols = len(arg.Matrix[0])
 	)
-	for colIdx := 0; colIdx < cols; colIdx++ {
-		for _, row := range arg.Matrix {
+	for _, row := range arg.Matrix {
+		for colIdx := 0; colIdx < cols; colIdx++ {
 			cell := row[colIdx]
 			if cell.Type == ArgError {
-				return cell
+				return nil, &cell
 			}
 			if cell.Type == ArgNumber {
-				mtx = append(mtx, cell)
+				mtx = append(mtx, sortedItem{idx: len(mtx), number: cell.Number})
 			}
 		}
 	}
-	argsList := newListFormulaArg(mtx)
-	sort.Slice(argsList.List, func(i, j int) bool {
-		return argsList.List[i].Number < argsList.List[j].Number
+
+	sort.Slice(mtx, func(i, j int) bool {
+		return mtx[i].number < mtx[j].number
 	})
-	return argsList
+	return mtx, nil
 }
 
 // FREQUENCY function to count how many children fall into different age
@@ -8295,37 +8301,27 @@ func (fn *formulaFuncs) FREQUENCY(argsList *list.List) formulaArg {
 	if len(bins.Matrix) == 0 {
 		bins.Matrix = [][]formulaArg{{bins}}
 	}
-	var (
-		dataMtx, binsMtx formulaArg
-		c                [][]formulaArg
-		i, j             int
-	)
-	if dataMtx = matrixToSortedColumnList(data); dataMtx.Type != ArgList {
-		return dataMtx
+
+	dataMtx, argErr := matrixToSortedColumnList(data)
+	if argErr != nil {
+		return *argErr
 	}
-	if binsMtx = matrixToSortedColumnList(bins); binsMtx.Type != ArgList {
-		return binsMtx
+	binsMtx, argErr := matrixToSortedColumnList(bins)
+	if argErr != nil {
+		return *argErr
 	}
-	for row := 0; row < len(binsMtx.List)+1; row++ {
-		var rows []formulaArg
-		for col := 0; col < 1; col++ {
-			rows = append(rows, newNumberFormulaArg(0))
-		}
-		c = append(c, rows)
-	}
-	for j = 0; j < len(binsMtx.List); j++ {
+	out := make([][]formulaArg, len(binsMtx)+1)
+	var i int
+	for j := range len(binsMtx) {
 		n := 0.0
-		for i < len(dataMtx.List) && dataMtx.List[i].Number <= binsMtx.List[j].Number {
+		for i < len(dataMtx) && dataMtx[i].number <= binsMtx[j].number {
 			n++
 			i++
 		}
-		c[j] = []formulaArg{newNumberFormulaArg(n)}
+		out[binsMtx[j].idx] = []formulaArg{newNumberFormulaArg(n)}
 	}
-	c[j] = []formulaArg{newNumberFormulaArg(float64(len(dataMtx.List) - i))}
-	if len(c) > 2 {
-		c[1], c[2] = c[2], c[1]
-	}
-	return newMatrixFormulaArg(c)
+	out[len(binsMtx)] = []formulaArg{newNumberFormulaArg(float64(len(dataMtx) - i))}
+	return newMatrixFormulaArg(out)
 }
 
 // GAMMA function returns the value of the Gamma Function, Γ(n), for a
