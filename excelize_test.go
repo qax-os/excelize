@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"archive/zip"
 	"bytes"
 	"compress/gzip"
 	"encoding/xml"
@@ -19,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/klauspost/compress/zip"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/html/charset"
 )

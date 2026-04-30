@@ -347,10 +347,9 @@ func TestNewStreamWriter(t *testing.T) {
 
 func TestStreamMarshalAttrs(t *testing.T) {
 	var r *RowOpts
-	assert.NoError(t, r.validateRowOpts())
-	var bw bufferedWriter
-	r.marshalAttrs(&bw)
-	assert.Empty(t, bw.buf.Bytes())
+	attrs, err := r.marshalAttrs()
+	assert.NoError(t, err)
+	assert.Empty(t, attrs)
 }
 
 func TestStreamSetRow(t *testing.T) {
@@ -505,20 +504,20 @@ func TestStreamWriterReader(t *testing.T) {
 		rawData: bufferedWriter{},
 	}
 	// Test getRowValues without expected row
-	sw.rawData.WriteString("<worksheet><row r=\"1\"><c r=\"B1\"></c></row><worksheet/>")
+	sw.rawData.buf.WriteString("<worksheet><row r=\"1\"><c r=\"B1\"></c></row><worksheet/>")
 	_, err = sw.getRowValues(1, 1, 1)
 	assert.NoError(t, err)
-	sw.rawData.Reset()
+	sw.rawData.buf.Reset()
 	// Test getRowValues with illegal cell reference
-	sw.rawData.WriteString("<worksheet><row r=\"1\"><c r=\"A\"></c></row><worksheet/>")
+	sw.rawData.buf.WriteString("<worksheet><row r=\"1\"><c r=\"A\"></c></row><worksheet/>")
 	_, err = sw.getRowValues(1, 1, 1)
 	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), err)
-	sw.rawData.Reset()
+	sw.rawData.buf.Reset()
 	// Test getRowValues with invalid c element characters
-	sw.rawData.WriteString("<worksheet><row r=\"1\"><c></row><worksheet/>")
+	sw.rawData.buf.WriteString("<worksheet><row r=\"1\"><c></row><worksheet/>")
 	_, err = sw.getRowValues(1, 1, 1)
 	assert.EqualError(t, err, "XML syntax error on line 1: element <c> closed by </row>")
-	sw.rawData.Reset()
+	sw.rawData.buf.Reset()
 }
 
 func TestStreamWriterGetRowElement(t *testing.T) {
@@ -531,45 +530,5 @@ func TestStreamWriterGetRowElement(t *testing.T) {
 		}
 		_, ok := getRowElement(token, 0)
 		assert.False(t, ok)
-	}
-}
-
-func BenchmarkStreamWriterLarge(b *testing.B) {
-	row := make([]interface{}, 50)
-	for colID := 0; colID < 50; colID++ {
-		row[colID] = colID * 100
-	}
-	b.ResetTimer()
-	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
-		file := NewFile()
-		streamWriter, _ := file.NewStreamWriter("Sheet1")
-		for rowID := 1; rowID <= 10000; rowID++ {
-			cell, _ := CoordinatesToCellName(1, rowID)
-			_ = streamWriter.SetRow(cell, row)
-		}
-		_ = streamWriter.Flush()
-		_ = file.Close()
-	}
-}
-
-// BenchmarkStreamWriterHuge exercises the bufio.Writer path by generating
-// enough data (~75 MB XML) to exceed the 16 MB StreamChunkSize threshold.
-func BenchmarkStreamWriterHuge(b *testing.B) {
-	row := make([]interface{}, 100)
-	for colID := 0; colID < 100; colID++ {
-		row[colID] = colID * 12345
-	}
-	b.ResetTimer()
-	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
-		file := NewFile()
-		streamWriter, _ := file.NewStreamWriter("Sheet1")
-		for rowID := 1; rowID <= 50000; rowID++ {
-			cell, _ := CoordinatesToCellName(1, rowID)
-			_ = streamWriter.SetRow(cell, row)
-		}
-		_ = streamWriter.Flush()
-		_ = file.Close()
 	}
 }

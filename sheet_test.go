@@ -788,50 +788,6 @@ func TestCheckSheetName(t *testing.T) {
 	}
 }
 
-func TestSheetStats(t *testing.T) {
-	// Test CalculateSheetStats on a new file
-	f := NewFile()
-	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "Hello"))
-	assert.NoError(t, f.SetCellValue("Sheet1", "B1", "World"))
-	assert.NoError(t, f.SetCellValue("Sheet1", "A2", 123))
-	assert.NoError(t, f.SetCellValue("Sheet1", "C3", 456))
-
-	stats, err := f.CalculateSheetStats("Sheet1")
-	assert.NoError(t, err)
-	assert.NotNil(t, stats)
-	assert.Equal(t, 3, stats.Rows)
-	assert.Equal(t, 3, stats.Cols)
-	assert.Equal(t, int64(4), stats.Cells)
-	assert.Equal(t, "C3", stats.MaxCell)
-
-	// Test caching - second call should return same result
-	stats2, err := f.CalculateSheetStats("Sheet1")
-	assert.NoError(t, err)
-	assert.Same(t, stats, stats2)
-
-	// Test GetSheetStats returns cached result
-	stats3 := f.GetSheetStats("Sheet1")
-	assert.Same(t, stats, stats3)
-
-	// Test on non-existent sheet
-	_, err = f.CalculateSheetStats("NonExistent")
-	assert.Error(t, err)
-
-	// Test GetSheetStats on empty file
-	f2 := NewFile()
-	assert.Nil(t, f2.GetSheetStats("Sheet1"))
-
-	// Test CalculateSheetStats on existing file
-	f3, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	assert.NoError(t, err)
-	stats, err = f3.CalculateSheetStats("Sheet1")
-	assert.NoError(t, err)
-	assert.NotNil(t, stats)
-	assert.Greater(t, stats.Rows, 0)
-	assert.Greater(t, stats.Cells, int64(0))
-	assert.NoError(t, f3.Close())
-}
-
 func TestSheetDimension(t *testing.T) {
 	f := NewFile()
 	const sheetName = "Sheet1"

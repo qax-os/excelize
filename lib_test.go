@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/xml"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/klauspost/compress/zip"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

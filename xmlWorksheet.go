@@ -515,22 +515,6 @@ type xlsxC struct {
 	f        string
 }
 
-// reset clears the cell struct for reuse, avoiding allocation of a new struct.
-func (c *xlsxC) reset() {
-	c.XMLName = xml.Name{}
-	c.XMLSpace = xml.Attr{}
-	c.R = ""
-	c.S = 0
-	c.T = ""
-	c.Cm = nil
-	c.Vm = nil
-	c.Ph = nil
-	c.F = nil
-	c.V = ""
-	c.IS = nil
-	c.f = ""
-}
-
 // xlsxF represents a formula for the cell. The formula expression is
 // contained in the character node of this element.
 type xlsxF struct {

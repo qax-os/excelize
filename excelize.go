@@ -13,6 +13,7 @@
 package excelize
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/xml"
 	"io"
@@ -23,8 +24,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/klauspost/compress/flate"
-	"github.com/klauspost/compress/zip"
 	"golang.org/x/net/html/charset"
 )
 
@@ -38,14 +37,6 @@ type File struct {
 	sharedStringItem [][]uint
 	sharedStringsMap map[string]int
 	sharedStringTemp *os.File
-	// fastSST is a preloaded shared strings table for FastReadMode. It holds
-	// all shared string values in a flat slice for O(1) index lookup without
-	// disk I/O. Populated by preloadSharedStrings() when FastReadMode is set.
-	fastSST       []string
-	fastSSTLoaded bool
-	// sheetStats tracks row/column counts per sheet for metadata purposes.
-	// Keys are sheet names, values contain the statistics.
-	sheetStats       map[string]*SheetStats
 	sheetMap         map[string]string
 	streams          map[string]*StreamWriter
 	tempFiles        sync.Map
@@ -73,16 +64,6 @@ type File struct {
 	ZipWriter        func(io.Writer) ZipWriter
 }
 
-// SheetStats contains statistics about a worksheet's dimensions.
-// This is populated during streaming writes and can be used by
-// consumers to determine pagination without parsing the full sheet.
-type SheetStats struct {
-	Rows    int    // Total number of rows written
-	Cols    int    // Maximum column index used
-	Cells   int64  // Total number of cells written
-	MaxCell string // Cell reference of the bottom-right used cell (e.g., "Z444695")
-}
-
 // ZipWriter defines an interface for writing files to a ZIP archive. It
 // provides methods to create new files within the archive, add files from a
 // filesystem, and close the archive when writing is complete.
@@ -91,28 +72,6 @@ type ZipWriter interface {
 	AddFS(fsys fs.FS) error
 	Close() error
 }
-
-// Compression defines the compression level for the ZIP archive used to store
-// the spreadsheet.
-type Compression int
-
-const (
-	// CompressionDefault uses standard deflate compression (the default).
-	// This produces the smallest files but uses more CPU and memory during
-	// Save/WriteTo.
-	CompressionDefault Compression = iota
-	// CompressionNone disables ZIP compression entirely. The spreadsheet
-	// parts are stored uncompressed. This significantly reduces CPU time and
-	// memory usage during Save/WriteTo at the cost of larger output files
-	// (typically 5-10× larger). Recommended for memory-constrained
-	// environments (e.g. AWS Lambda) or when the output will be compressed
-	// by another layer (e.g. gzip transport, S3 transfer acceleration).
-	CompressionNone
-	// CompressionBestSpeed uses the fastest deflate compression level. This
-	// is a good middle ground: roughly 2× faster than default compression
-	// with only moderately larger output.
-	CompressionBestSpeed
-)
 
 // Options define the options for opening and reading the spreadsheet.
 //
@@ -162,44 +121,6 @@ type Options struct {
 	LongDatePattern   string
 	LongTimePattern   string
 	CultureInfo       CultureName
-	// StreamingChunkSize is the number of bytes of XML data accumulated in
-	// memory before a streaming worksheet spills to a temp file. A smaller
-	// value reduces peak memory usage at the cost of more disk I/O. Zero
-	// means use the default (StreamChunkSize = 16 MiB). Set to -1 to
-	// disable temp files entirely (all data stays in memory); this
-	// eliminates disk I/O overhead and can be significantly faster when
-	// sufficient memory is available.
-	StreamingChunkSize int
-	// StreamingBufSize is the size of the bufio.Writer used for all disk
-	// writes after the StreamingChunkSize threshold is crossed. Larger values
-	// reduce write syscall counts at the cost of slightly more memory. The
-	// measured inflection point on NVMe and HDD alike is 128 KiB. Zero means
-	// use the default (defaultBioSize = 128 KiB).
-	StreamingBufSize int
-	// Compression specifies the compression level for the output ZIP
-	// archive. The default (CompressionDefault) uses standard deflate. Use
-	// CompressionNone in memory-constrained environments like AWS Lambda to
-	// eliminate compressor overhead, or CompressionBestSpeed for a balance
-	// of speed and size.
-	Compression Compression
-	// FastReadMode optimizes for read-heavy workloads by preloading the
-	// shared strings table into memory (as a []string slice) instead of
-	// using random-access temp file I/O. This eliminates per-cell ReadAt
-	// syscalls and provides 5-10× faster iteration via Rows()/Columns().
-	// Memory usage increases by the size of the shared strings table
-	// (typically 10-100 MB for large files). Enable this when iterating
-	// over large worksheets where read performance is critical.
-	FastReadMode bool
-	// UseSharedStrings enables shared string table generation during
-	// streaming writes (StreamWriter). When enabled, duplicate string values
-	// are stored once in xl/sharedStrings.xml and referenced by index in cells.
-	// This significantly reduces file size for data with repeated strings
-	// and improves read performance (readers can load strings once).
-	// Memory usage increases during writes to track unique strings.
-	// The default (false) writes inline strings for maximum streaming write speed.
-	// Note: Non-streaming writes (SetCellValue, SetCellStr) always use shared
-	// strings automatically; this option only affects StreamWriter.
-	UseSharedStrings bool
 }
 
 // OpenFile take the name of a spreadsheet file and returns a populated
@@ -339,31 +260,6 @@ func (f *File) CharsetTranscoder(fn func(charset string, input io.Reader) (rdr i
 // SetZipWriter set user defined zip writer function for saving the workbook.
 func (f *File) SetZipWriter(fn func(io.Writer) ZipWriter) *File { f.ZipWriter = fn; return f }
 
-// configureZipCompression applies the Compression option to the zip writer.
-// It is a no-op for the default compression level or for custom ZipWriter
-// implementations that are not *zip.Writer.
-func (f *File) configureZipCompression(zw ZipWriter) {
-	if f.options == nil || f.options.Compression == CompressionDefault {
-		return
-	}
-	zipW, ok := zw.(*zip.Writer)
-	if !ok {
-		return
-	}
-	var level int
-	switch f.options.Compression {
-	case CompressionNone:
-		level = flate.NoCompression
-	case CompressionBestSpeed:
-		level = flate.BestSpeed
-	default:
-		return
-	}
-	zipW.RegisterCompressor(zip.Deflate, func(out io.Writer) (io.WriteCloser, error) {
-		return flate.NewWriter(out, level)
-	})
-}
-
 // Creates new XML decoder with charset reader.
 func (f *File) xmlNewDecoder(rdr io.Reader) (ret *xml.Decoder) {
 	ret = xml.NewDecoder(rdr)
@@ -414,16 +310,15 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		}
 	}
 	ws = new(xlsxWorksheet)
-	data := f.readBytes(name)
 	if attrs, ok := f.xmlAttr.Load(name); !ok {
-		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(data)))
+		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name))))
 		if attrs == nil {
 			attrs = []xml.Attr{}
 		}
 		attrs = append(attrs.([]xml.Attr), getRootElement(d)...)
 		f.xmlAttr.Store(name, attrs)
 	}
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(data))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name)))).
 		Decode(ws); err != nil && err != io.EOF {
 		return
 	}

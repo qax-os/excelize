@@ -12,12 +12,14 @@
 package excelize
 
 import (
+	"archive/zip"
 	"bytes"
 	"container/list"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"math"
+	"math/big"
 	"os"
 	"reflect"
 	"regexp"
@@ -25,8 +27,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf16"
-
-	"github.com/klauspost/compress/zip"
 )
 
 // ReadZipReader extract spreadsheet with given options.
@@ -105,7 +105,7 @@ func (f *File) readXML(name string) []byte {
 		return content.([]byte)
 	}
 	if content, ok := f.streams[name]; ok {
-		return content.rawData.Bytes()
+		return content.rawData.buf.Bytes()
 	}
 	return []byte{}
 }
@@ -225,28 +225,6 @@ func ColumnNameToNumber(name string) (int, error) {
 	return col, nil
 }
 
-// columnNames is a precomputed lookup table of column names for all valid
-// column numbers (1 to MaxColumns). This eliminates per-call allocations
-// in ColumnNumberToName.
-var columnNames = func() []string {
-	names := make([]string, MaxColumns+1)
-	for i := 1; i <= MaxColumns; i++ {
-		num := i
-		l := 0
-		for n := num; n > 0; n = (n - 1) / 26 {
-			l++
-		}
-		buf := make([]byte, l)
-		for num > 0 {
-			l--
-			buf[l] = byte((num-1)%26 + 'A')
-			num = (num - 1) / 26
-		}
-		names[i] = string(buf)
-	}
-	return names
-}()
-
 // ColumnNumberToName provides a function to convert the integer to Excel
 // sheet column title.
 //
@@ -257,7 +235,18 @@ func ColumnNumberToName(num int) (string, error) {
 	if num < MinColumns || num > MaxColumns {
 		return "", ErrColumnNumber
 	}
-	return columnNames[num], nil
+	estimatedLength := 0
+	for n := num; n > 0; n = (n - 1) / 26 {
+		estimatedLength++
+	}
+
+	result := make([]byte, estimatedLength)
+	for num > 0 {
+		estimatedLength--
+		result[estimatedLength] = byte((num-1)%26 + 'A')
+		num = (num - 1) / 26
+	}
+	return string(result), nil
 }
 
 // CellNameToCoordinates converts alphanumeric cell name to [X, Y] coordinates
@@ -293,16 +282,14 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	if row > TotalRows {
 		return "", ErrMaxRows
 	}
-	colName, err := ColumnNumberToName(col)
-	if err != nil {
-		return "", err
-	}
+	sign := ""
 	for _, a := range abs {
 		if a {
-			return "$" + colName + "$" + strconv.Itoa(row), nil
+			sign = "$"
 		}
 	}
-	return colName + strconv.Itoa(row), nil
+	colName, err := ColumnNumberToName(col)
+	return sign + colName + sign + strconv.Itoa(row), err
 }
 
 // rangeRefToCoordinates provides a function to convert range reference to a
@@ -586,12 +573,6 @@ func (ext *xlsxExt) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 // namespaceStrictToTransitional provides a method to convert Strict and
 // Transitional namespaces.
 func namespaceStrictToTransitional(content []byte) []byte {
-	// Fast path: the vast majority of XLSX files use the Transitional namespace.
-	// All Strict namespace URIs contain "purl.oclc.org", so if that substring is
-	// absent we can skip the entire replacement loop and avoid allocating a copy.
-	if !bytes.Contains(content, []byte("purl.oclc.org")) {
-		return content
-	}
 	namespaceTranslationDic := map[string]string{
 		StrictNameSpaceDocumentPropertiesVariantTypes: NameSpaceDocumentPropertiesVariantTypes.Value,
 		StrictNameSpaceDrawingMLMain:                  NameSpaceDrawingMLMain,
@@ -800,14 +781,15 @@ func isNumeric(s string) (bool, int, float64) {
 	if strings.Contains(s, "_") {
 		return false, 0, 0
 	}
-	flt, err := strconv.ParseFloat(s, 64)
-	if err != nil {
+	var decimal big.Float
+	_, ok := decimal.SetString(s)
+	if !ok {
 		return false, 0, 0
 	}
-	noScientificNotation := strconv.FormatFloat(flt, 'f', -1, 64)
-	// Count significant characters (digits + sign), excluding decimal point.
-	// Uses arithmetic instead of strings.ReplaceAll to avoid allocation.
-	return true, len(noScientificNotation) - strings.Count(noScientificNotation, "."), flt
+	var noScientificNotation string
+	flt, _ := decimal.Float64()
+	noScientificNotation = strconv.FormatFloat(flt, 'f', -1, 64)
+	return true, len(strings.ReplaceAll(noScientificNotation, ".", "")), flt
 }
 
 var (
@@ -827,12 +809,6 @@ var (
 // initial underscore shall itself be escaped (i.e. stored as _x005F_). For
 // example: The string literal _x0008_ would be stored as _x005F_x0008_.
 func bstrUnmarshal(s string) (result string) {
-	// Fast path: if the string doesn't contain "_x" there can be no bstr
-	// escape sequences, so skip the regex entirely. This applies to >99% of
-	// cell values and eliminates ~54 MB of regex allocations per 100K rows.
-	if !strings.Contains(s, "_x") {
-		return s
-	}
 	matches, l, cursor := bstrExp.FindAllStringSubmatchIndex(s, -1), len(s), 0
 	for _, match := range matches {
 		result += s[cursor:match[0]]

@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"archive/zip"
 	"bufio"
 	"bytes"
 	"encoding/binary"
@@ -15,7 +16,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/klauspost/compress/zip"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -164,7 +164,7 @@ func TestWriteTo(t *testing.T) {
 		f := NewFile()
 		f.streams = make(map[string]*StreamWriter)
 		sw := &StreamWriter{}
-		sw.rawData.WriteString("test data")
+		sw.rawData.buf.WriteString("test data")
 		f.streams["s"] = sw
 		f.SetZipWriter(func(w io.Writer) ZipWriter {
 			return &errZipWriter{
@@ -273,146 +273,4 @@ func TestRemoveTempFiles(t *testing.T) {
 		t.Errorf("temp file %q still exist", tmpName)
 		assert.NoError(t, os.Remove(tmpName))
 	}
-}
-
-func TestStreamingWriteTo(t *testing.T) {
-	// Verify that WriteTo streams directly when no password is set,
-	// producing a valid XLSX file.
-	f := NewFile()
-	sw, err := f.NewStreamWriter("Sheet1")
-	assert.NoError(t, err)
-	for row := 1; row <= 100; row++ {
-		rowData := make([]interface{}, 10)
-		for col := range 10 {
-			rowData[col] = "test"
-		}
-		cell, _ := CoordinatesToCellName(1, row)
-		assert.NoError(t, sw.SetRow(cell, rowData))
-	}
-	assert.NoError(t, sw.Flush())
-	// WriteTo a buffer (exercises the streaming path, no password)
-	var buf bytes.Buffer
-	_, err = f.WriteTo(&buf)
-	assert.NoError(t, err)
-	assert.Greater(t, buf.Len(), 0)
-	assert.NoError(t, f.Close())
-	// Verify the output is a valid ZIP/XLSX by reading it back
-	f2, err := OpenReader(bytes.NewReader(buf.Bytes()))
-	assert.NoError(t, err)
-	val, err := f2.GetCellValue("Sheet1", "A1")
-	assert.NoError(t, err)
-	assert.Equal(t, "test", val)
-	assert.NoError(t, f2.Close())
-}
-
-func TestCompressionOption(t *testing.T) {
-	// Generate a file with known content, then save with different
-	// compression levels and compare sizes.
-	makeFile := func() *File {
-		f := NewFile()
-		sw, _ := f.NewStreamWriter("Sheet1")
-		for row := 1; row <= 500; row++ {
-			rowData := make([]interface{}, 20)
-			for col := range 20 {
-				rowData[col] = "Hello World"
-			}
-			cell, _ := CoordinatesToCellName(1, row)
-			_ = sw.SetRow(cell, rowData)
-		}
-		_ = sw.Flush()
-		return f
-	}
-
-	// Default compression
-	f1 := makeFile()
-	var buf1 bytes.Buffer
-	_, err := f1.WriteTo(&buf1)
-	assert.NoError(t, err)
-	assert.NoError(t, f1.Close())
-
-	// No compression
-	f2 := makeFile()
-	f2.options.Compression = CompressionNone
-	var buf2 bytes.Buffer
-	_, err = f2.WriteTo(&buf2)
-	assert.NoError(t, err)
-	assert.NoError(t, f2.Close())
-
-	// Best speed
-	f3 := makeFile()
-	f3.options.Compression = CompressionBestSpeed
-	var buf3 bytes.Buffer
-	_, err = f3.WriteTo(&buf3)
-	assert.NoError(t, err)
-	assert.NoError(t, f3.Close())
-
-	// No compression should produce the largest file
-	assert.Greater(t, buf2.Len(), buf1.Len(), "uncompressed should be larger than default")
-	assert.Greater(t, buf2.Len(), buf3.Len(), "uncompressed should be larger than best-speed")
-
-	// All should be valid XLSX files
-	for _, buf := range []*bytes.Buffer{&buf1, &buf2, &buf3} {
-		f, err := OpenReader(bytes.NewReader(buf.Bytes()))
-		assert.NoError(t, err)
-		val, err := f.GetCellValue("Sheet1", "A1")
-		assert.NoError(t, err)
-		assert.Equal(t, "Hello World", val)
-		assert.NoError(t, f.Close())
-	}
-}
-
-func TestWriteToBufferCompression(t *testing.T) {
-	// Ensure WriteToBuffer also respects the Compression option
-	f := NewFile(Options{Compression: CompressionNone})
-	sw, err := f.NewStreamWriter("Sheet1")
-	assert.NoError(t, err)
-	for row := 1; row <= 100; row++ {
-		cell, _ := CoordinatesToCellName(1, row)
-		_ = sw.SetRow(cell, []interface{}{"data"})
-	}
-	_ = sw.Flush()
-	buf, err := f.WriteToBuffer()
-	assert.NoError(t, err)
-	assert.Greater(t, buf.Len(), 0)
-	assert.NoError(t, f.Close())
-}
-
-func TestWriteToWithPassword(t *testing.T) {
-	// Test that WriteTo with password uses temp file approach
-	f := NewFile()
-	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "Encrypted Data"))
-
-	// Write with password encryption to a buffer
-	var buf bytes.Buffer
-	n, err := f.WriteTo(&buf, Options{Password: "testpass"})
-	assert.NoError(t, err)
-	assert.Greater(t, n, int64(0))
-	assert.Greater(t, buf.Len(), 0)
-
-	// Verify it can be opened with the password
-	encrypted := buf.Bytes()
-	f2, err := OpenReader(bytes.NewReader(encrypted), Options{Password: "testpass"})
-	assert.NoError(t, err)
-	val, err := f2.GetCellValue("Sheet1", "A1")
-	assert.NoError(t, err)
-	assert.Equal(t, "Encrypted Data", val)
-	assert.NoError(t, f2.Close())
-	assert.NoError(t, f.Close())
-}
-
-func TestWriteToWithPasswordAndCompression(t *testing.T) {
-	// Test that compression settings work with password encryption
-	f := NewFile(Options{Compression: CompressionBestSpeed})
-	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "Test"))
-
-	var buf bytes.Buffer
-	_, err := f.WriteTo(&buf, Options{Password: "pass", Compression: CompressionBestSpeed})
-	assert.NoError(t, err)
-	assert.Greater(t, buf.Len(), 0)
-
-	// Verify it opens correctly
-	f2, err := OpenReader(bytes.NewReader(buf.Bytes()), Options{Password: "pass"})
-	assert.NoError(t, err)
-	assert.NoError(t, f2.Close())
-	assert.NoError(t, f.Close())
 }

@@ -113,10 +113,7 @@ func (f *File) Write(w io.Writer, opts ...Options) error {
 	return err
 }
 
-// WriteTo implements io.WriterTo to write the file. When no password
-// encryption is required, the ZIP archive is streamed directly to w without
-// buffering the entire compressed output in memory. When password encryption
-// is required, a temporary file is used to reduce memory usage.
+// WriteTo implements io.WriterTo to write the file.
 func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 	for i := range opts {
 		f.options = &opts[i]
@@ -130,100 +127,18 @@ func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 			return 0, err
 		}
 	}
-	// Password encryption requires post-processing the entire output.
-	// Use a temporary file to reduce peak memory usage.
-	if f.options != nil && f.options.Password != "" {
-		return f.writeToWithEncryption(w)
-	}
-	// Stream the ZIP directly to w. This avoids holding the full compressed
-	// archive in a bytes.Buffer, which can be 50-200 MB+ for large reports.
-	cw := &countWriter{w: w}
-	zw := f.ZipWriter(cw)
-	f.configureZipCompression(zw)
-	if err := f.writeToZip(zw); err != nil {
-		_ = zw.Close()
-		return cw.n, err
-	}
-	return cw.n, zw.Close()
-}
-
-// writeToWithEncryption writes an encrypted file using a temporary file to
-// reduce memory usage. This avoids buffering the entire ZIP in memory before
-// encryption.
-func (f *File) writeToWithEncryption(w io.Writer) (int64, error) {
-	var tmpDir string
-	if f.options != nil {
-		tmpDir = f.options.TmpDir
-	}
-	// Create temporary file for the unencrypted ZIP
-	tmpFile, err := os.CreateTemp(tmpDir, "excelize-encrypt-*.zip")
+	buf, err := f.WriteToBuffer()
 	if err != nil {
 		return 0, err
 	}
-	tmpPath := tmpFile.Name()
-	defer func() {
-		_ = tmpFile.Close()
-		_ = os.Remove(tmpPath)
-	}()
-
-	// Write ZIP to temp file
-	f.zip64Entries = nil // Reset before writing
-	zw := f.ZipWriter(tmpFile)
-	f.configureZipCompression(zw)
-	if err := f.writeToZip(zw); err != nil {
-		_ = zw.Close()
-		return 0, err
-	}
-	if err := zw.Close(); err != nil {
-		return 0, err
-	}
-
-	// If ZIP64 entries exist, we need to fixup the local file headers
-	if len(f.zip64Entries) > 0 {
-		if err := f.writeZip64LFHFile(tmpFile); err != nil {
-			return 0, err
-		}
-	}
-
-	// Read the ZIP file back and encrypt it
-	if _, err := tmpFile.Seek(0, 0); err != nil {
-		return 0, err
-	}
-	rawZip, err := io.ReadAll(tmpFile)
-	if err != nil {
-		return 0, err
-	}
-
-	// Encrypt and write to output
-	encrypted, err := Encrypt(rawZip, f.options)
-	if err != nil {
-		return 0, err
-	}
-	n, err := w.Write(encrypted)
-	return int64(n), err
-}
-
-// countWriter wraps an io.Writer and counts bytes written.
-type countWriter struct {
-	w io.Writer
-	n int64
-}
-
-func (cw *countWriter) Write(p []byte) (int, error) {
-	n, err := cw.w.Write(p)
-	cw.n += int64(n)
-	return n, err
+	return buf.WriteTo(w)
 }
 
 // WriteToBuffer provides a function to get bytes.Buffer from the saved file,
 // and it allocates space in memory. Be careful when the file size is large.
-// Consider using WriteTo with a file for large password-protected files to
-// reduce memory usage.
 func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
-	f.zip64Entries = nil // Reset before writing
 	zw := f.ZipWriter(buf)
-	f.configureZipCompression(zw)
 
 	if err := f.writeToZip(zw); err != nil {
 		_ = zw.Close()
@@ -232,11 +147,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	if err := zw.Close(); err != nil {
 		return buf, err
 	}
-	// Only perform ZIP64 fixup if we actually have ZIP64 entries
-	var err error
-	if len(f.zip64Entries) > 0 {
-		err = f.writeZip64LFH(buf)
-	}
+	err := f.writeZip64LFH(buf)
 	if f.options != nil && f.options.Password != "" {
 		b, err := Encrypt(buf.Bytes(), f.options)
 		if err != nil {
@@ -269,9 +180,13 @@ func (f *File) writeToZip(zw ZipWriter) error {
 		if err != nil {
 			return err
 		}
-		written, err := stream.rawData.CopyTo(fi)
-		if err != nil {
+		var from io.Reader
+		if from, err = stream.rawData.Reader(); err != nil {
 			_ = stream.rawData.Close()
+			return err
+		}
+		written, err := io.Copy(fi, from)
+		if err != nil {
 			return err
 		}
 		if written > math.MaxUint32 {
@@ -355,82 +270,5 @@ func (f *File) writeZip64LFH(buf *bytes.Buffer) error {
 		}
 		offset = idx + 1
 	}
-	return nil
-}
-
-// writeZip64LFHFile performs ZIP64 local file header fixup on a file.
-// This is used when encrypting to avoid loading the entire file into memory.
-func (f *File) writeZip64LFHFile(file *os.File) error {
-	if len(f.zip64Entries) == 0 {
-		return nil
-	}
-	// Seek to start of file
-	if _, err := file.Seek(0, 0); err != nil {
-		return err
-	}
-	// Read file info to get size
-	info, err := file.Stat()
-	if err != nil {
-		return err
-	}
-	fileSize := info.Size()
-
-	// Process file in chunks to avoid loading entire file into memory
-	const chunkSize = 1024 * 1024 // 1MB chunks
-	buf := make([]byte, chunkSize)
-	var offset int64
-
-	for offset < fileSize {
-		// Read chunk
-		n, err := file.ReadAt(buf, offset)
-		if err != nil && err != io.EOF {
-			return err
-		}
-		if n == 0 {
-			break
-		}
-
-		// Search for local file headers in this chunk
-		searchBuf := buf[:n]
-		searchOffset := 0
-		for searchOffset < n {
-			idx := bytes.Index(searchBuf[searchOffset:], []byte{0x50, 0x4b, 0x03, 0x04})
-			if idx == -1 {
-				break
-			}
-			idx += searchOffset
-			absoluteIdx := offset + int64(idx)
-
-			// Check if we have enough data for the header
-			if idx+30 > n {
-				// Header spans chunk boundary, will be caught in next iteration
-				break
-			}
-
-			filenameLen := int(binary.LittleEndian.Uint16(searchBuf[idx+26 : idx+28]))
-			if idx+30+filenameLen > n {
-				// Filename spans chunk boundary, will be caught in next iteration
-				break
-			}
-
-			filename := string(searchBuf[idx+30 : idx+30+filenameLen])
-			if inStrSlice(f.zip64Entries, filename, true) != -1 {
-				// Update version field at offset idx+4
-				versionBuf := make([]byte, 2)
-				binary.LittleEndian.PutUint16(versionBuf, 45)
-				if _, err := file.WriteAt(versionBuf, absoluteIdx+4); err != nil {
-					return err
-				}
-			}
-			searchOffset = idx + 1
-		}
-
-		offset += int64(n)
-		// Overlap by 30 bytes to catch headers that span chunks
-		if offset < fileSize {
-			offset -= 30
-		}
-	}
-
 	return nil
 }
