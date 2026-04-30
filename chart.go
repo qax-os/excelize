@@ -634,16 +634,23 @@ func (opts *Chart) parseTitle() error {
 	if opts.Title.Height < 0 || 100 < opts.Title.Height {
 		return newChartTitleError("Height")
 	}
+	if len(opts.Title.Paragraph) > 0 && opts.Title.Formula != "" {
+		return ErrChartTitle
+	}
+	setDefaultFont := func(font **Font) {
+		if *font == nil {
+			*font = &Font{}
+		}
+		if (*font).Color == "" {
+			(*font).Color = "595959"
+		}
+		if (*font).Size == 0 {
+			(*font).Size = 14
+		}
+	}
+	setDefaultFont(&opts.Title.Font)
 	for i := range opts.Title.Paragraph {
-		if opts.Title.Paragraph[i].Font == nil {
-			opts.Title.Paragraph[i].Font = &Font{}
-		}
-		if opts.Title.Paragraph[i].Font.Color == "" {
-			opts.Title.Paragraph[i].Font.Color = "595959"
-		}
-		if opts.Title.Paragraph[i].Font.Size == 0 {
-			opts.Title.Paragraph[i].Font.Size = 14
-		}
+		setDefaultFont(&opts.Title.Paragraph[i].Font)
 	}
 	return nil
 }
@@ -855,7 +862,8 @@ func (opts *Chart) parseTitle() error {
 // DataPoint: This sets the format for individual data points in a doughnut, pie
 // or 3D pie chart series. The 'DataPoint' property is optional.
 //
-// Set properties of the chart legend. The options that can be set are:
+// Set properties of the chart legend by 'Legend' field with 'ChartLegend' data
+// type. The options that can be set are:
 //
 //	Position
 //	ShowLegendKey
@@ -879,14 +887,55 @@ func (opts *Chart) parseTitle() error {
 // The font family, size, color, bold, italic, underline, and strike properties
 // can be set.
 //
-// Set properties of the chart title. The properties that can be set are:
+// Set properties of the chart title by 'Title' field with 'ChartTitle' data
+// type. The properties that can be set are:
 //
-//	Title
+//	Fill
+//	Border
+//	Paragraph
+//	Font
+//	Formula
+//	OffsetX
+//	OffsetY
+//	Width
+//	Height
+//	Overlay
 //
-// Title: Set the name (title) for the chart. The name is displayed above the
-// chart. The name can also be a formula such as Sheet1!$A$1 or a list with a
-// sheet name. The name property is optional. The default is to have no chart
-// title.
+// Fill: Set fill color of the chart title. The 'Fill' property is optional.
+//
+// Border: Set border of the chart title, the properties that can be set are the
+// same as the border object that is used for cell formatting. The 'Border'
+// property is optional.
+//
+// Paragraph: Set the rich text of the chart title text. The 'Paragraph'
+// property is optional, and can not be set at the same time with 'Formula'
+// property.
+//
+// Font: Set the font properties of the chart title formula text. The 'Font'
+// property is optional.
+//
+// Formula: Set the formula of the chart title text. For example: Sheet1!$A$1.
+// The 'Formula' property is optional, and can not be set at the same time with
+// 'Paragraph' property.
+//
+// OffsetX: Set the horizontal offset of the chart title. The 'OffsetX' property
+// is optional. The default value is 0, and the value of 'OffsetX' must be an
+// integer from 0 to 100.
+//
+// OffsetY: Set the vertical offset of the chart title. The 'OffsetY' property
+// is optional. The default value is 0, and the value of 'OffsetY' must be an
+// integer from 0 to 100.
+//
+// Width: Set the width of the chart title. The 'Width' property is optional.
+// The default value is 0, and the value of 'Width' must be an integer from 0 to
+// 100.
+//
+// Height: Set the height of the chart title. The 'Height' property is optional.
+// The default value is 0, and the value of 'Height' must be an integer from 0
+// to 100.
+//
+// Overlay: Set the chart title shall be overlaid on the chart. The 'Overlay'
+// property is optional. The default value is false.
 //
 // Specifies how blank cells are plotted on the chart by 'ShowBlanksAs'. The
 // default value is gap. The options that can be set are:
@@ -907,8 +956,8 @@ func (opts *Chart) parseTitle() error {
 // Set chart offset, scale, aspect ratio setting and print settings by 'Format',
 // same as function 'AddPicture'.
 //
-// Set the position of the chart plot area by 'PlotArea'. The properties that
-// can be set are:
+// Set the position of the chart plot area by 'PlotArea' field with
+// 'ChartPlotArea' data type. The properties that can be set are:
 //
 //	SecondPlotValues
 //	ShowBubbleSize
@@ -965,8 +1014,9 @@ func (opts *Chart) parseTitle() error {
 // for data labels. The 'NumFmt' property is optional. The default format code
 // is 'General'.
 //
-// Set the primary horizontal and vertical axis options by 'XAxis' and 'YAxis'.
-// The properties of 'XAxis' that can be set are:
+// Set the primary horizontal and vertical axis options by 'XAxis' and 'YAxis'
+// fields with 'ChartAxis' data type. The properties of 'XAxis' that can be set
+// are:
 //
 //	None
 //	DropLines
@@ -1072,14 +1122,15 @@ func (opts *Chart) parseTitle() error {
 // for axis. The 'NumFmt' property is optional. The default format code is
 // 'General'.
 //
-// Title: Specifies that the primary horizontal or vertical axis title and
-// resize chart. The 'Title' property is optional.
+// Title: Specifies that the primary horizontal or vertical axis title by
+// 'Title' field with 'ChartTitle' data type. The 'Title' property is optional.
 //
-// Set chart size by 'Dimension' property. The 'Dimension' property is optional.
-// The default width is 480, and height is 260.
+// Set chart size by 'Dimension' property with 'ChartDimension' data type. The
+// 'Dimension' property is optional. The default width is 480, and height is
+// 260.
 //
-// Set chart legend for all data series by 'Legend' property. The 'Legend'
-// property is optional.
+// Set chart legend for all data series by 'Legend' property with 'ChartLegend'
+// data type. The 'Legend' property is optional.
 //
 // Set the bubble size in all data series for the bubble chart or 3D bubble
 // chart by 'BubbleSizes' property. The 'BubbleSizes' property is optional. The
