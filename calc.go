@@ -876,16 +876,19 @@ func (fn *formulaFuncs) implicitIntersect(arg formulaArg) formulaArg {
 //	Z.TEST
 //	ZTEST
 func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string, err error) {
-	entry := sheet + "!" + cell
-	if cachedResult, ok := f.calcCache.Load(entry); ok {
-		return cachedResult.(string), nil
-	}
 	options := f.getOptions(opts...)
 	var (
 		rawCellValue = options.RawCellValue
 		styleIdx     int
 		token        formulaArg
 	)
+	entry := sheet + "!" + cell
+	if rawCellValue {
+		entry += "!raw"
+	}
+	if cachedResult, ok := f.calcCache.Load(entry); ok {
+		return cachedResult.(string), nil
+	}
 	if token, err = f.calcCellValue(&calcContext{
 		entry:             entry,
 		maxCalcIterations: options.MaxCalcIterations,

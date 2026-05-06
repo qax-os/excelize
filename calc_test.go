@@ -6818,6 +6818,34 @@ func TestCalcCellValueCache(t *testing.T) {
 		assert.Equal(t, "120", newResult5)
 		assert.NotEqual(t, result5, newResult5, "A5 should be updated")
 	})
+	t.Run("for_calc_call_raw_value_with_cache", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "DATE(2020,10,21)"))
+		exp := "dd/mm/yyyy"
+		style, err := f.NewStyle(&Style{CustomNumFmt: &exp})
+		assert.NoError(t, err)
+		assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", style))
+
+		result1, err := f.CalcCellValue("Sheet1", "A1", Options{RawCellValue: false})
+		assert.NoError(t, err)
+		assert.Equal(t, "21/10/2020", result1)
+
+		result2, err := f.CalcCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, result1, result2, "cached result should be consistent")
+
+		result3, err := f.CalcCellValue("Sheet1", "A1", Options{RawCellValue: true})
+		assert.NoError(t, err)
+		assert.Equal(t, "44125", result3)
+
+		result4, err := f.CalcCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, result1, result4, "cached result should be consistent")
+
+		result5, err := f.CalcCellValue("Sheet1", "A1", Options{RawCellValue: true})
+		assert.NoError(t, err)
+		assert.Equal(t, result3, result5, "cached result should be consistent")
+	})
 	t.Run("for_clear_calculation_cache", func(t *testing.T) {
 		f := NewFile()
 		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 10))
