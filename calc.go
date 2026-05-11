@@ -876,18 +876,22 @@ func (fn *formulaFuncs) implicitIntersect(arg formulaArg) formulaArg {
 //	Z.TEST
 //	ZTEST
 func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string, err error) {
+	entry := sheet + "!" + cell
 	options := f.getOptions(opts...)
 	var (
 		rawCellValue = options.RawCellValue
 		styleIdx     int
 		token        formulaArg
 	)
-	entry := sheet + "!" + cell
 	if rawCellValue {
-		entry += "!raw"
+		if cachedResult, ok := f.calcRawCache.Load(entry); ok {
+			return cachedResult.(string), nil
+		}
 	}
-	if cachedResult, ok := f.calcCache.Load(entry); ok {
-		return cachedResult.(string), nil
+	if !rawCellValue {
+		if cachedResult, ok := f.calcCache.Load(entry); ok {
+			return cachedResult.(string), nil
+		}
 	}
 	if token, err = f.calcCellValue(&calcContext{
 		entry:             entry,
@@ -906,7 +910,7 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 		if precision > 15 {
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'G', 15, 64))}, rawCellValue, CellTypeNumber)
 			if err == nil {
-				f.calcCache.Store(entry, result)
+				f.storeCalcCache(entry, result, rawCellValue)
 			}
 			return
 		}
@@ -914,20 +918,31 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 			result, err = f.formattedValue(&xlsxC{S: styleIdx, V: strings.ToUpper(strconv.FormatFloat(decimal, 'f', -1, 64))}, rawCellValue, CellTypeNumber)
 		}
 		if err == nil {
-			f.calcCache.Store(entry, result)
+			f.storeCalcCache(entry, result, rawCellValue)
 		}
 		return
 	}
 	result, err = f.formattedValue(&xlsxC{S: styleIdx, V: token.Value()}, rawCellValue, CellTypeInlineString)
 	if err == nil {
-		f.calcCache.Store(entry, result)
+		f.storeCalcCache(entry, result, rawCellValue)
 	}
 	return
+}
+
+// storeCalcCache stores the calculated result in the cache with the given entry
+// as the key.
+func (f *File) storeCalcCache(entry, result string, rawCellValue bool) {
+	if rawCellValue {
+		f.calcRawCache.Store(entry, result)
+		return
+	}
+	f.calcCache.Store(entry, result)
 }
 
 // clearCalcCache clear all calculation related caches.
 func (f *File) clearCalcCache() {
 	f.calcCache.Clear()
+	f.calcRawCache.Clear()
 	f.formulaArgCache.Clear()
 }
 
