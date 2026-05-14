@@ -140,6 +140,8 @@ func TestEncrypt(t *testing.T) {
 		},
 	})
 	assert.Error(t, err)
+	_, err = decryptPackage(make([]byte, 32), input[:packageOffset-1], Encryption{})
+	assert.Equal(t, ErrWorkbookFileFormat, err)
 	// Test put with path that is a prefix of name
 	compoundFile = &cfb{
 		paths:   []string{"Root Entry/"},
@@ -199,6 +201,13 @@ func TestAgileDecryptPackageBoundary(t *testing.T) {
 	filename := filepath.Join("test", "agile4096Boundary.xlsx")
 	raw, err := os.ReadFile(filename)
 	require.NoError(t, err)
+	doc, err := mscfb.New(bytes.NewReader(raw))
+	require.NoError(t, err)
+	_, encryptedPackageBuf, err := extractPart(doc)
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, len(encryptedPackageBuf), packageOffset)
+	assert.Zero(t, (len(encryptedPackageBuf)-packageOffset)%packageEncryptionChunkSize)
+
 	packageBuf, err := Decrypt(raw, &Options{Password: password})
 	require.NoError(t, err)
 	assert.Len(t, packageBuf, 12284)

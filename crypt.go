@@ -511,6 +511,10 @@ func decrypt(key, iv, input []byte) (packageKey []byte, err error) {
 // info.
 func decryptPackage(packageKey, input []byte, encryption Encryption) (outputChunks []byte, err error) {
 	encryptedKey := encryption.KeyData
+	if len(input) < packageOffset {
+		err = ErrWorkbookFileFormat
+		return
+	}
 	packageSize := binary.LittleEndian.Uint64(input[:packageOffset])
 	input = input[packageOffset:]
 	var i, start, end int
