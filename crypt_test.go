@@ -22,6 +22,7 @@ import (
 
 	"github.com/richardlehane/mscfb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEncrypt(t *testing.T) {
@@ -35,6 +36,15 @@ func TestEncrypt(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "SECRET", cell)
 	assert.NoError(t, f.Close())
+	// Test decrypt agile encryption where EncryptedPackage payload length is a 4096-byte multiple.
+	boundaryFile, err := OpenFile(filepath.Join("test", "agile4096Boundary.xlsx"), Options{Password: "password"})
+	require.NoError(t, err)
+	cell, err = boundaryFile.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "synthetic non-confidential repro", cell)
+	assert.NoError(t, boundaryFile.Close())
+	f, err = OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
+	assert.NoError(t, err)
 	// Test decrypt spreadsheet with unsupported encrypt mechanism
 	raw, err := os.ReadFile(filepath.Join("test", "encryptAES.xlsx"))
 	assert.NoError(t, err)
