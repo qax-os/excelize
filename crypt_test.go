@@ -12,6 +12,7 @@
 package excelize
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
@@ -36,15 +37,6 @@ func TestEncrypt(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "SECRET", cell)
 	assert.NoError(t, f.Close())
-	// Test decrypt agile encryption where EncryptedPackage payload length is a 4096-byte multiple.
-	boundaryFile, err := OpenFile(filepath.Join("test", "agile4096Boundary.xlsx"), Options{Password: "password"})
-	require.NoError(t, err)
-	cell, err = boundaryFile.GetCellValue("Sheet1", "A1")
-	assert.NoError(t, err)
-	assert.Equal(t, "synthetic non-confidential repro", cell)
-	assert.NoError(t, boundaryFile.Close())
-	f, err = OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
-	assert.NoError(t, err)
 	// Test decrypt spreadsheet with unsupported encrypt mechanism
 	raw, err := os.ReadFile(filepath.Join("test", "encryptAES.xlsx"))
 	assert.NoError(t, err)
@@ -200,6 +192,25 @@ func TestEncrypt(t *testing.T) {
 	}
 	compoundFile.stream = make([]byte, 10000)
 	compoundFile.writeDirectoryEntry([]int{1, 0, 1, 0, 1, 0, 0, 0})
+}
+
+func TestAgileDecryptPackageBoundary(t *testing.T) {
+	const password = "password"
+	filename := filepath.Join("test", "agile4096Boundary.xlsx")
+	raw, err := os.ReadFile(filename)
+	require.NoError(t, err)
+	packageBuf, err := Decrypt(raw, &Options{Password: password})
+	require.NoError(t, err)
+	assert.Len(t, packageBuf, 12284)
+	_, err = zip.NewReader(bytes.NewReader(packageBuf), int64(len(packageBuf)))
+	assert.NoError(t, err)
+
+	f, err := OpenFile(filename, Options{Password: password})
+	require.NoError(t, err)
+	cell, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "synthetic non-confidential repro", cell)
+	assert.NoError(t, f.Close())
 }
 
 func TestEncryptionMechanism(t *testing.T) {

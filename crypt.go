@@ -544,7 +544,7 @@ func decryptPackage(packageKey, input []byte, encryption Encryption) (outputChun
 		i++
 	}
 	if uint64(len(outputChunks)) > packageSize {
-		outputChunks = outputChunks[:packageSize]
+		outputChunks = outputChunks[:int(packageSize)]
 	}
 	return
 }
