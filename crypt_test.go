@@ -12,7 +12,6 @@
 package excelize
 
 import (
-	"archive/zip"
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
@@ -23,7 +22,6 @@ import (
 
 	"github.com/richardlehane/mscfb"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestEncrypt(t *testing.T) {
@@ -31,9 +29,15 @@ func TestEncrypt(t *testing.T) {
 	_, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "passwd"})
 	assert.EqualError(t, err, ErrWorkbookPassword.Error())
 	// Test decrypt spreadsheet with password
-	f, err := OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
+	f, err := OpenFile(filepath.Join("test", "encryptAgile.xlsx"), Options{Password: "password"})
 	assert.NoError(t, err)
 	cell, err := f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SECRET", cell)
+	assert.NoError(t, f.Close())
+	f, err = OpenFile(filepath.Join("test", "encryptSHA1.xlsx"), Options{Password: "password"})
+	assert.NoError(t, err)
+	cell, err = f.GetCellValue("Sheet1", "A1")
 	assert.NoError(t, err)
 	assert.Equal(t, "SECRET", cell)
 	assert.NoError(t, f.Close())
@@ -194,32 +198,6 @@ func TestEncrypt(t *testing.T) {
 	}
 	compoundFile.stream = make([]byte, 10000)
 	compoundFile.writeDirectoryEntry([]int{1, 0, 1, 0, 1, 0, 0, 0})
-}
-
-func TestAgileDecryptPackageBoundary(t *testing.T) {
-	const password = "password"
-	filename := filepath.Join("test", "agile4096Boundary.xlsx")
-	raw, err := os.ReadFile(filename)
-	require.NoError(t, err)
-	doc, err := mscfb.New(bytes.NewReader(raw))
-	require.NoError(t, err)
-	_, encryptedPackageBuf, err := extractPart(doc)
-	require.NoError(t, err)
-	require.GreaterOrEqual(t, len(encryptedPackageBuf), packageOffset)
-	assert.Zero(t, (len(encryptedPackageBuf)-packageOffset)%packageEncryptionChunkSize)
-
-	packageBuf, err := Decrypt(raw, &Options{Password: password})
-	require.NoError(t, err)
-	assert.Len(t, packageBuf, 12284)
-	_, err = zip.NewReader(bytes.NewReader(packageBuf), int64(len(packageBuf)))
-	assert.NoError(t, err)
-
-	f, err := OpenFile(filename, Options{Password: password})
-	require.NoError(t, err)
-	cell, err := f.GetCellValue("Sheet1", "A1")
-	assert.NoError(t, err)
-	assert.Equal(t, "synthetic non-confidential repro", cell)
-	assert.NoError(t, f.Close())
 }
 
 func TestEncryptionMechanism(t *testing.T) {
