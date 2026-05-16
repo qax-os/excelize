@@ -35,6 +35,12 @@ func TestEncrypt(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "SECRET", cell)
 	assert.NoError(t, f.Close())
+	f, err = OpenFile(filepath.Join("test", "encryptSHA512.xlsx"), Options{Password: "password"})
+	assert.NoError(t, err)
+	cell, err = f.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "SECRET", cell)
+	assert.NoError(t, f.Close())
 	// Test decrypt spreadsheet with unsupported encrypt mechanism
 	raw, err := os.ReadFile(filepath.Join("test", "encryptAES.xlsx"))
 	assert.NoError(t, err)
@@ -138,6 +144,8 @@ func TestEncrypt(t *testing.T) {
 		},
 	})
 	assert.Error(t, err)
+	_, err = decryptPackage(make([]byte, 32), input[:packageOffset-1], Encryption{})
+	assert.Equal(t, ErrWorkbookFileFormat, err)
 	// Test put with path that is a prefix of name
 	compoundFile = &cfb{
 		paths:   []string{"Root Entry/"},
