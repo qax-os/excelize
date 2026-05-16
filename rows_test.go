@@ -82,6 +82,87 @@ func TestRows(t *testing.T) {
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
+func TestIterateColumns(t *testing.T) {
+	const sheet2 = "Sheet2"
+	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
+	assert.NoError(t, err)
+
+	// Compare IterateColumns output against Columns row-by-row on the same file.
+	expectedRows, err := f.GetRows(sheet2)
+	assert.NoError(t, err)
+
+	rows, err := f.Rows(sheet2)
+	assert.NoError(t, err)
+	var streamed [][]string
+	for rows.Next() {
+		var row []string
+		err := rows.IterateColumns(func(colIndex int, cellValue string) {
+			for len(row) < colIndex-1 {
+				row = append(row, "")
+			}
+			row = append(row, cellValue)
+		})
+		assert.NoError(t, err)
+		streamed = append(streamed, row)
+	}
+	assert.NoError(t, rows.Error())
+	assert.NoError(t, rows.Close())
+
+	// GetRows skips wholly empty rows in the tail; align lengths before compare.
+	if len(streamed) > len(expectedRows) {
+		streamed = streamed[:len(expectedRows)]
+	}
+	for i := range streamed {
+		assert.Equal(t, trimSliceSpace(expectedRows[i]), trimSliceSpace(streamed[i]),
+			"row %d mismatch", i+1)
+	}
+	assert.NoError(t, f.Close())
+
+	// Test sparse sheet: indices must reflect actual column positions, not
+	// the order non-empty cells were emitted in.
+	f = NewFile()
+	cells := map[string]string{"C1": "c", "E1": "e", "A3": "a", "B3": "b", "E3": "e"}
+	for cell, val := range cells {
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, val))
+	}
+	rows, err = f.Rows("Sheet1")
+	assert.NoError(t, err)
+	collected := make(map[string]string)
+	rowIdx := 0
+	for rows.Next() {
+		rowIdx++
+		assert.NoError(t, rows.IterateColumns(func(colIndex int, cellValue string) {
+			ref, err := CoordinatesToCellName(colIndex, rowIdx)
+			assert.NoError(t, err)
+			collected[ref] = cellValue
+		}))
+	}
+	assert.NoError(t, rows.Close())
+	assert.Equal(t, cells, collected)
+
+	// Test nil callback is a safe no-op.
+	rows, err = f.Rows("Sheet1")
+	assert.NoError(t, err)
+	assert.True(t, rows.Next())
+	assert.NoError(t, rows.IterateColumns(nil))
+	assert.NoError(t, rows.Close())
+
+	// Test RawCellValue option propagates through.
+	f = NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1.5))
+	assert.NoError(t, f.SetCellStyle("Sheet1", "A1", "A1", 0))
+	rows, err = f.Rows("Sheet1")
+	assert.NoError(t, err)
+	assert.True(t, rows.Next())
+	var raw string
+	assert.NoError(t, rows.IterateColumns(func(_ int, cellValue string) {
+		raw = cellValue
+	}, Options{RawCellValue: true}))
+	assert.Equal(t, "1.5", raw)
+	assert.NoError(t, rows.Close())
+	assert.NoError(t, f.Close())
+}
+
 func TestRowsIterator(t *testing.T) {
 	sheetName, rowCount, expectedNumRow := "Sheet2", 0, 11
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
