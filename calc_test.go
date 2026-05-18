@@ -35,33 +35,33 @@ func TestCalcCellValue(t *testing.T) {
 		{nil, nil, nil, "Feb", "South 2", 45500},
 	}
 	mathCalc := map[string]string{
-		"2^3":                   "8",
-		"1=1":                   "TRUE",
-		"1=2":                   "FALSE",
-		"1<2":                   "TRUE",
-		"3<2":                   "FALSE",
-		"1<\"-1\"":              "TRUE",
-		"\"-1\"<1":              "FALSE",
-		"\"-1\"<\"-2\"":         "TRUE",
-		"2<=3":                  "TRUE",
-		"2<=1":                  "FALSE",
-		"1<=\"-1\"":             "TRUE",
-		"\"-1\"<=1":             "FALSE",
-		"\"-1\"<=\"-2\"":        "TRUE",
-		"2>1":                   "TRUE",
-		"2>3":                   "FALSE",
-		"1>\"-1\"":              "FALSE",
-		"\"-1\">-1":             "TRUE",
-		"\"-1\">\"-2\"":         "FALSE",
-		"2>=1":                  "TRUE",
-		"2>=3":                  "FALSE",
-		"1>=\"-1\"":             "FALSE",
-		"\"-1\">=-1":            "TRUE",
-		"\"-1\">=\"-2\"":        "FALSE",
-		"-----1+1":              "0",
-		"------1+1":             "2",
-		"---1---1":              "-2",
-		"---1----1":             "0",
+		"2^3":                          "8",
+		"1=1":                          "TRUE",
+		"1=2":                          "FALSE",
+		"1<2":                          "TRUE",
+		"3<2":                          "FALSE",
+		"1<\"-1\"":                     "TRUE",
+		"\"-1\"<1":                     "FALSE",
+		"\"-1\"<\"-2\"":                "TRUE",
+		"2<=3":                         "TRUE",
+		"2<=1":                         "FALSE",
+		"1<=\"-1\"":                    "TRUE",
+		"\"-1\"<=1":                    "FALSE",
+		"\"-1\"<=\"-2\"":               "TRUE",
+		"2>1":                          "TRUE",
+		"2>3":                          "FALSE",
+		"1>\"-1\"":                     "FALSE",
+		"\"-1\">-1":                    "TRUE",
+		"\"-1\">\"-2\"":                "FALSE",
+		"2>=1":                         "TRUE",
+		"2>=3":                         "FALSE",
+		"1>=\"-1\"":                    "FALSE",
+		"\"-1\">=-1":                   "TRUE",
+		"\"-1\">=\"-2\"":               "FALSE",
+		strings.Repeat("-", 5) + "1+1": "0",
+		strings.Repeat("-", 6) + "1+1": "2",
+		strings.Repeat("-", 3) + "1" + strings.Repeat("-", 3) + "1": "-2",
+		strings.Repeat("-", 3) + "1" + strings.Repeat("-", 4) + "1": "0",
 		"1&2":                   "12",
 		"15%":                   "0.15",
 		"1+20%":                 "1.2",
@@ -7096,9 +7096,6 @@ func TestCalcImplicitIntersect(t *testing.T) {
 }
 
 func TestCalc3DRef(t *testing.T) {
-	// setup builds a workbook with four sheets `Jan`, `Feb`, `Mar`, `Apr`
-	// (creation order = workbook order) and fills A1 / A2 / B1 with
-	// predictable values on each so range shapes can be asserted.
 	setup := func() *File {
 		f := NewFile()
 		assert.NoError(t, f.SetSheetName("Sheet1", "Jan"))
@@ -7118,26 +7115,22 @@ func TestCalc3DRef(t *testing.T) {
 	}
 
 	cases := map[string]string{
-		// Single cell per sheet across the whole range.
-		"SUM(Jan:Apr!A1)":   "100", // 10+20+30+40
-		"SUM(Jan:Apr!$A$1)": "100",
-		"SUM(Jan:Mar!A1)":   "60",
-		"SUM(Feb:Apr!A1)":   "90",
-		"SUM(Jan:Jan!A1)":   "10", // degenerate single-sheet range
-		// Multi-cell ranges on each sheet.
-		"SUM(Jan:Apr!A1:A2)": "110", // (10+1)+(20+2)+(30+3)+(40+4)
-		"SUM(Jan:Apr!A1:B1)": "1100",
-		// Other aggregates.
+		"SUM(Jan:Apr!A1)":     "100", // 10+20+30+40
+		"SUM(Jan:Apr!$A$1)":   "100",
+		"SUM(Jan:Mar!A1)":     "60",
+		"SUM(Feb:Apr!A1)":     "90",
+		"SUM(Jan:Jan!A1)":     "10",  // degenerate single-sheet range
+		"SUM(Jan:Apr!A1:A2)":  "110", // (10+1)+(20+2)+(30+3)+(40+4)
+		"SUM(Jan:Apr!A1:B1)":  "1100",
 		"AVERAGE(Jan:Apr!A1)": "25",
 		"MIN(Jan:Apr!A1)":     "10",
 		"MAX(Jan:Apr!A1)":     "40",
 		"COUNT(Jan:Apr!A1)":   "4",
 		"COUNTA(Jan:Apr!A1)":  "4",
 		"PRODUCT(Jan:Apr!A1)": "240000",
-		// Error paths.
-		"SUM(Apr:Jan!A1)": "#REF!", // reversed order
-		"SUM(Jan:Xyz!A1)": "#REF!", // missing end sheet
-		"SUM(Xyz:Mar!A1)": "#REF!", // missing start sheet
+		"SUM(Apr:Jan!A1)":     "#REF!", // reversed order
+		"SUM(Jan:Xyz!A1)":     "#REF!", // missing end sheet
+		"SUM(Xyz:Mar!A1)":     "#REF!", // missing start sheet
 	}
 	for formula, expected := range cases {
 		f := setup()
@@ -7146,8 +7139,6 @@ func TestCalc3DRef(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 
-	// Non-ASCII sheet names must work unquoted, matching Excel's
-	// behaviour. Uses the month-name shape common in European workbooks.
 	t.Run("non-ascii sheet names", func(t *testing.T) {
 		f := NewFile()
 		assert.NoError(t, f.SetSheetName("Sheet1", "Jänner"))
@@ -7165,4 +7156,76 @@ func TestCalc3DRef(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "1000", result)
 	})
+}
+
+func TestParse3DRefBoundaries(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetSheetName("Sheet1", "Jan"))
+	_, err := f.NewSheet("Feb")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellInt("Jan", "A1", 1))
+	assert.NoError(t, f.SetCellInt("Feb", "A1", 2))
+	ctx := &calcContext{
+		entry:             "Jan!A1",
+		maxCalcIterations: f.options.MaxCalcIterations,
+		iterations:        make(map[string]uint),
+		iterationsCache:   make(map[string]formulaArg),
+	}
+
+	_, is3D, err := f.parse3DRef(ctx, "A1")
+	assert.False(t, is3D)
+	assert.NoError(t, err)
+
+	arg, is3D, err := f.parse3DRef(ctx, "Jan:Feb!bad-ref")
+	assert.True(t, is3D)
+	assert.Error(t, err)
+	assert.Equal(t, ArgError, arg.Type)
+}
+
+func TestSplit3DRefBoundaries(t *testing.T) {
+	sheet1, sheet2, innerRef, ok := split3DRef("Jan:Apr!A1:B2")
+	assert.True(t, ok)
+	assert.Equal(t, "Jan", sheet1)
+	assert.Equal(t, "Apr", sheet2)
+	assert.Equal(t, "A1:B2", innerRef)
+
+	rejects := []string{
+		"Jan:Apr",
+		"Jan:Apr!",
+		"Jan!A1",
+		"Jan:!A1",
+		":Apr!A1",
+		"Jan:Apr:May!A1",
+		"'Jan':Apr!A1",
+		"Jan:'Apr'!A1",
+	}
+	for _, ref := range rejects {
+		t.Run(ref, func(t *testing.T) {
+			_, _, _, ok := split3DRef(ref)
+			assert.False(t, ok)
+		})
+	}
+}
+
+func TestReadSheetTokenBoundaries(t *testing.T) {
+	cases := []struct {
+		input   string
+		want    string
+		wantRem string
+		wantOK  bool
+	}{
+		{"Jan:Apr", "Jan", ":Apr", true},
+		{"Jan", "Jan", "", true},
+		{"", "", "", false},
+		{"Jan!Apr", "", "", false},
+		{"'Jan'", "", "", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.input, func(t *testing.T) {
+			name, rest, ok := readSheetToken(tc.input)
+			assert.Equal(t, tc.want, name)
+			assert.Equal(t, tc.wantRem, rest)
+			assert.Equal(t, tc.wantOK, ok)
+		})
+	}
 }
