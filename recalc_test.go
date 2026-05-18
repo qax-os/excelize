@@ -185,6 +185,21 @@ func TestRecalcWorkbookWithoutFormulas(t *testing.T) {
 	assert.NoError(t, f.Recalc())
 }
 
+func TestRecalcRejectsChartSheet(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellInt("Sheet1", "A1", 1))
+	assert.NoError(t, f.SetCellInt("Sheet1", "A2", 2))
+	assert.NoError(t, f.AddChartSheet("Chart1", &Chart{
+		Type: Col,
+		Series: []ChartSeries{{
+			Categories: "Sheet1!$A$1:$A$2",
+			Values:     "Sheet1!$A$1:$A$2",
+		}},
+	}))
+
+	assert.Error(t, f.Recalc())
+}
+
 func TestRecalcAggregatesFailures(t *testing.T) {
 	// An unsupported function on one cell must not prevent other cells
 	// from being recalculated. The returned error is the join of
@@ -213,4 +228,41 @@ func TestRecalcNonASCIISheetName(t *testing.T) {
 	assert.NoError(t, f.SetCellFormula("Bérénice", "A2", "A1*A1"))
 	assert.NoError(t, f.Recalc())
 	assert.Equal(t, "9", cellXML(t, f, "Bérénice", "A2").V)
+}
+
+func TestSetCellCachedValueRejectsBadTarget(t *testing.T) {
+	f := NewFile()
+
+	assert.Error(t, f.setCellCachedValue("Nope", "A1", newNumberFormulaArg(1)))
+	assert.Error(t, f.setCellCachedValue("Sheet1", "bad-ref", newNumberFormulaArg(1)))
+}
+
+func TestSetCachedArgTypes(t *testing.T) {
+	cases := []struct {
+		name  string
+		arg   formulaArg
+		wantT string
+		wantV string
+	}{
+		{"string", newStringFormulaArg("ready"), "str", "ready"},
+		{"formula_error", newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE), "e", formulaErrorVALUE},
+		{"empty", newEmptyFormulaArg(), "", ""},
+		{"unknown", formulaArg{Type: ArgUnknown}, "", ""},
+		{"matrix_scalar_head", newMatrixFormulaArg([][]formulaArg{{newStringFormulaArg("top")}}), "str", "top"},
+		{"matrix_nested_head", newMatrixFormulaArg([][]formulaArg{{newMatrixFormulaArg([][]formulaArg{{newNumberFormulaArg(1)}})}}), "", ""},
+		{"list_scalar_head", newListFormulaArg([]formulaArg{newNumberFormulaArg(12)}), "", "12"},
+		{"list_nested_head", newListFormulaArg([]formulaArg{newListFormulaArg([]formulaArg{newNumberFormulaArg(2)})}), "", ""},
+		{"list_empty", newListFormulaArg(nil), "", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := &xlsxC{T: "inlineStr", V: "stale", IS: &xlsxSI{}}
+
+			setCachedArg(c, tc.arg)
+
+			assert.Nil(t, c.IS)
+			assert.Equal(t, tc.wantT, c.T)
+			assert.Equal(t, tc.wantV, c.V)
+		})
+	}
 }
