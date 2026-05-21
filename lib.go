@@ -585,9 +585,6 @@ func (ext *xlsxExt) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 // namespaceStrictToTransitional provides a method to convert Strict and
 // Transitional namespaces.
 func namespaceStrictToTransitional(content []byte) []byte {
-	// Fast path: the vast majority of XLSX files use the Transitional namespace.
-	// All Strict namespace URIs contain "purl.oclc.org", so if that substring is
-	// absent we can skip the entire replacement loop and avoid allocating a copy.
 	if !bytes.Contains(content, []byte("purl.oclc.org")) {
 		return content
 	}
@@ -824,8 +821,6 @@ var (
 // initial underscore shall itself be escaped (i.e. stored as _x005F_). For
 // example: The string literal _x0008_ would be stored as _x005F_x0008_.
 func bstrUnmarshal(s string) (result string) {
-	// Fast path: if the string doesn't contain "_x" there can be no bstr
-	// escape sequences, so skip the regex entirely.
 	if !strings.Contains(s, "_x") {
 		return s
 	}
