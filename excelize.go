@@ -311,15 +311,16 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		}
 	}
 	ws = new(xlsxWorksheet)
+	data := f.readBytes(name)
 	if attrs, ok := f.xmlAttr.Load(name); !ok {
-		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name))))
+		d := f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(data)))
 		if attrs == nil {
 			attrs = []xml.Attr{}
 		}
 		attrs = append(attrs.([]xml.Attr), getRootElement(d)...)
 		f.xmlAttr.Store(name, attrs)
 	}
-	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(f.readBytes(name)))).
+	if err = f.xmlNewDecoder(bytes.NewReader(namespaceStrictToTransitional(data))).
 		Decode(ws); err != nil && err != io.EOF {
 		return
 	}

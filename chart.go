@@ -956,7 +956,7 @@ func (opts *Chart) parseTitle() error {
 // Set chart offset, scale, aspect ratio setting and print settings by 'Format',
 // same as function 'AddPicture'.
 //
-// Set the position of the chart plot area by 'PlotArea' field with
+// Set the properties of the chart plot area by 'PlotArea' field with
 // 'ChartPlotArea' data type. The properties that can be set are:
 //
 //	SecondPlotValues
