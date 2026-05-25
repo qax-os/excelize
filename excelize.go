@@ -24,6 +24,7 @@ import (
 	"strings"
 	"sync"
 
+	"golang.org/x/exp/mmap"
 	"golang.org/x/net/html/charset"
 )
 
@@ -132,20 +133,19 @@ type Options struct {
 //
 // Close the file by Close function after opening the spreadsheet.
 func OpenFile(filename string, opts ...Options) (*File, error) {
-	file, err := os.Open(filepath.Clean(filename))
+	r, err := mmap.Open(filepath.Clean(filename))
 	if err != nil {
 		return nil, err
 	}
-	fi, _ := file.Stat()
-	f, err := openReaderAt(file, fi.Size(), opts...)
+	f, err := openReaderAt(r, int64(r.Len()), opts...)
 	if err != nil {
-		if closeErr := file.Close(); closeErr != nil {
+		if closeErr := r.Close(); closeErr != nil {
 			return f, closeErr
 		}
 		return f, err
 	}
 	f.Path = filename
-	return f, file.Close()
+	return f, r.Close()
 }
 
 // newFile is object builder
