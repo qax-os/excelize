@@ -29,6 +29,9 @@ var (
 	ErrCellCharsLength = fmt.Errorf("cell value must be 0-%d characters", TotalCellChars)
 	// ErrCellStyles defined the error message on cell styles exceeds the limit.
 	ErrCellStyles = fmt.Errorf("the cell styles exceeds the %d limit", MaxCellStyles)
+	// ErrChartTitle defined the error message on both formula and rich text for
+	// chart title.
+	ErrChartTitle = errors.New("cannot set both 'Formula' and 'Paragraph' for chart title")
 	// ErrColumnNumber defined the error message on receive an invalid column
 	// number.
 	ErrColumnNumber = fmt.Errorf("the column number must be greater than or equal to %d and less than or equal to %d", MinColumns, MaxColumns)

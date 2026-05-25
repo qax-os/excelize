@@ -704,6 +704,8 @@ type ChartTitle struct {
 	Fill      Fill
 	Border    LineOptions
 	Paragraph []RichTextRun
+	Font      *Font
+	Formula   string
 	OffsetX   int
 	OffsetY   int
 	Width     int

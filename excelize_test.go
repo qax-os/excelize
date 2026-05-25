@@ -357,6 +357,11 @@ func TestOpenReader(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00,
 	}))
 	assert.EqualError(t, err, zip.ErrAlgorithm.Error())
+
+	// Test open spreadsheet with invalid zip data
+	_, err = OpenReader(bytes.NewReader(make([]byte, 8)))
+	assert.Error(t, err)
+	assert.NotEqual(t, ErrWorkbookPassword, err)
 }
 
 func TestBrokenFile(t *testing.T) {

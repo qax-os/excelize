@@ -510,7 +510,13 @@ func decrypt(key, iv, input []byte) (packageKey []byte, err error) {
 // decryptPackage decrypt package by given packageKey and encryption
 // info.
 func decryptPackage(packageKey, input []byte, encryption Encryption) (outputChunks []byte, err error) {
-	encryptedKey, offset := encryption.KeyData, packageOffset
+	encryptedKey := encryption.KeyData
+	if len(input) < packageOffset {
+		err = ErrWorkbookFileFormat
+		return
+	}
+	packageSize := binary.LittleEndian.Uint64(input[:packageOffset])
+	input = input[packageOffset:]
 	var i, start, end int
 	var iv, outputChunk []byte
 	for end < len(input) {
@@ -521,12 +527,7 @@ func decryptPackage(packageKey, input []byte, encryption Encryption) (outputChun
 			end = len(input)
 		}
 		// Grab the next chunk
-		var inputChunk []byte
-		if (end + offset) < len(input) {
-			inputChunk = input[start+offset : end+offset]
-		} else {
-			inputChunk = input[start+offset : end]
-		}
+		inputChunk := input[start:end]
 
 		// Pad the chunk if it is not an integer multiple of the block size
 		remainder := len(inputChunk) % encryptedKey.BlockSize
@@ -545,6 +546,9 @@ func decryptPackage(packageKey, input []byte, encryption Encryption) (outputChun
 		}
 		outputChunks = append(outputChunks, outputChunk...)
 		i++
+	}
+	if uint64(len(outputChunks)) > packageSize {
+		outputChunks = outputChunks[:int(packageSize)]
 	}
 	return
 }

@@ -1290,28 +1290,49 @@ func drawChartFont(fnt *Font, r *aRPr) {
 
 // drawPlotAreaTitles provides a function to draw the c:title element.
 func (ct *ChartTitle) drawPlotAreaTitles(vert string) *cTitle {
-	if ct == nil || len(ct.Paragraph) == 0 {
+	if ct == nil || (len(ct.Paragraph) == 0 && ct.Formula == "") {
 		return nil
 	}
+	defaultPPr := func() *aPPr {
+		return &aPPr{DefRPr: aRPr{
+			Latin: &xlsxCTTextFont{Typeface: "+mn-lt"},
+			Ea:    &xlsxCTTextFont{Typeface: "+mn-ea"},
+			Cs:    &xlsxCTTextFont{Typeface: "+mn-cs"},
+		}}
+	}
+	endParaRPr := &aEndParaRPr{Lang: "en-US", AltLang: "en-US"}
 	title := &cTitle{
 		Tx:      cTx{Rich: &cRich{}},
 		Layout:  ct.drawTitlesManualLayout(),
 		Overlay: &attrValBool{Val: boolPtr(ct.Overlay)},
 	}
+	if ct.Formula != "" {
+		title.Tx = cTx{
+			StrRef: &cStrRef{
+				F: ct.Formula,
+			},
+		}
+		title.TxPr = cTxPr{
+			P: aP{
+				PPr:        defaultPPr(),
+				EndParaRPr: endParaRPr,
+			},
+		}
+		drawChartFont(ct.Font, &title.TxPr.P.PPr.DefRPr)
+		if vert == "horz" {
+			title.TxPr.BodyPr = aBodyPr{Rot: -5400000, Vert: vert}
+		}
+	}
 	for _, run := range ct.Paragraph {
 		r := &aR{T: run.Text}
 		drawChartFont(run.Font, &r.RPr)
 		title.Tx.Rich.P = append(title.Tx.Rich.P, aP{
-			PPr: &aPPr{DefRPr: aRPr{
-				Latin: &xlsxCTTextFont{Typeface: "+mn-lt"},
-				Ea:    &xlsxCTTextFont{Typeface: "+mn-ea"},
-				Cs:    &xlsxCTTextFont{Typeface: "+mn-cs"},
-			}},
+			PPr:        defaultPPr(),
 			R:          r,
-			EndParaRPr: &aEndParaRPr{Lang: "en-US", AltLang: "en-US"},
+			EndParaRPr: endParaRPr,
 		})
 	}
-	if vert == "horz" {
+	if len(ct.Paragraph) > 0 && vert == "horz" {
 		title.Tx.Rich.BodyPr = aBodyPr{Rot: -5400000, Vert: vert}
 	}
 	spPr := ct.Fill.drawShapeFill(nil)
