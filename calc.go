@@ -1645,8 +1645,8 @@ func (cr *cellRange) prepareCellRange(col, row bool, cellRef cellRef) error {
 // characters and default sheet name.
 func (f *File) parseReference(ctx *calcContext, sheet, reference string) (formulaArg, error) {
 	reference = strings.ReplaceAll(reference, "$", "")
-	if result, is3D, err := f.parse3DRef(ctx, reference); is3D {
-		return result, err
+	if parts := split3DReference(reference); len(parts) == 3 {
+		return f.parse3DReference(ctx, parts)
 	}
 	ranges, cellRanges, cellRefs := strings.Split(reference, ":"), list.New(), list.New()
 	if len(ranges) > 1 {
@@ -1687,62 +1687,52 @@ func (f *File) parseReference(ctx *calcContext, sheet, reference string) (formul
 	return f.rangeResolver(ctx, cellRefs, cellRanges)
 }
 
-// parse3DRef detects a 3D reference of the form
-//
-//	Sheet1 : Sheet2 ! CellOrRange
-//
-// and expands it across the workbook-order sheet range. On a 3D hit it
-// returns the expanded matrix as a formulaArg, is3D=true, and any
-// evaluation error encountered. On a non-3D reference it returns
-// is3D=false and callers fall through to the regular 2D parse path.
-// The quoted-name form `SUM('A':'B'!ref)` is mis-tokenised by the efp
-// tokeniser upstream of parseReference and is not handled here.
-func (f *File) parse3DRef(ctx *calcContext, reference string) (formulaArg, bool, error) {
-	sheet1, sheet2, innerRef, ok := split3DRef(reference)
-	if !ok {
-		return formulaArg{}, false, nil
-	}
-	sheets, err := f.expand3DSheetRange(sheet1, sheet2)
+// parse3DReference detects a 3D reference from a range reference and expands it
+// across the workbook-order sheet range.
+func (f *File) parse3DReference(ctx *calcContext, parts []string) (formulaArg, error) {
+	firstSheet, lastSheet, cellRef := parts[0], parts[1], parts[2]
+	sheets, err := f.expand3DSheetRange(firstSheet, lastSheet)
 	if err != nil {
-		return newErrorFormulaArg(formulaErrorREF, formulaErrorREF), true, errors.New(formulaErrorREF)
+		return newErrorFormulaArg(formulaErrorREF, formulaErrorREF), err
 	}
 	var matrix [][]formulaArg
-	for _, sn := range sheets {
-		sub, subErr := f.parseReference(ctx, sn, innerRef)
-		if subErr != nil {
-			return sub, true, subErr
+	for _, sheet := range sheets {
+		result, err := f.parseReference(ctx, sheet, cellRef)
+		if err != nil {
+			return newErrorFormulaArg(formulaErrorNAME, formulaErrorNAME), err
 		}
-		switch sub.Type {
+		switch result.Type {
 		case ArgMatrix:
-			matrix = append(matrix, sub.Matrix...)
+			matrix = append(matrix, result.Matrix...)
 		default:
-			matrix = append(matrix, []formulaArg{sub})
+			matrix = append(matrix, []formulaArg{result})
 		}
 	}
-	return newMatrixFormulaArg(matrix), true, nil
+	return newMatrixFormulaArg(matrix), err
 }
 
-// split3DRef parses `sheet1:sheet2!ref` with optional single-quote
-// quoting of sheet names. Returns (sheet1, sheet2, innerRef, true) on a
-// 3D shape; otherwise returns ok=false.
-func split3DRef(reference string) (sheet1, sheet2, innerRef string, ok bool) {
-	bang := strings.Index(reference, "!")
-	if bang < 0 || bang == len(reference)-1 {
-		return
+// split3DReference parses a reference string for a 3D reference of the form
+// formula structure in FirstSheet:LastSheet!CellReference and returns the three
+// components if valid, or an empty slice if not.
+func split3DReference(reference string) []string {
+	var parts []string
+	idx := strings.Index(reference, "!")
+	if idx < 0 || idx == len(reference)-1 {
+		return parts
 	}
-	left, right := reference[:bang], reference[bang+1:]
-	s1, rest, ok := readSheetToken(left)
+	sheetsRef, cellRef := reference[:idx], reference[idx+1:]
+	firstSheet, rest, ok := readSheetToken(sheetsRef)
 	if !ok || len(rest) < 2 || rest[0] != ':' {
-		return "", "", "", false
+		return parts
 	}
-	s2, rest, ok := readSheetToken(rest[1:])
+	lastSheet, rest, ok := readSheetToken(rest[1:])
 	if !ok || rest != "" {
-		return "", "", "", false
+		return parts
 	}
-	if s1 == "" || s2 == "" {
-		return "", "", "", false
+	if firstSheet == "" || lastSheet == "" {
+		return parts
 	}
-	return s1, s2, right, true
+	return []string{firstSheet, lastSheet, cellRef}
 }
 
 // readSheetToken reads an unquoted sheet name from the front of s and
@@ -1764,25 +1754,20 @@ func readSheetToken(s string) (name, rest string, ok bool) {
 }
 
 // expand3DSheetRange returns the workbook-order slice of sheet names
-// from sheet1 to sheet2 inclusive. Returns an error if either sheet is
-// missing, or if sheet1's index is greater than sheet2's in workbook
-// order. Callers surface the error as a #REF! formulaArg. Sheet lookup
-// is case-insensitive (GetSheetIndex uses strings.EqualFold); the
-// returned names preserve the workbook's stored casing.
+// from first sheet to last sheet inclusive.
 func (f *File) expand3DSheetRange(sheet1, sheet2 string) ([]string, error) {
-	i1, err := f.GetSheetIndex(sheet1)
-	if err != nil || i1 < 0 {
-		return nil, fmt.Errorf("sheet %q not found", sheet1)
+	firstSheetIdx, err := f.GetSheetIndex(sheet1)
+	if err != nil || firstSheetIdx < 0 {
+		return nil, ErrSheetNotExist{sheet1}
 	}
-	i2, err := f.GetSheetIndex(sheet2)
-	if err != nil || i2 < 0 {
-		return nil, fmt.Errorf("sheet %q not found", sheet2)
+	lastSheetIdx, err := f.GetSheetIndex(sheet2)
+	if err != nil || lastSheetIdx < 0 {
+		return nil, ErrSheetNotExist{sheet2}
 	}
-	if i1 > i2 {
-		return nil, fmt.Errorf("sheet range %q:%q reversed in workbook order", sheet1, sheet2)
+	if firstSheetIdx > lastSheetIdx {
+		firstSheetIdx, lastSheetIdx = lastSheetIdx, firstSheetIdx
 	}
-	names := f.GetSheetList()
-	return names[i1 : i2+1], nil
+	return f.GetSheetList()[firstSheetIdx : lastSheetIdx+1], err
 }
 
 // prepareValueRange prepare value range.

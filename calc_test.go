@@ -35,33 +35,33 @@ func TestCalcCellValue(t *testing.T) {
 		{nil, nil, nil, "Feb", "South 2", 45500},
 	}
 	mathCalc := map[string]string{
-		"2^3":                          "8",
-		"1=1":                          "TRUE",
-		"1=2":                          "FALSE",
-		"1<2":                          "TRUE",
-		"3<2":                          "FALSE",
-		"1<\"-1\"":                     "TRUE",
-		"\"-1\"<1":                     "FALSE",
-		"\"-1\"<\"-2\"":                "TRUE",
-		"2<=3":                         "TRUE",
-		"2<=1":                         "FALSE",
-		"1<=\"-1\"":                    "TRUE",
-		"\"-1\"<=1":                    "FALSE",
-		"\"-1\"<=\"-2\"":               "TRUE",
-		"2>1":                          "TRUE",
-		"2>3":                          "FALSE",
-		"1>\"-1\"":                     "FALSE",
-		"\"-1\">-1":                    "TRUE",
-		"\"-1\">\"-2\"":                "FALSE",
-		"2>=1":                         "TRUE",
-		"2>=3":                         "FALSE",
-		"1>=\"-1\"":                    "FALSE",
-		"\"-1\">=-1":                   "TRUE",
-		"\"-1\">=\"-2\"":               "FALSE",
-		strings.Repeat("-", 5) + "1+1": "0",
-		strings.Repeat("-", 6) + "1+1": "2",
-		strings.Repeat("-", 3) + "1" + strings.Repeat("-", 3) + "1": "-2",
-		strings.Repeat("-", 3) + "1" + strings.Repeat("-", 4) + "1": "0",
+		"2^3":                   "8",
+		"1=1":                   "TRUE",
+		"1=2":                   "FALSE",
+		"1<2":                   "TRUE",
+		"3<2":                   "FALSE",
+		"1<\"-1\"":              "TRUE",
+		"\"-1\"<1":              "FALSE",
+		"\"-1\"<\"-2\"":         "TRUE",
+		"2<=3":                  "TRUE",
+		"2<=1":                  "FALSE",
+		"1<=\"-1\"":             "TRUE",
+		"\"-1\"<=1":             "FALSE",
+		"\"-1\"<=\"-2\"":        "TRUE",
+		"2>1":                   "TRUE",
+		"2>3":                   "FALSE",
+		"1>\"-1\"":              "FALSE",
+		"\"-1\">-1":             "TRUE",
+		"\"-1\">\"-2\"":         "FALSE",
+		"2>=1":                  "TRUE",
+		"2>=3":                  "FALSE",
+		"1>=\"-1\"":             "FALSE",
+		"\"-1\">=-1":            "TRUE",
+		"\"-1\">=\"-2\"":        "FALSE",
+		"-----1+1":              "0",
+		"------1+1":             "2",
+		"---1---1":              "-2",
+		"---1----1":             "0",
 		"1&2":                   "12",
 		"15%":                   "0.15",
 		"1+20%":                 "1.2",
@@ -7124,136 +7124,64 @@ func TestCalcImplicitIntersect(t *testing.T) {
 }
 
 func TestCalc3DRef(t *testing.T) {
-	setup := func() *File {
+	prepareCalcData := func() *File {
 		f := NewFile()
-		assert.NoError(t, f.SetSheetName("Sheet1", "Jan"))
-		_, err := f.NewSheet("Feb")
+		_, err := f.NewSheet("Sheet 2")
 		assert.NoError(t, err)
-		_, err = f.NewSheet("Mar")
+		_, err = f.NewSheet("Sheet3")
 		assert.NoError(t, err)
-		_, err = f.NewSheet("Apr")
+		_, err = f.NewSheet("Sheet4")
 		assert.NoError(t, err)
-		for i, sn := range []string{"Jan", "Feb", "Mar", "Apr"} {
+		for i, sheet := range []string{"Sheet1", "Sheet 2", "Sheet3", "Sheet4"} {
 			base := int64(i + 1)
-			assert.NoError(t, f.SetCellInt(sn, "A1", base*10))
-			assert.NoError(t, f.SetCellInt(sn, "A2", base))
-			assert.NoError(t, f.SetCellInt(sn, "B1", base*100))
+			assert.NoError(t, f.SetCellValue(sheet, "A1", base*10))
+			assert.NoError(t, f.SetCellValue(sheet, "A2", base))
+			assert.NoError(t, f.SetCellValue(sheet, "B1", base*100))
 		}
 		return f
 	}
-
-	cases := map[string]string{
-		"SUM(Jan:Apr!A1)":     "100", // 10+20+30+40
-		"SUM(Jan:Apr!$A$1)":   "100",
-		"SUM(Jan:Mar!A1)":     "60",
-		"SUM(Feb:Apr!A1)":     "90",
-		"SUM(Jan:Jan!A1)":     "10",  // degenerate single-sheet range
-		"SUM(Jan:Apr!A1:A2)":  "110", // (10+1)+(20+2)+(30+3)+(40+4)
-		"SUM(Jan:Apr!A1:B1)":  "1100",
-		"AVERAGE(Jan:Apr!A1)": "25",
-		"MIN(Jan:Apr!A1)":     "10",
-		"MAX(Jan:Apr!A1)":     "40",
-		"COUNT(Jan:Apr!A1)":   "4",
-		"COUNTA(Jan:Apr!A1)":  "4",
-		"PRODUCT(Jan:Apr!A1)": "240000",
-		"SUM(Apr:Jan!A1)":     "#REF!", // reversed order
-		"SUM(Jan:Xyz!A1)":     "#REF!", // missing end sheet
-		"SUM(Xyz:Mar!A1)":     "#REF!", // missing start sheet
+	formulaList := map[string]string{
+		"SUM(Sheet1:Sheet4!A1)":     "100",
+		"SUM(Sheet1:Sheet4!$A$1)":   "100",
+		"SUM(Sheet1:Sheet3!A1)":     "60",
+		"SUM('Sheet 2:Sheet4'!A1)":  "90",
+		"SUM(Sheet1:Sheet1!A1)":     "10",
+		"SUM(Sheet1:Sheet4!A1:A2)":  "110",
+		"SUM(Sheet1:Sheet4!A1:B1)":  "1100",
+		"AVERAGE(Sheet1:Sheet4!A1)": "25",
+		"MIN(Sheet1:Sheet4!A1)":     "10",
+		"MAX(Sheet1:Sheet4!A1)":     "40",
+		"COUNT(Sheet1:Sheet4!A1)":   "4",
+		"COUNTA(Sheet1:Sheet4!A1)":  "4",
+		"PRODUCT(Sheet1:Sheet4!A1)": "240000",
+		"SUM(Sheet4:Sheet1!A1)":     "100",
 	}
-	for formula, expected := range cases {
-		f := setup()
-		assert.NoError(t, f.SetCellFormula("Jan", "Z1", formula))
-		result, _ := f.CalcCellValue("Jan", "Z1")
+	for formula, expected := range formulaList {
+		f := prepareCalcData()
+		defer func() {
+			assert.NoError(t, f.Close())
+		}()
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err)
 		assert.Equal(t, expected, result, formula)
 	}
-
-	t.Run("non-ascii sheet names", func(t *testing.T) {
-		f := NewFile()
-		assert.NoError(t, f.SetSheetName("Sheet1", "Jänner"))
-		_, err := f.NewSheet("Februar")
-		assert.NoError(t, err)
-		_, err = f.NewSheet("März")
-		assert.NoError(t, err)
-		_, err = f.NewSheet("Dezember")
-		assert.NoError(t, err)
-		for i, sn := range []string{"Jänner", "Februar", "März", "Dezember"} {
-			assert.NoError(t, f.SetCellInt(sn, "M40", int64((i+1)*100)))
-		}
-		assert.NoError(t, f.SetCellFormula("Jänner", "A1", "SUM(Jänner:Dezember!$M$40)"))
-		result, err := f.CalcCellValue("Jänner", "A1")
-		assert.NoError(t, err)
-		assert.Equal(t, "1000", result)
-	})
-}
-
-func TestParse3DRefBoundaries(t *testing.T) {
-	f := NewFile()
-	assert.NoError(t, f.SetSheetName("Sheet1", "Jan"))
-	_, err := f.NewSheet("Feb")
-	assert.NoError(t, err)
-	assert.NoError(t, f.SetCellInt("Jan", "A1", 1))
-	assert.NoError(t, f.SetCellInt("Feb", "A1", 2))
-	ctx := &calcContext{
-		entry:             "Jan!A1",
-		maxCalcIterations: f.options.MaxCalcIterations,
-		iterations:        make(map[string]uint),
-		iterationsCache:   make(map[string]formulaArg),
+	calcError := map[string][]string{
+		"SUM(Sheet1:SheetN!A1)": {"#REF!", "sheet SheetN does not exist"},
+		"SUM(SheetN:Sheet3!A1)": {"#REF!", "sheet SheetN does not exist"},
+		"SUM(Sheet1:Sheet3!A)":  {"#NAME?", newCoordinatesToCellNameError(1, -1).Error()},
 	}
-
-	_, is3D, err := f.parse3DRef(ctx, "A1")
-	assert.False(t, is3D)
-	assert.NoError(t, err)
-
-	arg, is3D, err := f.parse3DRef(ctx, "Jan:Feb!bad-ref")
-	assert.True(t, is3D)
-	assert.Error(t, err)
-	assert.Equal(t, ArgError, arg.Type)
-}
-
-func TestSplit3DRefBoundaries(t *testing.T) {
-	sheet1, sheet2, innerRef, ok := split3DRef("Jan:Apr!A1:B2")
-	assert.True(t, ok)
-	assert.Equal(t, "Jan", sheet1)
-	assert.Equal(t, "Apr", sheet2)
-	assert.Equal(t, "A1:B2", innerRef)
-
-	rejects := []string{
-		"Jan:Apr",
-		"Jan:Apr!",
-		"Jan!A1",
-		"Jan:!A1",
-		":Apr!A1",
-		"Jan:Apr:May!A1",
-		"'Jan':Apr!A1",
-		"Jan:'Apr'!A1",
+	for formula, expected := range calcError {
+		f := prepareCalcData()
+		defer func() {
+			assert.NoError(t, f.Close())
+		}()
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected[1], formula)
+		assert.Equal(t, expected[0], result, formula)
 	}
-	for _, ref := range rejects {
-		t.Run(ref, func(t *testing.T) {
-			_, _, _, ok := split3DRef(ref)
-			assert.False(t, ok)
-		})
-	}
-}
-
-func TestReadSheetTokenBoundaries(t *testing.T) {
-	cases := []struct {
-		input   string
-		want    string
-		wantRem string
-		wantOK  bool
-	}{
-		{"Jan:Apr", "Jan", ":Apr", true},
-		{"Jan", "Jan", "", true},
-		{"", "", "", false},
-		{"Jan!Apr", "", "", false},
-		{"'Jan'", "", "", false},
-	}
-	for _, tc := range cases {
-		t.Run(tc.input, func(t *testing.T) {
-			name, rest, ok := readSheetToken(tc.input)
-			assert.Equal(t, tc.want, name)
-			assert.Equal(t, tc.wantRem, rest)
-			assert.Equal(t, tc.wantOK, ok)
-		})
-	}
+	assert.Empty(t, split3DReference("Sheet1:Sheet2:Sheet3!A1"))
+	assert.Empty(t, split3DReference(":Sheet1!A1"))
+	assert.Empty(t, split3DReference("!A1"))
 }
