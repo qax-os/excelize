@@ -326,7 +326,9 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	}
 	err = nil
 	if _, ok = f.checked.Load(name); !ok {
-		ws.checkSheet()
+		if err = ws.checkSheet(); err != nil {
+			return
+		}
 		if err = ws.checkRow(); err != nil {
 			return
 		}
@@ -336,26 +338,42 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 	return
 }
 
+// checkRowNum provides a function to check the row number is valid or not.
+func checkRowNum(r int) error {
+	if r < 0 {
+		return newInvalidRowNumberError(r)
+	}
+	if r > TotalRows {
+		return ErrMaxRows
+	}
+	return nil
+}
+
+// lastRowNum provides a function to get the last row number of the row element.
+func lastRowNum(r xlsxRow) int {
+	var num int
+	for _, cell := range r.C {
+		if _, row, err := CellNameToCoordinates(cell.R); err == nil {
+			if row > num {
+				num = row
+			}
+		}
+	}
+	return num
+}
+
 // checkSheet provides a function to fill each row element and make that is
 // continuous in a worksheet of XML.
-func (ws *xlsxWorksheet) checkSheet() {
+func (ws *xlsxWorksheet) checkSheet() error {
 	var (
-		row        int
-		r0Rows     []xlsxRow
-		lastRowNum = func(r xlsxRow) int {
-			var num int
-			for _, cell := range r.C {
-				if _, row, err := CellNameToCoordinates(cell.R); err == nil {
-					if row > num {
-						num = row
-					}
-				}
-			}
-			return num
-		}
+		row    int
+		r0Rows []xlsxRow
 	)
 	for i := 0; i < len(ws.SheetData.Row); i++ {
 		r := ws.SheetData.Row[i]
+		if err := checkRowNum(r.R); err != nil {
+			return err
+		}
 		if r.R == 0 || r.R == row {
 			num := lastRowNum(r)
 			if num > row {
@@ -390,6 +408,7 @@ func (ws *xlsxWorksheet) checkSheet() {
 		sheetData.Row[i-1].R = i
 		ws.checkSheetR0(&sheetData, &sheetData.Row[i-1], false)
 	}
+	return nil
 }
 
 // checkSheetR0 handle the row element with r="0" attribute, cells in this row

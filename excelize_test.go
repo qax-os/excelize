@@ -1619,6 +1619,18 @@ func TestWorkSheetReader(t *testing.T) {
 	f.checked = sync.Map{}
 	_, err = f.workSheetReader("Sheet1")
 	assert.NoError(t, err)
+
+	// Test on invalid row number
+	sheetData := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>%s</sheetData></worksheet>`
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, sheetData, `<row r="-1"><c r="A1"><v>1</v></c></row>`))
+	f.checked = sync.Map{}
+	_, err = f.workSheetReader("Sheet1")
+	assert.Equal(t, newInvalidRowNumberError(-1), err)
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, sheetData, `<row r="1048577"><c r="A1"><v>1</v></c></row>`))
+	_, err = f.workSheetReader("Sheet1")
+	assert.Equal(t, ErrMaxRows, err)
 }
 
 func TestRelsReader(t *testing.T) {
