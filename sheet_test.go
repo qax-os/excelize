@@ -704,6 +704,22 @@ func newSheetWithSave() {
 	_ = file.Save()
 }
 
+func BenchmarkTrimRowSparseRows(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		trimRow(newSparseRowsSheetData(50000))
+	}
+}
+
+func newSparseRowsSheetData(rows int) *xlsxSheetData {
+	sheetData := &xlsxSheetData{Row: make([]xlsxRow, rows)}
+	for i := range sheetData.Row {
+		sheetData.Row[i].R = i + 1
+	}
+	sheetData.Row[1].C = []xlsxC{{R: "A2", V: "value"}, {R: "B2"}}
+	sheetData.Row[rows-1] = xlsxRow{R: TotalRows, Hidden: true}
+	return sheetData
+}
+
 func TestAttrValToBool(t *testing.T) {
 	_, err := attrValToBool("hidden", []xml.Attr{
 		{Name: xml.Name{Local: "hidden"}},
@@ -864,6 +880,24 @@ func TestSheetDimension(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, dimension)
 	assert.NoError(t, f.Close())
+}
+
+func TestTrimRowCompactsSparseRows(t *testing.T) {
+	sheetData := &xlsxSheetData{Row: []xlsxRow{
+		{R: 1, C: []xlsxC{{R: "A1"}}},
+		{R: 2, C: []xlsxC{{R: "A2", V: "value"}, {R: "B2"}}},
+		{R: 3},
+		{R: TotalRows, Hidden: true},
+	}}
+
+	rows := trimRow(sheetData)
+	assert.Len(t, rows, 2)
+	assert.Equal(t, 2, rows[0].R)
+	assert.Len(t, rows[0].C, 1)
+	assert.Equal(t, "A2", rows[0].C[0].R)
+	assert.Equal(t, "value", rows[0].C[0].V)
+	assert.Equal(t, TotalRows, rows[1].R)
+	assert.True(t, rows[1].Hidden)
 }
 
 func TestAddIgnoredErrors(t *testing.T) {

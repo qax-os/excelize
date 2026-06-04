@@ -197,16 +197,14 @@ func trimRow(sheetData *xlsxSheetData) []xlsxRow {
 		i   int
 	)
 
-	for k := 0; k < len(sheetData.Row); k++ {
+	for k := range sheetData.Row {
 		row = sheetData.Row[k]
 		if row = trimCell(row); len(row.C) != 0 || row.hasAttr() {
 			sheetData.Row[i] = row
 			i++
-			continue
 		}
-		sheetData.Row = append(sheetData.Row[:k], sheetData.Row[k+1:]...)
-		k--
 	}
+	clear(sheetData.Row[i:])
 	return sheetData.Row[:i]
 }
 
