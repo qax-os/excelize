@@ -513,13 +513,14 @@ func TestWorksheetWriter(t *testing.T) {
 	// Test set cell value with alternate content
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	worksheet := xml.Header + `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetData><row r="1"><c r="A1"><v>%d</v></c></row></sheetData><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" Requires="a14"><xdr:twoCellAnchor editAs="oneCell"></xdr:twoCellAnchor></mc:Choice><mc:Fallback/></mc:AlternateContent></worksheet>`
+	updatedWorksheet := xml.Header + `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><dimension ref="A1"></dimension><sheetData><row r="1"><c r="A1"><v>%d</v></c></row></sheetData><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" Requires="a14"><xdr:twoCellAnchor editAs="oneCell"></xdr:twoCellAnchor></mc:Choice><mc:Fallback/></mc:AlternateContent></worksheet>`
 	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(worksheet, 1)))
 	f.checked = sync.Map{}
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 2))
 	f.workSheetWriter()
 	value, ok := f.Pkg.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
-	assert.Equal(t, fmt.Sprintf(worksheet, 2), string(value.([]byte)))
+	assert.Equal(t, fmt.Sprintf(updatedWorksheet, 2), string(value.([]byte)))
 }
 
 func TestGetWorkbookPath(t *testing.T) {
@@ -839,6 +840,31 @@ func TestSheetDimension(t *testing.T) {
 	dimension, err = f.GetSheetDimension("")
 	assert.Empty(t, dimension)
 	assert.Equal(t, err, ErrSheetNameBlank)
+
+	f = NewFile()
+	assert.NoError(t, f.SetCellValue(sheetName, "C5", "value"))
+	dimension, err = f.GetSheetDimension(sheetName)
+	assert.NoError(t, err)
+	assert.Equal(t, "C5", dimension)
+
+	filePath := filepath.Join(t.TempDir(), "sheet-dimension.xlsx")
+	assert.NoError(t, f.SaveAs(filePath))
+	assert.NoError(t, f.Close())
+
+	f, err = OpenFile(filePath)
+	assert.NoError(t, err)
+	dimension, err = f.GetSheetDimension(sheetName)
+	assert.NoError(t, err)
+	assert.Equal(t, "C5", dimension)
+	assert.NoError(t, f.Close())
+
+	f = NewFile()
+	assert.NoError(t, f.SetSheetDimension(sheetName, "B2:E61"))
+	assert.NoError(t, f.SetCellValue(sheetName, "G64", "value"))
+	dimension, err = f.GetSheetDimension(sheetName)
+	assert.NoError(t, err)
+	assert.Equal(t, "B2:G64", dimension)
+	assert.NoError(t, f.Close())
 
 	// Test get the worksheet dimension with in mode
 	f, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipXMLSizeLimit: 128})

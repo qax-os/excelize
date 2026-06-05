@@ -2104,6 +2104,45 @@ func (ws *xlsxWorksheet) prepareSheetXML(col, row int) {
 	}
 	rowData := &ws.SheetData.Row[row-1]
 	fillColumns(rowData, col, row)
+	ws.expandSheetDimension(col, row)
+}
+
+func (ws *xlsxWorksheet) expandSheetDimension(col, row int) {
+	if col < 1 || row < 1 {
+		return
+	}
+	cell, err := CoordinatesToCellName(col, row)
+	if err != nil {
+		return
+	}
+	if ws.Dimension == nil || ws.Dimension.Ref == "" {
+		ws.Dimension = &xlsxDimension{Ref: cell}
+		return
+	}
+	coordinates, err := rangeRefToCoordinates(ws.Dimension.Ref)
+	if err != nil {
+		ws.Dimension = &xlsxDimension{Ref: cell}
+		return
+	}
+	_ = sortCoordinates(coordinates)
+	if col < coordinates[0] {
+		coordinates[0] = col
+	}
+	if row < coordinates[1] {
+		coordinates[1] = row
+	}
+	if col > coordinates[2] {
+		coordinates[2] = col
+	}
+	if row > coordinates[3] {
+		coordinates[3] = row
+	}
+	ref, err := coordinatesToRangeRef(coordinates)
+	if err != nil {
+		ws.Dimension = &xlsxDimension{Ref: cell}
+		return
+	}
+	ws.Dimension = &xlsxDimension{Ref: ref}
 }
 
 // fillColumns fill cells in the column of the row as contiguous.
