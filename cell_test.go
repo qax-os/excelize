@@ -822,6 +822,19 @@ func TestSetCellFormula(t *testing.T) {
 	assert.Equal(t, ErrColumnNumber, f.SetCellFormula("Sheet1", "A1", "SUM(XFE1:XFE2)", FormulaOpts{Ref: &ref, Type: &formulaType}))
 }
 
+func TestOverwriteSharedFormulaWithIndividualFormulas(t *testing.T) {
+	f := NewFile()
+	defer f.Close()
+	sharedType, ref := STCellFormulaTypeShared, "A1:A3"
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "1+1", FormulaOpts{Type: &sharedType, Ref: &ref}))
+	// Overwrite shared formula cells with individual formulas.
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "2+2"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "3+3"))
+	formula, err := f.GetCellFormula("Sheet1", "A2")
+	assert.NoError(t, err)
+	assert.Equal(t, "2+2", formula)
+}
+
 func TestGetCellRichText(t *testing.T) {
 	f, theme := NewFile(), 1
 

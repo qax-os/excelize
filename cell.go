@@ -802,11 +802,8 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 		return f.deleteCalcChain(f.getSheetID(sheet), cell)
 	}
 
-	if c.F != nil {
-		c.F.Content = formula
-	} else {
-		c.F = &xlsxF{Content: formula}
-	}
+	ws.deleteSharedFormula(c)
+	c.F = &xlsxF{Content: formula}
 
 	for _, opt := range opts {
 		if opt.Type != nil {
