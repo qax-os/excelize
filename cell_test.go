@@ -569,6 +569,54 @@ func TestGetValueFrom(t *testing.T) {
 	value, err = c.getValueFrom(f, &xlsxSST{Count: 1, SI: []xlsxSI{{}, {T: &xlsxT{Val: "s"}}}}, false)
 	assert.NoError(t, err)
 	assert.Equal(t, "s", value)
+
+	// Test fastSST path (preloaded shared strings)
+	f2 := NewFile()
+	f2.fastSST = []string{"fast0", "fast1", "fast2"}
+	f2.fastSSTLoaded = true
+	sst2 := &xlsxSST{}
+
+	// Raw mode, style 0 — fast return without formattedValue
+	c2 := xlsxC{T: "s", V: "1", S: 0}
+	val, err := c2.getValueFrom(f2, sst2, true)
+	assert.NoError(t, err)
+	assert.Equal(t, "fast1", val)
+
+	// Non-raw, style 0 — still fast return
+	c3 := xlsxC{T: "s", V: "0", S: 0}
+	val, err = c3.getValueFrom(f2, sst2, false)
+	assert.NoError(t, err)
+	assert.Equal(t, "fast0", val)
+
+	// Empty V with shared string type — raw, style 0
+	c4 := xlsxC{T: "s", V: "", S: 0}
+	val, err = c4.getValueFrom(f2, sst2, true)
+	assert.NoError(t, err)
+	assert.Equal(t, "", val)
+
+	// inlineStr type — raw path
+	c5 := xlsxC{T: "inlineStr", IS: &xlsxSI{T: &xlsxT{Val: "inline_val"}}, S: 0}
+	val, err = c5.getValueFrom(f2, sst2, true)
+	assert.NoError(t, err)
+	assert.Equal(t, "inline_val", val)
+
+	// inlineStr type — nil IS, raw path
+	c6 := xlsxC{T: "inlineStr", V: "fallback", S: 0}
+	val, err = c6.getValueFrom(f2, sst2, true)
+	assert.NoError(t, err)
+	assert.Equal(t, "fallback", val)
+
+	// default (numeric) type — raw path
+	c7 := xlsxC{T: "", V: "42.5", S: 0}
+	val, err = c7.getValueFrom(f2, sst2, true)
+	assert.NoError(t, err)
+	assert.Equal(t, "42.5", val)
+
+	// default type — style 0, non-raw, numeric
+	c8 := xlsxC{T: "", V: "100", S: 0}
+	val, err = c8.getValueFrom(f2, sst2, false)
+	assert.NoError(t, err)
+	assert.Equal(t, "100", val)
 }
 
 func TestGetCellFormula(t *testing.T) {

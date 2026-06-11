@@ -160,6 +160,14 @@ func (f *File) SetCellValue(sheet, cell string, value interface{}) error {
 
 // String extracts characters from a string item.
 func (x xlsxSI) String() string {
+	// Fast path: simple string with no rich text runs (the common case).
+	// Avoids strings.Builder allocation entirely.
+	if x.T != nil && len(x.R) == 0 {
+		if x.T.Val == "" {
+			return ""
+		}
+		return bstrUnmarshal(x.T.Val)
+	}
 	var value strings.Builder
 	if x.T != nil {
 		value.WriteString(x.T.Val)
@@ -618,21 +626,51 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 	case "s":
 		if c.V != "" {
 			xlsxSI, _ := strconv.Atoi(strings.TrimSpace(c.V))
+			// Fast path: use preloaded shared strings if available
+			if f.fastSSTLoaded && xlsxSI >= 0 && xlsxSI < len(f.fastSST) {
+				val := f.fastSST[xlsxSI]
+				if raw || c.S == 0 {
+					return val, nil
+				}
+				fmtCell := xlsxC{S: c.S, V: val}
+				return f.formattedValue(&fmtCell, raw, CellTypeSharedString)
+			}
 			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
-				return f.formattedValue(&xlsxC{S: c.S, V: f.getFromStringItem(xlsxSI)}, raw, CellTypeSharedString)
+				val := f.getFromStringItem(xlsxSI)
+				if raw || c.S == 0 {
+					return val, nil
+				}
+				fmtCell := xlsxC{S: c.S, V: val}
+				return f.formattedValue(&fmtCell, raw, CellTypeSharedString)
 			}
 			d.mu.Lock()
 			defer d.mu.Unlock()
 			if len(d.SI) > xlsxSI {
-				return f.formattedValue(&xlsxC{S: c.S, V: d.SI[xlsxSI].String()}, raw, CellTypeSharedString)
+				val := d.SI[xlsxSI].String()
+				if raw || c.S == 0 {
+					return val, nil
+				}
+				fmtCell := xlsxC{S: c.S, V: val}
+				return f.formattedValue(&fmtCell, raw, CellTypeSharedString)
 			}
+		}
+		if raw || c.S == 0 {
+			return c.V, nil
 		}
 		return f.formattedValue(c, raw, CellTypeSharedString)
 	case "str":
 		return c.V, nil
 	case "inlineStr":
 		if c.IS != nil {
-			return f.formattedValue(&xlsxC{S: c.S, V: c.IS.String()}, raw, CellTypeInlineString)
+			val := c.IS.String()
+			if raw || c.S == 0 {
+				return val, nil
+			}
+			fmtCell := xlsxC{S: c.S, V: val}
+			return f.formattedValue(&fmtCell, raw, CellTypeInlineString)
+		}
+		if raw || c.S == 0 {
+			return c.V, nil
 		}
 		return f.formattedValue(c, raw, CellTypeInlineString)
 	default:
@@ -642,6 +680,9 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 			} else {
 				c.V = strconv.FormatFloat(decimal, 'f', -1, 64)
 			}
+		}
+		if raw || c.S == 0 {
+			return c.V, nil
 		}
 		return f.formattedValue(c, raw, CellTypeNumber)
 	}
