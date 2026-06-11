@@ -197,6 +197,95 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 	return rowIterator.cells, rowIterator.err
 }
 
+// ColumnIteratorFunc defines a function type for iterating over columns in a row.
+// The function receives the column index (0-based) and the cell value.
+// Return a non-nil error to stop the iteration.
+type ColumnIteratorFunc func(index int, cell string) error
+
+// The iterator function receives the column index (0-based) and the cell value.
+// If the iterator function returns a non-nil error, the iteration stops and
+// that error is returned.
+//
+// Example usage:
+//
+//	err := rows.IterateColumns(func(index int, cell string) error {
+//	    fmt.Printf("Column %d: %s\n", index, cell)
+//	    return nil
+//	})
+func (rows *Rows) IterateColumns(f ColumnIteratorFunc, opts ...Options) error {
+	if rows.curRow > rows.seekRow {
+		return nil
+	}
+	var rowIterator rowXMLIterator
+	var token xml.Token
+	rows.rawCellValue = rows.f.getOptions(opts...).RawCellValue
+	if rows.sst, rowIterator.err = rows.f.sharedStringsReader(); rowIterator.err != nil {
+		return rowIterator.err
+	}
+	columnIndex := 0
+	for {
+		if rows.token != nil {
+			token = rows.token
+		} else if token, _ = rows.decoder.Token(); token == nil {
+			break
+		}
+		switch xmlElement := token.(type) {
+		case xml.StartElement:
+			rowIterator.inElement = xmlElement.Name.Local
+			if rowIterator.inElement == "row" {
+				rowNum := 0
+				if rowNum, rowIterator.err = attrValToInt("r", xmlElement.Attr); rowNum != 0 {
+					rows.curRow = rowNum
+				} else if rows.token == nil {
+					rows.curRow++
+				}
+				rows.token = token
+				rows.seekRowOpts = extractRowOpts(xmlElement.Attr)
+				if rows.curRow > rows.seekRow {
+					rows.token = nil
+					return nil
+				}
+			}
+			if rowIterator.inElement == "c" {
+				rowIterator.cellCol++
+				colCell := xlsxC{}
+				colCell.cellXMLHandler(rows.decoder, &xmlElement)
+				if colCell.R != "" {
+					if rowIterator.cellCol, _, rowIterator.err = CellNameToCoordinates(colCell.R); rowIterator.err != nil {
+						rows.token = nil
+						return rowIterator.err
+					}
+				}
+				for columnIndex < rowIterator.cellCol-1 {
+					if err := f(columnIndex, ""); err != nil {
+						rows.token = nil
+						return err
+					}
+					columnIndex++
+				}
+				if val, _ := colCell.getValueFrom(rows.f, rows.sst, rows.rawCellValue); val != "" || colCell.F != nil {
+					if err := f(columnIndex, val); err != nil {
+						rows.token = nil
+						return err
+					}
+				} else {
+					if err := f(columnIndex, ""); err != nil {
+						rows.token = nil
+						return err
+					}
+				}
+				columnIndex++
+			}
+			rows.token = nil
+		case xml.EndElement:
+			if xmlElement.Name.Local == "sheetData" {
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
 // extractRowOpts extract row element attributes.
 func extractRowOpts(attrs []xml.Attr) RowOpts {
 	rowOpts := RowOpts{Height: defaultRowHeight}

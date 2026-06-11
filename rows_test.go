@@ -149,6 +149,55 @@ func TestRowsError(t *testing.T) {
 	assert.NoError(t, f.Close())
 }
 
+func TestIterateColumns(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "A1"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "C1", "C1"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "D1", "D1"))
+	rows, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	defer rows.Close()
+
+	assert.True(t, rows.Next())
+	var iteratedCells []string
+	err = rows.IterateColumns(func(index int, cell string) error {
+		iteratedCells = append(iteratedCells, cell)
+		return nil
+	})
+	assert.NoError(t, err)
+	rows2, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	defer rows2.Close()
+	assert.True(t, rows2.Next())
+	columns, err := rows2.Columns()
+	assert.NoError(t, err)
+	assert.Equal(t, columns, iteratedCells)
+	assert.Equal(t, []string{"A1", "", "C1", "D1"}, iteratedCells)
+}
+
+func TestIterateColumnsEarlyTermination(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "A1"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", "B1"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "C1", "C1"))
+
+	rows, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	defer rows.Close()
+
+	assert.True(t, rows.Next())
+	var collectedCells []string
+	err = rows.IterateColumns(func(index int, cell string) error {
+		collectedCells = append(collectedCells, cell)
+		if index == 1 {
+			return fmt.Errorf("stop")
+		}
+		return nil
+	})
+	assert.EqualError(t, err, "stop")
+	assert.Equal(t, []string{"A1", "B1"}, collectedCells)
+}
+
 func TestRowHeight(t *testing.T) {
 	f := NewFile()
 	sheet1 := f.GetSheetName(0)
