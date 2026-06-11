@@ -820,6 +820,21 @@ func TestSetCellFormula(t *testing.T) {
 	// Test set array formula with invalid cell reference
 	formulaType, ref = STCellFormulaTypeArray, "A1:A2"
 	assert.Equal(t, ErrColumnNumber, f.SetCellFormula("Sheet1", "A1", "SUM(XFE1:XFE2)", FormulaOpts{Ref: &ref, Type: &formulaType}))
+
+	t.Run("for_overwrite_shared_formula_cells", func(t *testing.T) {
+		f := NewFile()
+		defer f.Close()
+		sharedType, ref := STCellFormulaTypeShared, "A1:A3"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "1+1", FormulaOpts{Type: &sharedType, Ref: &ref}))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "2+2"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A3", "3+3"))
+		formula, err := f.GetCellFormula("Sheet1", "A2")
+		assert.NoError(t, err)
+		assert.Equal(t, "2+2", formula)
+		formula, err = f.GetCellFormula("Sheet1", "A3")
+		assert.NoError(t, err)
+		assert.Equal(t, "3+3", formula)
+	})
 }
 
 func TestGetCellRichText(t *testing.T) {
