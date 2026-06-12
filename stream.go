@@ -25,16 +25,19 @@ import (
 
 // StreamWriter defined the type of stream writer.
 type StreamWriter struct {
-	file            *File
-	Sheet           string
-	SheetID         int
-	sheetWritten    bool
-	worksheet       *xlsxWorksheet
-	rawData         bufferedWriter
-	rows            int
-	mergeCellsCount int
-	mergeCells      strings.Builder
-	tableParts      string
+	file             *File
+	Sheet            string
+	SheetID          int
+	sheetWritten     bool
+	worksheet        *xlsxWorksheet
+	rawData          bufferedWriter
+	rows             int
+	mergeCellsCount  int
+	mergeCells       strings.Builder
+	tableParts       string
+	useSharedStrings bool
+	sharedStrings    []string
+	sharedStringsMap map[string]int
 }
 
 // NewStreamWriter returns stream writer struct by given worksheet name used for
@@ -124,6 +127,10 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 		Sheet:   sheet,
 		SheetID: sheetID,
 		rawData: bufferedWriter{tmpDir: f.options.TmpDir},
+	}
+	if f.options != nil && f.options.UseSharedStrings {
+		sw.useSharedStrings = true
+		sw.sharedStringsMap = make(map[string]int, 1024)
 	}
 	var err error
 	sw.worksheet, err = f.workSheetReader(sheet)
@@ -429,6 +436,12 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 			_, _ = sw.rawData.WriteString(`</row>`)
 			return err
 		}
+		if sw.useSharedStrings && c.T == "inlineStr" && c.IS != nil && c.IS.T != nil && len(c.IS.R) == 0 {
+			idx := sw.getOrAddSharedString(c.IS.T.Val)
+			c.T = "s"
+			c.V = strconv.Itoa(idx)
+			c.IS = nil
+		}
 		writeCell(&sw.rawData, c)
 	}
 	_, _ = sw.rawData.WriteString(`</row>`)
@@ -704,6 +717,61 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 	_, _ = buf.WriteString(`</c>`)
 }
 
+// getOrAddSharedString returns the index of a string in the shared string
+// table, adding it if not already present.
+func (sw *StreamWriter) getOrAddSharedString(s string) int {
+	if idx, ok := sw.sharedStringsMap[s]; ok {
+		return idx
+	}
+	idx := len(sw.sharedStrings)
+	sw.sharedStrings = append(sw.sharedStrings, s)
+	sw.sharedStringsMap[s] = idx
+	return idx
+}
+
+// writeSharedStrings writes xl/sharedStrings.xml and registers the content
+// type and workbook relationship for the shared string table.
+func (sw *StreamWriter) writeSharedStrings() error {
+	var buf bytes.Buffer
+	buf.WriteString(xml.Header)
+	buf.WriteString(`<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="`)
+	buf.WriteString(strconv.Itoa(len(sw.sharedStrings)))
+	buf.WriteString(`" uniqueCount="`)
+	buf.WriteString(strconv.Itoa(len(sw.sharedStrings)))
+	buf.WriteString(`">`)
+
+	for _, s := range sw.sharedStrings {
+		buf.WriteString(`<si><t`)
+		if len(s) > 0 {
+			first, last := s[0], s[len(s)-1]
+			if first == ' ' || first == '\t' || first == '\n' || first == '\r' ||
+				last == ' ' || last == '\t' || last == '\n' || last == '\r' {
+				buf.WriteString(` xml:space="preserve"`)
+			}
+		}
+		buf.WriteString(`>`)
+		_ = xml.EscapeText(&buf, []byte(s))
+		buf.WriteString(`</t></si>`)
+	}
+	buf.WriteString(`</sst>`)
+
+	sw.file.Pkg.Store(defaultXMLPathSharedStrings, buf.Bytes())
+
+	if err := sw.file.addContentTypePart(0, "sharedStrings"); err != nil {
+		return err
+	}
+
+	relPath := sw.file.getWorkbookRelsPath()
+	rels, _ := sw.file.relsReader(relPath)
+	for _, rel := range rels.Relationships {
+		if rel.Target == "/xl/sharedStrings.xml" {
+			return nil
+		}
+	}
+	sw.file.addRels(relPath, SourceRelationshipSharedStrings, "/xl/sharedStrings.xml", "")
+	return nil
+}
+
 // writeSheetData prepares the element preceding sheetData and writes the
 // sheetData XML start element to the buffer.
 func (sw *StreamWriter) writeSheetData() {
@@ -764,6 +832,12 @@ func (sw *StreamWriter) Flush() error {
 	_, _ = sw.rawData.WriteString(`</worksheet>`)
 	if err := sw.rawData.Flush(); err != nil {
 		return err
+	}
+
+	if sw.useSharedStrings && len(sw.sharedStrings) > 0 {
+		if err := sw.writeSharedStrings(); err != nil {
+			return err
+		}
 	}
 
 	sheetPath := sw.file.sheetMap[sw.Sheet]
