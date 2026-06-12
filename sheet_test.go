@@ -909,3 +909,79 @@ func TestAddIgnoredErrors(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddIgnoredErrors.xlsx")))
 	assert.NoError(t, f.Close())
 }
+
+func TestSheetStats(t *testing.T) {
+	f := NewFile()
+	defer f.Close()
+
+	// GetSheetStats returns nil before any calculation
+	assert.Nil(t, f.GetSheetStats("Sheet1"))
+
+	// Set up some data
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "hello"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "C1", "world"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B3", 42))
+	assert.NoError(t, f.SetCellValue("Sheet1", "D5", true))
+
+	// CalculateSheetStats computes correct values
+	stats, err := f.CalculateSheetStats("Sheet1")
+	assert.NoError(t, err)
+	assert.NotNil(t, stats)
+	assert.Equal(t, 5, stats.Rows)
+	assert.Equal(t, 4, stats.Cols)
+	assert.Equal(t, int64(4), stats.Cells)
+	assert.Equal(t, "D5", stats.MaxCell)
+
+	// GetSheetStats returns cached result
+	cached := f.GetSheetStats("Sheet1")
+	assert.Equal(t, stats, cached)
+
+	// CalculateSheetStats returns cached result on second call
+	stats2, err := f.CalculateSheetStats("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, stats, stats2)
+
+	// Non-existent sheet returns nil from GetSheetStats
+	assert.Nil(t, f.GetSheetStats("NoSheet"))
+
+	// Non-existent sheet returns error from CalculateSheetStats
+	_, err = f.CalculateSheetStats("NoSheet")
+	assert.Error(t, err)
+}
+
+func TestSheetStatsEmptySheet(t *testing.T) {
+	f := NewFile()
+	defer f.Close()
+
+	// Empty sheet should have zero stats and empty MaxCell
+	stats, err := f.CalculateSheetStats("Sheet1")
+	assert.NoError(t, err)
+	assert.NotNil(t, stats)
+	assert.Equal(t, 0, stats.Rows)
+	assert.Equal(t, 0, stats.Cols)
+	assert.Equal(t, int64(0), stats.Cells)
+	assert.Equal(t, "", stats.MaxCell)
+}
+
+func TestSheetStatsColumnsError(t *testing.T) {
+	f := NewFile()
+	defer f.Close()
+
+	// Set up a valid row, then corrupt shared strings to trigger Columns() error
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "test"))
+
+	// Corrupt the shared strings table
+	f.Pkg.Store(defaultXMLPathSharedStrings, []byte(`<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><si><t>valid</t></si>`))
+	f.SharedStrings = nil
+	f.sharedStringItem = nil
+
+	// Corrupt the sheet XML to have an invalid cell ref that triggers Columns error
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetData><row r="1"><c r="A" t="s"><v>0</v></c></row></sheetData>
+</worksheet>`))
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+
+	_, err := f.CalculateSheetStats("Sheet1")
+	assert.Error(t, err)
+}

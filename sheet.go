@@ -2235,3 +2235,62 @@ func (f *File) AddIgnoredErrors(sheet, rangeRef string, ignoredErrorsType Ignore
 	ws.IgnoredErrors.IgnoredError = append(ws.IgnoredErrors.IgnoredError, ie)
 	return err
 }
+
+// GetSheetStats returns previously cached sheet statistics, or nil if stats
+// have not been calculated for the given sheet.
+func (f *File) GetSheetStats(sheet string) *SheetStats {
+	if f.sheetStats == nil {
+		return nil
+	}
+	return f.sheetStats[sheet]
+}
+
+// CalculateSheetStats iterates through all rows and columns in the given
+// sheet, computes statistics (row count, max column, cell count, max cell
+// reference), and caches the result. Subsequent calls return the cached value.
+func (f *File) CalculateSheetStats(sheet string) (*SheetStats, error) {
+	if f.sheetStats != nil {
+		if stats, ok := f.sheetStats[sheet]; ok {
+			return stats, nil
+		}
+	}
+
+	rows, err := f.Rows(sheet)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	stats := &SheetStats{}
+	rowNum, maxCol := 0, 0
+
+	for rows.Next() {
+		rowNum++
+		row, err := rows.Columns()
+		if err != nil {
+			return nil, err
+		}
+		for i, cell := range row {
+			if cell != "" {
+				stats.Cells++
+				if i+1 > maxCol {
+					maxCol = i + 1
+				}
+			}
+		}
+	}
+
+	stats.Rows = rowNum
+	stats.Cols = maxCol
+	if rowNum > 0 && maxCol > 0 {
+		colName, _ := ColumnNumberToName(maxCol)
+		stats.MaxCell = colName + strconv.Itoa(rowNum)
+	}
+
+	if f.sheetStats == nil {
+		f.sheetStats = make(map[string]*SheetStats)
+	}
+	f.sheetStats[sheet] = stats
+
+	return stats, nil
+}
