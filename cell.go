@@ -818,7 +818,7 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 			}
 			if c.F.T == STCellFormulaTypeShared {
 				ws.deleteSharedFormula(c)
-				if err = ws.setSharedFormula(cell, *opt.Ref); err != nil {
+				if err = ws.setSharedFormula(*opt.Ref); err != nil {
 					return err
 				}
 			}
@@ -893,7 +893,7 @@ func (f *File) setArrayFormulaCells() error {
 }
 
 // setSharedFormula set shared formula for the cells.
-func (ws *xlsxWorksheet) setSharedFormula(cell, ref string) error {
+func (ws *xlsxWorksheet) setSharedFormula(ref string) error {
 	coordinates, err := rangeRefToCoordinates(ref)
 	if err != nil {
 		return err
@@ -908,12 +908,6 @@ func (ws *xlsxWorksheet) setSharedFormula(cell, ref string) error {
 				c.F = &xlsxF{}
 			}
 			c.F.T = STCellFormulaTypeShared
-			if c.R == cell {
-				if c.F.Ref != "" {
-					si = *c.F.Si
-					continue
-				}
-			}
 			c.F.Si = &si
 		}
 	}
