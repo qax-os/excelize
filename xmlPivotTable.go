@@ -271,8 +271,8 @@ type xlsxDataField struct {
 	Fld        int         `xml:"fld,attr"`
 	Subtotal   string      `xml:"subtotal,attr,omitempty"`
 	ShowDataAs string      `xml:"showDataAs,attr,omitempty"`
-	BaseField  int         `xml:"baseField,attr,omitempty"`
-	BaseItem   int64       `xml:"baseItem,attr,omitempty"`
+	BaseField  *int        `xml:"baseField,attr"`
+	BaseItem   *int        `xml:"baseItem,attr"`
 	NumFmtID   int         `xml:"numFmtId,attr,omitempty"`
 	ExtLst     *xlsxExtLst `xml:"extLst"`
 }

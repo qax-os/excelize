@@ -94,6 +94,44 @@ type PivotTableOptions struct {
 // SelectedItems specifies the default selected items in a pivot table field.
 // The selected items must be values within the cell range referenced by that
 // field.
+//
+// ShowValueAs specifies the calculation type for showing values in a pivot
+// table values fields. The possible values for the Type field of ShowValueAs
+// are, some of the calculation types are not supported currently:
+//
+//	PivotTableShowValueAsPercentOfGrandTotal
+//	PivotTableShowValueAsPercentOfColumnTotal
+//	PivotTableShowValueAsPercentOfRowTotal
+//	PivotTableShowValueAsPercentOf
+//	PivotTableShowValueAsPercentOfParentRowTotal    (Unsupported)
+//	PivotTableShowValueAsPercentOfParentColumnTotal (Unsupported)
+//	PivotTableShowValueAsPercentOfParentTotal       (Unsupported)
+//	PivotTableShowValueAsDifferenceFrom
+//	PivotTableShowValueAsPercentDifferenceFrom
+//	PivotTableShowValueAsRunningTotalIn
+//	PivotTableShowValueAsPercentRunningTotalIn      (Unsupported)
+//	PivotTableShowValueAsRankSmallestToLargest      (Unsupported)
+//	PivotTableShowValueAsRankLargestToSmallest      (Unsupported)
+//	PivotTableShowValueAsIndex
+//
+// Note that the base field and base item settings of ShowValueAs are only
+// required for some calculation types, the calculation types requires base
+// field settings are:
+//
+//	PivotTableShowValueAsPercentOf
+//	PivotTableShowValueAsPercentOfParentTotal
+//	PivotTableShowValueAsDifferenceFrom
+//	PivotTableShowValueAsPercentDifferenceFrom
+//	PivotTableShowValueAsRunningTotalIn
+//	PivotTableShowValueAsPercentRunningTotalIn
+//	PivotTableShowValueAsRankSmallestToLargest
+//	PivotTableShowValueAsRankLargestToSmallest
+//
+// The supported calculation types requires base item settings are:
+//
+//	PivotTableShowValueAsPercentOf
+//	PivotTableShowValueAsDifferenceFrom
+//	PivotTableShowValueAsPercentDifferenceFrom
 type PivotTableField struct {
 	Compact         bool
 	Data            string
@@ -105,7 +143,82 @@ type PivotTableField struct {
 	DefaultSubtotal bool
 	NumFmt          int
 	SelectedItems   []string
+	ShowValueAs     PivotTableShowValueAs
 }
+
+// PivotTableShowValueAsType is the type of calculation for showing values in a
+// pivot table.
+type PivotTableShowValueAsType byte
+
+// PivotTableShowValueAsType defines the calculation type enumeration.
+const (
+	PivotTableShowValueAsNoCalculation PivotTableShowValueAsType = iota
+	PivotTableShowValueAsPercentOfGrandTotal
+	PivotTableShowValueAsPercentOfColumnTotal
+	PivotTableShowValueAsPercentOfRowTotal
+	PivotTableShowValueAsPercentOf
+	PivotTableShowValueAsPercentOfParentRowTotal
+	PivotTableShowValueAsPercentOfParentColumnTotal
+	PivotTableShowValueAsPercentOfParentTotal
+	PivotTableShowValueAsDifferenceFrom
+	PivotTableShowValueAsPercentDifferenceFrom
+	PivotTableShowValueAsRunningTotalIn
+	PivotTableShowValueAsPercentRunningTotalIn
+	PivotTableShowValueAsRankSmallestToLargest
+	PivotTableShowValueAsRankLargestToSmallest
+	PivotTableShowValueAsIndex
+)
+
+// PivotTableShowValueAs directly maps the show value as settings of the pivot
+// table.
+type PivotTableShowValueAs struct {
+	Type      PivotTableShowValueAsType
+	BaseField string
+	BaseItem  string
+}
+
+var (
+	pivotTableShowValueAsMap = map[PivotTableShowValueAsType]string{
+		PivotTableShowValueAsPercentOfGrandTotal:        "percentOfTotal",
+		PivotTableShowValueAsPercentOfColumnTotal:       "percentOfCol",
+		PivotTableShowValueAsPercentOfRowTotal:          "percentOfRow",
+		PivotTableShowValueAsPercentOf:                  "percent",
+		PivotTableShowValueAsPercentOfParentRowTotal:    "percentOfParentRow", // Unsupported
+		PivotTableShowValueAsPercentOfParentColumnTotal: "percentOfParentCol", // Unsupported
+		PivotTableShowValueAsPercentOfParentTotal:       "percentOfParent",    // Unsupported
+		PivotTableShowValueAsDifferenceFrom:             "difference",
+		PivotTableShowValueAsPercentDifferenceFrom:      "percentDiff",
+		PivotTableShowValueAsRunningTotalIn:             "runTotal",
+		PivotTableShowValueAsPercentRunningTotalIn:      "percentOfRunningTotal", // Unsupported
+		PivotTableShowValueAsRankSmallestToLargest:      "rankAscending",         // Unsupported
+		PivotTableShowValueAsRankLargestToSmallest:      "rankDescending",        // Unsupported
+		PivotTableShowValueAsIndex:                      "index",
+	}
+	pivotTableShowValueAsSupportedMap = map[PivotTableShowValueAsType]bool{
+		PivotTableShowValueAsPercentOfGrandTotal:   true,
+		PivotTableShowValueAsPercentOfColumnTotal:  true,
+		PivotTableShowValueAsPercentOfRowTotal:     true,
+		PivotTableShowValueAsPercentOf:             true,
+		PivotTableShowValueAsDifferenceFrom:        true,
+		PivotTableShowValueAsPercentDifferenceFrom: true,
+		PivotTableShowValueAsRunningTotalIn:        true,
+	}
+	pivotTableShowValueAsBaseFieldRequiredMap = map[PivotTableShowValueAsType]bool{
+		PivotTableShowValueAsPercentOf:             true,
+		PivotTableShowValueAsPercentOfParentTotal:  true,
+		PivotTableShowValueAsDifferenceFrom:        true,
+		PivotTableShowValueAsPercentDifferenceFrom: true,
+		PivotTableShowValueAsRunningTotalIn:        true,
+		PivotTableShowValueAsPercentRunningTotalIn: true,
+		PivotTableShowValueAsRankSmallestToLargest: true,
+		PivotTableShowValueAsRankLargestToSmallest: true,
+	}
+	pivotTableShowValueAsBaseItemRequiredMap = map[PivotTableShowValueAsType]bool{
+		PivotTableShowValueAsPercentOf:             true,
+		PivotTableShowValueAsDifferenceFrom:        true,
+		PivotTableShowValueAsPercentDifferenceFrom: true,
+	}
+)
 
 // AddPivotTable provides the method to add pivot table by given pivot table
 // options. Note that the same fields can not in Columns, Rows and Filter
@@ -472,6 +585,11 @@ func (f *File) buildPivotSharedItems(opts *PivotTableOptions, idx int, coordinat
 	}
 	i := 0
 	for _, item := range sharedItems.Items {
+		if len(field.SelectedItems) == 0 {
+			items = append(items, &xlsxItem{H: false, X: intPtr(i)})
+			i++
+			continue
+		}
 		switch item.XMLName.Local {
 		case "m":
 			items = append(items, &xlsxItem{H: inStrSlice(field.SelectedItems, "", true) == -1, X: intPtr(i)})
@@ -509,7 +627,10 @@ func (f *File) buildPivotSharedItems(opts *PivotTableOptions, idx int, coordinat
 // addPivotSharedItems provides a function to prepare shared items for pivot
 // table by given pivot table options, fields and coordinates.
 func (f *File) addPivotSharedItems(opts *PivotTableOptions, coordinates []int, fieldsType string) error {
-	var fields []PivotTableField
+	var (
+		fields                       []PivotTableField
+		showValueAsBaseFieldRequired bool
+	)
 	switch fieldsType {
 	case "filters":
 		fields = opts.Filter
@@ -522,8 +643,13 @@ func (f *File) addPivotSharedItems(opts *PivotTableOptions, coordinates []int, f
 	if err != nil {
 		return err
 	}
+	for _, field := range opts.Data {
+		if pivotTableShowValueAsSupportedMap[field.ShowValueAs.Type] && pivotTableShowValueAsBaseFieldRequiredMap[field.ShowValueAs.Type] {
+			showValueAsBaseFieldRequired = true
+		}
+	}
 	for i, field := range fields {
-		if len(field.SelectedItems) > 0 {
+		if len(field.SelectedItems) > 0 || showValueAsBaseFieldRequired {
 			if opts.items == nil {
 				opts.items = make(map[string][]*xlsxItem)
 			}
@@ -677,7 +803,9 @@ func (f *File) addPivotTable(cacheID, pivotTableID int, opts *PivotTableOptions)
 	_ = f.addPivotRowFields(&pt, opts)
 	_ = f.addPivotColFields(&pt, opts)
 	_ = f.addPivotPageFields(&pt, opts)
-	_ = f.addPivotDataFields(&pt, opts)
+	if err = f.addPivotDataFields(&pt, opts); err != nil {
+		return err
+	}
 
 	pivotTable, err := xml.Marshal(pt)
 	f.saveFileList(opts.pivotTableXML, pivotTable)
@@ -749,19 +877,90 @@ func (f *File) addPivotDataFields(pt *xlsxPivotTableDefinition, opts *PivotTable
 		if pt.DataFields == nil {
 			pt.DataFields = &xlsxDataFields{}
 		}
-		pt.DataFields.DataField = append(pt.DataFields.DataField, &xlsxDataField{
+		dataField := &xlsxDataField{
 			Name:     dataFieldsName[idx],
 			Fld:      dataField,
 			Subtotal: dataFieldsSubtotals[idx],
 			NumFmtID: dataFieldsNumFmtID[idx],
-		})
+		}
+		if err = dataField.setPivotTableShowValueAs(idx, opts); err != nil {
+			return err
+		}
+		pt.DataFields.DataField = append(pt.DataFields.DataField, dataField)
 	}
-
 	// count data fields
 	if pt.DataFields != nil {
 		pt.DataFields.Count = len(pt.DataFields.DataField)
 	}
 	return err
+}
+
+// setPivotTableShowValueAs provides a method to set show value as for pivot
+// table data field by given pivot table options and data field index.
+func (df *xlsxDataField) setPivotTableShowValueAs(idx int, opts *PivotTableOptions) error {
+	showValueAsType := opts.Data[idx].ShowValueAs.Type
+	if showValueAsType == PivotTableShowValueAsNoCalculation {
+		return nil
+	}
+	if !pivotTableShowValueAsSupportedMap[showValueAsType] {
+		return ErrUnsupportedPivotTableShowValueAsType
+	}
+	df.ShowDataAs = pivotTableShowValueAsMap[showValueAsType]
+	if pivotTableShowValueAsBaseFieldRequiredMap[showValueAsType] {
+		baseField := opts.Data[idx].ShowValueAs.BaseField
+		if baseField == "" {
+			return ErrPivotTableShowValueAsBaseField
+		}
+		sharedItems, ok := opts.sharedItems[baseField]
+		if !ok {
+			return newPivotTableShowValueAsBaseFieldError(baseField)
+		}
+		var baseFieldIndex int
+		for i, rowField := range opts.Rows {
+			if rowField.Data == baseField {
+				baseFieldIndex = i
+				break
+			}
+		}
+		for i, colField := range opts.Columns {
+			if colField.Data == baseField {
+				baseFieldIndex = i
+				break
+			}
+		}
+		df.BaseField = intPtr(baseFieldIndex)
+		if pivotTableShowValueAsBaseItemRequiredMap[showValueAsType] {
+			if err := df.setPivotTableShowValueAsBaseItem(baseField, opts.Data[idx].ShowValueAs.BaseItem, &sharedItems); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// setPivotTableShowValueAsBaseItem provides a method to set base item for show
+// value as in pivot table data field by given base field, base item and shared
+// items.
+func (df *xlsxDataField) setPivotTableShowValueAsBaseItem(baseField, baseItem string, sharedItems *xlsxSharedItems) error {
+	if baseItem == "" {
+		return ErrPivotTableShowValueAsBaseItem
+	}
+	if err := sharedItems.checkSelectedItems(baseField, []string{baseItem}); err != nil {
+		return err
+	}
+	for i, item := range sharedItems.Items {
+		switch item.XMLName.Local {
+		case "b":
+			if strings.EqualFold(item.V, baseItem) {
+				df.BaseItem = intPtr(i)
+			}
+		case "n", "e", "s", "d":
+			if item.V == baseItem {
+				df.BaseItem = intPtr(i)
+			}
+		}
+	}
+	return nil
 }
 
 // inPivotTableField provides a method to check if an element is present in
@@ -1239,12 +1438,46 @@ func (pc *xlsxPivotCacheDefinition) extractPivotTableFields(pt *xlsxPivotTableDe
 	}
 	if pt.DataFields != nil {
 		for _, field := range pt.DataFields.DataField {
-			opts.Data = append(opts.Data, PivotTableField{
+			dataField := PivotTableField{
 				Data:     order[field.Fld],
 				Name:     field.Name,
-				Subtotal: cases.Title(language.English).String(field.Subtotal),
+				Subtotal: cases.Title(language.English, cases.NoLower).String(field.Subtotal),
 				NumFmt:   field.NumFmtID,
-			})
+			}
+			if field.ShowDataAs != "" {
+				field.extractPivotTableShowValueAs(pc, &dataField)
+			}
+			opts.Data = append(opts.Data, dataField)
+		}
+	}
+}
+
+// extractPivotTableShowValueAs provides a function to extract show value as
+// settings for pivot table data field.
+func (df *xlsxDataField) extractPivotTableShowValueAs(pc *xlsxPivotCacheDefinition, dataField *PivotTableField) {
+	order := pc.getPivotCacheFieldsName()
+	for k, v := range pivotTableShowValueAsMap {
+		if v == df.ShowDataAs {
+			dataField.ShowValueAs.Type = k
+			break
+		}
+	}
+	if df.BaseField != nil {
+		baseFieldIdx := *df.BaseField
+		if baseFieldIdx < len(order) {
+			dataField.ShowValueAs.BaseField = order[baseFieldIdx]
+		}
+	}
+	if df.BaseItem == nil {
+		return
+	}
+	for _, cacheField := range pc.CacheFields.CacheField {
+		if cacheField.Name == dataField.ShowValueAs.BaseField {
+			if cacheField.SharedItems != nil {
+				if *df.BaseItem < len(cacheField.SharedItems.Items) {
+					dataField.ShowValueAs.BaseItem = cacheField.SharedItems.Items[*df.BaseItem].V
+				}
+			}
 		}
 	}
 }

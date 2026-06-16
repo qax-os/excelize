@@ -801,7 +801,10 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 		c.F = nil
 		return f.deleteCalcChain(f.getSheetID(sheet), cell)
 	}
-
+	coordinates, err := sharedFormulaRefToCoordinates(opts...)
+	if err != nil {
+		return err
+	}
 	ws.deleteSharedFormula(c)
 	c.F = &xlsxF{Content: formula}
 
@@ -818,9 +821,7 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 			}
 			if c.F.T == STCellFormulaTypeShared {
 				ws.deleteSharedFormula(c)
-				if err = ws.setSharedFormula(*opt.Ref); err != nil {
-					return err
-				}
+				ws.setSharedFormula(coordinates)
 			}
 		}
 		if opt.Ref != nil {
@@ -829,6 +830,24 @@ func (f *File) SetCellFormula(sheet, cell, formula string, opts ...FormulaOpts) 
 	}
 	c.T, c.IS = "str", nil
 	return err
+}
+
+// sharedFormulaRefToCoordinates provides a function to convert shared formula
+// reference to coordinates.
+func sharedFormulaRefToCoordinates(opts ...FormulaOpts) ([]int, error) {
+	var (
+		coordinates []int
+		err         error
+	)
+	for _, opt := range opts {
+		if opt.Type != nil && *opt.Type == STCellFormulaTypeShared && opt.Ref != nil {
+			coordinates, err = rangeRefToCoordinates(*opt.Ref)
+			if err != nil {
+				return coordinates, err
+			}
+		}
+	}
+	return coordinates, err
 }
 
 // setArrayFormula transform the array formula in an array formula range to the
@@ -893,11 +912,7 @@ func (f *File) setArrayFormulaCells() error {
 }
 
 // setSharedFormula set shared formula for the cells.
-func (ws *xlsxWorksheet) setSharedFormula(ref string) error {
-	coordinates, err := rangeRefToCoordinates(ref)
-	if err != nil {
-		return err
-	}
+func (ws *xlsxWorksheet) setSharedFormula(coordinates []int) {
 	_ = sortCoordinates(coordinates)
 	si := ws.countSharedFormula()
 	for col := coordinates[0]; col <= coordinates[2]; col++ {
@@ -911,7 +926,6 @@ func (ws *xlsxWorksheet) setSharedFormula(ref string) error {
 			c.F.Si = &si
 		}
 	}
-	return err
 }
 
 // countSharedFormula count shared formula in the given worksheet.
