@@ -823,7 +823,7 @@ func TestSetCellFormula(t *testing.T) {
 
 	t.Run("for_overwrite_shared_formula_cells", func(t *testing.T) {
 		f := NewFile()
-		defer f.Close()
+		defer assert.NoError(t, f.Close())
 		sharedType, ref := STCellFormulaTypeShared, "A1:A3"
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "1+1", FormulaOpts{Type: &sharedType, Ref: &ref}))
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "2+2"))

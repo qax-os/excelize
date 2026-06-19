@@ -110,7 +110,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!AE2:AH28",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Data: []PivotTableField{
-			{Data: "Revenue", Subtotal: "Max", Name: "Summarize by Max"},
+			{Data: "Revenue", Subtotal: "Max", Name: "Summarize by Max", ShowValuesAs: PivotTableShowValuesAs{Type: PivotTableShowValuesAsPercentRunningTotalIn, BaseField: "Year"}},
 			{Data: "Revenue", Subtotal: "Average", Name: "Average of Sales", ShowValuesAs: PivotTableShowValuesAs{Type: PivotTableShowValuesAsRunningTotalIn, BaseField: "Year"}},
 		},
 		RowGrandTotals: true,
@@ -337,7 +337,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!G2:M34",
 		Rows:            []PivotTableField{{Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Type"}},
-		Data:            []PivotTableField{{Data: "Revenue", ShowValuesAs: PivotTableShowValuesAs{Type: PivotTableShowValuesAsPercentOfParentRowTotal}}},
+		Data:            []PivotTableField{{Data: "Revenue", ShowValuesAs: PivotTableShowValuesAs{Type: 15}}},
 		Filter:          []PivotTableField{{Data: "Month"}},
 	}))
 	// Test set pivot table show value as type without required base field

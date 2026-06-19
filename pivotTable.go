@@ -87,7 +87,7 @@ type PivotTableOptions struct {
 //	Var
 //	Varp
 //
-// NumFmt specifies the number format ID of the data field, this filed only
+// NumFmt specifies the number format ID of the data field, this field only
 // accepts built-in number format ID and does not support custom number format
 // expression currently.
 //
@@ -103,15 +103,15 @@ type PivotTableOptions struct {
 //	PivotTableShowValuesAsPercentOfColumnTotal
 //	PivotTableShowValuesAsPercentOfRowTotal
 //	PivotTableShowValuesAsPercentOf
-//	PivotTableShowValuesAsPercentOfParentRowTotal    (Unsupported)
-//	PivotTableShowValuesAsPercentOfParentColumnTotal (Unsupported)
-//	PivotTableShowValuesAsPercentOfParentTotal       (Unsupported)
+//	PivotTableShowValuesAsPercentOfParentRowTotal
+//	PivotTableShowValuesAsPercentOfParentColumnTotal
+//	PivotTableShowValuesAsPercentOfParentTotal
 //	PivotTableShowValuesAsDifferenceFrom
 //	PivotTableShowValuesAsPercentDifferenceFrom
 //	PivotTableShowValuesAsRunningTotalIn
-//	PivotTableShowValuesAsPercentRunningTotalIn      (Unsupported)
-//	PivotTableShowValuesAsRankSmallestToLargest      (Unsupported)
-//	PivotTableShowValuesAsRankLargestToSmallest      (Unsupported)
+//	PivotTableShowValuesAsPercentRunningTotalIn
+//	PivotTableShowValuesAsRankSmallestToLargest
+//	PivotTableShowValuesAsRankLargestToSmallest
 //	PivotTableShowValuesAsIndex
 //
 // Note that the base field and base item settings of ShowValuesAs are only
@@ -183,25 +183,25 @@ var (
 		PivotTableShowValuesAsPercentOfColumnTotal:       "percentOfCol",
 		PivotTableShowValuesAsPercentOfRowTotal:          "percentOfRow",
 		PivotTableShowValuesAsPercentOf:                  "percent",
-		PivotTableShowValuesAsPercentOfParentRowTotal:    "percentOfParentRow", // Unsupported
-		PivotTableShowValuesAsPercentOfParentColumnTotal: "percentOfParentCol", // Unsupported
-		PivotTableShowValuesAsPercentOfParentTotal:       "percentOfParent",    // Unsupported
+		PivotTableShowValuesAsPercentOfParentRowTotal:    "percentOfParentRow",
+		PivotTableShowValuesAsPercentOfParentColumnTotal: "percentOfParentCol",
+		PivotTableShowValuesAsPercentOfParentTotal:       "percentOfParent",
 		PivotTableShowValuesAsDifferenceFrom:             "difference",
 		PivotTableShowValuesAsPercentDifferenceFrom:      "percentDiff",
 		PivotTableShowValuesAsRunningTotalIn:             "runTotal",
-		PivotTableShowValuesAsPercentRunningTotalIn:      "percentOfRunningTotal", // Unsupported
-		PivotTableShowValuesAsRankSmallestToLargest:      "rankAscending",         // Unsupported
-		PivotTableShowValuesAsRankLargestToSmallest:      "rankDescending",        // Unsupported
+		PivotTableShowValuesAsPercentRunningTotalIn:      "percentOfRunningTotal",
+		PivotTableShowValuesAsRankSmallestToLargest:      "rankAscending",
+		PivotTableShowValuesAsRankLargestToSmallest:      "rankDescending",
 		PivotTableShowValuesAsIndex:                      "index",
 	}
-	pivotTableShowValuesAsSupportedMap = map[PivotTableShowValuesAsType]bool{
-		PivotTableShowValuesAsPercentOfGrandTotal:   true,
-		PivotTableShowValuesAsPercentOfColumnTotal:  true,
-		PivotTableShowValuesAsPercentOfRowTotal:     true,
-		PivotTableShowValuesAsPercentOf:             true,
-		PivotTableShowValuesAsDifferenceFrom:        true,
-		PivotTableShowValuesAsPercentDifferenceFrom: true,
-		PivotTableShowValuesAsRunningTotalIn:        true,
+	pivotTableShowValuesAsX14Map = map[PivotTableShowValuesAsType]bool{
+		PivotTableShowValuesAsPercentOfParentRowTotal:    true,
+		PivotTableShowValuesAsPercentOfParentColumnTotal: true,
+		PivotTableShowValuesAsPercentOfParentTotal:       true,
+		PivotTableShowValuesAsPercentRunningTotalIn:      true,
+		PivotTableShowValuesAsRankSmallestToLargest:      true,
+		PivotTableShowValuesAsRankLargestToSmallest:      true,
+		PivotTableShowValuesAsIndex:                      true,
 	}
 	pivotTableShowValuesAsBaseFieldRequiredMap = map[PivotTableShowValuesAsType]bool{
 		PivotTableShowValuesAsPercentOf:             true,
@@ -644,7 +644,7 @@ func (f *File) addPivotSharedItems(opts *PivotTableOptions, coordinates []int, f
 		return err
 	}
 	for _, field := range opts.Data {
-		if pivotTableShowValuesAsSupportedMap[field.ShowValuesAs.Type] && pivotTableShowValuesAsBaseFieldRequiredMap[field.ShowValuesAs.Type] {
+		if _, ok := pivotTableShowValuesAsMap[field.ShowValuesAs.Type]; ok && pivotTableShowValuesAsBaseFieldRequiredMap[field.ShowValuesAs.Type] {
 			showValuesAsBaseFieldRequired = true
 		}
 	}
@@ -903,10 +903,22 @@ func (df *xlsxDataField) setPivotTableShowValuesAs(idx int, order []string, opts
 	if showValuesAsType == PivotTableShowValuesAsNoCalculation {
 		return nil
 	}
-	if !pivotTableShowValuesAsSupportedMap[showValuesAsType] {
+	if _, ok := pivotTableShowValuesAsMap[showValuesAsType]; !ok {
 		return ErrUnsupportedPivotTableShowValuesAsType
 	}
 	df.ShowDataAs = pivotTableShowValuesAsMap[showValuesAsType]
+	if pivotTableShowValuesAsX14Map[showValuesAsType] {
+		df.ShowDataAs = ""
+		dataFieldBytes, _ := xml.Marshal(xlsxX14DataField{PivotShowAs: pivotTableShowValuesAsMap[showValuesAsType]})
+		var decodeExtLst decodeExtLst
+		ext := &xlsxExt{
+			xmlns: []xml.Attr{{Name: xml.Name{Local: "xmlns:" + NameSpaceSpreadSheetX14.Name.Local}, Value: NameSpaceSpreadSheetX14.Value}},
+			URI:   ExtURIPivotDataField, Content: string(dataFieldBytes),
+		}
+		decodeExtLst.Ext = append(decodeExtLst.Ext, ext)
+		extLstBytes, _ := xml.Marshal(decodeExtLst)
+		df.ExtLst = &xlsxExtLst{Ext: strings.TrimSuffix(strings.TrimPrefix(string(extLstBytes), "<extLst>"), "</extLst>")}
+	}
 	if pivotTableShowValuesAsBaseFieldRequiredMap[showValuesAsType] {
 		baseField := opts.Data[idx].ShowValuesAs.BaseField
 		if baseField == "" {
@@ -1364,7 +1376,7 @@ func (f *File) getPivotTable(sheet, pivotTableXML, pivotCacheRels string) (Pivot
 	if err = f.getPivotTableDataRange(&opts); err != nil {
 		return opts, err
 	}
-	pc.extractPivotTableFields(pt, &opts)
+	f.extractPivotTableFields(pt, pc, &opts)
 	return opts, err
 }
 
@@ -1412,7 +1424,7 @@ func (f *File) pivotCacheReader(path string) (*xlsxPivotCacheDefinition, error) 
 
 // extractPivotTableFields provides a function to extract all pivot table fields
 // settings by given pivot table fields.
-func (pc *xlsxPivotCacheDefinition) extractPivotTableFields(pt *xlsxPivotTableDefinition, opts *PivotTableOptions) {
+func (f *File) extractPivotTableFields(pt *xlsxPivotTableDefinition, pc *xlsxPivotCacheDefinition, opts *PivotTableOptions) {
 	order := pc.getPivotCacheFieldsName()
 	for fieldIdx, field := range pt.PivotFields.PivotField {
 		if field.Axis == "axisRow" {
@@ -1433,8 +1445,8 @@ func (pc *xlsxPivotCacheDefinition) extractPivotTableFields(pt *xlsxPivotTableDe
 				Subtotal: cases.Title(language.English, cases.NoLower).String(field.Subtotal),
 				NumFmt:   field.NumFmtID,
 			}
-			if field.ShowDataAs != "" {
-				field.extractPivotTableShowValuesAs(pc, &dataField)
+			if field.ShowDataAs != "" || field.ExtLst != nil {
+				f.extractPivotTableShowValuesAs(pc, field, &dataField)
 			}
 			opts.Data = append(opts.Data, dataField)
 		}
@@ -1443,10 +1455,18 @@ func (pc *xlsxPivotCacheDefinition) extractPivotTableFields(pt *xlsxPivotTableDe
 
 // extractPivotTableShowValuesAs provides a function to extract show value as
 // settings for pivot table data field.
-func (df *xlsxDataField) extractPivotTableShowValuesAs(pc *xlsxPivotCacheDefinition, dataField *PivotTableField) {
+func (f *File) extractPivotTableShowValuesAs(pc *xlsxPivotCacheDefinition, df *xlsxDataField, dataField *PivotTableField) {
 	order := pc.getPivotCacheFieldsName()
+	showDataAs := df.ShowDataAs
+	if df.ExtLst != nil {
+		ext := new(xlsxExt)
+		_ = f.xmlNewDecoder(strings.NewReader(df.ExtLst.Ext)).Decode(ext)
+		field := new(decodeX14DataField)
+		_ = f.xmlNewDecoder(strings.NewReader(ext.Content)).Decode(field)
+		showDataAs = field.PivotShowAs
+	}
 	for k, v := range pivotTableShowValuesAsMap {
-		if v == df.ShowDataAs {
+		if v == showDataAs {
 			dataField.ShowValuesAs.Type = k
 			break
 		}
