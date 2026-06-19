@@ -37,6 +37,11 @@ type File struct {
 	sharedStringItem [][]uint
 	sharedStringsMap map[string]int
 	sharedStringTemp *os.File
+	// fastSST is a preloaded shared strings table for FastReadMode. It holds
+	// all shared string values in a flat slice for O(1) index lookup without
+	// disk I/O. Populated by preloadSharedStrings() when FastReadMode is set.
+	fastSST          []string
+	fastSSTLoaded    bool
 	sheetMap         map[string]string
 	streams          map[string]*StreamWriter
 	tempFiles        sync.Map
@@ -122,6 +127,13 @@ type Options struct {
 	LongDatePattern   string
 	LongTimePattern   string
 	CultureInfo       CultureName
+	// FastReadMode optimizes for read-heavy workloads by preloading the
+	// shared strings table into memory (as a []string slice) instead of
+	// using random-access temp file I/O. This eliminates per-cell ReadAt
+	// syscalls when iterating over rows, at the cost of higher memory usage
+	// (typically 10-100 MB for large files). Enable this when iterating
+	// over large worksheets where read performance is critical.
+	FastReadMode bool
 }
 
 // OpenFile take the name of a spreadsheet file and returns a populated
