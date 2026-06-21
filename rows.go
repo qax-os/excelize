@@ -111,7 +111,12 @@ func (rows *Rows) Next() bool {
 		case xml.StartElement:
 			if xmlElement.Name.Local == "row" {
 				rows.curRow++
-				if rowNum, _ := attrValToInt("r", xmlElement.Attr); rowNum != 0 {
+				rowNum, _ := attrValToInt("r", xmlElement.Attr)
+				if rowNum > TotalRows {
+					rows.err = ErrMaxRows
+					return false
+				}
+				if rowNum != 0 {
 					rows.curRow = rowNum
 				}
 				rows.token = token
@@ -144,7 +149,7 @@ func (rows *Rows) Close() error {
 	if tempFile != nil {
 		return tempFile.Close()
 	}
-	return nil
+	return rows.Error()
 }
 
 // Columns return the current row's column values. This fetches the worksheet

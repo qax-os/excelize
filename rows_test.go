@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,6 +21,12 @@ func TestGetRows(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
 	_, err := f.GetRows("Sheet1")
 	assert.NoError(t, err)
+	// Test get rows with row number over max row number limit
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="%d"><c t="s"><v>0</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value, TotalRows+1))
+	f.checked = sync.Map{}
+	_, err = f.GetRows("Sheet1")
+	assert.Equal(t, ErrMaxRows, err)
 }
 
 func TestRows(t *testing.T) {
