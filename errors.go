@@ -309,6 +309,12 @@ func newInvalidRowNumberError(row int) error {
 	return fmt.Errorf("invalid row number %d", row)
 }
 
+// newInvalidSharedStringIndex defined the error message on receive an invalid
+// shared string index.
+func newInvalidSharedStringIndex(idx int) error {
+	return fmt.Errorf("invalid shared string index %d", idx)
+}
+
 // newInvalidSlicerNameError defined the error message on receiving the invalid
 // slicer name.
 func newInvalidSlicerNameError(name string) error {

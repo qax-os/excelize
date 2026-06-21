@@ -623,9 +623,10 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 			}
 			d.mu.Lock()
 			defer d.mu.Unlock()
-			if len(d.SI) > xlsxSI {
-				return f.formattedValue(&xlsxC{S: c.S, V: d.SI[xlsxSI].String()}, raw, CellTypeSharedString)
+			if xlsxSI < 0 || xlsxSI >= len(d.SI) {
+				return "", newInvalidSharedStringIndex(xlsxSI)
 			}
+			return f.formattedValue(&xlsxC{S: c.S, V: d.SI[xlsxSI].String()}, raw, CellTypeSharedString)
 		}
 		return f.formattedValue(c, raw, CellTypeSharedString)
 	case "str":
