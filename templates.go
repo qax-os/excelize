@@ -116,6 +116,7 @@ const (
 	ExtURIPivotCacheDefinition           = "{725AE2AE-9491-48be-B2B4-4EB974FC3084}"
 	ExtURIPivotCachesX14                 = "{876F7934-8845-4945-9796-88D515C7AA90}"
 	ExtURIPivotCachesX15                 = "{841E416B-1EF1-43b6-AB56-02D37102CBD5}"
+	ExtURIPivotDataField                 = "{E15A36E0-9728-4e99-A89B-3F7291B0FE68}"
 	ExtURIPivotField                     = "{2946ED86-A175-432a-8AC1-64E0C546D7DE}"
 	ExtURIPivotFilter                    = "{0605FD5F-26C8-4aeb-8148-2DB25E43C511}"
 	ExtURIPivotHierarchy                 = "{F1805F06-0CD304483-9156-8803C3D141DF}"

@@ -3,16 +3,15 @@ module github.com/xuri/excelize/v2
 go 1.25.0
 
 require (
-	github.com/richardlehane/mscfb v1.0.6
+	github.com/richardlehane/mscfb v1.0.7
 	github.com/stretchr/testify v1.11.1
 	github.com/tiendc/go-deepcopy v1.7.2
 	github.com/xuri/efp v0.0.1
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9
-	golang.org/x/crypto v0.51.0
-	golang.org/x/exp v0.0.0-20260508232706-74f9aab9d74a
+	golang.org/x/crypto v0.53.0
 	golang.org/x/image v0.38.0
-	golang.org/x/net v0.54.0
-	golang.org/x/text v0.37.0
+	golang.org/x/net v0.56.0
+	golang.org/x/text v0.38.0
 )
 
 require (

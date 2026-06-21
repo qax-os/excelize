@@ -1,7 +1,10 @@
 package excelize
 
 import (
+	"encoding/xml"
+	"fmt"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -106,6 +109,20 @@ func TestMergeCellOverlap(t *testing.T) {
 	assert.Equal(t, "D3", mc[0].GetEndAxis())
 	assert.Empty(t, mc[0].GetCellValue())
 	assert.NoError(t, f.Close())
+
+	t.Run("for_worksheet_with_max_cells", func(t *testing.T) {
+		f := NewFile()
+		f.Sheet.Delete("xl/worksheets/sheet1.xml")
+		worksheet := xml.Header + `<worksheet xmlns="%s"><sheetData><row r="1"><c r="A1"><v>1</v></c></row></sheetData><mergeCells count="1"><mergeCell ref="A1:XFD1048576"/></mergeCells></worksheet>`
+		f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, worksheet, NameSpaceSpreadSheet.Value))
+		f.checked = sync.Map{}
+		mergeCells, err := f.GetMergeCells("Sheet1")
+		assert.NoError(t, err)
+		mergeCell := mergeCells[0]
+		assert.Equal(t, "A1", mergeCell.GetStartAxis())
+		assert.Equal(t, "XFD1048576", mergeCell.GetEndAxis())
+		assert.NoError(t, f.Close())
+	})
 }
 
 func TestGetMergeCells(t *testing.T) {

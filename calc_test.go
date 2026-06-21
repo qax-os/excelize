@@ -7122,3 +7122,66 @@ func TestCalcImplicitIntersect(t *testing.T) {
 		newMatrixFormulaArg([][]formulaArg{{newNumberFormulaArg(1)}})).Type,
 	)
 }
+
+func TestCalc3DRef(t *testing.T) {
+	prepareCalcData := func() *File {
+		f := NewFile()
+		_, err := f.NewSheet("Sheet 2")
+		assert.NoError(t, err)
+		_, err = f.NewSheet("Sheet3")
+		assert.NoError(t, err)
+		_, err = f.NewSheet("Sheet4")
+		assert.NoError(t, err)
+		for i, sheet := range []string{"Sheet1", "Sheet 2", "Sheet3", "Sheet4"} {
+			base := int64(i + 1)
+			assert.NoError(t, f.SetCellValue(sheet, "A1", base*10))
+			assert.NoError(t, f.SetCellValue(sheet, "A2", base))
+			assert.NoError(t, f.SetCellValue(sheet, "B1", base*100))
+		}
+		return f
+	}
+	formulaList := map[string]string{
+		"SUM(Sheet1:Sheet4!A1)":     "100",
+		"SUM(Sheet1:Sheet4!$A$1)":   "100",
+		"SUM(Sheet1:Sheet3!A1)":     "60",
+		"SUM('Sheet 2:Sheet4'!A1)":  "90",
+		"SUM(Sheet1:Sheet1!A1)":     "10",
+		"SUM(Sheet1:Sheet4!A1:A2)":  "110",
+		"SUM(Sheet1:Sheet4!A1:B1)":  "1100",
+		"AVERAGE(Sheet1:Sheet4!A1)": "25",
+		"MIN(Sheet1:Sheet4!A1)":     "10",
+		"MAX(Sheet1:Sheet4!A1)":     "40",
+		"COUNT(Sheet1:Sheet4!A1)":   "4",
+		"COUNTA(Sheet1:Sheet4!A1)":  "4",
+		"PRODUCT(Sheet1:Sheet4!A1)": "240000",
+		"SUM(Sheet4:Sheet1!A1)":     "100",
+	}
+	for formula, expected := range formulaList {
+		f := prepareCalcData()
+		defer func() {
+			assert.NoError(t, f.Close())
+		}()
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string][]string{
+		"SUM(Sheet1:SheetN!A1)": {"#REF!", "sheet SheetN does not exist"},
+		"SUM(SheetN:Sheet3!A1)": {"#REF!", "sheet SheetN does not exist"},
+		"SUM(Sheet1:Sheet3!A)":  {"#NAME?", newCoordinatesToCellNameError(1, -1).Error()},
+	}
+	for formula, expected := range calcError {
+		f := prepareCalcData()
+		defer func() {
+			assert.NoError(t, f.Close())
+		}()
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected[1], formula)
+		assert.Equal(t, expected[0], result, formula)
+	}
+	assert.Empty(t, split3DReference("Sheet1:Sheet2:Sheet3!A1"))
+	assert.Empty(t, split3DReference(":Sheet1!A1"))
+	assert.Empty(t, split3DReference("!A1"))
+}

@@ -271,10 +271,19 @@ type xlsxDataField struct {
 	Fld        int         `xml:"fld,attr"`
 	Subtotal   string      `xml:"subtotal,attr,omitempty"`
 	ShowDataAs string      `xml:"showDataAs,attr,omitempty"`
-	BaseField  int         `xml:"baseField,attr,omitempty"`
-	BaseItem   int64       `xml:"baseItem,attr,omitempty"`
+	BaseField  *int        `xml:"baseField,attr"`
+	BaseItem   *int        `xml:"baseItem,attr"`
 	NumFmtID   int         `xml:"numFmtId,attr,omitempty"`
 	ExtLst     *xlsxExtLst `xml:"extLst"`
+}
+
+// xlsxX14DataField specifies extended information about a data field in the
+// pivot table.
+type xlsxX14DataField struct {
+	XMLName     xml.Name `xml:"x14:dataField"`
+	PivotShowAs string   `xml:"pivotShowAs,attr,omitempty"`
+	SourceField int      `xml:"sourceField,attr,omitempty"`
+	UniqueName  string   `xml:"uniqueName,attr,omitempty"`
 }
 
 // xlsxConditionalFormats represents the collection of conditional formats
@@ -290,4 +299,13 @@ type xlsxPivotTableStyleInfo struct {
 	ShowRowStripes bool   `xml:"showRowStripes,attr,omitempty"`
 	ShowColStripes bool   `xml:"showColStripes,attr,omitempty"`
 	ShowLastColumn bool   `xml:"showLastColumn,attr,omitempty"`
+}
+
+// decodeX14DataField defines the structure used to parse the x14:dataField
+// element of the pivot table data field.
+type decodeX14DataField struct {
+	XMLName     xml.Name `xml:"dataField"`
+	PivotShowAs string   `xml:"pivotShowAs,attr,omitempty"`
+	SourceField int      `xml:"sourceField,attr,omitempty"`
+	UniqueName  string   `xml:"uniqueName,attr,omitempty"`
 }

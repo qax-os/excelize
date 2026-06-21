@@ -520,6 +520,18 @@ func TestWorksheetWriter(t *testing.T) {
 	value, ok := f.Pkg.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	assert.Equal(t, fmt.Sprintf(worksheet, 2), string(value.([]byte)))
+
+	t.Run("for_worksheet_with_max_rows", func(t *testing.T) {
+		f := NewFile()
+		f.Sheet.Delete("xl/worksheets/sheet1.xml")
+		worksheet := xml.Header + `<worksheet xmlns="%s"><dimension ref="A1048576"/><sheetData><row r="1048576" spans="1:1"><c r="A1048576" s="0"/></row></sheetData></worksheet>`
+		f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, worksheet, NameSpaceSpreadSheet.Value))
+		f.checked = sync.Map{}
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1))
+		f.workSheetWriter()
+		assert.Equal(t, fmt.Sprintf(xml.Header+`<worksheet xmlns="%s" xmlns:r="%s"><dimension ref="A1048576"></dimension><sheetData><row r="1"><c r="A1"><v>1</v></c></row><row r="1048576" spans="1:1"></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value, SourceRelationship.Value), string(f.readXML("xl/worksheets/sheet1.xml")))
+		assert.NoError(t, f.Close())
+	})
 }
 
 func TestGetWorkbookPath(t *testing.T) {
@@ -864,6 +876,18 @@ func TestSheetDimension(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, dimension)
 	assert.NoError(t, f.Close())
+}
+
+func TestTrimRow(t *testing.T) {
+	assert.Equal(t, []xlsxRow{
+		{R: 2, C: []xlsxC{{R: "A2", V: "value"}}},
+		{R: TotalRows, Hidden: true},
+	}, trimRow(&xlsxSheetData{Row: []xlsxRow{
+		{R: 1, C: []xlsxC{{R: "A1"}}},
+		{R: 2, C: []xlsxC{{R: "A2", V: "value"}, {R: "B2"}}},
+		{R: 3},
+		{R: TotalRows, Hidden: true},
+	}}))
 }
 
 func TestAddIgnoredErrors(t *testing.T) {

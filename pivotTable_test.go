@@ -79,7 +79,7 @@ func TestPivotTable(t *testing.T) {
 		PivotTableRange: "Sheet1!W2:AC28",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
 		Columns:         []PivotTableField{{Data: "Region"}},
-		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "Count", Name: "Summarize by Count"}},
+		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "Count", Name: "Summarize by Count", ShowValuesAs: PivotTableShowValuesAs{Type: PivotTableShowValuesAsPercentOf, BaseField: "Region", BaseItem: "East"}}},
 		RowGrandTotals:  true,
 		ColGrandTotals:  true,
 		ShowDrill:       true,
@@ -89,10 +89,10 @@ func TestPivotTable(t *testing.T) {
 	}))
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
-		PivotTableRange: "Sheet1!G42:X57",
+		PivotTableRange: "Sheet1!G34:X49",
 		Rows:            []PivotTableField{{Data: "Month"}},
 		Columns:         []PivotTableField{{Data: "Region", DefaultSubtotal: true}, {Data: "Year"}},
-		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "CountNums", Name: "Summarize by CountNums"}},
+		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "CountNums", Name: "Summarize by CountNums", ShowValuesAs: PivotTableShowValuesAs{Type: PivotTableShowValuesAsPercentOf, BaseField: "Month", BaseItem: "Jan"}}},
 		RowGrandTotals:  true,
 		ColGrandTotals:  true,
 		ShowDrill:       true,
@@ -100,17 +100,25 @@ func TestPivotTable(t *testing.T) {
 		ShowColHeaders:  true,
 		ShowLastColumn:  true,
 	}))
+	// Test get pivot table with show value as with base field and base item
+	pivotTables, err = f.GetPivotTables("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, pivotTables, 4)
+	assert.Equal(t, []PivotTableField{{Data: "Revenue", Subtotal: "CountNums", Name: "Summarize by CountNums", ShowValuesAs: PivotTableShowValuesAs{Type: PivotTableShowValuesAsPercentOf, BaseField: "Month", BaseItem: "Jan"}}}, pivotTables[3].Data)
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
 		DataRange:       "Sheet1!A1:E31",
 		PivotTableRange: "Sheet1!AE2:AH28",
 		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
-		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "Max", Name: "Summarize by Max"}, {Data: "Revenue", Subtotal: "Average", Name: "Average of Sales"}},
-		RowGrandTotals:  true,
-		ColGrandTotals:  true,
-		ShowDrill:       true,
-		ShowRowHeaders:  true,
-		ShowColHeaders:  true,
-		ShowLastColumn:  true,
+		Data: []PivotTableField{
+			{Data: "Revenue", Subtotal: "Max", Name: "Summarize by Max", ShowValuesAs: PivotTableShowValuesAs{Type: PivotTableShowValuesAsPercentRunningTotalIn, BaseField: "Year"}},
+			{Data: "Revenue", Subtotal: "Average", Name: "Average of Sales", ShowValuesAs: PivotTableShowValuesAs{Type: PivotTableShowValuesAsRunningTotalIn, BaseField: "Year"}},
+		},
+		RowGrandTotals: true,
+		ColGrandTotals: true,
+		ShowDrill:      true,
+		ShowRowHeaders: true,
+		ShowColHeaders: true,
+		ShowLastColumn: true,
 	}))
 	// Create pivot table with empty subtotal field name and specified style
 	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
@@ -323,6 +331,51 @@ func TestPivotTable(t *testing.T) {
 		Data:            []PivotTableField{{Data: "Revenue"}},
 		Filter:          []PivotTableField{{Data: "Month"}},
 	}))
+	// Test with unsupported pivot table data field show value as type
+	assert.Equal(t, ErrUnsupportedPivotTableShowValuesAsType, f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!G2:M34",
+		Rows:            []PivotTableField{{Data: "Year"}},
+		Columns:         []PivotTableField{{Data: "Type"}},
+		Data:            []PivotTableField{{Data: "Revenue", ShowValuesAs: PivotTableShowValuesAs{Type: 15}}},
+		Filter:          []PivotTableField{{Data: "Month"}},
+	}))
+	// Test set pivot table show value as type without required base field
+	assert.Equal(t, ErrPivotTableShowValuesAsBaseField, f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!G2:M34",
+		Rows:            []PivotTableField{{Data: "Year"}},
+		Columns:         []PivotTableField{{Data: "Type"}},
+		Data:            []PivotTableField{{Data: "Revenue", ShowValuesAs: PivotTableShowValuesAs{Type: PivotTableShowValuesAsRunningTotalIn}}},
+		Filter:          []PivotTableField{{Data: "Month"}},
+	}))
+	// Test set pivot table show value as type without required base item
+	assert.Equal(t, ErrPivotTableShowValuesAsBaseItem, f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!G2:M34",
+		Rows:            []PivotTableField{{Data: "Year"}},
+		Columns:         []PivotTableField{{Data: "Type"}},
+		Data:            []PivotTableField{{Data: "Revenue", ShowValuesAs: PivotTableShowValuesAs{Type: PivotTableShowValuesAsPercentOf, BaseField: "Month"}}},
+		Filter:          []PivotTableField{{Data: "Month"}},
+	}))
+	// Test with invalid pivot table show value as base field
+	assert.Equal(t, newPivotTableShowValuesAsBaseFieldError("x"), f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!G2:M34",
+		Rows:            []PivotTableField{{Data: "Year"}},
+		Columns:         []PivotTableField{{Data: "Type"}},
+		Data:            []PivotTableField{{Data: "Revenue", ShowValuesAs: PivotTableShowValuesAs{Type: PivotTableShowValuesAsRunningTotalIn, BaseField: "x"}}},
+		Filter:          []PivotTableField{{Data: "Month"}},
+	}))
+	// Test with invalid pivot table show value as base item
+	assert.Equal(t, newPivotTableSelectedItemError("x", "Month"), f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:E31",
+		PivotTableRange: "Sheet1!G2:M34",
+		Rows:            []PivotTableField{{Data: "Year"}},
+		Columns:         []PivotTableField{{Data: "Type"}},
+		Data:            []PivotTableField{{Data: "Revenue", ShowValuesAs: PivotTableShowValuesAs{Type: PivotTableShowValuesAsPercentOf, BaseField: "Month", BaseItem: "x"}}},
+		Filter:          []PivotTableField{{Data: "Month"}},
+	}))
 	// Test delete pivot table
 	pivotTables, err = f.GetPivotTables("Sheet1")
 	assert.Len(t, pivotTables, 8)
@@ -505,6 +558,14 @@ func TestPivotTable(t *testing.T) {
 			SelectedItems: []string{"true"},
 		}))
 		assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPivotTable3.xlsx")))
+	})
+
+	t.Run("set_show_value_as_base_items_with_mixed_types", func(t *testing.T) {
+		df := &xlsxDataField{}
+		sharedItems := &xlsxSharedItems{}
+		sharedItems.addBooleanItem("true")
+		assert.NoError(t, df.setPivotTableShowValuesAsBaseItem("FieldName", "true", sharedItems))
+		assert.Equal(t, 0, *df.BaseItem)
 	})
 }
 
