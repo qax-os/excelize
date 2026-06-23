@@ -229,7 +229,21 @@ func (f *File) writeToZip(zw ZipWriter) error {
 		if fi, err = zw.Create(path); err != nil {
 			break
 		}
-		if n, err = fi.Write(f.readBytes(path)); int64(n) > math.MaxUint32 {
+		var file *os.File
+		if file, err = f.readTemp(path); err != nil {
+			break
+		}
+		var written int64
+		written, err = io.Copy(fi, file)
+		closeErr := file.Close()
+		if err != nil {
+			break
+		}
+		if closeErr != nil {
+			err = closeErr
+			break
+		}
+		if written > math.MaxUint32 {
 			f.zip64Entries = append(f.zip64Entries, path)
 		}
 	}

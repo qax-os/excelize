@@ -181,6 +181,43 @@ func TestWriteTo(t *testing.T) {
 	}
 }
 
+func TestWriteToZipStreamsTempFiles(t *testing.T) {
+	f := NewFile()
+	defer assert.NoError(t, f.Close())
+
+	const path = "xl/media/large.bin"
+	content := bytes.Repeat([]byte("0123456789"), 1024)
+	tmp, err := os.CreateTemp(t.TempDir(), "excelize-temp-*")
+	require.NoError(t, err)
+	_, err = tmp.Write(content)
+	require.NoError(t, err)
+	require.NoError(t, tmp.Close())
+
+	f.tempFiles.Store(path, tmp.Name())
+
+	buf, err := f.WriteToBuffer()
+	require.NoError(t, err)
+
+	_, ok := f.Pkg.Load(path)
+	assert.False(t, ok)
+
+	zr, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	require.NoError(t, err)
+	for _, file := range zr.File {
+		if file.Name != path {
+			continue
+		}
+		rc, err := file.Open()
+		require.NoError(t, err)
+		got, err := io.ReadAll(rc)
+		require.NoError(t, err)
+		require.NoError(t, rc.Close())
+		assert.Equal(t, content, got)
+		return
+	}
+	t.Fatalf("temporary file %q not found in saved workbook", path)
+}
+
 func TestClose(t *testing.T) {
 	f := NewFile()
 	f.tempFiles.Store("/d/", "/d/")
