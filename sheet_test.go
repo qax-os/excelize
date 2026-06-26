@@ -479,8 +479,9 @@ func TestSetSheetName(t *testing.T) {
 	// Test set worksheet with the different name
 	assert.NoError(t, f.SetSheetName("Sheet1", "sheet1"))
 	assert.Equal(t, "sheet1", f.GetSheetName(0))
-	// Test set sheet name with invalid sheet name
-	assert.Equal(t, f.SetSheetName("Sheet:1", "Sheet1"), ErrSheetNameInvalid)
+	// Test set sheet name with invalid source name (should not error, allows
+	// renaming sheets with non-standard names created by other applications)
+	assert.NoError(t, f.SetSheetName("Sheet:1", "Sheet1"))
 	_, err := f.NewSheet("Sheet 3")
 	assert.NoError(t, err)
 
