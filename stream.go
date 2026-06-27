@@ -12,16 +12,22 @@
 package excelize
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// dimensionPlaceholder is a fixed-width placeholder for the dimension element.
+// It uses max possible cell ref (XFD1048576) to ensure any final dimension fits.
+const dimensionPlaceholder = `<dimension ref="A1:XFD1048576"/>`
 
 // StreamWriter defined the type of stream writer.
 type StreamWriter struct {
@@ -32,6 +38,9 @@ type StreamWriter struct {
 	worksheet       *xlsxWorksheet
 	rawData         bufferedWriter
 	rows            int
+	maxCol          int   // track max column for dimension element
+	cellCount       int64 // track total cells written
+	dimensionOffset int64 // byte offset of dimension placeholder for update
 	mergeCellsCount int
 	mergeCells      strings.Builder
 	tableParts      string
@@ -119,11 +128,26 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	if sheetID == -1 {
 		return nil, ErrSheetNotExist{sheet}
 	}
+	chunkSize := f.options.StreamingChunkSize
+	switch {
+	case chunkSize < 0:
+		chunkSize = math.MaxInt // never spill to disk
+	case chunkSize == 0:
+		chunkSize = StreamChunkSize
+	}
+	bufSize := f.options.StreamingBufSize
+	if bufSize <= 0 {
+		bufSize = StreamingBufSizeDefault
+	}
 	sw := &StreamWriter{
 		file:    f,
 		Sheet:   sheet,
 		SheetID: sheetID,
-		rawData: bufferedWriter{tmpDir: f.options.TmpDir},
+		rawData: bufferedWriter{
+			tmpDir:    f.options.TmpDir,
+			flushSize: chunkSize,
+			bioSize:   bufSize,
+		},
 	}
 	var err error
 	sw.worksheet, err = f.workSheetReader(sheet)
@@ -138,7 +162,11 @@ func (f *File) NewStreamWriter(sheet string) (*StreamWriter, error) {
 	f.streams[sheetXMLPath] = sw
 
 	_, _ = sw.rawData.WriteString(xml.Header + `<worksheet` + templateNamespaceIDMap)
-	bulkAppendFields(&sw.rawData, sw.worksheet, 3, 4)
+	// Write SheetPr (field 3) only, we handle Dimension separately
+	bulkAppendFields(&sw.rawData, sw.worksheet, 3, 3)
+	// Record offset and write fixed-width dimension placeholder
+	sw.dimensionOffset = sw.rawData.written
+	_, _ = sw.rawData.WriteString(dimensionPlaceholder)
 	return sw, err
 }
 
@@ -394,6 +422,10 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 		return newStreamSetRowError(row)
 	}
 	sw.rows = row
+	// Track max column for dimension element
+	if endCol := col + len(values) - 1; endCol > sw.maxCol {
+		sw.maxCol = endCol
+	}
 	sw.writeSheetData()
 	options := parseRowOpts(opts...)
 	attrs, err := options.marshalAttrs()
@@ -430,6 +462,7 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 			return err
 		}
 		writeCell(&sw.rawData, c)
+		sw.cellCount++
 	}
 	_, _ = sw.rawData.WriteString(`</row>`)
 	return sw.rawData.Sync()
@@ -766,12 +799,61 @@ func (sw *StreamWriter) Flush() error {
 		return err
 	}
 
+	// Update dimension placeholder with actual dimensions
+	if err := sw.updateDimension(); err != nil {
+		return err
+	}
+
+	// Store sheet statistics for metadata access
+	sw.storeSheetStats()
+
 	sheetPath := sw.file.sheetMap[sw.Sheet]
 	sw.file.Sheet.Delete(sheetPath)
 	sw.file.checked.Delete(sheetPath)
 	sw.file.Pkg.Delete(sheetPath)
 
 	return nil
+}
+
+// updateDimension overwrites the dimension placeholder with the actual
+// dimensions computed during streaming.
+func (sw *StreamWriter) updateDimension() error {
+	// Build actual dimension element, padded to match placeholder length
+	var dim string
+	if sw.rows > 0 && sw.maxCol > 0 {
+		maxCell, _ := CoordinatesToCellName(sw.maxCol, sw.rows)
+		dim = fmt.Sprintf(`<dimension ref="A1:%s"/>`, maxCell)
+	} else {
+		dim = `<dimension ref="A1"/>`
+	}
+	padded := dim + strings.Repeat(" ", len(dimensionPlaceholder)-len(dim))
+	return sw.rawData.WriteAt([]byte(padded), sw.dimensionOffset)
+}
+
+// storeSheetStats saves the sheet statistics to the File for later access.
+func (sw *StreamWriter) storeSheetStats() {
+	if sw.file.sheetStats == nil {
+		sw.file.sheetStats = make(map[string]*SheetStats)
+	}
+	maxCell := ""
+	if sw.maxCol > 0 && sw.rows > 0 {
+		maxCell, _ = CoordinatesToCellName(sw.maxCol, sw.rows)
+	}
+	sw.file.sheetStats[sw.Sheet] = &SheetStats{
+		Rows:    sw.rows,
+		Cols:    sw.maxCol,
+		Cells:   sw.cellCount,
+		MaxCell: maxCell,
+	}
+}
+
+// GetSheetStats returns previously cached sheet statistics, or nil if stats
+// have not been calculated for the given sheet.
+func (f *File) GetSheetStats(sheet string) *SheetStats {
+	if f.sheetStats == nil {
+		return nil
+	}
+	return f.sheetStats[sheet]
 }
 
 // bulkAppendFields bulk-appends fields in a worksheet by specified field
@@ -791,19 +873,126 @@ func bulkAppendFields(w io.Writer, ws *xlsxWorksheet, from, to int) {
 // is written to the temp file with Sync, which may return an error.
 // Therefore, Sync should be periodically called and the error checked.
 type bufferedWriter struct {
-	tmpDir string
-	tmp    *os.File
-	buf    bytes.Buffer
+	tmpDir    string
+	tmp       *os.File
+	buf       bytes.Buffer  // used before temp file is created
+	bio       *bufio.Writer // used after temp file is created
+	scratch   [24]byte      // scratch space for strconv.Append* to avoid heap allocs
+	flushSize int           // if >0, flush to temp file at this threshold instead of StreamChunkSize
+	bioSize   int           // bufio.Writer buffer size after threshold; 0 = use StreamingBufSizeDefault
+	written   int64         // total bytes written (for tracking offsets)
 }
 
-// Write to the in-memory buffer. The error is always nil.
+// Write to the active writer (bufio if streaming, otherwise in-memory buffer).
 func (bw *bufferedWriter) Write(p []byte) (n int, err error) {
-	return bw.buf.Write(p)
+	if bw.bio != nil {
+		n, err = bw.bio.Write(p)
+	} else {
+		n, err = bw.buf.Write(p)
+	}
+	bw.written += int64(n)
+	return
 }
 
-// WriteString write to the in-memory buffer. The error is always nil.
+// WriteString writes to the active writer.
 func (bw *bufferedWriter) WriteString(p string) (n int, err error) {
-	return bw.buf.WriteString(p)
+	if bw.bio != nil {
+		n, err = bw.bio.WriteString(p)
+	} else {
+		n, err = bw.buf.WriteString(p)
+	}
+	bw.written += int64(n)
+	return
+}
+
+// WriteInt formats and writes an int64 directly using the scratch space,
+// avoiding a heap-allocated string.
+func (bw *bufferedWriter) WriteInt(v int64) {
+	b := strconv.AppendInt(bw.scratch[:0], v, 10)
+	if bw.bio != nil {
+		bw.bio.Write(b)
+	} else {
+		bw.buf.Write(b)
+	}
+	bw.written += int64(len(b))
+}
+
+// WriteUint formats and writes a uint64 directly to the buffer.
+func (bw *bufferedWriter) WriteUint(v uint64) {
+	b := strconv.AppendUint(bw.scratch[:0], v, 10)
+	if bw.bio != nil {
+		bw.bio.Write(b)
+	} else {
+		bw.buf.Write(b)
+	}
+	bw.written += int64(len(b))
+}
+
+// WriteFloat formats and writes a float64 directly to the buffer.
+func (bw *bufferedWriter) WriteFloat(v float64, fmt byte, prec, bitSize int) {
+	b := strconv.AppendFloat(bw.scratch[:0], v, fmt, prec, bitSize)
+	if bw.bio != nil {
+		bw.bio.Write(b)
+	} else {
+		bw.buf.Write(b)
+	}
+	bw.written += int64(len(b))
+}
+
+// Bytes returns the in-memory buffer contents. This is only valid when no
+// temp file has been created (i.e. for small worksheets). Once streaming to
+// disk, this returns nil.
+func (bw *bufferedWriter) Bytes() []byte {
+	if bw.tmp != nil {
+		return nil
+	}
+	return bw.buf.Bytes()
+}
+
+// WriteAt writes data at a specific offset. For in-memory buffers, it
+// modifies the buffer directly. For temp files, it flushes first then
+// uses pwrite. The data must fit within previously written bytes.
+func (bw *bufferedWriter) WriteAt(p []byte, offset int64) error {
+	if bw.tmp == nil {
+		// In-memory: directly modify buffer bytes
+		buf := bw.buf.Bytes()
+		if offset+int64(len(p)) > int64(len(buf)) {
+			return fmt.Errorf("WriteAt: offset %d + len %d exceeds buffer size %d", offset, len(p), len(buf))
+		}
+		copy(buf[offset:], p)
+		return nil
+	}
+	// Temp file: flush bufio first, then use pwrite
+	if err := bw.Flush(); err != nil {
+		return err
+	}
+	_, err := bw.tmp.WriteAt(p, offset)
+	return err
+}
+
+// CopyTo efficiently copies all buffered data to w. For in-memory buffers
+// this is a simple WriteTo. For temp files this uses a large read buffer to
+// minimize syscalls.
+func (bw *bufferedWriter) CopyTo(w io.Writer) (int64, error) {
+	if bw.tmp == nil {
+		return io.Copy(w, bytes.NewReader(bw.buf.Bytes()))
+	}
+	if err := bw.Flush(); err != nil {
+		return 0, err
+	}
+	if _, err := bw.tmp.Seek(0, 0); err != nil {
+		return 0, err
+	}
+	// Use a large read buffer to batch Pread syscalls. Without this,
+	// io.Copy uses 32 KB reads, generating thousands of syscalls for
+	// large worksheets (e.g. 100 MB XML → 3000+ syscalls). A 256 KB
+	// buffer reduces that to ~400.
+	readBufSize := 256 * 1024
+	if bw.bioSize > readBufSize {
+		readBufSize = bw.bioSize
+	}
+	br := bufio.NewReaderSize(bw.tmp, readBufSize)
+	return io.Copy(w, br)
 }
 
 // Reader provides read-access to the underlying buffer/file.
@@ -823,10 +1012,16 @@ func (bw *bufferedWriter) Reader() (io.Reader, error) {
 }
 
 // Sync will write the in-memory buffer to a temp file, if the in-memory
-// buffer has grown large enough. Any error will be returned.
+// buffer has grown large enough. Once the temp file is created, all
+// subsequent writes go through the bufio.Writer and the bytes.Buffer is
+// released.
 func (bw *bufferedWriter) Sync() (err error) {
-	// Try to use local storage
-	if bw.buf.Len() < StreamChunkSize {
+	// Already streaming to disk via bufio.Writer — nothing to do here;
+	// the final Flush() call will drain any remaining bytes.
+	if bw.bio != nil {
+		return nil
+	}
+	if bw.buf.Len() < bw.flushSize {
 		return nil
 	}
 	if bw.tmp == nil {
@@ -836,26 +1031,47 @@ func (bw *bufferedWriter) Sync() (err error) {
 			return nil
 		}
 	}
-	return bw.Flush()
+	// Drain the in-memory buffer to the temp file
+	if _, err = bw.buf.WriteTo(bw.tmp); err != nil {
+		return err
+	}
+	// Release the bytes.Buffer backing array entirely
+	bw.buf = bytes.Buffer{}
+	// Switch to bufio.Writer for all future writes
+	bw.bio = bufio.NewWriterSize(bw.tmp, bw.bioSize)
+	return nil
 }
 
-// Flush the entire in-memory buffer to the temp file, if a temp file is being
-// used.
+// Flush ensures all buffered data is written to the temp file.
 func (bw *bufferedWriter) Flush() error {
 	if bw.tmp == nil {
 		return nil
+	}
+	if bw.bio != nil {
+		return bw.bio.Flush()
 	}
 	_, err := bw.buf.WriteTo(bw.tmp)
 	if err != nil {
 		return err
 	}
-	bw.buf.Reset()
+	bw.buf = bytes.Buffer{}
 	return nil
+}
+
+// Reset clears all buffered data (in-memory and bufio) without closing the
+// temp file.
+func (bw *bufferedWriter) Reset() {
+	bw.buf.Reset()
+	if bw.bio != nil {
+		bw.bio.Reset(&bw.buf) // detach from temp file
+		bw.bio = nil
+	}
 }
 
 // Close the underlying temp file and reset the in-memory buffer.
 func (bw *bufferedWriter) Close() error {
 	bw.buf.Reset()
+	bw.bio = nil
 	if bw.tmp == nil {
 		return nil
 	}
