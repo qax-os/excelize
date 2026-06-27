@@ -156,14 +156,36 @@ func (rows *Rows) Close() error {
 // data as a stream, returns each cell in a row as is, and will not skip empty
 // rows in the tail of the worksheet.
 func (rows *Rows) Columns(opts ...Options) ([]string, error) {
-	if rows.curRow > rows.seekRow {
-		return nil, nil
-	}
 	var rowIterator rowXMLIterator
+	err := rows.iterate(&rowIterator, opts...)
+	return rowIterator.cells, err
+}
+
+// IterateColumns streams each non-empty cell of the current row through fn
+// with its 1-based column index, avoiding the []string allocation that
+// Columns performs.
+//
+//	rows.IterateColumns(func(colIndex int, cellValue string) {
+//	    fmt.Printf("col %d: %s\n", colIndex, cellValue)
+//	})
+func (rows *Rows) IterateColumns(fn func(colIndex int, cellValue string), opts ...Options) error {
+	if fn == nil {
+		return nil
+	}
+	rowIterator := rowXMLIterator{yield: fn}
+	return rows.iterate(&rowIterator, opts...)
+}
+
+// iterate drives the SAX parser for the current row, streaming cells via
+// rowIterator.yield when set or accumulating them into rowIterator.cells.
+func (rows *Rows) iterate(rowIterator *rowXMLIterator, opts ...Options) error {
+	if rows.curRow > rows.seekRow {
+		return nil
+	}
 	var token xml.Token
 	rows.rawCellValue = rows.f.getOptions(opts...).RawCellValue
 	if rows.sst, rowIterator.err = rows.f.sharedStringsReader(); rowIterator.err != nil {
-		return rowIterator.cells, rowIterator.err
+		return rowIterator.err
 	}
 	for {
 		if rows.token != nil {
@@ -185,21 +207,21 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 				rows.seekRowOpts = extractRowOpts(xmlElement.Attr)
 				if rows.curRow > rows.seekRow {
 					rows.token = nil
-					return rowIterator.cells, rowIterator.err
+					return rowIterator.err
 				}
 			}
-			if rows.rowXMLHandler(&rowIterator, &xmlElement, rows.rawCellValue); rowIterator.err != nil {
+			if rows.rowXMLHandler(rowIterator, &xmlElement, rows.rawCellValue); rowIterator.err != nil {
 				rows.token = nil
-				return rowIterator.cells, rowIterator.err
+				return rowIterator.err
 			}
 			rows.token = nil
 		case xml.EndElement:
 			if xmlElement.Name.Local == "sheetData" {
-				return rowIterator.cells, rowIterator.err
+				return rowIterator.err
 			}
 		}
 	}
-	return rowIterator.cells, rowIterator.err
+	return rowIterator.err
 }
 
 // extractRowOpts extract row element attributes.
@@ -226,11 +248,14 @@ func appendSpace(l int, s []string) []string {
 }
 
 // rowXMLIterator defined runtime use field for the worksheet row SAX parser.
+// When yield is non-nil cells are streamed through it; otherwise they are
+// accumulated into cells.
 type rowXMLIterator struct {
 	err              error
 	inElement        string
 	cellCol, cellRow int
 	cells            []string
+	yield            func(colIndex int, cellValue string)
 }
 
 // rowXMLHandler parse the row XML element of the worksheet.
@@ -244,10 +269,16 @@ func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.Sta
 				return
 			}
 		}
-		blank := rowIterator.cellCol - len(rowIterator.cells)
-		if val, _ := colCell.getValueFrom(rows.f, rows.sst, raw); val != "" || colCell.F != nil {
-			rowIterator.cells = append(appendSpace(blank, rowIterator.cells), val)
+		val, _ := colCell.getValueFrom(rows.f, rows.sst, raw)
+		if val == "" && colCell.F == nil {
+			return
 		}
+		if rowIterator.yield != nil {
+			rowIterator.yield(rowIterator.cellCol, val)
+			return
+		}
+		blank := rowIterator.cellCol - len(rowIterator.cells)
+		rowIterator.cells = append(appendSpace(blank, rowIterator.cells), val)
 	}
 }
 
