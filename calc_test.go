@@ -2322,6 +2322,7 @@ func TestCalcCellValue(t *testing.T) {
 	}
 	mathCalcError := map[string][]string{
 		"1/0":        {"", "#DIV/0!"},
+		"(1/0)":      {"", "#DIV/0!"},
 		"1^\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
 		"\"text\"^1": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
 		"1+\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
