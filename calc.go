@@ -1157,6 +1157,9 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 	if opdStack.Len() == 0 {
 		return newEmptyFormulaArg(), ErrInvalidFormula
 	}
+	if result := opdStack.Peek().(formulaArg); result.Type == ArgError {
+		return newEmptyFormulaArg(), errors.New(result.Error)
+	}
 	return opdStack.Peek().(formulaArg), err
 }
 
@@ -1471,7 +1474,9 @@ func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Tok
 	for tokenPriority <= topOptPriority {
 		optStack.Pop()
 		if err = calculate(opdStack, topOpt); err != nil {
-			return
+			opdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
+			err = nil
+			break
 		}
 		if optStack.Len() > 0 {
 			topOpt = optStack.Peek().(efp.Token)
@@ -1569,7 +1574,9 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 		for !isBeginParenthesesToken(optStack.Peek().(efp.Token)) { // != (
 			topOpt := optStack.Peek().(efp.Token)
 			if err := calculate(opdStack, topOpt); err != nil {
-				return err
+				opdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
+				optStack.Pop()
+				break
 			}
 			optStack.Pop()
 		}

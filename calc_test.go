@@ -1450,6 +1450,8 @@ func TestCalcCellValue(t *testing.T) {
 		"ISERROR(A1)":          "FALSE",
 		"ISERROR(NA())":        "TRUE",
 		"ISERROR(\"#VALUE!\")": "FALSE",
+		"ISERROR((1/0))":       "TRUE",
+		"ISERROR(1/0+0)":       "TRUE",
 		// ISEVEN
 		"ISEVEN(A1)": "FALSE",
 		"ISEVEN(A2)": "TRUE",
@@ -1528,6 +1530,8 @@ func TestCalcCellValue(t *testing.T) {
 		"IFERROR(1/2,0)":             "0.5",
 		"IFERROR(ISERROR(),0)":       "0",
 		"IFERROR(1/0,0)":             "0",
+		"IFERROR((1/0),0)":           "0",
+		"IFERROR(1/0+0,0)":           "0",
 		"IFERROR(G1,2)":              "0",
 		"IFERROR(B2/MROUND(A2,1),0)": "2.5",
 		// IFNA
@@ -2927,7 +2931,7 @@ func TestCalcCellValue(t *testing.T) {
 		"SUM(1*)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
 		"SUM(1/)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
 		"SUM(1*SUM(1/0))":   {"#DIV/0!", "#DIV/0!"},
-		"SUM(1*SUM(1/0)*1)": {"", "#DIV/0!"},
+		"SUM(1*SUM(1/0)*1)": {"#DIV/0!", "#DIV/0!"},
 		"SUM(0:2)":          {"#NAME?", "invalid reference"},
 		"SUM(1:1048577)":    {"#NAME?", "invalid reference"},
 		// SUMIF
