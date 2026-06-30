@@ -1157,6 +1157,9 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 	if opdStack.Len() == 0 {
 		return newEmptyFormulaArg(), ErrInvalidFormula
 	}
+	if result := opdStack.Peek().(formulaArg); result.Type == ArgError {
+		return newEmptyFormulaArg(), errors.New(result.Error)
+	}
 	return opdStack.Peek().(formulaArg), err
 }
 
@@ -1452,7 +1455,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 }
 
 // parseOperatorPrefixToken parse operator prefix token.
-func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Token) (err error) {
+func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Token) {
 	if optStack.Len() == 0 {
 		optStack.Push(token)
 		return
@@ -1470,8 +1473,9 @@ func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Tok
 	}
 	for tokenPriority <= topOptPriority {
 		optStack.Pop()
-		if err = calculate(opdStack, topOpt); err != nil {
-			return
+		if err := calculate(opdStack, topOpt); err != nil {
+			opdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
+			break
 		}
 		if optStack.Len() > 0 {
 			topOpt = optStack.Peek().(efp.Token)
@@ -1481,7 +1485,6 @@ func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Tok
 		break
 	}
 	optStack.Push(token)
-	return
 }
 
 // isFunctionStartToken determine if the token is function start.
@@ -1558,9 +1561,7 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 		token = formulaArgToToken(result)
 	}
 	if isOperatorPrefixToken(token) {
-		if err := f.parseOperatorPrefixToken(optStack, opdStack, token); err != nil {
-			return err
-		}
+		f.parseOperatorPrefixToken(optStack, opdStack, token)
 	}
 	if isBeginParenthesesToken(token) { // (
 		optStack.Push(token)
@@ -1569,7 +1570,9 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 		for !isBeginParenthesesToken(optStack.Peek().(efp.Token)) { // != (
 			topOpt := optStack.Peek().(efp.Token)
 			if err := calculate(opdStack, topOpt); err != nil {
-				return err
+				opdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
+				optStack.Pop()
+				break
 			}
 			optStack.Pop()
 		}

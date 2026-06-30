@@ -1450,6 +1450,8 @@ func TestCalcCellValue(t *testing.T) {
 		"ISERROR(A1)":          "FALSE",
 		"ISERROR(NA())":        "TRUE",
 		"ISERROR(\"#VALUE!\")": "FALSE",
+		"ISERROR((1/0))":       "TRUE",
+		"ISERROR(1/0+0)":       "TRUE",
 		// ISEVEN
 		"ISEVEN(A1)": "FALSE",
 		"ISEVEN(A2)": "TRUE",
@@ -1528,6 +1530,8 @@ func TestCalcCellValue(t *testing.T) {
 		"IFERROR(1/2,0)":             "0.5",
 		"IFERROR(ISERROR(),0)":       "0",
 		"IFERROR(1/0,0)":             "0",
+		"IFERROR((1/0),0)":           "0",
+		"IFERROR(1/0+0,0)":           "0",
 		"IFERROR(G1,2)":              "0",
 		"IFERROR(B2/MROUND(A2,1),0)": "2.5",
 		// IFNA
@@ -2318,6 +2322,7 @@ func TestCalcCellValue(t *testing.T) {
 	}
 	mathCalcError := map[string][]string{
 		"1/0":        {"", "#DIV/0!"},
+		"(1/0)":      {"", "#DIV/0!"},
 		"1^\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
 		"\"text\"^1": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
 		"1+\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
@@ -2603,6 +2608,7 @@ func TestCalcCellValue(t *testing.T) {
 		"ABS()":      {"#VALUE!", "ABS requires 1 numeric argument"},
 		"ABS(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		"ABS(~)":     {"#NAME?", "invalid reference"},
+		"ABS(~+1)":   {"", "#NAME?"},
 		// ACOS
 		"ACOS()":        {"#VALUE!", "ACOS requires 1 numeric argument"},
 		"ACOS(\"X\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
@@ -2927,7 +2933,7 @@ func TestCalcCellValue(t *testing.T) {
 		"SUM(1*)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
 		"SUM(1/)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
 		"SUM(1*SUM(1/0))":   {"#DIV/0!", "#DIV/0!"},
-		"SUM(1*SUM(1/0)*1)": {"", "#DIV/0!"},
+		"SUM(1*SUM(1/0)*1)": {"#DIV/0!", "#DIV/0!"},
 		"SUM(0:2)":          {"#NAME?", "invalid reference"},
 		"SUM(1:1048577)":    {"#NAME?", "invalid reference"},
 		// SUMIF
