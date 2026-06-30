@@ -1455,7 +1455,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 }
 
 // parseOperatorPrefixToken parse operator prefix token.
-func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Token) (err error) {
+func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Token) {
 	if optStack.Len() == 0 {
 		optStack.Push(token)
 		return
@@ -1473,9 +1473,8 @@ func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Tok
 	}
 	for tokenPriority <= topOptPriority {
 		optStack.Pop()
-		if err = calculate(opdStack, topOpt); err != nil {
+		if err := calculate(opdStack, topOpt); err != nil {
 			opdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
-			err = nil
 			break
 		}
 		if optStack.Len() > 0 {
@@ -1486,7 +1485,6 @@ func (f *File) parseOperatorPrefixToken(optStack, opdStack *Stack, token efp.Tok
 		break
 	}
 	optStack.Push(token)
-	return
 }
 
 // isFunctionStartToken determine if the token is function start.
@@ -1563,9 +1561,7 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 		token = formulaArgToToken(result)
 	}
 	if isOperatorPrefixToken(token) {
-		if err := f.parseOperatorPrefixToken(optStack, opdStack, token); err != nil {
-			return err
-		}
+		f.parseOperatorPrefixToken(optStack, opdStack, token)
 	}
 	if isBeginParenthesesToken(token) { // (
 		optStack.Push(token)

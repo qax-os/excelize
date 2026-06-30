@@ -2608,6 +2608,7 @@ func TestCalcCellValue(t *testing.T) {
 		"ABS()":      {"#VALUE!", "ABS requires 1 numeric argument"},
 		"ABS(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		"ABS(~)":     {"#NAME?", "invalid reference"},
+		"ABS(~+1)":   {"", "#NAME?"},
 		// ACOS
 		"ACOS()":        {"#VALUE!", "ACOS requires 1 numeric argument"},
 		"ACOS(\"X\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
