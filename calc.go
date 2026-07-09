@@ -1213,8 +1213,21 @@ func prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack *Stack) {
 	argument := true
 	if opftStack.Len() > 2 && opfdStack.Len() == 1 {
 		topOpt := opftStack.Pop()
-		if opftStack.Peek().(efp.Token).TType == efp.TokenTypeOperatorInfix {
+		// Look past any subexpression start and function start tokens.
+		var savedTokens []efp.Token
+		for opftStack.Len() > 0 {
+			tok := opftStack.Peek().(efp.Token)
+			if !isBeginParenthesesToken(tok) && !isFunctionStartToken(tok) {
+				break
+			}
+			savedTokens = append(savedTokens, opftStack.Pop().(efp.Token))
+		}
+		if opftStack.Len() > 0 && opftStack.Peek().(efp.Token).TType == efp.TokenTypeOperatorInfix {
 			argument = false
+		}
+		// Restore saved tokens
+		for i := len(savedTokens) - 1; i >= 0; i-- {
+			opftStack.Push(savedTokens[i])
 		}
 		opftStack.Push(topOpt)
 	}
