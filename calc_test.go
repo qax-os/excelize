@@ -894,6 +894,8 @@ func TestCalcCellValue(t *testing.T) {
 		"1+SUM(SUM(1,2*3),4)*4/3+5+(4+2)*3":  "38.6666666666667",
 		"SUM(1+ROW())":                       "2",
 		"SUM((SUM(2))+1)":                    "3",
+		"SUM(1+(ABS(A1)+A1)/2)":              "2",
+		"SUM(1+(-ABS(A1)))":                  "0",
 		"IF(2<0, 1, (4))":                    "4",
 		"IF(2>0, (1), 4)":                    "1",
 		"IF(2>0, (A1)*2.5, 4)":               "2.5",
@@ -1998,6 +2000,7 @@ func TestCalcCellValue(t *testing.T) {
 		"IF(FALSE,0,ROUND(4/2,0))":                  "2",
 		"IF(TRUE,ROUND(4/2,0),0)":                   "2",
 		"IF(A4>0.4,\"TRUE\",\"FALSE\")":             "FALSE",
+		"IF(A1=0,0,1+(SUM(ABS(A1))))":               "2",
 		// Excel Lookup and Reference Functions
 		// ADDRESS
 		"ADDRESS(1,1,1,TRUE)":            "$A$1",
