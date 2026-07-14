@@ -2001,6 +2001,7 @@ func TestCalcCellValue(t *testing.T) {
 		"IF(TRUE,ROUND(4/2,0),0)":                   "2",
 		"IF(A4>0.4,\"TRUE\",\"FALSE\")":             "FALSE",
 		"IF(A1=0,0,1+(SUM(ABS(A1))))":               "2",
+		"IF(C1=0,0,A1/C1+B1/C1)":                    "0",
 		// Excel Lookup and Reference Functions
 		// ADDRESS
 		"ADDRESS(1,1,1,TRUE)":            "$A$1",

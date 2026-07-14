@@ -1204,7 +1204,7 @@ func prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack *Stack) {
 		// calculate trigger
 		topOpt := opftStack.Peek().(efp.Token)
 		if err := calculate(opfdStack, topOpt); err != nil {
-			argsStack.Peek().(*list.List).PushBack(newErrorFormulaArg(err.Error(), err.Error()))
+			opfdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
 			opftStack.Pop()
 			continue
 		}
