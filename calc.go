@@ -1213,11 +1213,11 @@ func prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack *Stack) {
 	argument := true
 	if opftStack.Len() > 2 && opfdStack.Len() == 1 {
 		topOpt := opftStack.Pop()
-		// Look past any subexpression start and function start tokens.
+		// Look past any subexpression start, function start, and prefix operator tokens
 		var savedTokens []efp.Token
 		for opftStack.Len() > 0 {
-			tok := opftStack.Peek().(efp.Token)
-			if !isBeginParenthesesToken(tok) && !isFunctionStartToken(tok) {
+			token := opftStack.Peek().(efp.Token)
+			if !isBeginParenthesesToken(token) && !isFunctionStartToken(token) && token.TType != efp.TokenTypeOperatorPrefix {
 				break
 			}
 			savedTokens = append(savedTokens, opftStack.Pop().(efp.Token))

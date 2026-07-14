@@ -895,6 +895,7 @@ func TestCalcCellValue(t *testing.T) {
 		"SUM(1+ROW())":                       "2",
 		"SUM((SUM(2))+1)":                    "3",
 		"SUM(1+(ABS(A1)+A1)/2)":              "2",
+		"SUM(1+(-ABS(A1)))":                  "0",
 		"IF(2<0, 1, (4))":                    "4",
 		"IF(2>0, (1), 4)":                    "1",
 		"IF(2>0, (A1)*2.5, 4)":               "2.5",
