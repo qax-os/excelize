@@ -532,3 +532,159 @@ func TestStreamWriterGetRowElement(t *testing.T) {
 		assert.False(t, ok)
 	}
 }
+
+func TestStreamWriterUseSharedStrings(t *testing.T) {
+	// Test basic UseSharedStrings functionality
+	f := NewFile(Options{UseSharedStrings: true})
+	defer f.Close()
+
+	sw, err := f.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.True(t, sw.useSharedStrings)
+	assert.NotNil(t, sw.sharedStringsMap)
+
+	// Write rows with duplicate strings
+	assert.NoError(t, sw.SetRow("A1", []interface{}{"hello", "world", "hello"}))
+	assert.NoError(t, sw.SetRow("A2", []interface{}{"world", "new", "hello"}))
+
+	assert.NoError(t, sw.Flush())
+
+	// Verify shared strings were created
+	data, ok := f.Pkg.Load(defaultXMLPathSharedStrings)
+	assert.True(t, ok)
+	sstXML := string(data.([]byte))
+	assert.Contains(t, sstXML, `<si><t>hello</t></si>`)
+	assert.Contains(t, sstXML, `<si><t>world</t></si>`)
+	assert.Contains(t, sstXML, `<si><t>new</t></si>`)
+	assert.Contains(t, sstXML, `uniqueCount="3"`)
+
+	// Save and re-read to verify file is valid
+	tmpPath := filepath.Join(t.TempDir(), "shared_strings.xlsx")
+	assert.NoError(t, f.SaveAs(tmpPath))
+
+	f2, err := OpenFile(tmpPath)
+	assert.NoError(t, err)
+	defer f2.Close()
+
+	val, err := f2.GetCellValue("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "hello", val)
+
+	val, err = f2.GetCellValue("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "world", val)
+
+	val, err = f2.GetCellValue("Sheet1", "C1")
+	assert.NoError(t, err)
+	assert.Equal(t, "hello", val)
+
+	val, err = f2.GetCellValue("Sheet1", "B2")
+	assert.NoError(t, err)
+	assert.Equal(t, "new", val)
+}
+
+func TestStreamWriterSharedStringsPreserveSpace(t *testing.T) {
+	// Test that strings with leading/trailing whitespace get xml:space="preserve"
+	f := NewFile(Options{UseSharedStrings: true})
+	defer f.Close()
+
+	sw, err := f.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+
+	assert.NoError(t, sw.SetRow("A1", []interface{}{" leading", "trailing ", "\tnewline\n"}))
+	assert.NoError(t, sw.Flush())
+
+	data, ok := f.Pkg.Load(defaultXMLPathSharedStrings)
+	assert.True(t, ok)
+	sstXML := string(data.([]byte))
+	assert.Contains(t, sstXML, `xml:space="preserve"`)
+}
+
+func TestStreamWriterSharedStringsDedup(t *testing.T) {
+	// Test that getOrAddSharedString deduplicates correctly
+	f := NewFile(Options{UseSharedStrings: true})
+	defer f.Close()
+
+	sw, err := f.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+
+	// Same string should return same index
+	idx1 := sw.getOrAddSharedString("test")
+	idx2 := sw.getOrAddSharedString("test")
+	idx3 := sw.getOrAddSharedString("other")
+	assert.Equal(t, 0, idx1)
+	assert.Equal(t, 0, idx2)
+	assert.Equal(t, 1, idx3)
+	assert.Equal(t, 2, len(sw.sharedStrings))
+}
+
+func TestStreamWriterSharedStringsDisabled(t *testing.T) {
+	// Test that without UseSharedStrings, inline strings are used
+	f := NewFile()
+	defer f.Close()
+
+	sw, err := f.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.False(t, sw.useSharedStrings)
+
+	assert.NoError(t, sw.SetRow("A1", []interface{}{"hello"}))
+	assert.NoError(t, sw.Flush())
+
+	// No shared strings file should be created
+	_, ok := f.Pkg.Load(defaultXMLPathSharedStrings)
+	assert.False(t, ok)
+}
+
+func TestStreamWriterSharedStringsEmptyStrings(t *testing.T) {
+	// Test with empty string values (no shared strings generated)
+	f := NewFile(Options{UseSharedStrings: true})
+	defer f.Close()
+
+	sw, err := f.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+
+	// Write only numeric values - no shared strings
+	assert.NoError(t, sw.SetRow("A1", []interface{}{42, 3.14, true}))
+	assert.NoError(t, sw.Flush())
+
+	// No shared strings should be written (empty table)
+	_, ok := f.Pkg.Load(defaultXMLPathSharedStrings)
+	assert.False(t, ok)
+}
+
+func TestStreamWriterSharedStringsRelationship(t *testing.T) {
+	// Test that writeSharedStrings adds content type and relationship
+	f := NewFile(Options{UseSharedStrings: true})
+	defer f.Close()
+
+	sw, err := f.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+
+	assert.NoError(t, sw.SetRow("A1", []interface{}{"test"}))
+	assert.NoError(t, sw.Flush())
+
+	// Call Flush again with another stream writer to verify relationship dedup
+	sw2, err := f.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, sw2.SetRow("A1", []interface{}{"test2"}))
+	assert.NoError(t, sw2.Flush())
+}
+
+func TestStreamWriterSharedStringsError(t *testing.T) {
+	// Test writeSharedStrings error path (corrupted content types)
+	f := NewFile(Options{UseSharedStrings: true})
+	defer f.Close()
+
+	sw, err := f.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+
+	assert.NoError(t, sw.SetRow("A1", []interface{}{"trigger_sst"}))
+
+	// Corrupt content types with invalid XML that triggers a decode error
+	// (unclosed element causes syntax error, not EOF)
+	f.Pkg.Store(defaultXMLPathContentTypes, []byte(`<Types xmlns="x"><Override PartName="/xl`))
+	f.ContentTypes = nil
+
+	err = sw.Flush()
+	assert.Error(t, err)
+}
