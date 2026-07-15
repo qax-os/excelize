@@ -1213,6 +1213,29 @@ func TestCellXMLHandler(t *testing.T) {
 	}
 }
 
+func TestCellXMLHandlerInlineStr(t *testing.T) {
+	// Phonetic run and run property elements must not leak their text into
+	// the inline string value.
+	content := []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><rPh sb="0" eb="1"><t>フリガナ</t></rPh><r><rPr><b/></rPr><t>A</t></r><r><t xml:space="preserve"> B</t></r><phoneticPr fontId="1"/></is></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
+	decoder := xml.NewDecoder(bytes.NewReader(content))
+	cells := 0
+	for {
+		token, err := decoder.Token()
+		if err != nil || token == nil {
+			break
+		}
+		if element, ok := token.(xml.StartElement); ok && element.Name.Local == "c" {
+			colCell := xlsxC{}
+			assert.NoError(t, colCell.cellXMLHandler(decoder, &element))
+			if assert.NotNil(t, colCell.IS) {
+				assert.Equal(t, "A B", colCell.IS.String())
+			}
+			cells++
+		}
+	}
+	assert.Equal(t, 1, cells)
+}
+
 func BenchmarkRows(b *testing.B) {
 	f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	for i := 0; i < b.N; i++ {

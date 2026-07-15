@@ -12,6 +12,7 @@
 package excelize
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/xml"
 	"io"
@@ -273,6 +274,93 @@ func (cell *xlsxC) cellXMLAttrHandler(start *xml.StartElement) error {
 	return nil
 }
 
+// charDataXMLHandler collects the character data directly inside the element
+// opened by start, skipping nested elements, without the reflection overhead
+// of Decoder.DecodeElement.
+func charDataXMLHandler(decoder *xml.Decoder, start *xml.StartElement) (string, error) {
+	var buf []byte
+	depth := 0
+	for {
+		tok, err := decoder.Token()
+		if err != nil {
+			return "", err
+		}
+		switch el := tok.(type) {
+		case xml.StartElement:
+			depth++
+		case xml.CharData:
+			if depth == 0 {
+				buf = append(buf, el...)
+			}
+		case xml.EndElement:
+			if depth == 0 && el == start.End() {
+				return string(buf), nil
+			}
+			if depth > 0 {
+				depth--
+			}
+		}
+	}
+}
+
+// inlineStrXMLHandler parses an inline string element of a cell, collecting
+// the plain text and rich text runs used to express the string value, without
+// the reflection overhead of Decoder.DecodeElement.
+func (cell *xlsxC) inlineStrXMLHandler(decoder *xml.Decoder, start *xml.StartElement) error {
+	var (
+		is   xlsxSI
+		run  *xlsxR
+		text *xlsxT
+		buf  []byte
+	)
+	for {
+		tok, err := decoder.Token()
+		if err != nil {
+			return err
+		}
+		switch el := tok.(type) {
+		case xml.StartElement:
+			switch el.Name.Local {
+			case "t":
+				text = &xlsxT{XMLName: el.Name}
+				for _, attr := range el.Attr {
+					if attr.Name.Local == "space" {
+						text.Space = attr
+					}
+				}
+				buf = buf[:0]
+			case "r":
+				is.R = append(is.R, xlsxR{XMLName: el.Name})
+				run = &is.R[len(is.R)-1]
+			default:
+				if err := decoder.Skip(); err != nil {
+					return err
+				}
+			}
+		case xml.CharData:
+			if text != nil {
+				buf = append(buf, el...)
+			}
+		case xml.EndElement:
+			switch {
+			case text != nil && el.Name.Local == "t":
+				text.Val = string(buf)
+				if run != nil {
+					run.T = text
+				} else {
+					is.T = text
+				}
+				text = nil
+			case el.Name.Local == "r":
+				run = nil
+			case el == start.End():
+				cell.IS = &is
+				return nil
+			}
+		}
+	}
+}
+
 // cellXMLHandler parse the cell XML element of the worksheet.
 func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement) error {
 	cell.XMLName = start.Name
@@ -291,11 +379,11 @@ func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement)
 			se = el
 			switch se.Name.Local {
 			case "v":
-				err = decoder.DecodeElement(&cell.V, &se)
+				cell.V, err = charDataXMLHandler(decoder, &se)
 			case "f":
 				err = decoder.DecodeElement(&cell.F, &se)
 			case "is":
-				err = decoder.DecodeElement(&cell.IS, &se)
+				err = cell.inlineStrXMLHandler(decoder, &se)
 			}
 			if err != nil {
 				return err
@@ -417,7 +505,10 @@ func (f *File) xmlDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
 		return false, f.xmlNewDecoder(bytes.NewReader(content)), tempFile, err
 	}
 	tempFile, err = f.readTemp(name)
-	return true, f.xmlNewDecoder(tempFile), tempFile, err
+	if err != nil {
+		return true, f.xmlNewDecoder(tempFile), tempFile, err
+	}
+	return true, f.xmlNewDecoder(bufio.NewReaderSize(tempFile, 1<<20)), tempFile, err
 }
 
 // SetRowHeight provides a function to set the height of a single row. If the

@@ -646,6 +646,16 @@ func setCellIntFunc(c *xlsxC, val interface{}) {
 	}
 }
 
+// writeEscapedText writes s as XML character data, skipping the escaper and
+// its per-call allocations when no character in s requires escaping.
+func writeEscapedText(buf *bufferedWriter, s string) {
+	if xmlPlainText(s) {
+		_, _ = buf.WriteString(s)
+		return
+	}
+	_ = xml.EscapeText(buf, []byte(s))
+}
+
 // writeCell constructs a cell XML and writes it to the buffer.
 func writeCell(buf *bufferedWriter, c xlsxC) {
 	_, _ = buf.WriteString(`<c`)
@@ -672,12 +682,12 @@ func writeCell(buf *bufferedWriter, c xlsxC) {
 	_, _ = buf.WriteString(`>`)
 	if c.F != nil {
 		_, _ = buf.WriteString(`<f>`)
-		_ = xml.EscapeText(buf, []byte(c.F.Content))
+		writeEscapedText(buf, c.F.Content)
 		_, _ = buf.WriteString(`</f>`)
 	}
 	if c.V != "" {
 		_, _ = buf.WriteString(`<v>`)
-		_ = xml.EscapeText(buf, []byte(c.V))
+		writeEscapedText(buf, c.V)
 		_, _ = buf.WriteString(`</v>`)
 	}
 	if c.IS != nil {

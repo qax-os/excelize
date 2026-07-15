@@ -296,12 +296,60 @@ func CoordinatesToCellName(col, row int, abs ...bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	var b [16]byte
+	buf := b[:0]
 	for _, a := range abs {
 		if a {
-			return "$" + colName + "$" + strconv.Itoa(row), nil
+			buf = append(buf, '$')
+			buf = append(buf, colName...)
+			buf = append(buf, '$')
+			buf = strconv.AppendInt(buf, int64(row), 10)
+			return string(buf), nil
 		}
 	}
-	return colName + strconv.Itoa(row), nil
+	buf = append(buf, colName...)
+	buf = strconv.AppendInt(buf, int64(row), 10)
+	return string(buf), nil
+}
+
+// isCanonicalNumber reports whether s is a plain decimal integer that
+// strconv.FormatFloat(v, 'f', -1, 64) would reproduce byte-for-byte, which
+// lets numeric cell reads skip the parse and re-format round trip. Bounded to
+// 15 characters so the value is exactly representable as a float64 and stays
+// under the 15 significant digit re-format threshold.
+func isCanonicalNumber(s string) bool {
+	if s == "" || len(s) > 15 {
+		return false
+	}
+	i := 0
+	if s[0] == '-' {
+		if len(s) == 1 {
+			return false
+		}
+		i = 1
+	}
+	if s[i] == '0' {
+		return len(s)-i == 1 && i == 0
+	}
+	for ; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// xmlPlainText reports whether every character of s can be written into XML
+// character data verbatim, which lets hot paths skip the escaper and its
+// allocations for the common case of plain values.
+func xmlPlainText(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= 0x80 || c < 0x20 || c == '"' || c == '\'' || c == '&' || c == '<' || c == '>' {
+			return false
+		}
+	}
+	return true
 }
 
 // rangeRefToCoordinates provides a function to convert range reference to a
@@ -848,6 +896,9 @@ func bstrUnmarshal(s string) (result string) {
 // bstrMarshal encode the escaped string literal which not permitted in an XML
 // 1.0 document.
 func bstrMarshal(s string) (result string) {
+	if !strings.Contains(s, "_x") {
+		return s
+	}
 	matches, l, cursor := bstrExp.FindAllStringSubmatchIndex(s, -1), len(s), 0
 	for _, match := range matches {
 		result += s[cursor:match[0]]
