@@ -1236,6 +1236,63 @@ func TestCellXMLHandlerInlineStr(t *testing.T) {
 	assert.Equal(t, 1, cells)
 }
 
+func BenchmarkRowsColumnsMixed(b *testing.B) {
+	f := NewFile()
+	streamWriter, err := f.NewStreamWriter("Sheet1")
+	if err != nil {
+		b.Fatal(err)
+	}
+	row := make([]interface{}, 20)
+	for colID := 0; colID < 20; colID++ {
+		if colID%2 == 0 {
+			row[colID] = colID * 100
+		} else {
+			row[colID] = fmt.Sprintf("R%dC%d", colID, colID)
+		}
+	}
+	for rowID := 1; rowID <= 10000; rowID++ {
+		cell, _ := CoordinatesToCellName(1, rowID)
+		if err := streamWriter.SetRow(cell, row); err != nil {
+			b.Fatal(err)
+		}
+	}
+	if err := streamWriter.Flush(); err != nil {
+		b.Fatal(err)
+	}
+	buf, err := f.WriteToBuffer()
+	if err != nil {
+		b.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		b.Fatal(err)
+	}
+	src, err := OpenReader(buf)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer func() {
+		if err := src.Close(); err != nil {
+			b.Error(err)
+		}
+	}()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		rows, err := src.Rows("Sheet1")
+		if err != nil {
+			b.Fatal(err)
+		}
+		for rows.Next() {
+			if _, err := rows.Columns(); err != nil {
+				b.Fatal(err)
+			}
+		}
+		if err := rows.Close(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func BenchmarkRows(b *testing.B) {
 	f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	for i := 0; i < b.N; i++ {

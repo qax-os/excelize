@@ -16,6 +16,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"reflect"
 	"strconv"
@@ -35,6 +36,7 @@ type StreamWriter struct {
 	mergeCellsCount int
 	mergeCells      strings.Builder
 	tableParts      string
+	scratch         []byte
 }
 
 // NewStreamWriter returns stream writer struct by given worksheet name used for
@@ -395,25 +397,32 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 	}
 	sw.rows = row
 	sw.writeSheetData()
-	options := parseRowOpts(opts...)
-	attrs, err := options.marshalAttrs()
-	if err != nil {
-		return err
+	rowStyleID, rowAttrs := 0, ""
+	if len(opts) > 0 {
+		options := parseRowOpts(opts...)
+		attrs, err := options.marshalAttrs()
+		if err != nil {
+			return err
+		}
+		rowStyleID, rowAttrs = options.StyleID, attrs.String()
 	}
 	_, _ = sw.rawData.WriteString(`<row r="`)
-	_, _ = sw.rawData.WriteString(strconv.Itoa(row))
+	sw.writeRawInt(int64(row))
 	_, _ = sw.rawData.WriteString(`"`)
-	_, _ = sw.rawData.WriteString(attrs.String())
+	_, _ = sw.rawData.WriteString(rowAttrs)
 	_, _ = sw.rawData.WriteString(`>`)
 	for i, val := range values {
 		if val == nil {
+			continue
+		}
+		if sw.writePlainCell(col+i, row, rowStyleID, val) {
 			continue
 		}
 		ref, err := CoordinatesToCellName(col+i, row)
 		if err != nil {
 			return err
 		}
-		c := xlsxC{R: ref, S: sw.worksheet.prepareCellStyle(col+i, row, options.StyleID)}
+		c := xlsxC{R: ref, S: sw.worksheet.prepareCellStyle(col+i, row, rowStyleID)}
 		var s int
 		if v, ok := val.(Cell); ok {
 			s, val = v.StyleID, v.Value
@@ -433,6 +442,116 @@ func (sw *StreamWriter) SetRow(cell string, values []interface{}, opts ...RowOpt
 	}
 	_, _ = sw.rawData.WriteString(`</row>`)
 	return sw.rawData.Sync()
+}
+
+// writeRawInt writes the decimal representation of an integer to the stream
+// buffer without allocating.
+func (sw *StreamWriter) writeRawInt(v int64) {
+	var b [20]byte
+	_, _ = sw.rawData.Write(strconv.AppendInt(b[:0], v, 10))
+}
+
+// writePlainCell serializes a scalar cell value directly into the stream
+// buffer without constructing an intermediate cell structure, eliminating
+// per-cell allocations on the common path. It reports whether the value was
+// handled; values that need escaping, whitespace preservation, truncation or
+// special formatting fall back to the generic cell path in SetRow.
+func (sw *StreamWriter) writePlainCell(col, row, rowStyleID int, val interface{}) bool {
+	var (
+		numInt   int64
+		numUint  uint64
+		numFloat float64
+		bitSize  int
+		str      string
+		kind     byte
+	)
+	switch v := val.(type) {
+	case int:
+		numInt, kind = int64(v), 'i'
+	case int8:
+		numInt, kind = int64(v), 'i'
+	case int16:
+		numInt, kind = int64(v), 'i'
+	case int32:
+		numInt, kind = int64(v), 'i'
+	case int64:
+		numInt, kind = v, 'i'
+	case uint:
+		numUint, kind = uint64(v), 'u'
+	case uint8:
+		numUint, kind = uint64(v), 'u'
+	case uint16:
+		numUint, kind = uint64(v), 'u'
+	case uint32:
+		numUint, kind = uint64(v), 'u'
+	case uint64:
+		numUint, kind = v, 'u'
+	case float32:
+		numFloat, bitSize, kind = float64(v), 32, 'f'
+	case float64:
+		numFloat, bitSize, kind = v, 64, 'f'
+	case bool:
+		kind = 'b'
+		if v {
+			numInt = 1
+		}
+	case string:
+		str, kind = v, 's'
+	default:
+		return false
+	}
+	if col >= len(columnNames) {
+		return false
+	}
+	if kind == 'f' && (math.IsNaN(numFloat) || math.IsInf(numFloat, 0)) {
+		return false
+	}
+	if kind == 's' {
+		// xmlPlainText already rejects tabs and line breaks, so only a
+		// leading or trailing blank still requires space preservation.
+		if len(str) > TotalCellChars || !xmlPlainText(str) {
+			return false
+		}
+		if str != "" && (str[0] == ' ' || str[len(str)-1] == ' ') {
+			return false
+		}
+	}
+	_, _ = sw.rawData.WriteString(`<c r="`)
+	_, _ = sw.rawData.WriteString(columnNames[col])
+	sw.writeRawInt(int64(row))
+	if s := sw.worksheet.prepareCellStyle(col, row, rowStyleID); s != 0 {
+		_, _ = sw.rawData.WriteString(`" s="`)
+		sw.writeRawInt(int64(s))
+	}
+	switch kind {
+	case 'i':
+		_, _ = sw.rawData.WriteString(`"><v>`)
+		sw.writeRawInt(numInt)
+		_, _ = sw.rawData.WriteString(`</v></c>`)
+	case 'u':
+		_, _ = sw.rawData.WriteString(`"><v>`)
+		var b [20]byte
+		_, _ = sw.rawData.Write(strconv.AppendUint(b[:0], numUint, 10))
+		_, _ = sw.rawData.WriteString(`</v></c>`)
+	case 'f':
+		_, _ = sw.rawData.WriteString(`"><v>`)
+		sw.scratch = strconv.AppendFloat(sw.scratch[:0], numFloat, 'f', -1, bitSize)
+		_, _ = sw.rawData.Write(sw.scratch)
+		_, _ = sw.rawData.WriteString(`</v></c>`)
+	case 'b':
+		_, _ = sw.rawData.WriteString(`" t="b"><v>`)
+		if numInt == 1 {
+			_, _ = sw.rawData.WriteString(`1`)
+		} else {
+			_, _ = sw.rawData.WriteString(`0`)
+		}
+		_, _ = sw.rawData.WriteString(`</v></c>`)
+	case 's':
+		_, _ = sw.rawData.WriteString(`" t="inlineStr"><is><t>`)
+		_, _ = sw.rawData.WriteString(str)
+		_, _ = sw.rawData.WriteString(`</t></is></c>`)
+	}
+	return true
 }
 
 // SetColVisible provides a function set the visibility of a single column or

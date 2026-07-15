@@ -15,6 +15,97 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestStreamWriterPlainCellXML(t *testing.T) {
+	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	// Mix of values served by the direct serialization fast path and values
+	// that fall back to the generic cell path.
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{
+		42, int64(-7), uint8(255), 3.14, 1e-7, float32(1.5), true, false,
+		"plain", "", " lead", "trail ", "a&b", "a<b", math.NaN(),
+	}))
+	assert.NoError(t, streamWriter.Flush())
+	buf, err := file.WriteToBuffer()
+	assert.NoError(t, err)
+	src, err := OpenReader(buf)
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, src.Close())
+	}()
+	data := src.readXML("xl/worksheets/sheet1.xml")
+	expected := `<row r="1">` +
+		`<c r="A1"><v>42</v></c>` +
+		`<c r="B1"><v>-7</v></c>` +
+		`<c r="C1"><v>255</v></c>` +
+		`<c r="D1"><v>3.14</v></c>` +
+		`<c r="E1"><v>0.0000001</v></c>` +
+		`<c r="F1"><v>1.5</v></c>` +
+		`<c r="G1" t="b"><v>1</v></c>` +
+		`<c r="H1" t="b"><v>0</v></c>` +
+		`<c r="I1" t="inlineStr"><is><t>plain</t></is></c>` +
+		`<c r="J1" t="inlineStr"><is><t></t></is></c>` +
+		`<c r="K1" t="inlineStr"><is><t xml:space="preserve"> lead</t></is></c>` +
+		`<c r="L1" t="inlineStr"><is><t xml:space="preserve">trail </t></is></c>` +
+		`<c r="M1" t="inlineStr"><is><t>a&amp;b</t></is></c>` +
+		`<c r="N1" t="inlineStr"><is><t>a&lt;b</t></is></c>` +
+		`<c r="O1" t="inlineStr"><is><t>NaN</t></is></c>` +
+		`</row>`
+	assert.Contains(t, string(data), expected)
+	rows, err := src.GetRows("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, [][]string{{
+		"42", "-7", "255", "3.14", "0.0000001", "1.5", "TRUE", "FALSE",
+		"plain", "", " lead", "trail ", "a&b", "a<b", "NaN",
+	}}, rows)
+}
+
+func BenchmarkStreamWriterSetRowMixed(b *testing.B) {
+	file := NewFile()
+	defer func() {
+		if err := file.Close(); err != nil {
+			b.Error(err)
+		}
+	}()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	if err != nil {
+		b.Fatal(err)
+	}
+	row := make([]interface{}, 20)
+	for colID := 0; colID < 20; colID++ {
+		if colID%2 == 0 {
+			row[colID] = colID * 100
+		} else {
+			row[colID] = fmt.Sprintf("R%dC%d", colID, colID)
+		}
+	}
+	rowID := 0
+	b.ReportAllocs()
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		rowID++
+		if rowID > TotalRows {
+			b.StopTimer()
+			if err := file.Close(); err != nil {
+				b.Fatal(err)
+			}
+			file = NewFile()
+			if streamWriter, err = file.NewStreamWriter("Sheet1"); err != nil {
+				b.Fatal(err)
+			}
+			rowID = 1
+			b.StartTimer()
+		}
+		cell, _ := CoordinatesToCellName(1, rowID)
+		if err := streamWriter.SetRow(cell, row); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func BenchmarkStreamWriter(b *testing.B) {
 	file := NewFile()
 	defer func() {
