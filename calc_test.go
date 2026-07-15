@@ -2325,18 +2325,19 @@ func TestCalcCellValue(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	mathCalcError := map[string][]string{
-		"1/0":        {"", "#DIV/0!"},
-		"(1/0)":      {"", "#DIV/0!"},
-		"1^\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"^1": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"1+\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"+1": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"1-\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"-1": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"1*\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"*1": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"1/\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"/1": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
+		"1/0":         {"", "#DIV/0!"},
+		"(1/0)":       {"", "#DIV/0!"},
+		"(A1/0+B1/0)": {"", "#DIV/0!"},
+		"1^\"text\"":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
+		"\"text\"^1":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
+		"1+\"text\"":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
+		"\"text\"+1":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
+		"1-\"text\"":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
+		"\"text\"-1":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
+		"1*\"text\"":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
+		"\"text\"*1":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
+		"1/\"text\"":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
+		"\"text\"/1":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
 		// Engineering Functions
 		// BESSELI
 		"BESSELI()":       {"#VALUE!", "BESSELI requires 2 numeric arguments"},
@@ -4058,9 +4059,10 @@ func TestCalcCellValue(t *testing.T) {
 		"UPPER(1,2)": {"#VALUE!", "UPPER requires 1 argument"},
 		// Conditional Functions
 		// IF
-		"IF()":        {"#VALUE!", "IF requires at least 1 argument"},
-		"IF(0,1,2,3)": {"#VALUE!", "IF accepts at most 3 arguments"},
-		"IF(D1,1,2)":  {"#VALUE!", "strconv.ParseBool: parsing \"Month\": invalid syntax"},
+		"IF(A1/C1+B1/C1,0,1)": {"#DIV/0!", "#DIV/0!"},
+		"IF()":                {"#VALUE!", "IF requires at least 1 argument"},
+		"IF(0,1,2,3)":         {"#VALUE!", "IF accepts at most 3 arguments"},
+		"IF(D1,1,2)":          {"#VALUE!", "strconv.ParseBool: parsing \"Month\": invalid syntax"},
 		// Excel Lookup and Reference Functions
 		// ADDRESS
 		"ADDRESS()":                        {"#VALUE!", "ADDRESS requires at least 2 arguments"},
@@ -4749,7 +4751,7 @@ func TestCalcCellValue(t *testing.T) {
 		// MDETERM
 		"MDETERM(A1:B3)": {"#VALUE!", "#VALUE!"},
 		// SUM
-		"1+SUM(SUM(A1+A2/A4)*(2-3),2)": {"#VALUE!", "#DIV/0!"},
+		"1+SUM(SUM(A1+A2/A4)*(2-3),2)": {"#DIV/0!", "#DIV/0!"},
 	}
 	for formula, expected := range referenceCalcError {
 		f := prepareCalcData(cellData)
