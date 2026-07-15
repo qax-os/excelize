@@ -66,7 +66,6 @@ type PivotTableOptions struct {
 	PivotTableStyleName string
 }
 
-
 // PivotTableShowValuesAsType is the type of calculation for showing values in a
 // pivot table.
 type PivotTableShowValuesAsType byte
