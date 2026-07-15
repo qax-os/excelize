@@ -1118,7 +1118,7 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 					// calculate trigger
 					topOpt := opftStack.Peek().(efp.Token)
 					if err := calculate(opfdStack, topOpt); err != nil {
-						argsStack.Peek().(*list.List).PushFront(newErrorFormulaArg(formulaErrorVALUE, err.Error()))
+						opfdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
 					}
 					opftStack.Pop()
 				}
@@ -1204,7 +1204,7 @@ func prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack *Stack) {
 		// calculate trigger
 		topOpt := opftStack.Peek().(efp.Token)
 		if err := calculate(opfdStack, topOpt); err != nil {
-			argsStack.Peek().(*list.List).PushBack(newErrorFormulaArg(err.Error(), err.Error()))
+			opfdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
 			opftStack.Pop()
 			continue
 		}
@@ -1585,7 +1585,7 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 			if err := calculate(opdStack, topOpt); err != nil {
 				opdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
 				optStack.Pop()
-				break
+				continue
 			}
 			optStack.Pop()
 		}
@@ -15029,6 +15029,8 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 		result formulaArg
 	)
 	switch token.Type {
+	case ArgError:
+		return token
 	case ArgString:
 		if cond, err = strconv.ParseBool(token.Value()); err != nil {
 			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
