@@ -63,6 +63,48 @@ func TestStreamWriterPlainCellXML(t *testing.T) {
 	}}, rows)
 }
 
+func TestStreamWriterPlainCellFallbacks(t *testing.T) {
+	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
+	streamWriter, err := file.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	// Remaining integer widths served by the direct serialization fast path,
+	// a formula whose expression requires escaping, and an over-length string
+	// that must fall back to the truncating generic path.
+	assert.NoError(t, streamWriter.SetRow("A1", []interface{}{
+		int8(-8), int16(-16), int32(-32), uint(1), uint16(65535),
+		uint32(32), uint64(18446744073709551615),
+		Cell{Formula: "IF(A1<5,1,0)"},
+		strings.Repeat("a", TotalCellChars+1),
+	}))
+	// A row extending beyond the last worksheet column must fail like the
+	// generic path does.
+	assert.ErrorIs(t, streamWriter.SetRow("XFD2", []interface{}{1, 2}), ErrColumnNumber)
+	assert.NoError(t, streamWriter.Flush())
+	buf, err := file.WriteToBuffer()
+	assert.NoError(t, err)
+	src, err := OpenReader(buf)
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, src.Close())
+	}()
+	data := string(src.readXML("xl/worksheets/sheet1.xml"))
+	assert.Contains(t, data, `<c r="A1"><v>-8</v></c>`+
+		`<c r="B1"><v>-16</v></c>`+
+		`<c r="C1"><v>-32</v></c>`+
+		`<c r="D1"><v>1</v></c>`+
+		`<c r="E1"><v>65535</v></c>`+
+		`<c r="F1"><v>32</v></c>`+
+		`<c r="G1"><v>18446744073709551615</v></c>`+
+		`<c r="H1" t="str"><f>IF(A1&lt;5,1,0)</f></c>`)
+	rows, err := src.GetRows("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, rows[0], 9)
+	assert.Equal(t, strings.Repeat("a", TotalCellChars), rows[0][8])
+}
+
 func BenchmarkStreamWriterSetRowMixed(b *testing.B) {
 	file := NewFile()
 	defer func() {

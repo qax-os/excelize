@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -1158,6 +1159,7 @@ func TestCellXMLHandler(t *testing.T) {
 		content      = []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="1"><c r="A1" t="s"><v>10</v></c><c r="B1"><is><t>String</t></is></c></row><row r="2"><c r="A2" s="4" t="str"><f>2*A1</f><v>0</v></c><c r="C2" s="1"><f>A3</f><v>2422.3000000000002</v></c><c r="D2" t="d"><v>2022-10-22T15:05:29Z</v></c><c r="F2"></c><c r="G2"></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
 		expected, ws xlsxWorksheet
 		row          *xlsxRow
+		scratch      []byte
 	)
 	assert.NoError(t, xml.Unmarshal(content, &expected))
 	decoder := xml.NewDecoder(bytes.NewReader(content))
@@ -1177,7 +1179,7 @@ func TestCellXMLHandler(t *testing.T) {
 			}
 			if element.Name.Local == "c" {
 				colCell := xlsxC{}
-				assert.NoError(t, colCell.cellXMLHandler(rows.decoder, &element))
+				assert.NoError(t, colCell.cellXMLHandler(rows.decoder, &element, &scratch))
 				row.C = append(row.C, colCell)
 			}
 		}
@@ -1204,7 +1206,7 @@ func TestCellXMLHandler(t *testing.T) {
 			case xml.StartElement:
 				if element.Name.Local == "c" {
 					colCell := xlsxC{}
-					err := colCell.cellXMLHandler(rows.decoder, &element)
+					err := colCell.cellXMLHandler(rows.decoder, &element, &scratch)
 					assert.Error(t, err)
 					assert.Equal(t, expected, err)
 				}
@@ -1218,6 +1220,7 @@ func TestCellXMLHandlerInlineStr(t *testing.T) {
 	// the inline string value.
 	content := []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><rPh sb="0" eb="1"><t>フリガナ</t></rPh><r><rPr><b/></rPr><t>A</t></r><r><t xml:space="preserve"> B</t></r><phoneticPr fontId="1"/></is></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
 	decoder := xml.NewDecoder(bytes.NewReader(content))
+	var scratch []byte
 	cells := 0
 	for {
 		token, err := decoder.Token()
@@ -1226,7 +1229,7 @@ func TestCellXMLHandlerInlineStr(t *testing.T) {
 		}
 		if element, ok := token.(xml.StartElement); ok && element.Name.Local == "c" {
 			colCell := xlsxC{}
-			assert.NoError(t, colCell.cellXMLHandler(decoder, &element))
+			assert.NoError(t, colCell.cellXMLHandler(decoder, &element, &scratch))
 			if assert.NotNil(t, colCell.IS) {
 				assert.Equal(t, "A B", colCell.IS.String())
 			}
@@ -1234,6 +1237,52 @@ func TestCellXMLHandlerInlineStr(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 1, cells)
+}
+
+func TestCellXMLHandlerNestedCharData(t *testing.T) {
+	// Character data inside elements nested in the value element must be
+	// skipped, and a truncated value element must surface an error.
+	var scratch []byte
+	decoder := xml.NewDecoder(strings.NewReader(`<c r="A1"><v>1<x>2</x>3</v></c>`))
+	token, err := decoder.Token()
+	assert.NoError(t, err)
+	element, ok := token.(xml.StartElement)
+	assert.True(t, ok)
+	colCell := xlsxC{}
+	assert.NoError(t, colCell.cellXMLHandler(decoder, &element, &scratch))
+	assert.Equal(t, "13", colCell.V)
+
+	decoder = xml.NewDecoder(strings.NewReader(`<c r="A1"><v>1`))
+	token, err = decoder.Token()
+	assert.NoError(t, err)
+	element, ok = token.(xml.StartElement)
+	assert.True(t, ok)
+	colCell = xlsxC{}
+	assert.Error(t, colCell.cellXMLHandler(decoder, &element, &scratch))
+
+	// Truncated rich text run and unknown child element inside an inline
+	// string must surface errors from the skipped subtree.
+	for _, src := range []string{
+		`<c r="A1" t="inlineStr"><is><r><rPr>`,
+		`<c r="A1" t="inlineStr"><is><rPh sb="0">`,
+	} {
+		decoder = xml.NewDecoder(strings.NewReader(src))
+		token, err = decoder.Token()
+		assert.NoError(t, err)
+		element, ok = token.(xml.StartElement)
+		assert.True(t, ok)
+		colCell = xlsxC{}
+		assert.Error(t, colCell.cellXMLHandler(decoder, &element, &scratch))
+	}
+}
+
+func TestXlsxSIString(t *testing.T) {
+	assert.Empty(t, xlsxSI{}.String())
+	assert.Empty(t, xlsxSI{T: &xlsxT{}}.String())
+	assert.Equal(t, "a", xlsxSI{T: &xlsxT{Val: "a"}}.String())
+	assert.Equal(t, "ab", xlsxSI{R: []xlsxR{{T: &xlsxT{Val: "a"}}, {T: &xlsxT{Val: "b"}}, {}}}.String())
+	assert.Equal(t, "ab", xlsxSI{T: &xlsxT{Val: "a"}, R: []xlsxR{{T: &xlsxT{Val: "b"}}}}.String())
+	assert.Empty(t, xlsxSI{R: []xlsxR{{}}}.String())
 }
 
 func BenchmarkRowsColumnsMixed(b *testing.B) {
