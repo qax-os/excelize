@@ -2325,19 +2325,27 @@ func TestCalcCellValue(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	mathCalcError := map[string][]string{
-		"1/0":         {"", "#DIV/0!"},
-		"(1/0)":       {"", "#DIV/0!"},
-		"(A1/0+B1/0)": {"", "#DIV/0!"},
-		"1^\"text\"":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"^1":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"1+\"text\"":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"+1":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"1-\"text\"":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"-1":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"1*\"text\"":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"*1":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"1/\"text\"":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"/1":  {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
+		"1/0":         {"#DIV/0!", "#DIV/0!"},
+		"(1/0)":       {"#DIV/0!", "#DIV/0!"},
+		"(A1/0+B1/0)": {"#DIV/0!", "#DIV/0!"},
+		"1^\"text\"":  {"#VALUE!", "#VALUE!"},
+		"\"text\"^1":  {"#VALUE!", "#VALUE!"},
+		"1+\"text\"":  {"#VALUE!", "#VALUE!"},
+		"\"text\"+1":  {"#VALUE!", "#VALUE!"},
+		"1-\"text\"":  {"#VALUE!", "#VALUE!"},
+		"\"text\"-1":  {"#VALUE!", "#VALUE!"},
+		"1*\"text\"":  {"#VALUE!", "#VALUE!"},
+		"\"text\"*1":  {"#VALUE!", "#VALUE!"},
+		"1/\"text\"":  {"#VALUE!", "#VALUE!"},
+		"\"text\"/1":  {"#VALUE!", "#VALUE!"},
+		"\"\"+1":      {"#VALUE!", "#VALUE!"},
+		"1+\"\"":      {"#VALUE!", "#VALUE!"},
+		"\"\"-1":      {"#VALUE!", "#VALUE!"},
+		"1-\"\"":      {"#VALUE!", "#VALUE!"},
+		"\"\"*1":      {"#VALUE!", "#VALUE!"},
+		"1*\"\"":      {"#VALUE!", "#VALUE!"},
+		"\"\"^1":      {"#VALUE!", "#VALUE!"},
+		"1/\"\"":      {"#VALUE!", "#VALUE!"},
 		// Engineering Functions
 		// BESSELI
 		"BESSELI()":       {"#VALUE!", "BESSELI requires 2 numeric arguments"},
@@ -6671,17 +6679,6 @@ func TestFormulaRawCellValueOption(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, test.expected, val)
 	}
-}
-
-func TestFormulaArgToToken(t *testing.T) {
-	assert.Equal(t,
-		efp.Token{
-			TType:    efp.TokenTypeOperand,
-			TSubType: efp.TokenSubTypeLogical,
-			TValue:   "TRUE",
-		},
-		formulaArgToToken(newBoolFormulaArg(true)),
-	)
 }
 
 func TestPrepareTrendGrowth(t *testing.T) {
