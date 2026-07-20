@@ -740,8 +740,9 @@ func BenchmarkSetCellValue(b *testing.B) {
 	f := NewFile()
 	b.ResetTimer()
 	for i := 1; i <= b.N; i++ {
+		row := (i-1)%TotalRows + 1
 		for j := 0; j < len(values); j++ {
-			if err := f.SetCellValue("Sheet1", cols[j]+strconv.Itoa(i), values[j]); err != nil {
+			if err := f.SetCellValue("Sheet1", cols[j]+strconv.Itoa(row), values[j]); err != nil {
 				b.Error(err)
 			}
 		}
