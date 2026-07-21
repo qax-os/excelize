@@ -1,6 +1,7 @@
 package excelize
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -531,4 +532,230 @@ func TestStreamWriterGetRowElement(t *testing.T) {
 		_, ok := getRowElement(token, 0)
 		assert.False(t, ok)
 	}
+}
+
+func TestBufferedWriterWriteInt(t *testing.T) {
+	// In-memory path
+	bw := &bufferedWriter{flushSize: StreamChunkSize, bioSize: StreamingBufSizeDefault}
+	bw.WriteInt(42)
+	bw.WriteInt(-1234567890)
+	assert.Equal(t, "42-1234567890", bw.buf.String())
+	assert.Equal(t, int64(len("42-1234567890")), bw.written)
+
+	// Temp file (bio) path
+	bw2 := &bufferedWriter{flushSize: 1, bioSize: 4096}
+	bw2.WriteString("x") // trigger sync
+	_ = bw2.Sync()
+	assert.NotNil(t, bw2.bio)
+	bw2.WriteInt(99)
+	_ = bw2.Flush()
+	bw2.tmp.Seek(0, 0)
+	data, _ := io.ReadAll(bw2.tmp)
+	assert.Contains(t, string(data), "99")
+	bw2.Close()
+}
+
+func TestBufferedWriterWriteUint(t *testing.T) {
+	bw := &bufferedWriter{flushSize: StreamChunkSize, bioSize: StreamingBufSizeDefault}
+	bw.WriteUint(12345)
+	assert.Equal(t, "12345", bw.buf.String())
+
+	// bio path
+	bw2 := &bufferedWriter{flushSize: 1, bioSize: 4096}
+	bw2.WriteString("x")
+	_ = bw2.Sync()
+	bw2.WriteUint(67890)
+	_ = bw2.Flush()
+	bw2.tmp.Seek(0, 0)
+	data, _ := io.ReadAll(bw2.tmp)
+	assert.Contains(t, string(data), "67890")
+	bw2.Close()
+}
+
+func TestBufferedWriterWriteFloat(t *testing.T) {
+	bw := &bufferedWriter{flushSize: StreamChunkSize, bioSize: StreamingBufSizeDefault}
+	bw.WriteFloat(3.14, 'f', 2, 64)
+	assert.Equal(t, "3.14", bw.buf.String())
+
+	// bio path
+	bw2 := &bufferedWriter{flushSize: 1, bioSize: 4096}
+	bw2.WriteString("x")
+	_ = bw2.Sync()
+	bw2.WriteFloat(2.72, 'f', 2, 64)
+	_ = bw2.Flush()
+	bw2.tmp.Seek(0, 0)
+	data, _ := io.ReadAll(bw2.tmp)
+	assert.Contains(t, string(data), "2.72")
+	bw2.Close()
+}
+
+func TestBufferedWriterBytes(t *testing.T) {
+	// In-memory: returns buffer bytes
+	bw := &bufferedWriter{flushSize: StreamChunkSize, bioSize: StreamingBufSizeDefault}
+	bw.WriteString("hello")
+	assert.Equal(t, []byte("hello"), bw.Bytes())
+
+	// After temp file creation: returns nil
+	bw2 := &bufferedWriter{flushSize: 1, bioSize: 4096}
+	bw2.WriteString("x")
+	_ = bw2.Sync()
+	assert.Nil(t, bw2.Bytes())
+	bw2.Close()
+}
+
+func TestBufferedWriterWriteAt(t *testing.T) {
+	// In-memory WriteAt
+	bw := &bufferedWriter{flushSize: StreamChunkSize, bioSize: StreamingBufSizeDefault}
+	bw.WriteString("AAABBBCCC")
+	err := bw.WriteAt([]byte("XXX"), 3)
+	assert.NoError(t, err)
+	assert.Equal(t, "AAAXXXCCC", bw.buf.String())
+
+	// In-memory WriteAt out of bounds
+	err = bw.WriteAt([]byte("TOOLONG"), 5)
+	assert.Error(t, err)
+
+	// Temp file WriteAt
+	bw2 := &bufferedWriter{flushSize: 1, bioSize: 4096}
+	bw2.WriteString("AAABBBCCC")
+	_ = bw2.Sync()
+	err = bw2.WriteAt([]byte("YYY"), 3)
+	assert.NoError(t, err)
+	// Verify by reading the file back
+	var readBuf bytes.Buffer
+	_, _ = bw2.CopyTo(&readBuf)
+	assert.Equal(t, "AAAYYYCC", readBuf.String()[:8])
+	bw2.Close()
+}
+
+func TestBufferedWriterCopyTo(t *testing.T) {
+	// In-memory CopyTo
+	bw := &bufferedWriter{flushSize: StreamChunkSize, bioSize: StreamingBufSizeDefault}
+	bw.WriteString("hello world")
+	var dst bytes.Buffer
+	n, err := bw.CopyTo(&dst)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(11), n)
+	assert.Equal(t, "hello world", dst.String())
+
+	// Temp file CopyTo
+	bw2 := &bufferedWriter{flushSize: 1, bioSize: 4096}
+	bw2.WriteString("file data here")
+	_ = bw2.Sync()
+	bw2.WriteString(" more") // this goes through bio
+	var dst2 bytes.Buffer
+	n2, err := bw2.CopyTo(&dst2)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(19), n2)
+	assert.Equal(t, "file data here more", dst2.String())
+	bw2.Close()
+
+	// Temp file CopyTo with large bioSize (> 256KB)
+	bw3 := &bufferedWriter{flushSize: 1, bioSize: 512 * 1024}
+	bw3.WriteString("large buffer test")
+	_ = bw3.Sync()
+	var dst3 bytes.Buffer
+	n3, err := bw3.CopyTo(&dst3)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(17), n3)
+	assert.Equal(t, "large buffer test", dst3.String())
+	bw3.Close()
+}
+
+func TestBufferedWriterReset(t *testing.T) {
+	// Reset in-memory only
+	bw := &bufferedWriter{flushSize: StreamChunkSize, bioSize: StreamingBufSizeDefault}
+	bw.WriteString("data")
+	bw.Reset()
+	assert.Equal(t, 0, bw.buf.Len())
+
+	// Reset after temp file creation
+	bw2 := &bufferedWriter{flushSize: 1, bioSize: 4096}
+	bw2.WriteString("data")
+	_ = bw2.Sync()
+	assert.NotNil(t, bw2.bio)
+	bw2.Reset()
+	assert.Nil(t, bw2.bio)
+	assert.Equal(t, 0, bw2.buf.Len())
+	bw2.Close()
+}
+
+func TestNewStreamWriterOptions(t *testing.T) {
+	// Test StreamingChunkSize = -1 (never spill)
+	f := NewFile()
+	defer f.Close()
+	f.options.StreamingChunkSize = -1
+	sw, err := f.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.True(t, sw.rawData.flushSize > StreamChunkSize)
+
+	// Test StreamingBufSize custom value
+	f2 := NewFile()
+	defer f2.Close()
+	f2.options.StreamingBufSize = 64 * 1024
+	sw2, err := f2.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, 64*1024, sw2.rawData.bioSize)
+
+	// Test StreamingChunkSize positive custom value
+	f3 := NewFile()
+	defer f3.Close()
+	f3.options.StreamingChunkSize = 1024
+	sw3, err := f3.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, 1024, sw3.rawData.flushSize)
+}
+
+func TestBufferedWriterWriteAtFlushError(t *testing.T) {
+	// Test WriteAt temp file path where Flush fails (line 901)
+	bw := &bufferedWriter{flushSize: 1, bioSize: 4096}
+	bw.WriteString("AAABBBCCC")
+	_ = bw.Sync()
+	// Write more data so bio has unflushed content
+	bw.bio.WriteString("extra")
+	// Close the temp file to cause Flush (bio.Flush) to fail
+	bw.tmp.Close()
+	err := bw.WriteAt([]byte("YYY"), 3)
+	assert.Error(t, err)
+}
+
+func TestBufferedWriterCopyToFlushError(t *testing.T) {
+	// Test CopyTo temp file path where Flush fails (line 915)
+	bw := &bufferedWriter{flushSize: 1, bioSize: 4096}
+	bw.WriteString("test data")
+	_ = bw.Sync()
+	bw.WriteString(" more")
+	// Close file to cause Flush to fail
+	bw.tmp.Close()
+	var dst bytes.Buffer
+	_, err := bw.CopyTo(&dst)
+	assert.Error(t, err)
+}
+
+func TestBufferedWriterCopyToSeekError(t *testing.T) {
+	// Test CopyTo temp file path where Seek fails (line 918)
+	bw := &bufferedWriter{flushSize: 1, bioSize: 4096}
+	bw.WriteString("test data")
+	_ = bw.Sync()
+	// Close file so Flush succeeds (bio is nil after sync with no writes) but Seek fails
+	// We need bio to be nil so Flush() is a no-op, then Seek will fail on closed file
+	bw.bio = nil
+	bw.tmp.Close()
+	var dst bytes.Buffer
+	_, err := bw.CopyTo(&dst)
+	assert.Error(t, err)
+}
+
+func TestBufferedWriterSyncWriteToError(t *testing.T) {
+	// Test Sync where buf.WriteTo(tmp) fails (line 970)
+	bw := &bufferedWriter{flushSize: 1, bioSize: 4096}
+	bw.WriteString("initial")
+	// Sync to create temp file
+	_ = bw.Sync()
+	// Now reset state to have data in buf and tmp exists but is closed
+	bw.bio = nil
+	bw.buf.WriteString("more data")
+	bw.tmp.Close()
+	err := bw.Sync()
+	assert.Error(t, err)
 }
