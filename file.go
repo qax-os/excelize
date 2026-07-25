@@ -116,7 +116,8 @@ func (f *File) Write(w io.Writer, opts ...Options) error {
 // WriteTo implements io.WriterTo to write the file. The workbook will be
 // streamed to the writer without buffering the whole archive in memory,
 // except when saving with password protection, which requires the complete
-// archive for encryption.
+// archive for encryption. Because of streaming, a failure during writing may
+// leave a partial archive in the writer.
 func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 	for i := range opts {
 		f.options = &opts[i]
@@ -160,6 +161,7 @@ func (cw *countWriter) Write(p []byte) (int, error) {
 // access to the output, so the archive will be spooled to a temporary file
 // in that case.
 func (f *File) writeDirect(w io.Writer) (int64, error) {
+	f.prepareToWrite()
 	if f.zip64Needed() {
 		return f.writeSpooled(w)
 	}
@@ -251,6 +253,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
 	zw := f.ZipWriter(buf)
 
+	f.prepareToWrite()
 	if err := f.writeToZip(zw); err != nil {
 		_ = zw.Close()
 		return buf, err
@@ -270,8 +273,10 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	return buf, err
 }
 
-// writeToZip provides a function to write to ZipWriter.
-func (f *File) writeToZip(zw ZipWriter) error {
+// prepareToWrite serializes the in-memory workbook parts into the package
+// parts, so that the sizes of all archive entries are known before writing
+// the archive, see zip64Needed.
+func (f *File) prepareToWrite() {
 	f.calcChainWriter()
 	f.commentsWriter()
 	f.contentTypesWriter()
@@ -285,7 +290,12 @@ func (f *File) writeToZip(zw ZipWriter) error {
 	f.sharedStringsWriter()
 	f.styleSheetWriter()
 	f.themeWriter()
+}
 
+// writeToZip provides a function to write to ZipWriter. The workbook parts
+// must be serialized with prepareToWrite before calling this function.
+func (f *File) writeToZip(zw ZipWriter) error {
+	f.zip64Entries = nil
 	var copyBuf []byte
 	for path, stream := range f.streams {
 		fi, err := zw.Create(path)
@@ -345,7 +355,11 @@ func (f *File) writeToZip(zw ZipWriter) error {
 			break
 		}
 		file, readErr := f.readTemp(path)
-		if readErr != nil || file == nil {
+		if readErr != nil {
+			err = readErr
+			break
+		}
+		if file == nil {
 			continue
 		}
 		if copyBuf == nil {
