@@ -1783,7 +1783,7 @@ func fillCells(f *File, sheet string, colCount, rowCount int) error {
 }
 
 func BenchmarkOpenFile(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 		if err != nil {
 			b.Error(err)
