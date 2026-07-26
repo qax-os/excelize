@@ -820,9 +820,9 @@ func (f *File) drawChartSeries(opts *Chart) *[]cSer {
 			Marker:           f.drawChartSeriesMarker(k, opts),
 			DPt:              f.drawChartSeriesDPt(k, opts),
 			DLbls:            f.drawChartSeriesDLbls(k, opts),
-			InvertIfNegative: &attrValBool{Val: boolPtr(false)},
+			InvertIfNegative: f.drawChartSeriesInvertIfNegative(opts),
 			Cat:              f.drawChartSeriesCat(opts.Series[k], opts),
-			Smooth:           &attrValBool{Val: boolPtr(opts.Series[k].Line.Smooth)},
+			Smooth:           f.drawChartSeriesSmooth(k, opts),
 			Val:              f.drawChartSeriesVal(opts.Series[k], opts),
 			XVal:             f.drawChartSeriesXVal(opts.Series[k], opts),
 			YVal:             f.drawChartSeriesYVal(opts.Series[k], opts),
@@ -831,6 +831,35 @@ func (f *File) drawChartSeries(opts *Chart) *[]cSer {
 		})
 	}
 	return &ser
+}
+
+// drawChartSeriesInvertIfNegative provides a function to draw the
+// c:invertIfNegative element. This element belongs only to the bar and bubble
+// series groups (CT_BarSer and CT_BubbleSer); emitting it on any other series
+// type produces schema-invalid markup that Excel silently repairs on open, so
+// it is omitted for every other chart type.
+func (f *File) drawChartSeriesInvertIfNegative(opts *Chart) *attrValBool {
+	if opts.Type == Bubble || opts.Type == Bubble3D {
+		return &attrValBool{Val: boolPtr(false)}
+	}
+	for _, t := range barColChartTypes {
+		if t == opts.Type {
+			return &attrValBool{Val: boolPtr(false)}
+		}
+	}
+	return nil
+}
+
+// drawChartSeriesSmooth provides a function to draw the c:smooth element. This
+// element belongs only to the line and scatter series groups (CT_LineSer and
+// CT_ScatterSer); it is omitted for every other chart type to keep the series
+// schema-valid.
+func (f *File) drawChartSeriesSmooth(i int, opts *Chart) *attrValBool {
+	switch opts.Type {
+	case Line, Line3D, Scatter:
+		return &attrValBool{Val: boolPtr(opts.Series[i].Line.Smooth)}
+	}
+	return nil
 }
 
 // drawShapeFill provides a function to draw the a:solidFill element by given
