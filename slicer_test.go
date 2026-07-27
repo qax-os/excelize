@@ -274,7 +274,7 @@ func TestSlicer(t *testing.T) {
 	// Test add a pivot table slicer with workbook which contains timeline
 	f, err = OpenFile(workbookPath)
 	assert.NoError(t, err)
-	f.Pkg.Store("xl/timelines/timeline1.xml", []byte(fmt.Sprintf(`<timelines xmlns="%s"><timeline name="a"/></timelines>`, NameSpaceSpreadSheetX15.Value)))
+	f.Pkg.Store("xl/timelines/timeline1.xml", fmt.Appendf(nil, `<timelines xmlns="%s"><timeline name="a"/></timelines>`, NameSpaceSpreadSheetX15.Value))
 	assert.NoError(t, f.AddSlicer("Sheet2", &SlicerOptions{
 		Name:       "Month",
 		Cell:       "G42",
@@ -423,7 +423,7 @@ func TestSlicer(t *testing.T) {
 	// Test open a workbook and get sheet slicer with invalid cell reference in the drawing one cell anchor
 	f, err = OpenFile(workbookPath)
 	assert.NoError(t, err)
-	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(fmt.Sprintf(`<wsDr xmlns="%s"><oneCellAnchor><from><col>-1</col><row>-1</row></from><mc:AlternateContent><mc:Choice xmlns:sle15="%s"><graphicFrame><nvGraphicFramePr><cNvPr id="2" name="Column1"/></nvGraphicFramePr></graphicFrame></mc:Choice></mc:AlternateContent></oneCellAnchor></wsDr>`, NameSpaceDrawingMLSpreadSheet.Value, NameSpaceDrawingMLSlicerX15.Value)))
+	f.Pkg.Store("xl/drawings/drawing1.xml", fmt.Appendf(nil, `<wsDr xmlns="%s"><oneCellAnchor><from><col>-1</col><row>-1</row></from><mc:AlternateContent><mc:Choice xmlns:sle15="%s"><graphicFrame><nvGraphicFramePr><cNvPr id="2" name="Column1"/></nvGraphicFramePr></graphicFrame></mc:Choice></mc:AlternateContent></oneCellAnchor></wsDr>`, NameSpaceDrawingMLSpreadSheet.Value, NameSpaceDrawingMLSlicerX15.Value))
 	_, err = f.GetSlicers("Sheet1")
 	assert.Equal(t, newCoordinatesToCellNameError(0, 0), err)
 	assert.NoError(t, f.Close())
@@ -431,12 +431,12 @@ func TestSlicer(t *testing.T) {
 	f, err = OpenFile(workbookPath)
 	assert.NoError(t, err)
 	// Test open a workbook and get sheet slicer with invalid cell reference in the drawing two cell anchor
-	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(fmt.Sprintf(`<wsDr xmlns="%s"><twoCellAnchor><from><col>-1</col><row>-1</row></from><mc:AlternateContent><mc:Choice xmlns:sle15="%s"><graphicFrame><nvGraphicFramePr><cNvPr id="2" name="Column1"/></nvGraphicFramePr></graphicFrame></mc:Choice></mc:AlternateContent></twoCellAnchor></wsDr>`, NameSpaceDrawingMLSpreadSheet.Value, NameSpaceDrawingMLSlicerX15.Value)))
+	f.Pkg.Store("xl/drawings/drawing1.xml", fmt.Appendf(nil, `<wsDr xmlns="%s"><twoCellAnchor><from><col>-1</col><row>-1</row></from><mc:AlternateContent><mc:Choice xmlns:sle15="%s"><graphicFrame><nvGraphicFramePr><cNvPr id="2" name="Column1"/></nvGraphicFramePr></graphicFrame></mc:Choice></mc:AlternateContent></twoCellAnchor></wsDr>`, NameSpaceDrawingMLSpreadSheet.Value, NameSpaceDrawingMLSlicerX15.Value))
 	_, err = f.GetSlicers("Sheet1")
 	assert.Equal(t, newCoordinatesToCellNameError(0, 0), err)
 	// Test get sheet slicer without slicer shape in the drawing part
 	f.Drawings.Delete("xl/drawings/drawing1.xml")
-	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(fmt.Sprintf(`<wsDr xmlns="%s"><twoCellAnchor/></wsDr>`, NameSpaceDrawingMLSpreadSheet.Value)))
+	f.Pkg.Store("xl/drawings/drawing1.xml", fmt.Appendf(nil, `<wsDr xmlns="%s"><twoCellAnchor/></wsDr>`, NameSpaceDrawingMLSpreadSheet.Value))
 	_, err = f.GetSlicers("Sheet1")
 	assert.NoError(t, err)
 	f.Drawings.Delete("xl/drawings/drawing1.xml")
@@ -540,25 +540,25 @@ func TestSetSlicerCache(t *testing.T) {
 
 	f = NewFile()
 
-	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", []byte(fmt.Sprintf(`<slicerCacheDefinition xmlns="%s" name="Slicer2" sourceName="B1"><extLst><ext uri="%s"/></extLst></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value, ExtURISlicerCacheDefinition)))
+	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", fmt.Appendf(nil, `<slicerCacheDefinition xmlns="%s" name="Slicer2" sourceName="B1"><extLst><ext uri="%s"/></extLst></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value, ExtURISlicerCacheDefinition))
 	_, err = f.setSlicerCache(1, &SlicerOptions{}, &Table{}, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
-	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", []byte(fmt.Sprintf(`<slicerCacheDefinition xmlns="%s" name="Slicer1" sourceName="B1"><extLst><ext uri="%s"/></extLst></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value, ExtURISlicerCacheDefinition)))
+	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", fmt.Appendf(nil, `<slicerCacheDefinition xmlns="%s" name="Slicer1" sourceName="B1"><extLst><ext uri="%s"/></extLst></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value, ExtURISlicerCacheDefinition))
 	_, err = f.setSlicerCache(1, &SlicerOptions{}, &Table{}, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
-	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", []byte(fmt.Sprintf(`<slicerCacheDefinition xmlns="%s" name="Slicer1" sourceName="B1"><extLst><ext uri="%s"><tableSlicerCache tableId="1" column="2"/></ext></extLst></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value, ExtURISlicerCacheDefinition)))
+	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", fmt.Appendf(nil, `<slicerCacheDefinition xmlns="%s" name="Slicer1" sourceName="B1"><extLst><ext uri="%s"><tableSlicerCache tableId="1" column="2"/></ext></extLst></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value, ExtURISlicerCacheDefinition))
 	_, err = f.setSlicerCache(1, &SlicerOptions{}, &Table{tID: 1}, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
 
 	f = NewFile()
-	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", []byte(fmt.Sprintf(`<slicerCacheDefinition xmlns="%s" name="Slicer1" sourceName="B1"></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value)))
+	f.Pkg.Store("xl/slicerCaches/slicerCache2.xml", fmt.Appendf(nil, `<slicerCacheDefinition xmlns="%s" name="Slicer1" sourceName="B1"></slicerCacheDefinition>`, NameSpaceSpreadSheetX14.Value))
 	_, err = f.setSlicerCache(1, &SlicerOptions{}, &Table{tID: 1}, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
@@ -625,11 +625,11 @@ func TestAddSlicerCache(t *testing.T) {
 	_, err := f.buildSlicerItems(&PivotTableOptions{pivotCacheXML: pivotCacheXML}, nil)
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	// Test add slicer items without pivot field cache
-	f.Pkg.Store(pivotCacheXML, []byte(fmt.Sprintf(`<pivotCacheDefinition xmlns="%s"><cacheFields/></pivotCacheDefinition>`, NameSpaceSpreadSheet.Value)))
+	f.Pkg.Store(pivotCacheXML, fmt.Appendf(nil, `<pivotCacheDefinition xmlns="%s"><cacheFields/></pivotCacheDefinition>`, NameSpaceSpreadSheet.Value))
 	_, err = f.buildSlicerItems(&PivotTableOptions{pivotCacheXML: pivotCacheXML}, nil)
 	assert.NoError(t, err)
 	// Test add slicer items without selected items
-	f.Pkg.Store(pivotCacheXML, []byte(fmt.Sprintf(`<pivotCacheDefinition xmlns="%s"><cacheFields><cacheField name="Month"><sharedItems/></cacheField></cacheFields></pivotCacheDefinition>`, NameSpaceSpreadSheet.Value)))
+	f.Pkg.Store(pivotCacheXML, fmt.Appendf(nil, `<pivotCacheDefinition xmlns="%s"><cacheFields><cacheField name="Month"><sharedItems/></cacheField></cacheFields></pivotCacheDefinition>`, NameSpaceSpreadSheet.Value))
 	_, err = f.buildSlicerItems(&PivotTableOptions{pivotCacheXML: pivotCacheXML}, &SlicerOptions{Name: "Month"})
 	assert.NoError(t, err)
 	assert.NoError(t, f.Close())
@@ -674,7 +674,7 @@ func TestAddPivotCacheSlicer(t *testing.T) {
 	f := NewFile()
 	pivotCacheXML := "xl/pivotCache/pivotCacheDefinition1.xml"
 	// Test add a pivot table cache slicer with existing extension list
-	f.Pkg.Store(pivotCacheXML, []byte(fmt.Sprintf(`<pivotCacheDefinition xmlns="%s"><extLst><ext uri="%s"><x14:pivotCacheDefinition pivotCacheId="1"/></ext></extLst></pivotCacheDefinition>`, NameSpaceSpreadSheet.Value, ExtURIPivotCacheDefinition)))
+	f.Pkg.Store(pivotCacheXML, fmt.Appendf(nil, `<pivotCacheDefinition xmlns="%s"><extLst><ext uri="%s"><x14:pivotCacheDefinition pivotCacheId="1"/></ext></extLst></pivotCacheDefinition>`, NameSpaceSpreadSheet.Value, ExtURIPivotCacheDefinition))
 	_, err := f.addPivotCacheSlicer(&PivotTableOptions{
 		pivotCacheXML: pivotCacheXML,
 	})

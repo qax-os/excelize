@@ -157,12 +157,12 @@ func TestGetColsError(t *testing.T) {
 
 	f = NewFile()
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="A"><c r="2" t="inlineStr"><is><t>B</t></is></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value)))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="A"><c r="2" t="inlineStr"><is><t>B</t></is></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
 	f.checked = sync.Map{}
 	_, err = f.GetCols("Sheet1")
 	assert.EqualError(t, err, `strconv.Atoi: parsing "A": invalid syntax`)
 
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="2"><c r="A" t="inlineStr"><is><t>B</t></is></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value)))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="2"><c r="A" t="inlineStr"><is><t>B</t></is></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
 	_, err = f.GetCols("Sheet1")
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 
@@ -172,7 +172,7 @@ func TestGetColsError(t *testing.T) {
 	cols.totalRows = 2
 	cols.totalCols = 2
 	cols.curCol = 1
-	cols.sheetXML = []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="1"><c r="A" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
+	cols.sheetXML = fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c r="A" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value)
 	_, err = cols.Rows()
 	assert.EqualError(t, err, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 

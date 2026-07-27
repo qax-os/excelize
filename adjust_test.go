@@ -983,7 +983,7 @@ func TestAdjustFormula(t *testing.T) {
 
 func TestAdjustVolatileDeps(t *testing.T) {
 	f := NewFile()
-	f.Pkg.Store(defaultXMLPathVolatileDeps, []byte(fmt.Sprintf(`<volTypes xmlns="%s"><volType><main><tp><tr r="C2" s="2"/><tr r="C2" s="1"/><tr r="D3" s="1"/></tp></main></volType></volTypes>`, NameSpaceSpreadSheet.Value)))
+	f.Pkg.Store(defaultXMLPathVolatileDeps, fmt.Appendf(nil, `<volTypes xmlns="%s"><volType><main><tp><tr r="C2" s="2"/><tr r="C2" s="1"/><tr r="D3" s="1"/></tp></main></volType></volTypes>`, NameSpaceSpreadSheet.Value))
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
 	assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
 	assert.Equal(t, "D3", f.VolatileDeps.VolType[0].Main[0].Tp[0].Tr[1].R)
@@ -996,7 +996,7 @@ func TestAdjustVolatileDeps(t *testing.T) {
 	assert.EqualError(t, f.InsertRows("Sheet1", 2, 1), "XML syntax error on line 1: invalid UTF-8")
 
 	f = NewFile()
-	f.Pkg.Store(defaultXMLPathVolatileDeps, []byte(fmt.Sprintf(`<volTypes xmlns="%s"><volType><main><tp><tr r="A" s="1"/></tp></main></volType></volTypes>`, NameSpaceSpreadSheet.Value)))
+	f.Pkg.Store(defaultXMLPathVolatileDeps, fmt.Appendf(nil, `<volTypes xmlns="%s"><volType><main><tp><tr r="A" s="1"/></tp></main></volType></volTypes>`, NameSpaceSpreadSheet.Value))
 	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.InsertCols("Sheet1", "A", 1))
 	f.volatileDepsWriter()
 }
