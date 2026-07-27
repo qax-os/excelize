@@ -374,6 +374,86 @@ func TestSetCellTime(t *testing.T) {
 	}
 }
 
+func TestGetNonEmptyCells(t *testing.T) {
+	// Test get non-empty cells with plain value cells
+	cells := []string{
+		"C1", "E1", "A3", "B3", "C3", "D3", "E3",
+	}
+	var expected []CellInfo
+
+	f := NewFile()
+	for _, cell := range cells {
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, cell))
+		expected = append(expected, CellInfo{Ref: cell, Value: cell})
+	}
+	cellsInSheet, err := f.GetNonEmptyCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, cellsInSheet)
+	assert.NoError(t, f.Close())
+
+	// Test get non-empty cells with formula cell
+	f = NewFile()
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=SUM(1,1)"))
+	expected = []CellInfo{{Ref: "B1", Value: ""}}
+	cellsInSheet, err = f.GetNonEmptyCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, cellsInSheet)
+	assert.NoError(t, f.Close())
+
+	// Test styled cell without value is skipped
+	f = NewFile()
+	styleID, err := f.NewStyle(&Style{Font: &Font{Bold: true}})
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellStyle("Sheet1", "B1", "B1", styleID))
+	cellsInSheet, err = f.GetNonEmptyCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Empty(t, cellsInSheet)
+	assert.NoError(t, f.Close())
+
+	// Test raw and formatted cell values
+	f = NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", true))
+	// Formatted
+	formatCellsInSheet, err := f.GetNonEmptyCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, []CellInfo{{Ref: "A1", Value: "TRUE"}}, formatCellsInSheet)
+	// Raw
+	rawCellsInSheet, err := f.GetNonEmptyCells("Sheet1", Options{RawCellValue: true})
+	assert.NoError(t, err)
+	assert.Equal(t, []CellInfo{{Ref: "A1", Value: "1"}}, rawCellsInSheet)
+	assert.NoError(t, f.Close())
+
+	// Test empty worksheet
+	f = NewFile()
+	cellsInSheet, err = f.GetNonEmptyCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Empty(t, cellsInSheet)
+	assert.NoError(t, f.Close())
+
+	// Test invalid sheet name
+	f = NewFile()
+	_, err = f.GetNonEmptyCells("Sheet:1")
+	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
+	assert.NoError(t, f.Close())
+
+	// Test non-existent sheet
+	f = NewFile()
+	_, err = f.GetNonEmptyCells("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.NoError(t, f.Close())
+
+	// Cell without r attribute
+	f = NewFile()
+	sheetData := `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>%s</sheetData></worksheet>`
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(sheetData, `<row r="2"><c t="str"><v>x</v></c></row>`)))
+	f.checked = sync.Map{}
+	cellsInSheet, err = f.GetNonEmptyCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Equal(t, []CellInfo{{Ref: "A2", Value: "x"}}, cellsInSheet)
+	assert.NoError(t, f.Close())
+}
+
 func TestGetCellValue(t *testing.T) {
 	// Test get cell value without r attribute of the row
 	f := NewFile()
