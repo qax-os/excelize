@@ -356,7 +356,7 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 // file at one time, and return value by given to string index.
 func (f *File) getFromStringItem(index int) string {
 	if f.sharedStringTemp != nil {
-		if len(f.sharedStringItem) <= index {
+		if index < 0 || len(f.sharedStringItem) <= index {
 			return strconv.Itoa(index)
 		}
 		offsetRange := f.sharedStringItem[index]

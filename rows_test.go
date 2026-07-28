@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -253,6 +254,20 @@ func TestColumns(t *testing.T) {
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader(nil))
 	_, err = rows.Columns()
 	assert.NoError(t, err)
+}
+
+func TestGetFromStringItem(t *testing.T) {
+	f := NewFile()
+	// Test get shared string item by a negative index on the streaming path,
+	// which the in-memory path already rejects in xlsxC.getValueFrom
+	tempFile, err := os.CreateTemp(f.options.TmpDir, "excelize-")
+	assert.NoError(t, err)
+	f.sharedStringTemp = tempFile
+	f.sharedStringItem = [][]uint{{0, 0}}
+	assert.Equal(t, "-1", f.getFromStringItem(-1))
+	assert.Equal(t, "1", f.getFromStringItem(1))
+	assert.NoError(t, tempFile.Close())
+	assert.NoError(t, os.Remove(tempFile.Name()))
 }
 
 func TestSharedStringsReader(t *testing.T) {
