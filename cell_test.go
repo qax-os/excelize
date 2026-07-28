@@ -574,6 +574,16 @@ func TestGetValueFrom(t *testing.T) {
 	value, err = c.getValueFrom(f, &xlsxSST{Count: 1, SI: []xlsxSI{{}, {T: &xlsxT{Val: "s"}}}}, false)
 	assert.Equal(t, newInvalidSharedStringIndex(-1), err)
 	assert.Empty(t, value)
+
+	f.tempFiles.Store(defaultXMLPathSharedStrings, "")
+	f.sharedStringTemp, err = os.CreateTemp(os.TempDir(), "excelize-")
+	assert.NoError(t, err)
+	c = xlsxC{T: "s", V: "-1"}
+	value, err = c.getValueFrom(f, sst, false)
+	assert.Equal(t, newInvalidSharedStringIndex(-1), err)
+	assert.Empty(t, value)
+	assert.NoError(t, f.sharedStringTemp.Close())
+	assert.NoError(t, os.Remove(f.sharedStringTemp.Name()))
 }
 
 func TestGetCellFormula(t *testing.T) {
