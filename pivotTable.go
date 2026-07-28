@@ -89,7 +89,7 @@ const (
 	PivotTableShowValuesAsIndex
 )
 
-// PivotTableShowValuesAs directly maps the show value as settings of the pivot
+// PivotTableShowValuesAs directly maps the show values as settings of the pivot
 // table.
 type PivotTableShowValuesAs struct {
 	Type      PivotTableShowValuesAsType
@@ -896,7 +896,7 @@ func (f *File) addPivotDataFields(pt *xlsxPivotTableDefinition, opts *PivotTable
 	return err
 }
 
-// setPivotTableShowValuesAs provides a method to set show value as for pivot
+// setPivotTableShowValuesAs provides a method to set show values as for pivot
 // table data field by given pivot table options and data field index.
 func (df *xlsxDataField) setPivotTableShowValuesAs(idx int, order []string, opts *PivotTableOptions) error {
 	showValuesAsType := opts.Data[idx].ShowValuesAs.Type
@@ -1453,7 +1453,7 @@ func (f *File) extractPivotTableFields(pt *xlsxPivotTableDefinition, pc *xlsxPiv
 	}
 }
 
-// extractPivotTableShowValuesAs provides a function to extract show value as
+// extractPivotTableShowValuesAs provides a function to extract show values as
 // settings for pivot table data field.
 func (f *File) extractPivotTableShowValuesAs(pc *xlsxPivotCacheDefinition, df *xlsxDataField, dataField *PivotTableField) {
 	order := pc.getPivotCacheFieldsName()

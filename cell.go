@@ -619,7 +619,11 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 		if c.V != "" {
 			xlsxSI, _ := strconv.Atoi(strings.TrimSpace(c.V))
 			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
-				return f.formattedValue(&xlsxC{S: c.S, V: f.getFromStringItem(xlsxSI)}, raw, CellTypeSharedString)
+				val, err := f.getFromStringItem(xlsxSI)
+				if err != nil {
+					return "", err
+				}
+				return f.formattedValue(&xlsxC{S: c.S, V: val}, raw, CellTypeSharedString)
 			}
 			d.mu.Lock()
 			defer d.mu.Unlock()
