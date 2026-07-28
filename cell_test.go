@@ -1199,10 +1199,14 @@ func TestSharedStringsError(t *testing.T) {
 	tempFile, ok := f.tempFiles.Load(defaultXMLPathSharedStrings)
 	assert.True(t, ok)
 	f.tempFiles.Store(defaultXMLPathSharedStrings, "")
-	assert.Equal(t, "1", f.getFromStringItem(1))
+	value, err := f.getFromStringItem(1)
+	assert.Equal(t, newInvalidSharedStringIndex(1), err)
+	assert.Empty(t, value)
 	// Test get from string item with invalid offset range
 	f.sharedStringItem = [][]uint{{0}}
-	assert.Equal(t, "0", f.getFromStringItem(0))
+	value, err = f.getFromStringItem(0)
+	assert.NoError(t, err)
+	assert.Equal(t, "0", value)
 	// Cleanup undelete temporary files
 	assert.NoError(t, os.Remove(tempFile.(string)))
 	// Test reload the file error on set cell value and rich text. The error message was different between macOS and Windows
@@ -1227,7 +1231,9 @@ func TestSharedStringsError(t *testing.T) {
 			assert.NoError(t, err)
 			// Test get cell value from string item with invalid offset
 			f.sharedStringItem[1] = []uint{maxUint16 - 1, maxUint16}
-			assert.Equal(t, "1", f.getFromStringItem(1))
+			value, err := f.getFromStringItem(1)
+			assert.NoError(t, err)
+			assert.Equal(t, "1", value)
 			break
 		}
 	}

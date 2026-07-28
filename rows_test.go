@@ -264,8 +264,15 @@ func TestGetFromStringItem(t *testing.T) {
 	assert.NoError(t, err)
 	f.sharedStringTemp = tempFile
 	f.sharedStringItem = [][]uint{{0, 0}}
-	assert.Equal(t, "-1", f.getFromStringItem(-1))
-	assert.Equal(t, "1", f.getFromStringItem(1))
+	value, err := f.getFromStringItem(-1)
+	assert.Equal(t, newInvalidSharedStringIndex(-1), err)
+	assert.Empty(t, value)
+	value, err = f.getFromStringItem(1)
+	assert.Equal(t, newInvalidSharedStringIndex(1), err)
+	assert.Empty(t, value)
+	value, err = f.getFromStringItem(0)
+	assert.NoError(t, err)
+	assert.Empty(t, value)
 	assert.NoError(t, tempFile.Close())
 	assert.NoError(t, os.Remove(tempFile.Name()))
 }
