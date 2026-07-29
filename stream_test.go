@@ -27,7 +27,7 @@ func BenchmarkStreamWriter(b *testing.B) {
 		row[colID] = colID
 	}
 
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		streamWriter, _ := file.NewStreamWriter("Sheet1")
 		for rowID := 10; rowID <= 110; rowID++ {
 			cell, _ := CoordinatesToCellName(1, rowID)
