@@ -826,40 +826,11 @@ func (f *File) drawChartSeries(opts *Chart) *[]cSer {
 			Val:              f.drawChartSeriesVal(opts.Series[k], opts),
 			XVal:             f.drawChartSeriesXVal(opts.Series[k], opts),
 			YVal:             f.drawChartSeriesYVal(opts.Series[k], opts),
-			BubbleSize:       f.drawCharSeriesBubbleSize(opts.Series[k], opts),
-			Bubble3D:         f.drawCharSeriesBubble3D(opts),
+			BubbleSize:       f.drawChartSeriesBubbleSize(opts.Series[k], opts),
+			Bubble3D:         f.drawChartSeriesBubble3D(opts),
 		})
 	}
 	return &ser
-}
-
-// drawChartSeriesInvertIfNegative provides a function to draw the
-// c:invertIfNegative element. This element belongs only to the bar and bubble
-// series groups (CT_BarSer and CT_BubbleSer); emitting it on any other series
-// type produces schema-invalid markup that Excel silently repairs on open, so
-// it is omitted for every other chart type.
-func (f *File) drawChartSeriesInvertIfNegative(opts *Chart) *attrValBool {
-	if opts.Type == Bubble || opts.Type == Bubble3D {
-		return &attrValBool{Val: boolPtr(false)}
-	}
-	for _, t := range barColChartTypes {
-		if t == opts.Type {
-			return &attrValBool{Val: boolPtr(false)}
-		}
-	}
-	return nil
-}
-
-// drawChartSeriesSmooth provides a function to draw the c:smooth element. This
-// element belongs only to the line and scatter series groups (CT_LineSer and
-// CT_ScatterSer); it is omitted for every other chart type to keep the series
-// schema-valid.
-func (f *File) drawChartSeriesSmooth(i int, opts *Chart) *attrValBool {
-	switch opts.Type {
-	case Line, Line3D, Scatter:
-		return &attrValBool{Val: boolPtr(opts.Series[i].Line.Smooth)}
-	}
-	return nil
 }
 
 // drawShapeFill provides a function to draw the a:solidFill element by given
@@ -883,34 +854,68 @@ func (fill *Fill) drawShapeFill(spPr *cSpPr) *cSpPr {
 	return spPr
 }
 
-// drawChartSeriesSpPr provides a function to draw the c:spPr element by given
-// format sets.
-func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
-	spPr := &cSpPr{SolidFill: &aSolidFill{SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa((opts.order+i)%6+1)}}}
-	spPr = opts.Series[i].Fill.drawShapeFill(spPr)
-	solid := &cSpPr{
-		Ln: &aLn{
-			W:         ptToEMUs(opts.Series[i].Line.Width),
-			Cap:       "rnd", // rnd, sq, flat
-			SolidFill: spPr.SolidFill,
+// drawChartSeriesBubble3D provides a function to draw the c:bubble3D element
+// by given format sets.
+func (f *File) drawChartSeriesBubble3D(opts *Chart) *attrValBool {
+	if _, ok := map[ChartType]bool{Bubble3D: true}[opts.Type]; !ok {
+		return nil
+	}
+	return &attrValBool{Val: boolPtr(true)}
+}
+
+// drawChartSeriesBubbleSize provides a function to draw the c:bubbleSize
+// element by given chart series and format sets.
+func (f *File) drawChartSeriesBubbleSize(v ChartSeries, opts *Chart) *cVal {
+	if _, ok := map[ChartType]bool{Bubble: true, Bubble3D: true}[opts.Type]; !ok {
+		return nil
+	}
+	fVal := v.Values
+	if v.Sizes != "" {
+		fVal = v.Sizes
+	}
+	return &cVal{
+		NumRef: &cNumRef{
+			F:        fVal,
+			NumCache: &cNumCache{},
 		},
 	}
-	if opts.Series[i].Line.Dash != LineDashUnset {
-		solid.Ln.PrstDash = &attrValString{Val: stringPtr(LineDashTypes[opts.Series[i].Line.Dash])}
+}
+
+// drawChartSeriesCat provides a function to draw the c:cat element by given
+// chart series and format sets.
+func (f *File) drawChartSeriesCat(v ChartSeries, opts *Chart) *cCat {
+	cat := &cCat{
+		StrRef: &cStrRef{
+			F: v.Categories,
+		},
 	}
-	noLn := &cSpPr{Ln: &aLn{NoFill: &attrValString{}}}
-	if chartSeriesSpPr, ok := map[ChartType]map[LineType]*cSpPr{
-		Line:                  {LineUnset: solid, LineSolid: solid, LineNone: noLn, LineAutomatic: solid},
-		Scatter:               {LineUnset: noLn, LineSolid: solid, LineNone: noLn, LineAutomatic: noLn},
-		StockHighLowClose:     {LineUnset: noLn, LineSolid: solid, LineNone: noLn, LineAutomatic: noLn},
-		StockOpenHighLowClose: {LineUnset: noLn, LineSolid: solid, LineNone: noLn, LineAutomatic: noLn},
-	}[opts.Type]; ok {
-		return chartSeriesSpPr[opts.Series[i].Line.Type]
+	chartSeriesCat := map[ChartType]*cCat{Scatter: nil, Bubble: nil, Bubble3D: nil}
+	if _, ok := chartSeriesCat[opts.Type]; ok || v.Categories == "" {
+		return nil
 	}
-	if spPr.SolidFill != nil && spPr.SolidFill.SrgbClr != nil || spPr.NoFill != nil {
-		return spPr
+	return cat
+}
+
+// drawChartSeriesDLbls provides a function to draw the c:dLbls element by
+// given format sets.
+func (f *File) drawChartSeriesDLbls(i int, opts *Chart) *cDLbls {
+	dLbls := f.drawChartDLbls(opts)
+	chartSeriesDLbls := map[ChartType]*cDLbls{
+		Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil,
 	}
-	return nil
+	if _, ok := chartSeriesDLbls[opts.Type]; ok {
+		return nil
+	}
+	if types, ok := supportedChartDataLabelsPosition[opts.Type]; ok && opts.Series[i].DataLabelPosition != ChartDataLabelsPositionUnset {
+		if inSupportedChartDataLabelsPositionType(types, opts.Series[i].DataLabelPosition) != -1 {
+			dLbls.DLblPos = &attrValString{Val: stringPtr(chartDataLabelsPositionTypes[opts.Series[i].DataLabelPosition])}
+		}
+	}
+	dLbl := opts.Series[i].DataLabel
+	dLbls.SpPr = dLbl.Fill.drawShapeFill(dLbls.SpPr)
+	dLbls.TxPr = &cTxPr{BodyPr: aBodyPr{}, P: aP{PPr: &aPPr{DefRPr: aRPr{}}}}
+	drawChartFont(&dLbl.Font, &dLbls.TxPr.P.PPr.DefRPr)
+	return dLbls
 }
 
 // drawChartSeriesDPt provides a function to draw the c:dPt element by given
@@ -952,35 +957,18 @@ func (f *File) drawChartSeriesDPt(i int, opts *Chart) []*cDPt {
 	return chartSeriesDPt[opts.Type]
 }
 
-// drawChartSeriesCat provides a function to draw the c:cat element by given
-// chart series and format sets.
-func (f *File) drawChartSeriesCat(v ChartSeries, opts *Chart) *cCat {
-	cat := &cCat{
-		StrRef: &cStrRef{
-			F: v.Categories,
-		},
+// drawChartSeriesInvertIfNegative provides a function to draw the
+// c:invertIfNegative element.
+func (f *File) drawChartSeriesInvertIfNegative(opts *Chart) *attrValBool {
+	if opts.Type == Bubble || opts.Type == Bubble3D {
+		return &attrValBool{Val: boolPtr(false)}
 	}
-	chartSeriesCat := map[ChartType]*cCat{Scatter: nil, Bubble: nil, Bubble3D: nil}
-	if _, ok := chartSeriesCat[opts.Type]; ok || v.Categories == "" {
-		return nil
+	for _, t := range barColChartTypes {
+		if t == opts.Type {
+			return &attrValBool{Val: boolPtr(false)}
+		}
 	}
-	return cat
-}
-
-// drawChartSeriesVal provides a function to draw the c:val element by given
-// chart series and format sets.
-func (f *File) drawChartSeriesVal(v ChartSeries, opts *Chart) *cVal {
-	val := &cVal{
-		NumRef: &cNumRef{
-			F:        v.Values,
-			NumCache: &cNumCache{},
-		},
-	}
-	chartSeriesVal := map[ChartType]*cVal{Scatter: nil, Bubble: nil, Bubble3D: nil}
-	if _, ok := chartSeriesVal[opts.Type]; ok {
-		return nil
-	}
-	return val
+	return nil
 }
 
 // drawChartSeriesMarker provides a function to draw the c:marker element by
@@ -1019,6 +1007,61 @@ func (f *File) drawChartSeriesMarker(i int, opts *Chart) *cMarker {
 	return chartSeriesMarker[opts.Type]
 }
 
+// drawChartSeriesSmooth provides a function to draw the c:smooth element.
+func (f *File) drawChartSeriesSmooth(i int, opts *Chart) *attrValBool {
+	switch opts.Type {
+	case Line, Line3D, Scatter:
+		return &attrValBool{Val: boolPtr(opts.Series[i].Line.Smooth)}
+	}
+	return nil
+}
+
+// drawChartSeriesSpPr provides a function to draw the c:spPr element by given
+// format sets.
+func (f *File) drawChartSeriesSpPr(i int, opts *Chart) *cSpPr {
+	spPr := &cSpPr{SolidFill: &aSolidFill{SchemeClr: &aSchemeClr{Val: "accent" + strconv.Itoa((opts.order+i)%6+1)}}}
+	spPr = opts.Series[i].Fill.drawShapeFill(spPr)
+	solid := &cSpPr{
+		Ln: &aLn{
+			W:         ptToEMUs(opts.Series[i].Line.Width),
+			Cap:       "rnd", // rnd, sq, flat
+			SolidFill: spPr.SolidFill,
+		},
+	}
+	if opts.Series[i].Line.Dash != LineDashUnset {
+		solid.Ln.PrstDash = &attrValString{Val: stringPtr(LineDashTypes[opts.Series[i].Line.Dash])}
+	}
+	noLn := &cSpPr{Ln: &aLn{NoFill: &attrValString{}}}
+	if chartSeriesSpPr, ok := map[ChartType]map[LineType]*cSpPr{
+		Line:                  {LineUnset: solid, LineSolid: solid, LineNone: noLn, LineAutomatic: solid},
+		Scatter:               {LineUnset: noLn, LineSolid: solid, LineNone: noLn, LineAutomatic: noLn},
+		StockHighLowClose:     {LineUnset: noLn, LineSolid: solid, LineNone: noLn, LineAutomatic: noLn},
+		StockOpenHighLowClose: {LineUnset: noLn, LineSolid: solid, LineNone: noLn, LineAutomatic: noLn},
+	}[opts.Type]; ok {
+		return chartSeriesSpPr[opts.Series[i].Line.Type]
+	}
+	if spPr.SolidFill != nil && spPr.SolidFill.SrgbClr != nil || spPr.NoFill != nil {
+		return spPr
+	}
+	return nil
+}
+
+// drawChartSeriesVal provides a function to draw the c:val element by given
+// chart series and format sets.
+func (f *File) drawChartSeriesVal(v ChartSeries, opts *Chart) *cVal {
+	val := &cVal{
+		NumRef: &cNumRef{
+			F:        v.Values,
+			NumCache: &cNumCache{},
+		},
+	}
+	chartSeriesVal := map[ChartType]*cVal{Scatter: nil, Bubble: nil, Bubble3D: nil}
+	if _, ok := chartSeriesVal[opts.Type]; ok {
+		return nil
+	}
+	return val
+}
+
 // drawChartSeriesXVal provides a function to draw the c:xVal element by given
 // chart series and format sets.
 func (f *File) drawChartSeriesXVal(v ChartSeries, opts *Chart) *cCat {
@@ -1042,33 +1085,6 @@ func (f *File) drawChartSeriesYVal(v ChartSeries, opts *Chart) *cVal {
 	}
 	chartSeriesYVal := map[ChartType]*cVal{Scatter: val, Bubble: val, Bubble3D: val}
 	return chartSeriesYVal[opts.Type]
-}
-
-// drawCharSeriesBubbleSize provides a function to draw the c:bubbleSize
-// element by given chart series and format sets.
-func (f *File) drawCharSeriesBubbleSize(v ChartSeries, opts *Chart) *cVal {
-	if _, ok := map[ChartType]bool{Bubble: true, Bubble3D: true}[opts.Type]; !ok {
-		return nil
-	}
-	fVal := v.Values
-	if v.Sizes != "" {
-		fVal = v.Sizes
-	}
-	return &cVal{
-		NumRef: &cNumRef{
-			F:        fVal,
-			NumCache: &cNumCache{},
-		},
-	}
-}
-
-// drawCharSeriesBubble3D provides a function to draw the c:bubble3D element
-// by given format sets.
-func (f *File) drawCharSeriesBubble3D(opts *Chart) *attrValBool {
-	if _, ok := map[ChartType]bool{Bubble3D: true}[opts.Type]; !ok {
-		return nil
-	}
-	return &attrValBool{Val: boolPtr(true)}
 }
 
 // drawChartNumFmt provides a function to draw the c:numFmt element by given
@@ -1109,28 +1125,6 @@ func inSupportedChartDataLabelsPositionType(a []ChartDataLabelPositionType, x Ch
 		}
 	}
 	return -1
-}
-
-// drawChartSeriesDLbls provides a function to draw the c:dLbls element by
-// given format sets.
-func (f *File) drawChartSeriesDLbls(i int, opts *Chart) *cDLbls {
-	dLbls := f.drawChartDLbls(opts)
-	chartSeriesDLbls := map[ChartType]*cDLbls{
-		Scatter: nil, Surface3D: nil, WireframeSurface3D: nil, Contour: nil, WireframeContour: nil,
-	}
-	if _, ok := chartSeriesDLbls[opts.Type]; ok {
-		return nil
-	}
-	if types, ok := supportedChartDataLabelsPosition[opts.Type]; ok && opts.Series[i].DataLabelPosition != ChartDataLabelsPositionUnset {
-		if inSupportedChartDataLabelsPositionType(types, opts.Series[i].DataLabelPosition) != -1 {
-			dLbls.DLblPos = &attrValString{Val: stringPtr(chartDataLabelsPositionTypes[opts.Series[i].DataLabelPosition])}
-		}
-	}
-	dLbl := opts.Series[i].DataLabel
-	dLbls.SpPr = dLbl.Fill.drawShapeFill(dLbls.SpPr)
-	dLbls.TxPr = &cTxPr{BodyPr: aBodyPr{}, P: aP{PPr: &aPPr{DefRPr: aRPr{}}}}
-	drawChartFont(&dLbl.Font, &dLbls.TxPr.P.PPr.DefRPr)
-	return dLbls
 }
 
 // drawPlotAreaCatAx provides a function to draw the c:catAx element.
