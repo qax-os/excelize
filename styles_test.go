@@ -897,30 +897,24 @@ func TestGetStyle(t *testing.T) {
 	style, err = f.GetStyle(1)
 	assert.Nil(t, style)
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
-}
 
-func TestGetStyleWithNegativeIndex(t *testing.T) {
-	styleSheet := `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
-		`<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>` +
-		`<fills count="1"><fill><patternFill patternType="none"/></fill></fills>` +
-		`<borders count="1"><border/></borders>` +
-		`<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>` +
-		`<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>` +
-		`<xf numFmtId="0" %s xfId="0" applyFont="1" applyFill="1" applyBorder="1"/></cellXfs></styleSheet>`
-	for _, testCase := range []struct {
-		label string
-		attrs string
-	}{
-		{"negative fill index", `fontId="0" fillId="-1" borderId="0"`},
-		{"negative border index", `fontId="0" fillId="0" borderId="-1"`},
-		{"negative font index", `fontId="-1" fillId="0" borderId="0"`},
-	} {
-		f := NewFile()
-		f.Styles = nil
-		f.Pkg.Store(defaultXMLPathStyles, []byte(fmt.Sprintf(styleSheet, testCase.attrs)))
-		style, err := f.GetStyle(1)
-		assert.NoError(t, err, testCase.label)
-		assert.NotNil(t, style, testCase.label)
-		assert.NoError(t, f.Close(), testCase.label)
-	}
+	t.Run("with_negative_index", func(t *testing.T) {
+		styleSheet := `<styleSheet xmlns="%s"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" %s xfId="0" applyFont="1" applyFill="1" applyBorder="1"/></cellXfs></styleSheet>`
+		for _, testCase := range []struct {
+			label string
+			attrs string
+		}{
+			{"negative fill index", `fontId="0" fillId="-1" borderId="0"`},
+			{"negative border index", `fontId="0" fillId="0" borderId="-1"`},
+			{"negative font index", `fontId="-1" fillId="0" borderId="0"`},
+		} {
+			f := NewFile()
+			f.Styles = nil
+			f.Pkg.Store(defaultXMLPathStyles, fmt.Appendf(nil, styleSheet, NameSpaceSpreadSheet.Value, testCase.attrs))
+			style, err := f.GetStyle(1)
+			assert.NoError(t, err, testCase.label)
+			assert.NotNil(t, style, testCase.label)
+			assert.NoError(t, f.Close(), testCase.label)
+		}
+	})
 }
