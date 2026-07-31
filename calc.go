@@ -12089,8 +12089,23 @@ func (fn *formulaFuncs) AND(argsList *list.List) formulaArg {
 		case ArgNumber:
 			and = and && token.Number != 0
 		case ArgMatrix:
-			// TODO
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			for _, item := range token.ToList() {
+				switch item.Type {
+				case ArgUnknown:
+					continue
+				case ArgString:
+					if item.String == "FALSE" {
+						return newStringFormulaArg(item.String)
+					}
+					if item.String != "TRUE" {
+						return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+					}
+				case ArgNumber:
+					if item.Number == 0 {
+						return newBoolFormulaArg(false)
+					}
+				}
+			}
 		}
 	}
 	return newBoolFormulaArg(and)

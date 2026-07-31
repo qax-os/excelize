@@ -4883,6 +4883,89 @@ func TestCalcAND(t *testing.T) {
 	result := fn.AND(argsList)
 	assert.Equal(t, result.String, "")
 	assert.Empty(t, result.Error)
+
+	argsList = list.New()
+	argsList.PushBack(formulaArg{
+		Type: ArgMatrix,
+		Matrix: [][]formulaArg{
+			{
+				newBoolFormulaArg(true),
+				newBoolFormulaArg(true),
+			},
+			{
+				newBoolFormulaArg(true),
+				newBoolFormulaArg(true),
+			},
+		},
+	})
+	result = fn.AND(argsList)
+	assert.Equal(t, "TRUE", result.Value())
+	assert.Empty(t, result.Error)
+
+	argsList = list.New()
+	argsList.PushBack(formulaArg{
+		Type: ArgMatrix,
+		Matrix: [][]formulaArg{
+			{
+				newBoolFormulaArg(true),
+				newBoolFormulaArg(false),
+			},
+			{
+				newBoolFormulaArg(true),
+				newNumberFormulaArg(1),
+			},
+		},
+	})
+	result = fn.AND(argsList)
+	assert.Equal(t, "FALSE", result.Value())
+	assert.Empty(t, result.Error)
+
+	argsList = list.New()
+	argsList.PushBack(formulaArg{
+		Type: ArgMatrix,
+		Matrix: [][]formulaArg{
+			{
+				newNumberFormulaArg(1),
+				newNumberFormulaArg(2),
+			},
+			{
+				newNumberFormulaArg(0),
+				newNumberFormulaArg(3),
+			},
+		},
+	})
+	result = fn.AND(argsList)
+	assert.Equal(t, "FALSE", result.Value())
+	assert.Empty(t, result.Error)
+
+	argsList = list.New()
+	argsList.PushBack(formulaArg{
+		Type: ArgMatrix,
+		Matrix: [][]formulaArg{
+			{
+				newStringFormulaArg("TRUE"),
+				newNumberFormulaArg(1),
+			},
+			{
+				newBoolFormulaArg(true),
+			},
+		},
+	})
+	result = fn.AND(argsList)
+	assert.Equal(t, "TRUE", result.Value())
+	assert.Empty(t, result.Error)
+
+	argsList = list.New()
+	argsList.PushBack(formulaArg{
+		Type: ArgMatrix,
+		Matrix: [][]formulaArg{
+			{
+				newStringFormulaArg("invalid"),
+			},
+		},
+	})
+	result = fn.AND(argsList)
+	assert.Equal(t, formulaErrorVALUE, result.Error)
 }
 
 func TestCalcOR(t *testing.T) {
