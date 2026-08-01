@@ -128,11 +128,11 @@ var (
 	// length.
 	ErrPasswordLengthInvalid = errors.New("password length invalid")
 	// ErrPivotTableShowValuesAsBaseField defined the error message on enable
-	// this kind of show value as type requires a base field.
-	ErrPivotTableShowValuesAsBaseField = errors.New("this kind of show value as type requires a base field")
+	// this kind of "show values as" type requires a base field.
+	ErrPivotTableShowValuesAsBaseField = errors.New("this kind of show values as type requires a base field")
 	// ErrPivotTableShowValuesAsBaseItem defined the error message on enable
-	// this kind of show value as type and base field requires a base item.
-	ErrPivotTableShowValuesAsBaseItem = errors.New("this kind of show value as type and base field requires a base item")
+	// this kind of "show values as" type and base field requires a base item.
+	ErrPivotTableShowValuesAsBaseItem = errors.New("this kind of show values as type and base field requires a base item")
 	// ErrPivotTableClassicLayout defined the error message on enable
 	// ClassicLayout and CompactData in the same time.
 	ErrPivotTableClassicLayout = errors.New("cannot enable ClassicLayout and CompactData in the same time")
@@ -199,8 +199,8 @@ var (
 	// number format expression.
 	ErrUnsupportedNumberFormat = errors.New("unsupported number format token")
 	// ErrUnsupportedPivotTableShowValuesAsType defined the error message on
-	// receiving the unsupported pivot table show value as type.
-	ErrUnsupportedPivotTableShowValuesAsType = errors.New("unsupported pivot table show value as type")
+	// receiving the unsupported pivot table "show values as" type.
+	ErrUnsupportedPivotTableShowValuesAsType = errors.New("unsupported pivot table show values as type")
 	// ErrWorkbookFileFormat defined the error message on receive an
 	// unsupported workbook file format.
 	ErrWorkbookFileFormat = errors.New("unsupported workbook file format")
@@ -376,7 +376,7 @@ func newPivotTableRangeError(msg string) error {
 }
 
 // newPivotTableShowValuesAsBaseFieldError defined the error message on receiving
-// the invalid pivot table show value as base field.
+// the invalid pivot table "show values as" base field.
 func newPivotTableShowValuesAsBaseFieldError(field string) error {
 	return fmt.Errorf("base field %s does not exist in shared items", field)
 }

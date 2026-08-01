@@ -353,21 +353,23 @@ func (f *File) Rows(sheet string) (*Rows, error) {
 }
 
 // getFromStringItem build shared string item offset list from system temporary
-// file at one time, and return value by given to string index.
-func (f *File) getFromStringItem(index int) string {
+// file at one time, and return value by given to string index. An index outside
+// the shared string table returns an error, matching the in-memory path in
+// xlsxC.getValueFrom.
+func (f *File) getFromStringItem(index int) (string, error) {
 	if f.sharedStringTemp != nil {
-		if len(f.sharedStringItem) <= index {
-			return strconv.Itoa(index)
+		if index < 0 || len(f.sharedStringItem) <= index {
+			return "", newInvalidSharedStringIndex(index)
 		}
 		offsetRange := f.sharedStringItem[index]
 		if len(offsetRange) != 2 || offsetRange[0] > offsetRange[1] {
-			return strconv.Itoa(index)
+			return strconv.Itoa(index), nil
 		}
 		buf := make([]byte, offsetRange[1]-offsetRange[0])
 		if _, err := f.sharedStringTemp.ReadAt(buf, int64(offsetRange[0])); err != nil {
-			return strconv.Itoa(index)
+			return strconv.Itoa(index), nil
 		}
-		return string(buf)
+		return string(buf), nil
 	}
 	needClose, decoder, tempFile, err := f.xmlDecoder(defaultXMLPathSharedStrings)
 	if needClose && err == nil {

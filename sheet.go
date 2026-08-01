@@ -373,9 +373,6 @@ func (f *File) getActiveSheetID() int {
 // may be problem formula error or reference missing.
 func (f *File) SetSheetName(source, target string) error {
 	var err error
-	if err = checkSheetName(source); err != nil {
-		return err
-	}
 	if err = checkSheetName(target); err != nil {
 		return err
 	}

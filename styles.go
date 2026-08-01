@@ -1171,17 +1171,17 @@ var (
 		"fill": func(xf xlsxXf, s *xlsxStyleSheet) bool {
 			return (xf.ApplyFill == nil || (xf.ApplyFill != nil && *xf.ApplyFill)) &&
 				xf.FillID != nil && s.Fills != nil &&
-				*xf.FillID < len(s.Fills.Fill)
+				0 <= *xf.FillID && *xf.FillID < len(s.Fills.Fill)
 		},
 		"border": func(xf xlsxXf, s *xlsxStyleSheet) bool {
 			return (xf.ApplyBorder == nil || (xf.ApplyBorder != nil && *xf.ApplyBorder)) &&
 				xf.BorderID != nil && s.Borders != nil &&
-				*xf.BorderID < len(s.Borders.Border)
+				0 <= *xf.BorderID && *xf.BorderID < len(s.Borders.Border)
 		},
 		"font": func(xf xlsxXf, s *xlsxStyleSheet) bool {
 			return (xf.ApplyFont == nil || (xf.ApplyFont != nil && *xf.ApplyFont)) &&
 				xf.FontID != nil && s.Fonts != nil &&
-				*xf.FontID < len(s.Fonts.Font)
+				0 <= *xf.FontID && *xf.FontID < len(s.Fonts.Font)
 		},
 		"alignment": func(xf xlsxXf, s *xlsxStyleSheet) bool {
 			return xf.ApplyAlignment == nil || (xf.ApplyAlignment != nil && *xf.ApplyAlignment)

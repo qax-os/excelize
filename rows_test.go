@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -253,6 +254,27 @@ func TestColumns(t *testing.T) {
 	rows.decoder = f.xmlNewDecoder(bytes.NewReader(nil))
 	_, err = rows.Columns()
 	assert.NoError(t, err)
+}
+
+func TestGetFromStringItem(t *testing.T) {
+	f := NewFile()
+	// Test get shared string item by a negative index on the streaming path,
+	// which the in-memory path already rejects in xlsxC.getValueFrom
+	tempFile, err := os.CreateTemp(f.options.TmpDir, "excelize-")
+	assert.NoError(t, err)
+	f.sharedStringTemp = tempFile
+	f.sharedStringItem = [][]uint{{0, 0}}
+	value, err := f.getFromStringItem(-1)
+	assert.Equal(t, newInvalidSharedStringIndex(-1), err)
+	assert.Empty(t, value)
+	value, err = f.getFromStringItem(1)
+	assert.Equal(t, newInvalidSharedStringIndex(1), err)
+	assert.Empty(t, value)
+	value, err = f.getFromStringItem(0)
+	assert.NoError(t, err)
+	assert.Empty(t, value)
+	assert.NoError(t, tempFile.Close())
+	assert.NoError(t, os.Remove(tempFile.Name()))
 }
 
 func TestSharedStringsReader(t *testing.T) {
@@ -1155,7 +1177,7 @@ func TestNumberFormats(t *testing.T) {
 
 func TestCellXMLHandler(t *testing.T) {
 	var (
-		content      = []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="1"><c r="A1" t="s"><v>10</v></c><c r="B1"><is><t>String</t></is></c></row><row r="2"><c r="A2" s="4" t="str"><f>2*A1</f><v>0</v></c><c r="C2" s="1"><f>A3</f><v>2422.3000000000002</v></c><c r="D2" t="d"><v>2022-10-22T15:05:29Z</v></c><c r="F2"></c><c r="G2"></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
+		content      = fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c r="A1" t="s"><v>10</v></c><c r="B1"><is><t>String</t></is></c></row><row r="2"><c r="A2" s="4" t="str"><f>2*A1</f><v>0</v></c><c r="C2" s="1"><f>A3</f><v>2422.3000000000002</v></c><c r="D2" t="d"><v>2022-10-22T15:05:29Z</v></c><c r="F2"></c><c r="G2"></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value)
 		expected, ws xlsxWorksheet
 		row          *xlsxRow
 	)
@@ -1190,7 +1212,7 @@ func TestCellXMLHandler(t *testing.T) {
 		`<row spans="1:17" r="1"><c r="B1"><is><t>`,                                                 // incorrect data
 	} {
 		ws := xlsxWorksheet{}
-		content := []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData>%s</sheetData></worksheet>`, NameSpaceSpreadSheet.Value, rowXML))
+		content := fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData>%s</sheetData></worksheet>`, NameSpaceSpreadSheet.Value, rowXML)
 		expected := xml.Unmarshal(content, &ws)
 		assert.Error(t, expected)
 		decoder := xml.NewDecoder(bytes.NewReader(content))
@@ -1215,7 +1237,7 @@ func TestCellXMLHandler(t *testing.T) {
 
 func BenchmarkRows(b *testing.B) {
 	f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		rows, _ := f.Rows("Sheet2")
 		for rows.Next() {
 			row, _ := rows.Columns()

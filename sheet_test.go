@@ -479,8 +479,9 @@ func TestSetSheetName(t *testing.T) {
 	// Test set worksheet with the different name
 	assert.NoError(t, f.SetSheetName("Sheet1", "sheet1"))
 	assert.Equal(t, "sheet1", f.GetSheetName(0))
-	// Test set sheet name with invalid sheet name
-	assert.Equal(t, f.SetSheetName("Sheet:1", "Sheet1"), ErrSheetNameInvalid)
+	// Test set sheet name with invalid source name (should not error, allows
+	// renaming sheets with non-standard names created by other applications)
+	assert.NoError(t, f.SetSheetName("Sheet:1", "Sheet1"))
 	_, err := f.NewSheet("Sheet 3")
 	assert.NoError(t, err)
 
@@ -513,7 +514,7 @@ func TestWorksheetWriter(t *testing.T) {
 	// Test set cell value with alternate content
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	worksheet := xml.Header + `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetData><row r="1"><c r="A1"><v>%d</v></c></row></sheetData><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" Requires="a14"><xdr:twoCellAnchor editAs="oneCell"></xdr:twoCellAnchor></mc:Choice><mc:Fallback/></mc:AlternateContent></worksheet>`
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(worksheet, 1)))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, worksheet, 1))
 	f.checked = sync.Map{}
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 2))
 	f.workSheetWriter()

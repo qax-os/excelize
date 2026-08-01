@@ -66,6 +66,37 @@ type PivotTableOptions struct {
 	PivotTableStyleName string
 }
 
+// PivotTableShowValuesAsType is the type of calculation for showing values in a
+// pivot table.
+type PivotTableShowValuesAsType byte
+
+// PivotTableShowValuesAsType defines the calculation type enumeration.
+const (
+	PivotTableShowValuesAsNoCalculation PivotTableShowValuesAsType = iota
+	PivotTableShowValuesAsPercentOfGrandTotal
+	PivotTableShowValuesAsPercentOfColumnTotal
+	PivotTableShowValuesAsPercentOfRowTotal
+	PivotTableShowValuesAsPercentOf
+	PivotTableShowValuesAsPercentOfParentRowTotal
+	PivotTableShowValuesAsPercentOfParentColumnTotal
+	PivotTableShowValuesAsPercentOfParentTotal
+	PivotTableShowValuesAsDifferenceFrom
+	PivotTableShowValuesAsPercentDifferenceFrom
+	PivotTableShowValuesAsRunningTotalIn
+	PivotTableShowValuesAsPercentRunningTotalIn
+	PivotTableShowValuesAsRankSmallestToLargest
+	PivotTableShowValuesAsRankLargestToSmallest
+	PivotTableShowValuesAsIndex
+)
+
+// PivotTableShowValuesAs directly maps the show values as settings of the pivot
+// table.
+type PivotTableShowValuesAs struct {
+	Type      PivotTableShowValuesAsType
+	BaseField string
+	BaseItem  string
+}
+
 // PivotTableField directly maps the field settings of the pivot table.
 //
 // Name specifies the name of the data field. Maximum 255 characters
@@ -97,7 +128,7 @@ type PivotTableOptions struct {
 //
 // ShowValuesAs specifies the calculation type for showing values in a pivot
 // table values fields. The possible values for the Type field of ShowValuesAs
-// are, some of the calculation types are not supported currently:
+// are:
 //
 //	PivotTableShowValuesAsPercentOfGrandTotal
 //	PivotTableShowValuesAsPercentOfColumnTotal
@@ -144,37 +175,6 @@ type PivotTableField struct {
 	NumFmt          int
 	SelectedItems   []string
 	ShowValuesAs    PivotTableShowValuesAs
-}
-
-// PivotTableShowValuesAsType is the type of calculation for showing values in a
-// pivot table.
-type PivotTableShowValuesAsType byte
-
-// PivotTableShowValuesAsType defines the calculation type enumeration.
-const (
-	PivotTableShowValuesAsNoCalculation PivotTableShowValuesAsType = iota
-	PivotTableShowValuesAsPercentOfGrandTotal
-	PivotTableShowValuesAsPercentOfColumnTotal
-	PivotTableShowValuesAsPercentOfRowTotal
-	PivotTableShowValuesAsPercentOf
-	PivotTableShowValuesAsPercentOfParentRowTotal
-	PivotTableShowValuesAsPercentOfParentColumnTotal
-	PivotTableShowValuesAsPercentOfParentTotal
-	PivotTableShowValuesAsDifferenceFrom
-	PivotTableShowValuesAsPercentDifferenceFrom
-	PivotTableShowValuesAsRunningTotalIn
-	PivotTableShowValuesAsPercentRunningTotalIn
-	PivotTableShowValuesAsRankSmallestToLargest
-	PivotTableShowValuesAsRankLargestToSmallest
-	PivotTableShowValuesAsIndex
-)
-
-// PivotTableShowValuesAs directly maps the show value as settings of the pivot
-// table.
-type PivotTableShowValuesAs struct {
-	Type      PivotTableShowValuesAsType
-	BaseField string
-	BaseItem  string
 }
 
 var (
@@ -896,7 +896,7 @@ func (f *File) addPivotDataFields(pt *xlsxPivotTableDefinition, opts *PivotTable
 	return err
 }
 
-// setPivotTableShowValuesAs provides a method to set show value as for pivot
+// setPivotTableShowValuesAs provides a method to set show values as for pivot
 // table data field by given pivot table options and data field index.
 func (df *xlsxDataField) setPivotTableShowValuesAs(idx int, order []string, opts *PivotTableOptions) error {
 	showValuesAsType := opts.Data[idx].ShowValuesAs.Type
@@ -1453,7 +1453,7 @@ func (f *File) extractPivotTableFields(pt *xlsxPivotTableDefinition, pc *xlsxPiv
 	}
 }
 
-// extractPivotTableShowValuesAs provides a function to extract show value as
+// extractPivotTableShowValuesAs provides a function to extract show values as
 // settings for pivot table data field.
 func (f *File) extractPivotTableShowValuesAs(pc *xlsxPivotCacheDefinition, df *xlsxDataField, dataField *PivotTableField) {
 	order := pc.getPivotCacheFieldsName()
