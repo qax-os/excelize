@@ -1517,15 +1517,19 @@ func TestCalcCellValue(t *testing.T) {
 		"T(N(10))":    "",
 		// Logical Functions
 		// AND
-		"AND(0)":                  "FALSE",
-		"AND(1)":                  "TRUE",
-		"AND(1,0)":                "FALSE",
-		"AND(0,1)":                "FALSE",
-		"AND(1=1)":                "TRUE",
-		"AND(1<2)":                "TRUE",
-		"AND(1>2,2<3,2>0,3>1)":    "FALSE",
-		"AND(1=1),1=1":            "TRUE",
-		"AND(\"TRUE\",\"FALSE\")": "FALSE",
+		"AND(0)":                    "FALSE",
+		"AND(1)":                    "TRUE",
+		"AND(1,0)":                  "FALSE",
+		"AND(0,1)":                  "FALSE",
+		"AND(1=1)":                  "TRUE",
+		"AND(1<2)":                  "TRUE",
+		"AND(1>2,2<3,2>0,3>1)":      "FALSE",
+		"AND(1=1),1=1":              "TRUE",
+		"AND(\"TRUE\",\"FALSE\")":   "FALSE",
+		"AND(A1:B1)":                "TRUE",
+		"AND(C2:C5)":                "TRUE",
+		"AND({\"TRUE\",\"FALSE\"})": "FALSE",
+		"AND({1,0})":                "FALSE",
 		// FALSE
 		"FALSE()": "FALSE",
 		// IFERROR
@@ -3731,7 +3735,7 @@ func TestCalcCellValue(t *testing.T) {
 		// Logical Functions
 		// AND
 		"AND(\"text\")":                          {"#VALUE!", "#VALUE!"},
-		"AND(A1:B1)":                             {"#VALUE!", "#VALUE!"},
+		"AND({\"TRUE\",\"text\"})":               {"#VALUE!", "#VALUE!"},
 		"AND(\"1\",\"TRUE\",\"FALSE\")":          {"#VALUE!", "#VALUE!"},
 		"AND()":                                  {"#VALUE!", "AND requires at least 1 argument"},
 		"AND(1" + strings.Repeat(",1", 30) + ")": {"#VALUE!", "AND accepts at most 30 arguments"},
@@ -4863,6 +4867,19 @@ func TestCalcWithDefinedName(t *testing.T) {
 	})
 }
 
+func TestCalcAND(t *testing.T) {
+	argsList := list.New()
+	argsList.PushBack(formulaArg{Type: ArgUnknown})
+	fn := formulaFuncs{}
+	assert.Equal(t, newBoolFormulaArg(true), fn.AND(argsList))
+	argsList = list.New()
+	argsList.PushBack(formulaArg{
+		Type:   ArgMatrix,
+		Matrix: [][]formulaArg{{{Type: ArgUnknown}}},
+	})
+	assert.Equal(t, newBoolFormulaArg(true), fn.AND(argsList))
+}
+
 func TestCalcISBLANK(t *testing.T) {
 	argsList := list.New()
 	argsList.PushBack(formulaArg{
@@ -4872,100 +4889,6 @@ func TestCalcISBLANK(t *testing.T) {
 	result := fn.ISBLANK(argsList)
 	assert.Equal(t, "TRUE", result.Value())
 	assert.Empty(t, result.Error)
-}
-
-func TestCalcAND(t *testing.T) {
-	argsList := list.New()
-	argsList.PushBack(formulaArg{
-		Type: ArgUnknown,
-	})
-	fn := formulaFuncs{}
-	result := fn.AND(argsList)
-	assert.Equal(t, result.String, "")
-	assert.Empty(t, result.Error)
-
-	argsList = list.New()
-	argsList.PushBack(formulaArg{
-		Type: ArgMatrix,
-		Matrix: [][]formulaArg{
-			{
-				newBoolFormulaArg(true),
-				newBoolFormulaArg(true),
-			},
-			{
-				newBoolFormulaArg(true),
-				newBoolFormulaArg(true),
-			},
-		},
-	})
-	result = fn.AND(argsList)
-	assert.Equal(t, "TRUE", result.Value())
-	assert.Empty(t, result.Error)
-
-	argsList = list.New()
-	argsList.PushBack(formulaArg{
-		Type: ArgMatrix,
-		Matrix: [][]formulaArg{
-			{
-				newBoolFormulaArg(true),
-				newBoolFormulaArg(false),
-			},
-			{
-				newBoolFormulaArg(true),
-				newNumberFormulaArg(1),
-			},
-		},
-	})
-	result = fn.AND(argsList)
-	assert.Equal(t, "FALSE", result.Value())
-	assert.Empty(t, result.Error)
-
-	argsList = list.New()
-	argsList.PushBack(formulaArg{
-		Type: ArgMatrix,
-		Matrix: [][]formulaArg{
-			{
-				newNumberFormulaArg(1),
-				newNumberFormulaArg(2),
-			},
-			{
-				newNumberFormulaArg(0),
-				newNumberFormulaArg(3),
-			},
-		},
-	})
-	result = fn.AND(argsList)
-	assert.Equal(t, "FALSE", result.Value())
-	assert.Empty(t, result.Error)
-
-	argsList = list.New()
-	argsList.PushBack(formulaArg{
-		Type: ArgMatrix,
-		Matrix: [][]formulaArg{
-			{
-				newStringFormulaArg("TRUE"),
-				newNumberFormulaArg(1),
-			},
-			{
-				newBoolFormulaArg(true),
-			},
-		},
-	})
-	result = fn.AND(argsList)
-	assert.Equal(t, "TRUE", result.Value())
-	assert.Empty(t, result.Error)
-
-	argsList = list.New()
-	argsList.PushBack(formulaArg{
-		Type: ArgMatrix,
-		Matrix: [][]formulaArg{
-			{
-				newStringFormulaArg("invalid"),
-			},
-		},
-	})
-	result = fn.AND(argsList)
-	assert.Equal(t, formulaErrorVALUE, result.Error)
 }
 
 func TestCalcOR(t *testing.T) {
