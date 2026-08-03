@@ -12061,6 +12061,32 @@ func (fn *formulaFuncs) T(argsList *list.List) formulaArg {
 
 // Logical Functions
 
+// and is a part of implementation of the formula function AND.
+func (fn *formulaFuncs) and(token formulaArg) formulaArg {
+	switch token.Type {
+	case ArgUnknown:
+		return newBoolFormulaArg(true)
+	case ArgString:
+		if token.String == "TRUE" {
+			return newBoolFormulaArg(true)
+		}
+		if token.String == "FALSE" {
+			return newStringFormulaArg(token.String)
+		}
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	case ArgNumber:
+		return newBoolFormulaArg(token.Number != 0)
+	case ArgMatrix:
+		for _, item := range token.ToList() {
+			result := fn.and(item)
+			if result.Type == ArgError || result.Value() == "FALSE" {
+				return result
+			}
+		}
+	}
+	return newBoolFormulaArg(true)
+}
+
 // AND function tests a number of supplied conditions and returns TRUE or
 // FALSE. The syntax of the function is:
 //
@@ -12075,23 +12101,11 @@ func (fn *formulaFuncs) AND(argsList *list.List) formulaArg {
 	and := true
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		token := arg.Value.(formulaArg)
-		switch token.Type {
-		case ArgUnknown:
-			continue
-		case ArgString:
-			if token.String == "TRUE" {
-				continue
-			}
-			if token.String == "FALSE" {
-				return newStringFormulaArg(token.String)
-			}
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-		case ArgNumber:
-			and = and && token.Number != 0
-		case ArgMatrix:
-			// TODO
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		result := fn.and(token)
+		if result.Type == ArgError || result.Type == ArgString || token.Type == ArgMatrix && result.Number == 0 {
+			return result
 		}
+		and = and && result.Number != 0
 	}
 	return newBoolFormulaArg(and)
 }
@@ -14867,12 +14881,12 @@ func transposeFormulaArgsList(args []formulaArg, cols, rows int) ([]formulaArg, 
 // concatValues concatenates the values of a slice of formulaArg into a single
 // string.
 func concatValues(args []formulaArg) string {
-	val := ""
+	var val strings.Builder
 	for _, arg := range args {
 		// Call to Value is cheap.
-		val += arg.Value()
+		val.WriteString(arg.Value())
 	}
-	return val
+	return val.String()
 }
 
 // uniqueArgs holds the parsed arguments for the UNIQUE function.
