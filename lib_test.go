@@ -3,7 +3,6 @@ package excelize
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/binary"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -424,67 +423,10 @@ func TestFloat2Frac(t *testing.T) {
 	assert.Equal(t, "954888175898973913/351283728530932463", floatToFraction(math.E, 1, 18))
 }
 
-func TestZip64UncompressedSizeOverflow(t *testing.T) {
-	// buildZip64Archive returns a stored-entry archive whose central directory
-	// carries the 0xFFFFFFFF sentinel for the 32-bit uncompressed size and a
-	// Zip64 extended information extra field declaring declaredSize.
-	buildZip64Archive := func(declaredSize uint64) []byte {
-		entryName, payload := "xl/worksheets/sheet1.xml", []byte("A")
-
-		var local bytes.Buffer
-		for _, field := range []any{
-			uint32(0x04034b50), uint16(45), uint16(0), uint16(0), uint16(0), uint16(0),
-			uint32(0), uint32(len(payload)), uint32(len(payload)),
-			uint16(len(entryName)), uint16(0),
-		} {
-			assert.NoError(t, binary.Write(&local, binary.LittleEndian, field))
-		}
-		local.WriteString(entryName)
-		local.Write(payload)
-
-		var extra bytes.Buffer
-		for _, field := range []any{uint16(1), uint16(8), declaredSize} {
-			assert.NoError(t, binary.Write(&extra, binary.LittleEndian, field))
-		}
-
-		var central bytes.Buffer
-		for _, field := range []any{
-			uint32(0x02014b50), uint16(45), uint16(45), uint16(0), uint16(0),
-			uint16(0), uint16(0), uint32(0), uint32(len(payload)), uint32(0xFFFFFFFF),
-			uint16(len(entryName)), uint16(extra.Len()), uint16(0), uint16(0), uint16(0),
-			uint32(0), uint32(0),
-		} {
-			assert.NoError(t, binary.Write(&central, binary.LittleEndian, field))
-		}
-		central.WriteString(entryName)
-		central.Write(extra.Bytes())
-
-		var buf bytes.Buffer
-		buf.Write(local.Bytes())
-		offset := buf.Len()
-		buf.Write(central.Bytes())
-		for _, field := range []any{
-			uint32(0x06054b50), uint16(0), uint16(0), uint16(1), uint16(1),
-			uint32(central.Len()), uint32(offset), uint16(0),
-		} {
-			assert.NoError(t, binary.Write(&buf, binary.LittleEndian, field))
-		}
-		return buf.Bytes()
-	}
-
-	// A declared size of 2^63 is negative once narrowed to a signed int64, which
-	// used to slip past the unzip size limit and panic on the allocation.
-	raw := buildZip64Archive(1 << 63)
-	zr, err := zip.NewReader(bytes.NewReader(raw), int64(len(raw)))
-	assert.NoError(t, err)
-	assert.Negative(t, zr.File[0].FileInfo().Size())
-
-	_, err = OpenReader(bytes.NewReader(raw))
-	assert.EqualError(t, err, newUnzipSizeLimitError(UnzipSizeLimit).Error())
-
-	// Control: the same archive one byte below the sign flip already reported the
-	// limit error, so the fix is about the conversion and not the magnitude.
-	raw = buildZip64Archive(1<<63 - 1)
-	_, err = OpenReader(bytes.NewReader(raw))
-	assert.EqualError(t, err, newUnzipSizeLimitError(UnzipSizeLimit).Error())
+func TestCheckFileSize(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.checkFileSize(1, 1))
+	assert.EqualError(t, f.checkFileSize(UnzipSizeLimit+1, 1), newUnzipSizeLimitError(UnzipSizeLimit).Error())
+	assert.EqualError(t, f.checkFileSize(1, UnzipSizeLimit+1), newUnzipSizeLimitError(UnzipSizeLimit).Error())
+	assert.EqualError(t, f.checkFileSize(-1, 1), newUnzipSizeLimitError(UnzipSizeLimit).Error())
 }

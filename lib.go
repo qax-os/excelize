@@ -28,6 +28,18 @@ import (
 	"unicode/utf16"
 )
 
+// checkFileSize checks if the file size and unzip size exceed the limit set in
+// options.
+func (f *File) checkFileSize(fileSize, unzipSize int64) error {
+	if f.options.UnzipSizeLimit < 0 || uint64(f.options.UnzipSizeLimit) < uint64(fileSize) || fileSize < 0 {
+		return newUnzipSizeLimitError(f.options.UnzipSizeLimit)
+	}
+	if unzipSize > f.options.UnzipSizeLimit {
+		return newUnzipSizeLimitError(f.options.UnzipSizeLimit)
+	}
+	return nil
+}
+
 // ReadZipReader extract spreadsheet with given options.
 func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 	var (
@@ -41,17 +53,10 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 		unzipSize  int64
 	)
 	for _, v := range r.File {
-		// The declared uncompressed size is a 64-bit field in the Zip64 extra
-		// record, so compare it before it gets narrowed to a signed int64.
-		// A value of 2^63 or above would otherwise turn negative and slip past
-		// the checks below.
-		if f.options.UnzipSizeLimit < 0 || v.UncompressedSize64 > uint64(f.options.UnzipSizeLimit) {
-			return fileList, worksheets, newUnzipSizeLimitError(f.options.UnzipSizeLimit)
-		}
 		fileSize := v.FileInfo().Size()
 		unzipSize += fileSize
-		if unzipSize > f.options.UnzipSizeLimit {
-			return fileList, worksheets, newUnzipSizeLimitError(f.options.UnzipSizeLimit)
+		if err := f.checkFileSize(fileSize, unzipSize); err != nil {
+			return fileList, worksheets, err
 		}
 		fileName := strings.ReplaceAll(v.Name, "\\", "/")
 		if partName, ok := docPart[strings.ToLower(fileName)]; ok {
@@ -78,7 +83,7 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 				}
 			}
 		}
-		if fileList[fileName], err = readFile(v, f.options.UnzipSizeLimit); err != nil {
+		if fileList[fileName], err = readFile(v); err != nil {
 			return nil, 0, err
 		}
 	}
@@ -149,20 +154,12 @@ func (f *File) saveFileList(name string, content []byte) {
 }
 
 // Read file content as string in an archive file.
-func readFile(file *zip.File, unzipSizeLimit int64) ([]byte, error) {
+func readFile(file *zip.File) ([]byte, error) {
 	rc, err := file.Open()
 	if err != nil {
 		return nil, err
 	}
-	// Keep the capacity hint within the limit. The declared size comes from the
-	// archive, so it can be negative once a Zip64 size of 2^63 or above has been
-	// narrowed to a signed int64, which make would reject.
-	size := file.FileInfo().Size()
-	if size < 0 || size > unzipSizeLimit {
-		_ = rc.Close()
-		return nil, newUnzipSizeLimitError(unzipSizeLimit)
-	}
-	dat := make([]byte, 0, size)
+	dat := make([]byte, 0, file.FileInfo().Size())
 	buff := bytes.NewBuffer(dat)
 	_, _ = io.Copy(buff, rc)
 	return buff.Bytes(), rc.Close()
