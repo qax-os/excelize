@@ -303,6 +303,8 @@ func TestOpenReader(t *testing.T) {
 	}
 
 	// Test open spreadsheet with unzip size limit
+	_, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipSizeLimit: -1})
+	assert.EqualError(t, err, newUnzipSizeLimitError(-1).Error())
 	_, err = OpenFile(filepath.Join("test", "Book1.xlsx"), Options{UnzipSizeLimit: 100})
 	assert.EqualError(t, err, newUnzipSizeLimitError(100).Error())
 

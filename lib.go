@@ -28,6 +28,18 @@ import (
 	"unicode/utf16"
 )
 
+// checkFileSize checks if the file size and unzip size exceed the limit set in
+// options.
+func (f *File) checkFileSize(fileSize, unzipSize int64) error {
+	if f.options.UnzipSizeLimit < 0 || uint64(f.options.UnzipSizeLimit) < uint64(fileSize) || fileSize < 0 {
+		return newUnzipSizeLimitError(f.options.UnzipSizeLimit)
+	}
+	if unzipSize > f.options.UnzipSizeLimit {
+		return newUnzipSizeLimitError(f.options.UnzipSizeLimit)
+	}
+	return nil
+}
+
 // ReadZipReader extract spreadsheet with given options.
 func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 	var (
@@ -43,8 +55,8 @@ func (f *File) ReadZipReader(r *zip.Reader) (map[string][]byte, int, error) {
 	for _, v := range r.File {
 		fileSize := v.FileInfo().Size()
 		unzipSize += fileSize
-		if unzipSize > f.options.UnzipSizeLimit {
-			return fileList, worksheets, newUnzipSizeLimitError(f.options.UnzipSizeLimit)
+		if err := f.checkFileSize(fileSize, unzipSize); err != nil {
+			return fileList, worksheets, err
 		}
 		fileName := strings.ReplaceAll(v.Name, "\\", "/")
 		if partName, ok := docPart[strings.ToLower(fileName)]; ok {
