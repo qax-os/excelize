@@ -113,7 +113,11 @@ func (f *File) Write(w io.Writer, opts ...Options) error {
 	return err
 }
 
-// WriteTo implements io.WriterTo to write the file.
+// WriteTo implements io.WriterTo to write the file. The workbook will be
+// streamed to the writer without buffering the whole archive in memory,
+// except when saving with password protection, which requires the complete
+// archive for encryption. Because of streaming, a failure during writing may
+// leave a partial archive in the writer.
 func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 	for i := range opts {
 		f.options = &opts[i]
@@ -127,11 +131,120 @@ func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 			return 0, err
 		}
 	}
-	buf, err := f.WriteToBuffer()
+	if f.options != nil && f.options.Password != "" {
+		buf, err := f.WriteToBuffer()
+		if err != nil {
+			return 0, err
+		}
+		return buf.WriteTo(w)
+	}
+	return f.writeDirect(w)
+}
+
+// countWriter wraps an io.Writer and counts the bytes written through it.
+type countWriter struct {
+	w       io.Writer
+	written int64
+}
+
+// Write writes to the underlying writer and accumulates the written bytes.
+func (cw *countWriter) Write(p []byte) (int, error) {
+	n, err := cw.w.Write(p)
+	cw.written += int64(n)
+	return n, err
+}
+
+// writeDirect provides a function to write the workbook to w, streaming
+// archive entries from their sources instead of buffering the whole archive
+// in memory. When any archive entry exceeds the ZIP64 size threshold, the
+// local file headers must be patched after writing, which requires random
+// access to the output, so the archive will be spooled to a temporary file
+// in that case.
+func (f *File) writeDirect(w io.Writer) (int64, error) {
+	f.prepareToWrite()
+	if f.zip64Needed() {
+		return f.writeSpooled(w)
+	}
+	cw := countWriter{w: w}
+	zw := f.ZipWriter(&cw)
+	if err := f.writeToZip(zw); err != nil {
+		_ = zw.Close()
+		return cw.written, err
+	}
+	return cw.written, zw.Close()
+}
+
+// writeSpooled provides a function to write the workbook to a temporary file,
+// patch the ZIP64 local file headers there, and copy the result to w.
+func (f *File) writeSpooled(w io.Writer) (int64, error) {
+	var tmpDir string
+	if f.options != nil {
+		tmpDir = f.options.TmpDir
+	}
+	tmp, err := os.CreateTemp(tmpDir, "excelize-")
 	if err != nil {
 		return 0, err
 	}
-	return buf.WriteTo(w)
+	defer func() {
+		_ = tmp.Close()
+		_ = os.Remove(tmp.Name())
+	}()
+	zw := f.ZipWriter(tmp)
+	if err := f.writeToZip(zw); err != nil {
+		_ = zw.Close()
+		return 0, err
+	}
+	if err := zw.Close(); err != nil {
+		return 0, err
+	}
+	size, err := tmp.Seek(0, io.SeekEnd)
+	if err != nil {
+		return 0, err
+	}
+	if err := f.patchZip64LFH(tmp, size); err != nil {
+		return 0, err
+	}
+	if _, err := tmp.Seek(0, io.SeekStart); err != nil {
+		return 0, err
+	}
+	return io.CopyBuffer(w, tmp, make([]byte, 1<<20))
+}
+
+// zip64Needed returns whether any archive entry will exceed the ZIP64 size
+// threshold, which requires patching local file headers after writing the
+// archive, see writeZip64LFH.
+func (f *File) zip64Needed() bool {
+	needed := false
+	for _, stream := range f.streams {
+		if stream.rawData.Size() > math.MaxUint32 {
+			needed = true
+		}
+	}
+	if !needed {
+		f.Pkg.Range(func(path, content interface{}) bool {
+			if _, ok := f.streams[path.(string)]; ok {
+				return true
+			}
+			if b, ok := content.([]byte); ok && int64(len(b)) > math.MaxUint32 {
+				needed = true
+				return false
+			}
+			return true
+		})
+	}
+	if !needed {
+		f.tempFiles.Range(func(path, tmpPath interface{}) bool {
+			if _, ok := f.Pkg.Load(path); ok {
+				return true
+			}
+			if fi, err := os.Stat(tmpPath.(string)); err == nil && fi.Size() > math.MaxUint32 {
+				needed = true
+				return false
+			}
+			return true
+		})
+	}
+	return needed
 }
 
 // WriteToBuffer provides a function to get bytes.Buffer from the saved file,
@@ -140,6 +253,7 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	buf := new(bytes.Buffer)
 	zw := f.ZipWriter(buf)
 
+	f.prepareToWrite()
 	if err := f.writeToZip(zw); err != nil {
 		_ = zw.Close()
 		return buf, err
@@ -159,8 +273,10 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 	return buf, err
 }
 
-// writeToZip provides a function to write to ZipWriter.
-func (f *File) writeToZip(zw ZipWriter) error {
+// prepareToWrite serializes the in-memory workbook parts into the package
+// parts, so that the sizes of all archive entries are known before writing
+// the archive, see zip64Needed.
+func (f *File) prepareToWrite() {
 	f.calcChainWriter()
 	f.commentsWriter()
 	f.contentTypesWriter()
@@ -174,7 +290,13 @@ func (f *File) writeToZip(zw ZipWriter) error {
 	f.sharedStringsWriter()
 	f.styleSheetWriter()
 	f.themeWriter()
+}
 
+// writeToZip provides a function to write to ZipWriter. The workbook parts
+// must be serialized with prepareToWrite before calling this function.
+func (f *File) writeToZip(zw ZipWriter) error {
+	f.zip64Entries = nil
+	var copyBuf []byte
 	for path, stream := range f.streams {
 		fi, err := zw.Create(path)
 		if err != nil {
@@ -185,7 +307,10 @@ func (f *File) writeToZip(zw ZipWriter) error {
 			_ = stream.rawData.Close()
 			return err
 		}
-		written, err := io.Copy(fi, from)
+		if copyBuf == nil {
+			copyBuf = make([]byte, 1<<20)
+		}
+		written, err := io.CopyBuffer(fi, from, copyBuf)
 		if err != nil {
 			return err
 		}
@@ -229,8 +354,25 @@ func (f *File) writeToZip(zw ZipWriter) error {
 		if fi, err = zw.Create(path); err != nil {
 			break
 		}
-		if n, err = fi.Write(f.readBytes(path)); int64(n) > math.MaxUint32 {
+		file, readErr := f.readTemp(path)
+		if readErr != nil {
+			err = readErr
+			break
+		}
+		if file == nil {
+			continue
+		}
+		if copyBuf == nil {
+			copyBuf = make([]byte, 1<<20)
+		}
+		var written int64
+		written, err = io.CopyBuffer(fi, file, copyBuf)
+		_ = file.Close()
+		if written > math.MaxUint32 {
 			f.zip64Entries = append(f.zip64Entries, path)
+		}
+		if err != nil {
+			break
 		}
 	}
 	return err
@@ -269,6 +411,58 @@ func (f *File) writeZip64LFH(buf *bytes.Buffer) error {
 			binary.LittleEndian.PutUint16(data[idx+4:idx+6], 45)
 		}
 		offset = idx + 1
+	}
+	return nil
+}
+
+// patchZip64LFH sets the ZIP version to 0x2D (45) in the local file headers
+// of the archive entries which exceed the ZIP64 size threshold, in the same
+// way as writeZip64LFH, but operates on an archive spooled to a file instead
+// of an in-memory buffer, scanning it in chunks to keep the memory usage
+// constant regardless of the archive size.
+func (f *File) patchZip64LFH(file *os.File, size int64) error {
+	if len(f.zip64Entries) == 0 {
+		return nil
+	}
+	const (
+		chunkSize = 1 << 20
+		// The fixed local file header part with the maximum filename length
+		maxLFH = 30 + math.MaxUint16
+	)
+	sig := []byte{0x50, 0x4b, 0x03, 0x04}
+	bufSize := min(int64(chunkSize+maxLFH), size)
+	buf := make([]byte, bufSize)
+	for base := int64(0); base < size; base += chunkSize {
+		n, err := file.ReadAt(buf, base)
+		if err != nil && err != io.EOF {
+			return err
+		}
+		data, idx := buf[:n], 0
+		for {
+			i := bytes.Index(data[idx:], sig)
+			if i == -1 {
+				break
+			}
+			idx += i
+			// Signatures beyond the chunk boundary are found again in the
+			// overlapping part of the next chunk
+			if idx >= chunkSize {
+				break
+			}
+			if idx+30 > len(data) {
+				break
+			}
+			filenameLen := int(binary.LittleEndian.Uint16(data[idx+26 : idx+28]))
+			if idx+30+filenameLen > len(data) {
+				break
+			}
+			if inStrSlice(f.zip64Entries, string(data[idx+30:idx+30+filenameLen]), true) != -1 {
+				if _, err := file.WriteAt([]byte{45, 0}, base+int64(idx)+4); err != nil {
+					return err
+				}
+			}
+			idx++
+		}
 	}
 	return nil
 }

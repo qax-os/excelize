@@ -38,6 +38,24 @@ func BenchmarkStreamWriter(b *testing.B) {
 	b.ReportAllocs()
 }
 
+func TestBufferedWriterSize(t *testing.T) {
+	bw := bufferedWriter{}
+	assert.Equal(t, int64(0), bw.Size())
+	_, err := bw.WriteString("excelize")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(8), bw.Size())
+	// The size should include both the temp file and the in-memory buffer
+	tmp, err := os.CreateTemp(t.TempDir(), "excelize-")
+	assert.NoError(t, err)
+	bw.tmp = tmp
+	assert.NoError(t, bw.Flush())
+	assert.Equal(t, int64(8), bw.Size())
+	_, err = bw.WriteString("excelize")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(16), bw.Size())
+	assert.NoError(t, bw.Close())
+}
+
 func TestStreamWriter(t *testing.T) {
 	file := NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")

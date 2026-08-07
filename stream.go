@@ -806,6 +806,18 @@ func (bw *bufferedWriter) WriteString(p string) (n int, err error) {
 	return bw.buf.WriteString(p)
 }
 
+// Size returns the total size of the buffered data in bytes, including both
+// the in-memory buffer and the temp file if one is being used.
+func (bw *bufferedWriter) Size() int64 {
+	size := int64(bw.buf.Len())
+	if bw.tmp != nil {
+		if fi, err := bw.tmp.Stat(); err == nil {
+			size += fi.Size()
+		}
+	}
+	return size
+}
+
 // Reader provides read-access to the underlying buffer/file.
 func (bw *bufferedWriter) Reader() (io.Reader, error) {
 	if bw.tmp == nil {
