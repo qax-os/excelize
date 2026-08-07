@@ -122,6 +122,11 @@ type Options struct {
 	LongDatePattern   string
 	LongTimePattern   string
 	CultureInfo       CultureName
+	// UseSharedStrings enables shared string table generation during
+	// streaming. When true, string values are stored once in
+	// xl/sharedStrings.xml and referenced by index in cells, reducing
+	// file size when many cells contain duplicate string values.
+	UseSharedStrings bool
 }
 
 // OpenFile take the name of a spreadsheet file and returns a populated
