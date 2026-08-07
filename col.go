@@ -545,24 +545,8 @@ func (ws *xlsxWorksheet) setColWidth(minVal, maxVal int, width float64) {
 // flatCols provides a method for the column's operation functions to flatten
 // and check the worksheet columns.
 func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol) []xlsxCol {
-	// The min and max attributes of a col element are read straight from the
-	// worksheet XML and are not otherwise bounded. A worksheet cannot hold more
-	// than MaxColumns columns, so flattening past that is meaningless, while a
-	// crafted file declaring max="2147483647" would otherwise have this function
-	// allocate one xlsxCol per declared column.
-	clamp := func(c xlsxCol) (int, int) {
-		minVal, maxVal := c.Min, c.Max
-		if minVal < MinColumns {
-			minVal = MinColumns
-		}
-		if maxVal > MaxColumns {
-			maxVal = MaxColumns
-		}
-		return minVal, maxVal
-	}
 	var fc []xlsxCol
-	colMin, colMax := clamp(col)
-	for i := colMin; i <= colMax; i++ {
+	for i := max(MinColumns, col.Min); i <= min(MaxColumns, col.Max); i++ {
 		var c xlsxCol
 		_ = deepcopy.Copy(&c, col)
 		c.Min, c.Max = i, i
@@ -577,8 +561,7 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 		return -1, false
 	}
 	for _, column := range cols {
-		columnMin, columnMax := clamp(column)
-		for i := columnMin; i <= columnMax; i++ {
+		for i := max(MinColumns, column.Min); i <= min(MaxColumns, column.Max); i++ {
 			if idx, ok := inFlat(i, fc); ok {
 				fc[idx] = replacer(fc[idx], column)
 				continue

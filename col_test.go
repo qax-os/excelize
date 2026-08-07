@@ -436,6 +436,19 @@ func TestColWidth(t *testing.T) {
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestColWidth.xlsx")))
 	convertRowHeightToPixels(0)
+
+	t.Run("with_invalid_column_number", func(t *testing.T) {
+		f := NewFile()
+		ws, err := f.workSheetReader("Sheet1")
+		assert.NoError(t, err)
+		ws.Cols = &xlsxCols{Col: []xlsxCol{{Min: 0, Max: MaxColumns + 1, Width: float64Ptr(9)}}}
+		assert.NoError(t, f.SetColWidth("Sheet1", "A", "A", 12))
+		assert.Equal(t, len(ws.Cols.Col), MaxColumns)
+		width, err := f.GetColWidth("Sheet1", "A")
+		assert.NoError(t, err)
+		assert.Equal(t, 12.0, width)
+		assert.NoError(t, f.Close())
+	})
 }
 
 func TestGetColStyle(t *testing.T) {
@@ -584,24 +597,4 @@ func TestAutoFitColWidth(t *testing.T) {
 	})
 	_, err = f.autoFitColWidth("Sheet1", 1, 1, &Font{})
 	assert.Equal(t, err, newInvalidStyleID(1))
-}
-
-func TestFlatColsBounded(t *testing.T) {
-	// A col element's min and max come from the worksheet XML unvalidated. A
-	// crafted file can declare a range far beyond the MaxColumns a worksheet can
-	// actually hold, which previously made flatCols allocate one entry per
-	// declared column.
-	f := NewFile()
-	ws, err := f.workSheetReader("Sheet1")
-	assert.NoError(t, err)
-	ws.Cols = &xlsxCols{Col: []xlsxCol{{Min: 1, Max: 2147483647, Width: float64Ptr(9)}}}
-
-	assert.NoError(t, f.SetColWidth("Sheet1", "A", "A", 12))
-	assert.LessOrEqual(t, len(ws.Cols.Col), MaxColumns)
-
-	// The columns a worksheet can genuinely hold are still flattened.
-	width, err := f.GetColWidth("Sheet1", "A")
-	assert.NoError(t, err)
-	assert.Equal(t, 12.0, width)
-	assert.NoError(t, f.Close())
 }
