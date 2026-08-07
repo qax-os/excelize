@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"golang.org/x/net/html/charset"
 )
@@ -43,6 +44,7 @@ type File struct {
 	xmlAttr          sync.Map
 	calcCache        sync.Map
 	calcRawCache     sync.Map
+	calcCacheUsed    atomic.Bool
 	formulaArgCache  sync.Map
 	CalcChain        *xlsxCalcChain
 	CharsetReader    func(charset string, input io.Reader) (rdr io.Reader, err error)
