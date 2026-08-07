@@ -436,6 +436,19 @@ func TestColWidth(t *testing.T) {
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestColWidth.xlsx")))
 	convertRowHeightToPixels(0)
+
+	t.Run("with_invalid_column_number", func(t *testing.T) {
+		f := NewFile()
+		ws, err := f.workSheetReader("Sheet1")
+		assert.NoError(t, err)
+		ws.Cols = &xlsxCols{Col: []xlsxCol{{Min: 0, Max: MaxColumns + 1, Width: float64Ptr(9)}}}
+		assert.NoError(t, f.SetColWidth("Sheet1", "A", "A", 12))
+		assert.Equal(t, len(ws.Cols.Col), MaxColumns)
+		width, err := f.GetColWidth("Sheet1", "A")
+		assert.NoError(t, err)
+		assert.Equal(t, 12.0, width)
+		assert.NoError(t, f.Close())
+	})
 }
 
 func TestGetColStyle(t *testing.T) {
