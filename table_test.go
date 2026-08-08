@@ -224,3 +224,13 @@ func TestParseFilterTokens(t *testing.T) {
 	_, _, err = f.parseFilterTokens("", []string{"", "<", "x != blanks"})
 	assert.Equal(t, newInvalidAutoFilterOperatorError("<", ""), err)
 }
+
+func TestResizeTable(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "A1:B4", Name: "Table1"}))
+	assert.NoError(t, f.ResizeTable("Table1", "A1:C5"))
+	tables, err := f.GetTables("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, tables, 1)
+	assert.Equal(t, tables[0].Range, "$A$1:$C$5")
+}
