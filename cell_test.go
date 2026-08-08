@@ -317,6 +317,17 @@ func TestSetCellValue(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, expected, val)
 	}
+	// Test set cell value with a time duration whose serial number is not
+	// exactly representable, the stored value should keep float64 precision
+	for val, expected := range map[time.Duration]string{
+		time.Hour*24*100 + 123456789: "100.00000142889802",
+		time.Minute + time.Second*30: "0.0010416666666666667",
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", val))
+		raw, err := f.GetCellValue("Sheet1", "A1", Options{RawCellValue: true})
+		assert.NoError(t, err)
+		assert.Equal(t, expected, raw)
+	}
 	// Test set cell value with time
 	for val, expected := range map[time.Time]string{
 		time.Date(2024, time.October, 1, 0, 0, 0, 0, time.UTC):   "Oct-24",
