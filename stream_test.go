@@ -425,6 +425,78 @@ func TestStreamSetRowWithStyle(t *testing.T) {
 	}
 }
 
+func TestStreamWriterDurationFormat(t *testing.T) {
+	file := NewFile()
+	defer func() {
+		assert.NoError(t, file.Close())
+	}()
+	_, err := file.NewSheet("Stream")
+	assert.NoError(t, err)
+
+	streamWriter, err := file.NewStreamWriter("Stream")
+	assert.NoError(t, err)
+
+	for row, test := range []struct {
+		value  time.Duration
+		numFmt int
+	}{
+		// Whole minutes below 24 hours use the hour-and-minute format.
+		{time.Hour*21 + time.Minute*50, 20},
+		// Durations with seconds below 24 hours use the hour-minute-second format.
+		{time.Hour*21 + time.Minute*51 + time.Second*44, 21},
+		// Durations of 24 hours or more use the elapsed-hours format.
+		{time.Hour*25 + time.Minute*30, 46},
+	} {
+		cell := fmt.Sprintf("A%d", row+1)
+		assert.NoError(t, file.SetCellValue("Sheet1", cell, test.value))
+		assert.NoError(t, streamWriter.SetRow(cell, []any{test.value}))
+	}
+
+	// An explicitly supplied cell style must not be replaced by the default duration format.
+	explicitStyleID, err := file.NewStyle(&Style{Font: &Font{Color: "777777"}})
+	assert.NoError(t, err)
+	assert.NoError(t, streamWriter.SetRow("A10", []any{
+		Cell{StyleID: explicitStyleID, Value: time.Hour},
+	}))
+	assert.NoError(t, streamWriter.Flush())
+	styleID, err := file.GetCellStyle("Stream", "A10")
+	assert.NoError(t, err)
+	assert.Equal(t, explicitStyleID, styleID)
+
+	// Compare styles and values after flushing the streamed worksheet.
+	for row, test := range []struct {
+		value  time.Duration
+		numFmt int
+	}{
+		{time.Hour*21 + time.Minute*50, 20},
+		{time.Hour*21 + time.Minute*51 + time.Second*44, 21},
+		{time.Hour*25 + time.Minute*30, 46},
+	} {
+		cell := fmt.Sprintf("A%d", row+1)
+		normalStyleID, err := file.GetCellStyle("Sheet1", cell)
+		assert.NoError(t, err)
+		streamStyleID, err := file.GetCellStyle("Stream", cell)
+		assert.NoError(t, err)
+		normalStyle, err := file.GetStyle(normalStyleID)
+		assert.NoError(t, err)
+		streamStyle, err := file.GetStyle(streamStyleID)
+		assert.NoError(t, err)
+		assert.Equal(t, test.numFmt, normalStyle.NumFmt)
+		assert.Equal(t, normalStyle.NumFmt, streamStyle.NumFmt)
+
+		normalValue, err := file.GetCellValue("Sheet1", cell)
+		assert.NoError(t, err)
+		streamValue, err := file.GetCellValue("Stream", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, normalValue, streamValue)
+		normalRaw, err := file.GetCellValue("Sheet1", cell, Options{RawCellValue: true})
+		assert.NoError(t, err)
+		streamRaw, err := file.GetCellValue("Stream", cell, Options{RawCellValue: true})
+		assert.NoError(t, err)
+		assert.Equal(t, normalRaw, streamRaw)
+	}
+}
+
 func TestStreamSetCellValFunc(t *testing.T) {
 	f := NewFile()
 	defer func() {
