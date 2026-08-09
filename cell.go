@@ -285,7 +285,7 @@ func (c *xlsxC) setCellTime(value time.Time, date1904 bool) (isNum bool, err err
 // setCellDuration prepares cell type and value by given Go time.Duration type
 // time duration.
 func setCellDuration(value time.Duration) (t string, v string) {
-	v = strconv.FormatFloat(value.Seconds()/86400, 'f', -1, 32)
+	v = strconv.FormatFloat(value.Seconds()/86400, 'f', -1, 64)
 	return
 }
 
