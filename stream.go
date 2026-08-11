@@ -589,6 +589,17 @@ func (sw *StreamWriter) setCellTime(c *xlsxC, val time.Time) error {
 	return nil
 }
 
+// setCellDuration provides a function to set number of a cell with a duration.
+func (sw *StreamWriter) setCellDuration(c *xlsxC, val time.Duration) error {
+	c.T, c.V = setCellDuration(val)
+	if c.S != 0 {
+		return nil
+	}
+	var err error
+	c.S, err = sw.file.NewStyle(&Style{NumFmt: getDurationNumFmt(val)})
+	return err
+}
+
 // setCellValFunc provides a function to set value of a cell.
 func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
 	var err error
@@ -604,7 +615,7 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
 	case []byte:
 		c.setCellValue(string(val))
 	case time.Duration:
-		c.T, c.V = setCellDuration(val)
+		err = sw.setCellDuration(c, val)
 	case time.Time:
 		err = sw.setCellTime(c, val)
 	case bool:

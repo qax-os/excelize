@@ -462,7 +462,7 @@ func prepareTestBook2() (*File, error) {
 
 func TestDuplicateRowFromSingleRow(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	cells := map[string]string{
 		"A1": "A1 Value",
@@ -479,7 +479,7 @@ func TestDuplicateRowFromSingleRow(t *testing.T) {
 		assert.NoError(t, f.SetCellStr(sheet, "B1", cells["B1"]))
 
 		assert.NoError(t, f.DuplicateRow(sheet, 1))
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "FromSingleRow_1"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "FromSingleRow_1"))) {
 			t.FailNow()
 		}
 		expect := map[string]string{
@@ -495,7 +495,7 @@ func TestDuplicateRowFromSingleRow(t *testing.T) {
 		}
 
 		assert.NoError(t, f.DuplicateRow(sheet, 2))
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "FromSingleRow_2"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "FromSingleRow_2"))) {
 			t.FailNow()
 		}
 		expect = map[string]string{
@@ -515,7 +515,7 @@ func TestDuplicateRowFromSingleRow(t *testing.T) {
 
 func TestDuplicateRowUpdateDuplicatedRows(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	cells := map[string]string{
 		"A1": "A1 Value",
@@ -536,7 +536,7 @@ func TestDuplicateRowUpdateDuplicatedRows(t *testing.T) {
 		assert.NoError(t, f.SetCellStr(sheet, "A2", cells["A2"]))
 		assert.NoError(t, f.SetCellStr(sheet, "B2", cells["B2"]))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "UpdateDuplicatedRows"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "UpdateDuplicatedRows"))) {
 			t.FailNow()
 		}
 		expect := map[string]string{
@@ -555,7 +555,7 @@ func TestDuplicateRowUpdateDuplicatedRows(t *testing.T) {
 
 func TestDuplicateRowFirstOfMultipleRows(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 	cells := map[string]string{
 		"A1": "A1 Value",
 		"A2": "A2 Value",
@@ -569,7 +569,7 @@ func TestDuplicateRowFirstOfMultipleRows(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRow(sheet, 1))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "FirstOfMultipleRows"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "FirstOfMultipleRows"))) {
 			t.FailNow()
 		}
 		expect := map[string]string{
@@ -590,14 +590,14 @@ func TestDuplicateRowFirstOfMultipleRows(t *testing.T) {
 
 func TestDuplicateRowZeroWithNoRows(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	t.Run("ZeroWithNoRows", func(t *testing.T) {
 		f := NewFile()
 
 		assert.EqualError(t, f.DuplicateRow(sheet, 0), newInvalidRowNumberError(0).Error())
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "ZeroWithNoRows"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "ZeroWithNoRows"))) {
 			t.FailNow()
 		}
 
@@ -632,14 +632,14 @@ func TestDuplicateRowZeroWithNoRows(t *testing.T) {
 
 func TestDuplicateRowMiddleRowOfEmptyFile(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	t.Run("MiddleRowOfEmptyFile", func(t *testing.T) {
 		f := NewFile()
 
 		assert.NoError(t, f.DuplicateRow(sheet, 99))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "MiddleRowOfEmptyFile"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "MiddleRowOfEmptyFile"))) {
 			t.FailNow()
 		}
 		expect := map[string]string{
@@ -659,7 +659,7 @@ func TestDuplicateRowMiddleRowOfEmptyFile(t *testing.T) {
 
 func TestDuplicateRowWithLargeOffsetToMiddleOfData(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	cells := map[string]string{
 		"A1": "A1 Value",
@@ -674,7 +674,7 @@ func TestDuplicateRowWithLargeOffsetToMiddleOfData(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRowTo(sheet, 1, 3))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "WithLargeOffsetToMiddleOfData"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "WithLargeOffsetToMiddleOfData"))) {
 			t.FailNow()
 		}
 		expect := map[string]string{
@@ -695,7 +695,7 @@ func TestDuplicateRowWithLargeOffsetToMiddleOfData(t *testing.T) {
 
 func TestDuplicateRowWithLargeOffsetToEmptyRows(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 	cells := map[string]string{
 		"A1": "A1 Value",
 		"A2": "A2 Value",
@@ -709,7 +709,7 @@ func TestDuplicateRowWithLargeOffsetToEmptyRows(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRowTo(sheet, 1, 7))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "WithLargeOffsetToEmptyRows"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "WithLargeOffsetToEmptyRows"))) {
 			t.FailNow()
 		}
 		expect := map[string]string{
@@ -730,7 +730,7 @@ func TestDuplicateRowWithLargeOffsetToEmptyRows(t *testing.T) {
 
 func TestDuplicateRowInsertBefore(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 	cells := map[string]string{
 		"A1": "A1 Value",
 		"A2": "A2 Value",
@@ -745,7 +745,7 @@ func TestDuplicateRowInsertBefore(t *testing.T) {
 		assert.NoError(t, f.DuplicateRowTo(sheet, 2, 1))
 		assert.NoError(t, f.DuplicateRowTo(sheet, 10, 4))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "InsertBefore"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "InsertBefore"))) {
 			t.FailNow()
 		}
 
@@ -767,7 +767,7 @@ func TestDuplicateRowInsertBefore(t *testing.T) {
 
 func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 	cells := map[string]string{
 		"A1": "A1 Value",
 		"A2": "A2 Value",
@@ -781,7 +781,7 @@ func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRowTo(sheet, 3, 1))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "InsertBeforeWithLargeOffset"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "InsertBeforeWithLargeOffset"))) {
 			t.FailNow()
 		}
 
@@ -803,7 +803,7 @@ func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
 
 func TestDuplicateRowInsertBeforeWithMergeCells(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 	t.Run("InsertBeforeWithLargeOffset", func(t *testing.T) {
 		f, err := prepareTestBook2()
 		assert.NoError(t, err)
@@ -813,7 +813,7 @@ func TestDuplicateRowInsertBeforeWithMergeCells(t *testing.T) {
 		assert.NoError(t, f.DuplicateRowTo(sheet, 2, 1))
 		assert.NoError(t, f.DuplicateRowTo(sheet, 1, 8))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "InsertBeforeWithMergeCells"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "InsertBeforeWithMergeCells"))) {
 			t.FailNow()
 		}
 
@@ -835,7 +835,7 @@ func TestDuplicateRowInsertBeforeWithMergeCells(t *testing.T) {
 
 func TestDuplicateRowInvalidRowNum(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.InvalidRowNum.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.InvalidRowNum.%s.xlsx")
 
 	cells := map[string]string{
 		"A1": "A1 Value",
@@ -865,7 +865,7 @@ func TestDuplicateRowInvalidRowNum(t *testing.T) {
 					t.FailNow()
 				}
 			}
-			assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, name)))
+			assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, name)))
 		})
 	}
 
@@ -887,7 +887,7 @@ func TestDuplicateRowInvalidRowNum(t *testing.T) {
 						t.FailNow()
 					}
 				}
-				assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, name)))
+				assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, name)))
 			})
 		}
 	}
