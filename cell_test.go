@@ -226,10 +226,10 @@ func TestSetCellValuesMultiByte(t *testing.T) {
 	// Test set cell value with XML escape characters in stream writer
 	_, err := f.NewSheet("Sheet2")
 	assert.NoError(t, err)
-	streamWriter, err := f.NewStreamWriter("Sheet2")
+	sw, err := f.NewStreamWriter("Sheet2")
 	assert.NoError(t, err)
-	assert.NoError(t, streamWriter.SetRow("A1", row))
-	assert.NoError(t, streamWriter.Flush())
+	assert.NoError(t, sw.SetRow("A1", row))
+	assert.NoError(t, sw.Flush())
 	for _, sheetName := range []string{"Sheet1", "Sheet2"} {
 		for cell, expected := range map[string]int{
 			"A1": TotalCellChars,

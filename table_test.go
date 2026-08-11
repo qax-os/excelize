@@ -143,7 +143,7 @@ func TestSetTableColumns(t *testing.T) {
 }
 
 func TestAutoFilter(t *testing.T) {
-	outFile := filepath.Join("test", "TestAutoFilter%d.xlsx")
+	savePath := filepath.Join("test", "TestAutoFilter%d.xlsx")
 	f, err := prepareTestBook1()
 	assert.NoError(t, err)
 	for i, opts := range [][]AutoFilterOptions{
@@ -159,7 +159,7 @@ func TestAutoFilter(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("Expression%d", i+1), func(t *testing.T) {
 			assert.NoError(t, f.AutoFilter("Sheet1", "D4:B1", opts))
-			assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, i+1)))
+			assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, i+1)))
 		})
 	}
 
@@ -179,7 +179,7 @@ func TestAutoFilter(t *testing.T) {
 }
 
 func TestAutoFilterError(t *testing.T) {
-	outFile := filepath.Join("test", "TestAutoFilterError%d.xlsx")
+	savePath := filepath.Join("test", "TestAutoFilterError%d.xlsx")
 	f, err := prepareTestBook1()
 	assert.NoError(t, err)
 	for i, opts := range [][]AutoFilterOptions{
@@ -192,7 +192,7 @@ func TestAutoFilterError(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("Expression%d", i+1), func(t *testing.T) {
 			if assert.Error(t, f.AutoFilter("Sheet2", "D4:B1", opts)) {
-				assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, i+1)))
+				assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, i+1)))
 			}
 		})
 	}

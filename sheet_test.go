@@ -694,11 +694,11 @@ func BenchmarkNewSheet(b *testing.B) {
 }
 
 func newSheetWithSet() {
-	file := NewFile()
+	f := NewFile()
 	for i := 0; i < 1000; i++ {
-		_ = file.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), int64(i))
+		_ = f.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), int64(i))
 	}
-	file = nil
+	f = nil
 }
 
 func BenchmarkFile_SaveAs(b *testing.B) {
@@ -710,11 +710,11 @@ func BenchmarkFile_SaveAs(b *testing.B) {
 }
 
 func newSheetWithSave() {
-	file := NewFile()
+	f := NewFile()
 	for i := 0; i < 1000; i++ {
-		_ = file.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), int64(i))
+		_ = f.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), int64(i))
 	}
-	_ = file.Save()
+	_ = f.Save()
 }
 
 func TestAttrValToBool(t *testing.T) {
