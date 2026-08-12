@@ -3000,7 +3000,9 @@ func (f *File) extractCondFmtCellIs(c *xlsxCfRule, extLst *xlsxExtLst) Condition
 		format.MinValue, format.MaxValue = c.Formula[0], c.Formula[1]
 		return format
 	}
-	format.Value = c.Formula[0]
+	if len(c.Formula) > 0 {
+		format.Value = c.Formula[0]
+	}
 	return format
 }
 
@@ -3129,6 +3131,9 @@ func (f *File) extractCondFmtNoErrors(c *xlsxCfRule, extLst *xlsxExtLst) Conditi
 func (f *File) extractCondFmtColorScale(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{StopIfTrue: c.StopIfTrue}
 	format.Type, format.Criteria = "2_color_scale", "="
+	if c.ColorScale == nil {
+		return format
+	}
 	values := len(c.ColorScale.Cfvo)
 	colors := len(c.ColorScale.Color)
 	if colors > 1 && values > 1 {
@@ -3143,7 +3148,7 @@ func (f *File) extractCondFmtColorScale(c *xlsxCfRule, extLst *xlsxExtLst) Condi
 		}
 		format.MaxColor = "#" + f.getThemeColor(c.ColorScale.Color[1])
 	}
-	if colors == 3 {
+	if colors == 3 && values > 2 {
 		format.Type = "3_color_scale"
 		format.MidType = c.ColorScale.Cfvo[1].Type
 		if c.ColorScale.Cfvo[1].Val != "0" {
@@ -3181,7 +3186,7 @@ func (f *File) extractCondFmtDataBarRule(ID string, format *ConditionalFormatOpt
 // settings for data bar by given conditional formatting rule.
 func (f *File) extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) ConditionalFormatOptions {
 	format := ConditionalFormatOptions{Type: "data_bar", Criteria: "="}
-	if c.DataBar != nil {
+	if c.DataBar != nil && len(c.DataBar.Cfvo) > 1 && len(c.DataBar.Color) > 0 {
 		format.StopIfTrue = c.StopIfTrue
 		format.MinType = c.DataBar.Cfvo[0].Type
 		format.MinValue = c.DataBar.Cfvo[0].Val

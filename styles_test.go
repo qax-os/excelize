@@ -334,6 +334,25 @@ func TestGetConditionalFormats(t *testing.T) {
 	ws.ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:conditionalFormattings></ext>`, ExtURIConditionalFormattings)}
 	_, err = f.GetConditionalFormats("Sheet1")
 	assert.EqualError(t, err, "XML syntax error on line 1: element <conditionalFormattings> closed by </ext>")
+
+	t.Run("with_invalid_rules", func(t *testing.T) {
+		for _, condFmt := range []string{
+			// Test get conditional formats with cellIs rule without formula
+			`<conditionalFormatting sqref="A1"><cfRule type="cellIs" operator="equal" priority="1" dxfId="0"/></conditionalFormatting>`,
+			// Test get conditional formats with colorScale element absent rule
+			`<conditionalFormatting sqref="A1"><cfRule type="colorScale" priority="1"/></conditionalFormatting>`,
+			// Test get conditional formats with dataBar element empty rule
+			`<conditionalFormatting sqref="A1"><cfRule type="dataBar" priority="1"><dataBar></dataBar></cfRule></conditionalFormatting>`,
+			// Test get conditional formats with three colors rule but one cfvo
+			`<conditionalFormatting sqref="A1"><cfRule type="colorScale" priority="1"><colorScale><cfvo type="min"/><color rgb="FFFF0000"/><color rgb="FF00FF00"/><color rgb="FF0000FF"/></colorScale></cfRule></conditionalFormatting>`,
+		} {
+			f := NewFile()
+			f.Sheet.Delete("xl/worksheets/sheet1.xml")
+			f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData/>%s</worksheet>`, NameSpaceSpreadSheet.Value, condFmt))
+			_, err := f.GetConditionalFormats("Sheet1")
+			assert.NoError(t, err)
+		}
+	})
 }
 
 func TestUnsetConditionalFormat(t *testing.T) {
