@@ -1,8 +1,6 @@
 package excelize
 
 import (
-	"archive/zip"
-	"bytes"
 	"fmt"
 	"math"
 	"path/filepath"
@@ -336,6 +334,25 @@ func TestGetConditionalFormats(t *testing.T) {
 	ws.ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:conditionalFormattings></ext>`, ExtURIConditionalFormattings)}
 	_, err = f.GetConditionalFormats("Sheet1")
 	assert.EqualError(t, err, "XML syntax error on line 1: element <conditionalFormattings> closed by </ext>")
+
+	t.Run("with_invalid_rules", func(t *testing.T) {
+		for _, condFmt := range []string{
+			// Test get conditional formats with cellIs rule without formula
+			`<conditionalFormatting sqref="A1"><cfRule type="cellIs" operator="equal" priority="1" dxfId="0"/></conditionalFormatting>`,
+			// Test get conditional formats with colorScale element absent rule
+			`<conditionalFormatting sqref="A1"><cfRule type="colorScale" priority="1"/></conditionalFormatting>`,
+			// Test get conditional formats with dataBar element empty rule
+			`<conditionalFormatting sqref="A1"><cfRule type="dataBar" priority="1"><dataBar></dataBar></cfRule></conditionalFormatting>`,
+			// Test get conditional formats with three colors rule but one cfvo
+			`<conditionalFormatting sqref="A1"><cfRule type="colorScale" priority="1"><colorScale><cfvo type="min"/><color rgb="FFFF0000"/><color rgb="FF00FF00"/><color rgb="FF0000FF"/></colorScale></cfRule></conditionalFormatting>`,
+		} {
+			f := NewFile()
+			f.Sheet.Delete("xl/worksheets/sheet1.xml")
+			f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData/>%s</worksheet>`, NameSpaceSpreadSheet.Value, condFmt))
+			_, err := f.GetConditionalFormats("Sheet1")
+			assert.NoError(t, err)
+		}
+	})
 }
 
 func TestUnsetConditionalFormat(t *testing.T) {
@@ -919,52 +936,4 @@ func TestGetStyle(t *testing.T) {
 			assert.NoError(t, f.Close(), testCase.label)
 		}
 	})
-}
-
-// buildBookWithRule wraps a <conditionalFormatting> fragment in a minimal
-// workbook so the public OpenReader path parses it.
-func buildBookWithRule(t *testing.T, fragment string) []byte {
-	t.Helper()
-	parts := map[string]string{
-		"[Content_Types].xml": `<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`,
-		"_rels/.rels":         `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
-		"xl/workbook.xml":     `<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>`,
-		"xl/_rels/workbook.xml.rels": `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`,
-		"xl/worksheets/sheet1.xml": `<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/>` + fragment + `</worksheet>`,
-	}
-	buf := new(bytes.Buffer)
-	zw := zip.NewWriter(buf)
-	for name, body := range parts {
-		w, err := zw.Create(name)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, err := w.Write([]byte(body)); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := zw.Close(); err != nil {
-		t.Fatal(err)
-	}
-	return buf.Bytes()
-}
-
-func TestGetConditionalFormatsMalformedRules(t *testing.T) {
-	for _, tc := range []struct{ name, fragment string }{
-		{"cellIs without formula", `<conditionalFormatting sqref="A1"><cfRule type="cellIs" operator="equal" priority="1" dxfId="0"/></conditionalFormatting>`},
-		{"colorScale element absent", `<conditionalFormatting sqref="A1"><cfRule type="colorScale" priority="1"/></conditionalFormatting>`},
-		{"dataBar element empty", `<conditionalFormatting sqref="A1"><cfRule type="dataBar" priority="1"><dataBar></dataBar></cfRule></conditionalFormatting>`},
-		{"three colors but one cfvo", `<conditionalFormatting sqref="A1"><cfRule type="colorScale" priority="1"><colorScale><cfvo type="min"/><color rgb="FFFF0000"/><color rgb="FF00FF00"/><color rgb="FF0000FF"/></colorScale></cfRule></conditionalFormatting>`},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			fl, err := OpenReader(bytes.NewReader(buildBookWithRule(t, tc.fragment)))
-			if err != nil {
-				t.Fatalf("OpenReader: %v", err)
-			}
-			defer fl.Close()
-			if _, err := fl.GetConditionalFormats("Sheet1"); err != nil {
-				t.Fatalf("GetConditionalFormats returned an error: %v", err)
-			}
-		})
-	}
 }
