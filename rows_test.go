@@ -1267,3 +1267,31 @@ func trimSliceSpace(s []string) []string {
 	}
 	return s
 }
+
+func TestCheckRowOutOfOrderColumns(t *testing.T) {
+	// Cells are not always stored in ascending column order. Here Z1 precedes
+	// C1, so the highest column is not the last element and sizing the rebuilt
+	// slice from that element leaves Z1 without a slot.
+	ws := &xlsxWorksheet{}
+	ws.SheetData.Row = []xlsxRow{{
+		R: 1,
+		C: []xlsxC{{R: "Z1", V: "z"}, {R: "C1", V: "c"}},
+	}}
+	assert.NoError(t, ws.checkRow())
+	assert.Len(t, ws.SheetData.Row[0].C, 26)
+	assert.Equal(t, "z", ws.SheetData.Row[0].C[25].V)
+	assert.Equal(t, "c", ws.SheetData.Row[0].C[2].V)
+
+	// Reading such a sheet through the public API must not panic.
+	f := NewFile()
+	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
+		SheetData: xlsxSheetData{Row: []xlsxRow{{
+			R: 1,
+			C: []xlsxC{{R: "Z1", T: "str", V: "z"}, {R: "C1", T: "str", V: "c"}},
+		}}},
+	})
+	value, err := f.GetCellValue("Sheet1", "Z1")
+	assert.NoError(t, err)
+	assert.Equal(t, "z", value)
+	assert.NoError(t, f.Close())
+}

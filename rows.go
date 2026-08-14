@@ -937,9 +937,19 @@ func (ws *xlsxWorksheet) checkRow() error {
 			}
 			rowData.C[idx].R, _ = CoordinatesToCellName(rCount, rowIdx+1)
 		}
-		lastCol, _, err := CellNameToCoordinates(rowData.C[colCount-1].R)
-		if err != nil {
-			return err
+		// Cells are not guaranteed to be in ascending column order, so the
+		// highest column in the row is not necessarily the last element. Take
+		// the maximum, otherwise a cell that sorts later than the final element
+		// is scattered past the end of the rebuilt slice below.
+		var lastCol int
+		for cellIdx := range rowData.C {
+			colNum, _, err := CellNameToCoordinates(rowData.C[cellIdx].R)
+			if err != nil {
+				return err
+			}
+			if colNum > lastCol {
+				lastCol = colNum
+			}
 		}
 
 		if colCount < lastCol {
