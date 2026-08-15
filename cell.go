@@ -120,6 +120,20 @@ func (f *File) GetCellType(sheet, cell string) (CellType, error) {
 //	bool
 //	nil
 //
+// In addition, any value which implements the decimal number interface below
+// will be stored as a number instead of a string, this covers the arbitrary
+// precision decimal types provided by third-party packages, such as the
+// github.com/shopspring/decimal and the github.com/govalues/decimal, without
+// requiring a dependency on them:
+//
+//	interface {
+//	    Float64() (float64, bool)
+//	    String() string
+//	}
+//
+// The decimal string representation will be written to the cell as-is, so no
+// precision will be lost on the way to the spreadsheet.
+//
 // Note that default date format is m/d/yy h:mm of time.Time type value. You
 // can set numbers format by the SetCellStyle function. If you need to set the
 // specialized date in Excel like January 0, 1900 or February 29, 1900, these
@@ -153,6 +167,9 @@ func (f *File) SetCellValue(sheet, cell string, value interface{}) error {
 	case nil:
 		err = f.SetCellDefault(sheet, cell, "")
 	default:
+		if num, ok := setCellDecimal(value); ok {
+			return f.SetCellDefault(sheet, cell, num)
+		}
 		err = f.SetCellStr(sheet, cell, fmt.Sprint(value))
 	}
 	return err
@@ -287,6 +304,37 @@ func (c *xlsxC) setCellTime(value time.Time, date1904 bool) (isNum bool, err err
 func setCellDuration(value time.Duration) (t string, v string) {
 	v = strconv.FormatFloat(value.Seconds()/86400, 'f', -1, 64)
 	return
+}
+
+// decimalValue defines the method set shared by the arbitrary precision
+// decimal number types, such as the github.com/shopspring/decimal and the
+// github.com/govalues/decimal. Values satisfying it are stored as a number
+// rather than a string, matching it structurally keeps those packages out of
+// the module dependencies.
+type decimalValue interface {
+	Float64() (float64, bool)
+	String() string
+}
+
+// setCellDecimal prepares the numeric cell value by a given value which
+// implements the decimalValue interface. The decimal string representation is
+// used in preference to its float64 form to avoid the precision loss which
+// matters for monetary values. It reports false for a value that is not a
+// decimal number, or whose string representation isn't a number Excel can
+// read, so that the caller can fall back to storing the value as a string.
+func setCellDecimal(value interface{}) (string, bool) {
+	d, ok := value.(decimalValue)
+	if !ok {
+		return "", false
+	}
+	if v := reflect.ValueOf(value); v.Kind() == reflect.Ptr && v.IsNil() {
+		return "", false
+	}
+	num := d.String()
+	if numeric, _, _ := isNumeric(num); !numeric {
+		return "", false
+	}
+	return num, true
 }
 
 // SetCellInt provides a function to set int type value of a cell by given
@@ -583,7 +631,7 @@ func (c *xlsxC) setCellDefault(value string) {
 		c.T, c.V, c.IS = value, value, nil
 		return
 	}
-	c.T, c.V = "", value
+	c.T, c.V, c.IS = "", value, nil
 }
 
 // getCellDate parse cell value which contains a date in the ISO 8601 format.

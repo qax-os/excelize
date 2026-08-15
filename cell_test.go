@@ -4,6 +4,7 @@ import (
 	"fmt"
 	_ "image/jpeg"
 	"math"
+	"math/big"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -1309,5 +1310,88 @@ func TestGetCellStringFunc(t *testing.T) {
 	val, err := f.GetCellValue("Sheet1", "A1")
 	assert.Empty(t, val)
 	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+}
+
+// mockDecimal implements the decimalValue interface with the same method set
+// as the arbitrary precision decimal number types provided by third-party
+// packages, such as the github.com/shopspring/decimal and the
+// github.com/govalues/decimal.
+type mockDecimal string
+
+func (d mockDecimal) String() string { return string(d) }
+
+func (d mockDecimal) Float64() (float64, bool) {
+	f, err := strconv.ParseFloat(string(d), 64)
+	return f, err == nil
+}
+
+func TestSetCellValueDecimal(t *testing.T) {
+	f := NewFile()
+	// The number cell type is implicit in the worksheet XML, so the cell type
+	// of a decimal number is unset, as it is for the float64 type value
+	for cell, expected := range map[string]string{
+		"A1": "1234567890.12345678",
+		"A2": "-0.30",
+		"A3": "0",
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, mockDecimal(expected)))
+		cellType, err := f.GetCellType("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, CellTypeUnset, cellType)
+		value, err := f.GetCellValue("Sheet1", cell, Options{RawCellValue: true})
+		assert.NoError(t, err)
+		assert.Equal(t, expected, value)
+	}
+	// Test set cell value with a pointer to the decimal number type value
+	decimal := mockDecimal("42.5")
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", &decimal))
+	cellType, err := f.GetCellType("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, CellTypeUnset, cellType)
+	// Test set cell value with a nil pointer to the decimal number type value
+	assert.NoError(t, f.SetCellValue("Sheet1", "B2", (*mockDecimal)(nil)))
+	value, err := f.GetCellValue("Sheet1", "B2")
+	assert.NoError(t, err)
+	assert.Equal(t, "<nil>", value)
+	// Test set cell value with a decimal number type value which string
+	// representation isn't a number, such as the math/big.Rat type
+	assert.NoError(t, f.SetCellValue("Sheet1", "B3", big.NewRat(3, 2)))
+	cellType, err = f.GetCellType("Sheet1", "B3")
+	assert.NoError(t, err)
+	assert.Equal(t, CellTypeSharedString, cellType)
+	value, err = f.GetCellValue("Sheet1", "B3")
+	assert.NoError(t, err)
+	assert.Equal(t, "3/2", value)
+	assert.NoError(t, f.Close())
+
+	// Test overwrite an inline string cell with a decimal number type value,
+	// the inline string should be removed from the cell
+	f = NewFile()
+	assert.NoError(t, f.SetCellDefault("Sheet1", "A1", "abc"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", mockDecimal("19.99")))
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	c := ws.(*xlsxWorksheet).SheetData.Row[0].C[0]
+	assert.Empty(t, c.T)
+	assert.Equal(t, "19.99", c.V)
+	assert.Nil(t, c.IS)
+	assert.NoError(t, f.Close())
+
+	// Test set cell value with a decimal number type value by stream writer
+	f = NewFile()
+	sw, err := f.NewStreamWriter("Sheet1")
+	assert.NoError(t, err)
+	assert.NoError(t, sw.SetRow("A1", []interface{}{mockDecimal("1234567890.12345678"), big.NewRat(3, 2)}))
+	assert.NoError(t, sw.Flush())
+	cellType, err = f.GetCellType("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, CellTypeUnset, cellType)
+	value, err = f.GetCellValue("Sheet1", "A1", Options{RawCellValue: true})
+	assert.NoError(t, err)
+	assert.Equal(t, "1234567890.12345678", value)
+	value, err = f.GetCellValue("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, "3/2", value)
 	assert.NoError(t, f.Close())
 }

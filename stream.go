@@ -626,6 +626,10 @@ func (sw *StreamWriter) setCellValFunc(c *xlsxC, val interface{}) error {
 		c.T, c.IS = "inlineStr", &xlsxSI{}
 		c.IS.R, err = setRichText(val)
 	default:
+		if num, ok := setCellDecimal(val); ok {
+			c.setCellDefault(num)
+			return err
+		}
 		c.setCellValue(fmt.Sprint(val))
 	}
 	return err
