@@ -47,7 +47,7 @@ func TestAddComment(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddComments.xlsx")))
 
 	f.Comments["xl/comments2.xml"] = nil
-	f.Pkg.Store("xl/comments2.xml", []byte(xml.Header+`<comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author>Excelize: </author></authors><commentList><comment ref="B7" authorId="0"><text><t>Excelize: </t></text></comment></commentList></comments>`))
+	f.Pkg.Store("xl/comments2.xml", fmt.Appendf(nil, `%s<comments xmlns="%s"><authors><author>Excelize: </author></authors><commentList><comment ref="B7" authorId="0"><text><t>Excelize: </t></text></comment></commentList></comments>`, xml.Header, NameSpaceSpreadSheet.Value))
 	comments, err = f.GetComments("Sheet1")
 	assert.NoError(t, err)
 	assert.Len(t, comments, 2)

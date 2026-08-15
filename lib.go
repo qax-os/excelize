@@ -735,7 +735,7 @@ func getXMLNamespace(space string, attr []xml.Attr) string {
 // replaceNameSpaceBytes provides a function to replace the XML root element
 // attribute by the given component part path and XML content.
 func (f *File) replaceNameSpaceBytes(path string, contentMarshal []byte) []byte {
-	sourceXmlns := []byte(`xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
+	sourceXmlns := fmt.Appendf(nil, `xmlns="%s">`, NameSpaceSpreadSheet.Value)
 	targetXmlns := []byte(templateNamespaceIDMap)
 	if attrs, ok := f.xmlAttr.Load(path); ok {
 		targetXmlns = []byte(genXMLNamespace(attrs.([]xml.Attr)))
