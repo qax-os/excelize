@@ -921,8 +921,11 @@ func (ws *xlsxWorksheet) checkRow() error {
 		if colCount == 0 {
 			continue
 		}
-		// check and fill the cell without r attribute in a row element
-		rCount := 0
+		// check and fill the cell without r attribute in a row element. Cells are
+		// not guaranteed to be in ascending column order, so track the highest
+		// column seen instead of reading it off the last element, which would
+		// leave a cell sorting after that element without a slot below.
+		rCount, lastCol := 0, 0
 		for idx, cell := range rowData.C {
 			rCount++
 			if cell.R != "" {
@@ -933,22 +936,14 @@ func (ws *xlsxWorksheet) checkRow() error {
 				if lastR > rCount {
 					rCount = lastR
 				}
+				if lastR > lastCol {
+					lastCol = lastR
+				}
 				continue
 			}
 			rowData.C[idx].R, _ = CoordinatesToCellName(rCount, rowIdx+1)
-		}
-		// Cells are not guaranteed to be in ascending column order, so the
-		// highest column in the row is not necessarily the last element. Take
-		// the maximum, otherwise a cell that sorts later than the final element
-		// is scattered past the end of the rebuilt slice below.
-		var lastCol int
-		for cellIdx := range rowData.C {
-			colNum, _, err := CellNameToCoordinates(rowData.C[cellIdx].R)
-			if err != nil {
-				return err
-			}
-			if colNum > lastCol {
-				lastCol = colNum
+			if rCount > lastCol {
+				lastCol = rCount
 			}
 		}
 

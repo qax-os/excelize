@@ -1284,14 +1284,14 @@ func TestCheckRowOutOfOrderColumns(t *testing.T) {
 
 	// Reading such a sheet through the public API must not panic.
 	f := NewFile()
-	f.Sheet.Store("xl/worksheets/sheet1.xml", &xlsxWorksheet{
-		SheetData: xlsxSheetData{Row: []xlsxRow{{
-			R: 1,
-			C: []xlsxC{{R: "Z1", T: "str", V: "z"}, {R: "C1", T: "str", V: "c"}},
-		}}},
-	})
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.checked = sync.Map{}
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c r="Z1" t="str"><v>z</v></c><c r="C1" t="str"><v>c</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
 	value, err := f.GetCellValue("Sheet1", "Z1")
 	assert.NoError(t, err)
 	assert.Equal(t, "z", value)
+	value, err = f.GetCellValue("Sheet1", "C1")
+	assert.NoError(t, err)
+	assert.Equal(t, "c", value)
 	assert.NoError(t, f.Close())
 }
