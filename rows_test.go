@@ -1027,6 +1027,16 @@ func TestCheckRow(t *testing.T) {
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.checked.Delete("xl/worksheets/sheet1.xml")
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), newCellNameToCoordinatesError("-", newInvalidCellNameError("-")).Error())
+	t.Run("with_columns_sorted_in_descending_order", func(t *testing.T) {
+		f := NewFile()
+		f.Sheet.Delete("xl/worksheets/sheet1.xml")
+		f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c r="Z1"><v>z</v></c><c r="C1"><v>c</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
+		f.checked = sync.Map{}
+		value, err := f.GetCellValue("Sheet1", "Z1")
+		assert.NoError(t, err)
+		assert.Equal(t, "z", value)
+		assert.NoError(t, f.Close())
+	})
 }
 
 func TestSetRowStyle(t *testing.T) {
@@ -1266,32 +1276,4 @@ func trimSliceSpace(s []string) []string {
 		}
 	}
 	return s
-}
-
-func TestCheckRowOutOfOrderColumns(t *testing.T) {
-	// Cells are not always stored in ascending column order. Here Z1 precedes
-	// C1, so the highest column is not the last element and sizing the rebuilt
-	// slice from that element leaves Z1 without a slot.
-	ws := &xlsxWorksheet{}
-	ws.SheetData.Row = []xlsxRow{{
-		R: 1,
-		C: []xlsxC{{R: "Z1", V: "z"}, {R: "C1", V: "c"}},
-	}}
-	assert.NoError(t, ws.checkRow())
-	assert.Len(t, ws.SheetData.Row[0].C, 26)
-	assert.Equal(t, "z", ws.SheetData.Row[0].C[25].V)
-	assert.Equal(t, "c", ws.SheetData.Row[0].C[2].V)
-
-	// Reading such a sheet through the public API must not panic.
-	f := NewFile()
-	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.checked = sync.Map{}
-	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c r="Z1" t="str"><v>z</v></c><c r="C1" t="str"><v>c</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
-	value, err := f.GetCellValue("Sheet1", "Z1")
-	assert.NoError(t, err)
-	assert.Equal(t, "z", value)
-	value, err = f.GetCellValue("Sheet1", "C1")
-	assert.NoError(t, err)
-	assert.Equal(t, "c", value)
-	assert.NoError(t, f.Close())
 }

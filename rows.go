@@ -921,11 +921,8 @@ func (ws *xlsxWorksheet) checkRow() error {
 		if colCount == 0 {
 			continue
 		}
-		// check and fill the cell without r attribute in a row element. Cells are
-		// not guaranteed to be in ascending column order, so track the highest
-		// column seen instead of reading it off the last element, which would
-		// leave a cell sorting after that element without a slot below.
-		rCount, lastCol := 0, 0
+		// check and fill the cell without r attribute in a row element.
+		var rCount, lastCol int
 		for idx, cell := range rowData.C {
 			rCount++
 			if cell.R != "" {
