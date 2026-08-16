@@ -917,34 +917,34 @@ func (ws *xlsxWorksheet) checkRow() error {
 	for rowIdx := range ws.SheetData.Row {
 		rowData := &ws.SheetData.Row[rowIdx]
 
-		colCount := len(rowData.C)
-		if colCount == 0 {
+		colLen := len(rowData.C)
+		if colLen == 0 {
 			continue
 		}
-		// check and fill the cell without r attribute in a row element.
-		var rCount, lastCol int
+		// check and fill the cell without r attribute in a row element
+		var cols, lastCol int
 		for idx, cell := range rowData.C {
-			rCount++
+			cols++
 			if cell.R != "" {
-				lastR, _, err := CellNameToCoordinates(cell.R)
+				col, _, err := CellNameToCoordinates(cell.R)
 				if err != nil {
 					return err
 				}
-				if lastR > rCount {
-					rCount = lastR
+				if col > cols {
+					cols = col
 				}
-				if lastR > lastCol {
-					lastCol = lastR
+				if col > lastCol {
+					lastCol = col
 				}
 				continue
 			}
-			rowData.C[idx].R, _ = CoordinatesToCellName(rCount, rowIdx+1)
-			if rCount > lastCol {
-				lastCol = rCount
+			rowData.C[idx].R, _ = CoordinatesToCellName(cols, rowIdx+1)
+			if cols > lastCol {
+				lastCol = cols
 			}
 		}
 
-		if colCount < lastCol {
+		if colLen < lastCol {
 			sourceList := rowData.C
 			targetList := make([]xlsxC, 0, lastCol)
 

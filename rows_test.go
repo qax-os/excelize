@@ -1030,11 +1030,16 @@ func TestCheckRow(t *testing.T) {
 	t.Run("with_columns_sorted_in_descending_order", func(t *testing.T) {
 		f := NewFile()
 		f.Sheet.Delete("xl/worksheets/sheet1.xml")
-		f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c r="Z1"><v>z</v></c><c r="C1"><v>c</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
+		f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c r="D1"><v>d</v></c><c r="B1"><v>b</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
 		f.checked = sync.Map{}
-		value, err := f.GetCellValue("Sheet1", "Z1")
+		value, err := f.GetCellValue("Sheet1", "D1")
 		assert.NoError(t, err)
-		assert.Equal(t, "z", value)
+		assert.Equal(t, "d", value)
+		ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+		assert.True(t, ok)
+		assert.Len(t, ws.(*xlsxWorksheet).SheetData.Row[0].C, 4)
+		assert.Equal(t, "b", ws.(*xlsxWorksheet).SheetData.Row[0].C[1].V)
+		assert.Equal(t, "d", ws.(*xlsxWorksheet).SheetData.Row[0].C[3].V)
 		assert.NoError(t, f.Close())
 	})
 }
