@@ -701,7 +701,9 @@ func (f *File) extractPictureFromAnchor(drawingRelationships string, a *xdrCellA
 			pic.Format.Locked = &a.ClientData.FLocksWithSheet
 			pic.Format.PrintObject = &a.ClientData.FPrintsWithSheet
 		}
-		if a.To == nil {
+		if a.EditAs != "" {
+			pic.Format.Positioning = a.EditAs
+		} else if a.To == nil {
 			pic.Format.Positioning = "oneCell"
 		}
 		if a.Pic != nil {
@@ -761,7 +763,9 @@ func (f *File) extractPictureFromDecodeAnchor(drawingRelationships string, a *de
 			pic.Format.Locked = &a.ClientData.FLocksWithSheet
 			pic.Format.PrintObject = &a.ClientData.FPrintsWithSheet
 		}
-		if a.To == nil {
+		if a.EditAs != "" {
+			pic.Format.Positioning = a.EditAs
+		} else if a.To == nil {
 			pic.Format.Positioning = "oneCell"
 		}
 		if a.Pic != nil {
@@ -825,6 +829,9 @@ func (f *File) extractDecodeCellAnchor(anchor *xdrCellAnchor, drawingRelationshi
 		deCellAnchor = new(decodeCellAnchor)
 	)
 	_ = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + anchor.GraphicFrame + "</decodeCellAnchor>")).Decode(&deCellAnchor)
+	if deCellAnchor.EditAs == "" {
+		deCellAnchor.EditAs = anchor.EditAs
+	}
 	if deCellAnchor.From != nil && deCellAnchor.Pic != nil {
 		if cond(deCellAnchor.From) {
 			if drawRel = f.getDrawingRelationships(drawingRelationships, deCellAnchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
