@@ -1038,7 +1038,7 @@ func TestAdjustConditionalFormats(t *testing.T) {
 			Criteria: "=",
 			MinType:  "min",
 			MaxType:  "max",
-			BarColor: "#638EC6",
+			BarColor: "638EC6",
 		}}
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:D3", format))
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D5", format))
@@ -1054,7 +1054,7 @@ func TestAdjustConditionalFormats(t *testing.T) {
 			Criteria: "=",
 			MinType:  "min",
 			MaxType:  "max",
-			BarColor: "#638EC6",
+			BarColor: "638EC6",
 		}}
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:E2", format))
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", "F2", format))
@@ -1070,7 +1070,7 @@ func TestAdjustConditionalFormats(t *testing.T) {
 			Criteria: "=",
 			MinType:  "min",
 			MaxType:  "max",
-			BarColor: "#638EC6",
+			BarColor: "638EC6",
 		}}
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:D3", format))
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D5", format))

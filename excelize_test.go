@@ -1140,8 +1140,8 @@ func TestConditionalFormat(t *testing.T) {
 				Criteria: "=",
 				MinType:  "min",
 				MaxType:  "max",
-				MinColor: "#F8696B",
-				MaxColor: "#63BE7B",
+				MinColor: "F8696B",
+				MaxColor: "63BE7B",
 			},
 		},
 	))
@@ -1154,9 +1154,9 @@ func TestConditionalFormat(t *testing.T) {
 				MinType:  "min",
 				MidType:  "percentile",
 				MaxType:  "max",
-				MinColor: "#F8696B",
-				MidColor: "#FFEB84",
-				MaxColor: "#63BE7B",
+				MinColor: "F8696B",
+				MidColor: "FFEB84",
+				MaxColor: "63BE7B",
 			},
 		},
 	))
@@ -1255,7 +1255,7 @@ func TestConditionalFormat(t *testing.T) {
 				Criteria: "=",
 				MinType:  "min",
 				MaxType:  "max",
-				BarColor: "#638EC6",
+				BarColor: "638EC6",
 			},
 		},
 	))
@@ -1298,7 +1298,7 @@ func TestConditionalFormat(t *testing.T) {
 				Criteria: "=",
 				MinType:  "min",
 				MaxType:  "max",
-				BarColor: "#638EC6",
+				BarColor: "638EC6",
 			},
 		},
 	))
@@ -1310,7 +1310,7 @@ func TestConditionalFormat(t *testing.T) {
 				Criteria: "",
 				MinType:  "min",
 				MaxType:  "max",
-				BarColor: "#638EC6",
+				BarColor: "638EC6",
 			},
 		},
 	))
