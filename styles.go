@@ -2558,7 +2558,7 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 //	    &excelize.Style{
 //	        Font: &excelize.Font{Color: "9A0511"},
 //	        Fill: excelize.Fill{
-//	            Type: "pattern", Color: []string{"#FEC7CE"}, Pattern: 1,
+//	            Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1,
 //	        },
 //	    },
 //	)
@@ -2652,7 +2652,7 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 // type: top - The top type is used to specify the top n values by number or
 // percentage in a range:
 //
-//	// Top/Bottom rules: Top 10.
+//	// Top/Bottom rules: Top 6.
 //	err := f.SetConditionalFormat("Sheet1", "H1:H10",
 //	    []excelize.ConditionalFormatOptions{
 //	        {
@@ -2689,8 +2689,8 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 //	            Criteria: "=",
 //	            MinType:  "min",
 //	            MaxType:  "max",
-//	            MinColor: "#F8696B",
-//	            MaxColor: "#63BE7B",
+//	            MinColor: "F8696B",
+//	            MaxColor: "63BE7B",
 //	        },
 //	    },
 //	)
@@ -2710,9 +2710,9 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 //	            MinType:  "min",
 //	            MidType:  "percentile",
 //	            MaxType:  "max",
-//	            MinColor: "#F8696B",
-//	            MidColor: "#FFEB84",
-//	            MaxColor: "#63BE7B",
+//	            MinColor: "F8696B",
+//	            MidColor: "FFEB84",
+//	            MaxColor: "63BE7B",
 //	        },
 //	    },
 //	)
@@ -2737,7 +2737,7 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 //	            Criteria: "=",
 //	            MinType:  "min",
 //	            MaxType:  "max",
-//	            BarColor: "#638EC6",
+//	            BarColor: "638EC6",
 //	        },
 //	    },
 //	)
@@ -2778,9 +2778,9 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 //	            MinType:  "min",
 //	            MidType:  "percentile",
 //	            MaxType:  "max",
-//	            MinColor: "#F8696B",
-//	            MidColor: "#FFEB84",
-//	            MaxColor: "#63BE7B",
+//	            MinColor: "F8696B",
+//	            MidColor: "FFEB84",
+//	            MaxColor: "63BE7B",
 //	        },
 //	    },
 //	)
@@ -2792,7 +2792,7 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 // BarBorderColor - Used for sets the color for the border line of a data bar,
 // this is only visible in Excel 2010 and later.
 //
-// BarDirection - sets the direction for data bars. The available options are:
+// BarDirection - Sets the direction for data bars. The available options are:
 //
 //	context - Data bar direction is set by spreadsheet application based on the context of the data displayed.
 //	leftToRight - Data bar direction is from right to left.
@@ -2830,7 +2830,7 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 //
 // IconsOnly - Used for set displayed without the cell value.
 //
-// StopIfTrue - used to set the "stop if true" feature of a conditional
+// StopIfTrue - Used to set the "stop if true" feature of a conditional
 // formatting rule when more than one rule is applied to a cell or a range of
 // cells. When this parameter is set then subsequent rules are not evaluated
 // if the current rule is true.
@@ -3141,12 +3141,12 @@ func (f *File) extractCondFmtColorScale(c *xlsxCfRule, extLst *xlsxExtLst) Condi
 		if c.ColorScale.Cfvo[0].Val != "0" {
 			format.MinValue = c.ColorScale.Cfvo[0].Val
 		}
-		format.MinColor = "#" + f.getThemeColor(c.ColorScale.Color[0])
+		format.MinColor = f.getThemeColor(c.ColorScale.Color[0])
 		format.MaxType = c.ColorScale.Cfvo[1].Type
 		if c.ColorScale.Cfvo[1].Val != "0" {
 			format.MaxValue = c.ColorScale.Cfvo[1].Val
 		}
-		format.MaxColor = "#" + f.getThemeColor(c.ColorScale.Color[1])
+		format.MaxColor = f.getThemeColor(c.ColorScale.Color[1])
 	}
 	if colors == 3 && values > 2 {
 		format.Type = "3_color_scale"
@@ -3154,12 +3154,12 @@ func (f *File) extractCondFmtColorScale(c *xlsxCfRule, extLst *xlsxExtLst) Condi
 		if c.ColorScale.Cfvo[1].Val != "0" {
 			format.MidValue = c.ColorScale.Cfvo[1].Val
 		}
-		format.MidColor = "#" + f.getThemeColor(c.ColorScale.Color[1])
+		format.MidColor = f.getThemeColor(c.ColorScale.Color[1])
 		format.MaxType = c.ColorScale.Cfvo[2].Type
 		if c.ColorScale.Cfvo[2].Val != "0" {
 			format.MaxValue = c.ColorScale.Cfvo[2].Val
 		}
-		format.MaxColor = "#" + f.getThemeColor(c.ColorScale.Color[2])
+		format.MaxColor = f.getThemeColor(c.ColorScale.Color[2])
 	}
 	return format
 }
@@ -3175,7 +3175,7 @@ func (f *File) extractCondFmtDataBarRule(ID string, format *ConditionalFormatOpt
 					format.BarSolid = true
 				}
 				if rule.DataBar.BorderColor != nil {
-					format.BarBorderColor = "#" + f.getThemeColor(rule.DataBar.BorderColor)
+					format.BarBorderColor = f.getThemeColor(rule.DataBar.BorderColor)
 				}
 			}
 		}
@@ -3192,7 +3192,7 @@ func (f *File) extractCondFmtDataBar(c *xlsxCfRule, extLst *xlsxExtLst) Conditio
 		format.MinValue = c.DataBar.Cfvo[0].Val
 		format.MaxType = c.DataBar.Cfvo[1].Type
 		format.MaxValue = c.DataBar.Cfvo[1].Val
-		format.BarColor = "#" + f.getThemeColor(c.DataBar.Color[0])
+		format.BarColor = f.getThemeColor(c.DataBar.Color[0])
 		if c.DataBar.ShowValue != nil {
 			format.BarOnly = !*c.DataBar.ShowValue
 		}

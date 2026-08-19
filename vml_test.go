@@ -371,13 +371,13 @@ func TestFormControl(t *testing.T) {
 	assert.True(t, formControls[0].Paragraph[0].Font.Italic)
 	// Test get form controls with font format
 	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
-		Shape: []decodeShape{{Type: "#_x0000_t201", Val: "<v:textbox><div><font face=\"Calibri\" size=\"280\" color=\"#777777\">Text</font></div></v:textbox><x:ClientData ObjectType=\"Scroll\"><x:Anchor>0,0,0,0,0,0,0,0</x:Anchor></x:ClientData>"}},
+		Shape: []decodeShape{{Type: "#_x0000_t201", Val: "<v:textbox><div><font face=\"Calibri\" size=\"280\" color=\"777777\">Text</font></div></v:textbox><x:ClientData ObjectType=\"Scroll\"><x:Anchor>0,0,0,0,0,0,0,0</x:Anchor></x:ClientData>"}},
 	}
 	formControls, err = f.GetFormControls("Sheet1")
 	assert.NoError(t, err)
 	assert.Equal(t, "Calibri", formControls[0].Paragraph[0].Font.Family)
 	assert.Equal(t, 14.0, formControls[0].Paragraph[0].Font.Size)
-	assert.Equal(t, "#777777", formControls[0].Paragraph[0].Font.Color)
+	assert.Equal(t, "777777", formControls[0].Paragraph[0].Font.Color)
 	// Test get form controls with italic font format
 	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
 		Shape: []decodeShape{{Type: "#_x0000_t201", Val: "<v:textbox><div><font><i>Text</i></font></div></v:textbox><x:ClientData ObjectType=\"Scroll\"><x:Anchor>0,0,0,0,0,0,0,0</x:Anchor></x:ClientData>"}},

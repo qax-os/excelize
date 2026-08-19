@@ -172,7 +172,7 @@ func TestSetConditionalFormat(t *testing.T) {
 	// Test creating a conditional format with a solid color data bar style
 	f := NewFile()
 	condFmts := []ConditionalFormatOptions{
-		{Type: "data_bar", BarColor: "#A9D08E", BarSolid: true, Format: intPtr(0), Criteria: "=", MinType: "min", MaxType: "max"},
+		{Type: "data_bar", BarColor: "A9D08E", BarSolid: true, Format: intPtr(0), Criteria: "=", MinType: "min", MaxType: "max"},
 	}
 	for _, ref := range []string{"A1:A2", "B1:B2"} {
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", ref, condFmts))
@@ -186,7 +186,7 @@ func TestSetConditionalFormat(t *testing.T) {
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:slicerList /></ext><ext uri="%s"><x14:sparklineGroups /></ext>`, ExtURISlicerListX14, ExtURISparklineGroups)}
-	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarSolid: true}}))
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "0000FF", BarColor: "638EC6", BarSolid: true}}))
 	f = NewFile()
 	// Test creating a conditional format with invalid extension list characters
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
@@ -202,9 +202,9 @@ func TestSetConditionalFormat(t *testing.T) {
 		f := NewFile()
 		var condFmts []ConditionalFormatOptions
 		for _, color := range []string{
-			"#264B96", // Blue
-			"#F9A73E", // Yellow
-			"#006F3C", // Green
+			"264B96", // Blue
+			"F9A73E", // Yellow
+			"006F3C", // Green
 		} {
 			condFmts = append(condFmts, ConditionalFormatOptions{
 				Type:     "data_bar",
@@ -267,10 +267,10 @@ func TestGetConditionalFormats(t *testing.T) {
 		{{Type: "average", AboveAverage: true, Format: &idx, Criteria: "="}},
 		{{Type: "duplicate", Format: &idx, Criteria: "="}},
 		{{Type: "unique", Format: &idx, Criteria: "="}},
-		{{Type: "3_color_scale", Criteria: "=", MinType: "num", MidType: "num", MaxType: "num", MinValue: "-10", MidValue: "50", MaxValue: "10", MinColor: "#FF0000", MidColor: "#00FF00", MaxColor: "#0000FF"}},
-		{{Type: "2_color_scale", Criteria: "=", MinType: "num", MaxType: "num", MinColor: "#FF0000", MaxColor: "#0000FF"}},
-		{{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true}},
-		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: true, StopIfTrue: true}},
+		{{Type: "3_color_scale", Criteria: "=", MinType: "num", MidType: "num", MaxType: "num", MinValue: "-10", MidValue: "50", MaxValue: "10", MinColor: "FF0000", MidColor: "00FF00", MaxColor: "0000FF"}},
+		{{Type: "2_color_scale", Criteria: "=", MinType: "num", MaxType: "num", MinColor: "FF0000", MaxColor: "0000FF"}},
+		{{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "0000FF", BarColor: "638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true}},
+		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "0000FF", BarColor: "638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: true, StopIfTrue: true}},
 		{{Type: "formula", Format: &idx, Criteria: "1"}},
 		{{Type: "blanks", Format: &idx}},
 		{{Type: "no_blanks", Format: &idx}},
@@ -312,8 +312,8 @@ func TestGetConditionalFormats(t *testing.T) {
 	// Test get multiple conditional formats
 	f = NewFile()
 	expected := []ConditionalFormatOptions{
-		{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true},
-		{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: false, StopIfTrue: true},
+		{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "0000FF", BarColor: "638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true},
+		{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "0000FF", BarColor: "638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: false, StopIfTrue: true},
 	}
 	err = f.SetConditionalFormat("Sheet1", "A2:A1,B:B,2:2", expected)
 	assert.NoError(t, err)
