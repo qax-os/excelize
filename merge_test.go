@@ -238,4 +238,10 @@ func TestMergeCellsParser(t *testing.T) {
 	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{nil}}}
 	_, err := ws.mergeCellsParser("A1")
 	assert.NoError(t, err)
+
+	// Test parse merged cells with empty merged cell reference
+	ws = &xlsxWorksheet{MergeCells: &xlsxMergeCells{Cells: []*xlsxMergeCell{{Ref: ""}}}}
+	cell, err := ws.mergeCellsParser("A1")
+	assert.NoError(t, err)
+	assert.Equal(t, "A1", cell)
 }

@@ -1657,6 +1657,9 @@ func (ws *xlsxWorksheet) mergeCellsParser(cell string) (string, error) {
 				_ = sortCoordinates(rect)
 				ws.MergeCells.Cells[i].rect = rect
 			}
+			if len(ws.MergeCells.Cells[i].rect) == 0 {
+				continue
+			}
 			if cellInRange([]int{col, row}, ws.MergeCells.Cells[i].rect) {
 				cell = strings.Split(ws.MergeCells.Cells[i].Ref, ":")[0]
 				break
