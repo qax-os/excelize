@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -647,4 +648,56 @@ func TestChartWithLogarithmicBase(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestSetSheetNameWithChart(t *testing.T) {
+	// collectChartRefs returns the cell reference formulas from every chart part
+	// in the workbook.
+	collectChartRefs := func(f *File) []string {
+		var refs []string
+		f.Pkg.Range(func(k, v interface{}) bool {
+			if path, ok := k.(string); ok && strings.Contains(path, "xl/charts/chart") {
+				for _, sub := range chartRefFormulaRegex.FindAllSubmatch(v.([]byte), -1) {
+					refs = append(refs, string(sub[1]))
+				}
+			}
+			return true
+		})
+		return refs
+	}
+
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "Apple"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", 3))
+	_, err := f.NewSheet("Data")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellValue("Data", "A1", 5))
+	assert.NoError(t, f.AddChart("Sheet1", "E1", &Chart{
+		Type: Line,
+		Series: []ChartSeries{
+			{Name: "Sheet1!$A$1", Categories: "Sheet1!$A$1", Values: "Sheet1!$B$1"},
+			{Name: "Data!$A$1", Categories: "Data!$A$1", Values: "Data!$A$1"},
+		},
+	}))
+
+	// Renaming a worksheet must update the chart series references, including
+	// quoting the worksheet name when it contains a space, while leaving
+	// references to other worksheets untouched.
+	assert.NoError(t, f.SetSheetName("Sheet1", "New Sheet"))
+	for _, ref := range collectChartRefs(f) {
+		assert.NotContains(t, ref, "Sheet1!", "stale reference to the renamed worksheet")
+	}
+	assert.Contains(t, collectChartRefs(f), "'New Sheet'!$B$1")
+	assert.Contains(t, collectChartRefs(f), "Data!$A$1")
+
+	// The updated references must survive a save and reopen round trip.
+	buf, err := f.WriteToBuffer()
+	assert.NoError(t, err)
+	reopened, err := OpenReader(buf)
+	assert.NoError(t, err)
+	for _, ref := range collectChartRefs(reopened) {
+		assert.NotContains(t, ref, "Sheet1!", "stale reference after round trip")
+	}
+	assert.NoError(t, reopened.Close())
+	assert.NoError(t, f.Close())
 }
