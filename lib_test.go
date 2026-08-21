@@ -354,6 +354,82 @@ func TestBstrMarshal(t *testing.T) {
 	}
 }
 
+func TestIsCanonicalNumber(t *testing.T) {
+	for s, expected := range map[string]bool{
+		"":                 false,
+		"0":                true,
+		"-0":               false,
+		"7":                true,
+		"-7":               true,
+		"007":              false,
+		"-":                false,
+		"1.5":              false,
+		"1e3":              false,
+		"+7":               false,
+		"12a":              false,
+		"999999999999999":  true,
+		"-99999999999999":  true,
+		"-999999999999999": false,
+		"9999999999999999": false,
+	} {
+		assert.Equal(t, expected, isCanonicalNumber(s), s)
+	}
+}
+
+func FuzzIsCanonicalNumber(f *testing.F) {
+	for _, seed := range []string{"", "0", "-0", "1", "007", "1.5", "999999999999999", "1e3", "+1", "12a"} {
+		f.Add(seed)
+	}
+	f.Fuzz(func(t *testing.T, s string) {
+		if !isCanonicalNumber(s) {
+			return
+		}
+		flt, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			t.Fatalf("isCanonicalNumber(%q) is true but ParseFloat failed: %v", s, err)
+		}
+		if formatted := strconv.FormatFloat(flt, 'f', -1, 64); formatted != s {
+			t.Fatalf("isCanonicalNumber(%q) is true but re-format produces %q", s, formatted)
+		}
+	})
+}
+
+func TestXMLPlainText(t *testing.T) {
+	for s, expected := range map[string]bool{
+		"":       true,
+		"R1C2":   true,
+		"a b":    true,
+		"a&b":    false,
+		"a<b":    false,
+		"a>b":    false,
+		`a"b`:    false,
+		"a'b":    false,
+		"a\tb":   false,
+		"a\nb":   false,
+		"a\rb":   false,
+		"a\x00b": false,
+		"你好":     false,
+	} {
+		assert.Equal(t, expected, xmlPlainText(s), s)
+	}
+}
+
+func FuzzXMLPlainText(f *testing.F) {
+	for _, seed := range []string{"", "R1C2", "a&b", "a<b", "你", "a\nb"} {
+		f.Add(seed)
+	}
+	f.Fuzz(func(t *testing.T, s string) {
+		if !xmlPlainText(s) {
+			return
+		}
+		var buf strings.Builder
+		assert.NoError(t, xml.EscapeText(&buf, []byte(s)))
+		if buf.String() != s {
+			t.Fatalf("xmlPlainText(%q) is true but EscapeText produces %q", s, buf.String())
+		}
+	})
+}
+
 func TestTruncateUTF16Units(t *testing.T) {
 	assertTrunc := func(s string, max int, expected string) {
 		assert.Equal(t, expected, truncateUTF16Units(s, max), "src=%q max=%d", s, max)
