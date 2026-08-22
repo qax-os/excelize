@@ -1556,7 +1556,9 @@ func (f *File) extractGradientFill(gf *xlsxGradientFill, fill *Fill) {
 // settings by given pattern fill definition.
 func (f *File) extractPatternFill(pf *xlsxPatternFill, fill *Fill) {
 	fill.Type = "pattern"
-	fill.Pattern = inStrSlice(styleFillPatterns, pf.PatternType, false)
+	if pattern := inStrSlice(styleFillPatterns, pf.PatternType, false); pattern != -1 {
+		fill.Pattern = pattern
+	}
 	if pf.BgColor != nil && !pf.BgColor.Auto {
 		fill.Color = []string{f.getThemeColor(pf.BgColor)}
 	}

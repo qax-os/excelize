@@ -936,4 +936,12 @@ func TestGetStyle(t *testing.T) {
 			assert.NoError(t, f.Close(), testCase.label)
 		}
 	})
+	t.Run("without_fill_pattern", func(t *testing.T) {
+		f := NewFile()
+		f.Styles = nil
+		f.Pkg.Store(defaultXMLPathStyles, fmt.Appendf(nil, `<styleSheet xmlns="%s"><fills count="1"><fill><patternFill/></fill></fills><cellXfs count="1"><xf fillId="0"></xf></cellXfs></styleSheet>`, NameSpaceSpreadSheet.Value))
+		style, err := f.GetStyle(0)
+		assert.NoError(t, err)
+		assert.Zero(t, style.Fill.Pattern)
+	})
 }
