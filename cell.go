@@ -28,6 +28,12 @@ import (
 // CellType is the type of cell value type.
 type CellType byte
 
+// CellInfo represents the reference and value of a populated cell.
+type CellInfo struct {
+	Ref   string
+	Value string
+}
+
 // Cell value types enumeration.
 const (
 	CellTypeUnset CellType = iota
@@ -77,6 +83,46 @@ func (f *File) GetCellValue(sheet, cell string, opts ...Options) (string, error)
 		val, err := c.getValueFrom(f, sst, f.getOptions(opts...).RawCellValue)
 		return val, true, err
 	})
+}
+
+// GetNonEmptyCells provides a function to get all non-empty cells from a given
+// worksheet name in spreadsheet. The return value is a slice of CellInfo structs.
+// It is returned in row-major order, meaning that cells are ordered first by row and
+// then by column within each row. This function is concurrency safe.
+func (f *File) GetNonEmptyCells(sheet string, opts ...Options) ([]CellInfo, error) {
+	f.mu.Lock()
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		f.mu.Unlock()
+		return nil, err
+	}
+	f.mu.Unlock()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+	sst, err := f.sharedStringsReader()
+	if err != nil {
+		return nil, err
+	}
+	raw := f.getOptions(opts...).RawCellValue
+
+	var cells []CellInfo
+
+	for _, row := range ws.SheetData.Row {
+		for colIdx := range row.C {
+			cell := &row.C[colIdx]
+			val, err := cell.getValueFrom(f, sst, raw)
+			if err != nil {
+				return nil, err
+			}
+			if val != "" || cell.F != nil {
+				cells = append(cells, CellInfo{
+					Ref:   cell.R,
+					Value: val,
+				})
+			}
+		}
+	}
+	return cells, nil
 }
 
 // GetCellType provides a function to get the cell's data type by given
