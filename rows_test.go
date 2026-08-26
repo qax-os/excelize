@@ -1018,15 +1018,30 @@ func TestErrSheetNotExistError(t *testing.T) {
 
 func TestCheckRow(t *testing.T) {
 	f := NewFile()
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="F2"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `%s<worksheet xmlns="%s"><sheetData><row r="2"><c><v>1</v></c><c r="F2"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`, xml.Header, NameSpaceSpreadSheet.Value))
 	_, err := f.GetRows("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", false))
 	f = NewFile()
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.checked.Delete("xl/worksheets/sheet1.xml")
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), newCellNameToCoordinatesError("-", newInvalidCellNameError("-")).Error())
+	t.Run("with_columns_sorted_in_descending_order", func(t *testing.T) {
+		f := NewFile()
+		f.Sheet.Delete("xl/worksheets/sheet1.xml")
+		f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c r="D1"><v>d</v></c><c r="B1"><v>b</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
+		f.checked = sync.Map{}
+		value, err := f.GetCellValue("Sheet1", "D1")
+		assert.NoError(t, err)
+		assert.Equal(t, "d", value)
+		ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+		assert.True(t, ok)
+		assert.Len(t, ws.(*xlsxWorksheet).SheetData.Row[0].C, 4)
+		assert.Equal(t, "b", ws.(*xlsxWorksheet).SheetData.Row[0].C[1].V)
+		assert.Equal(t, "d", ws.(*xlsxWorksheet).SheetData.Row[0].C[3].V)
+		assert.NoError(t, f.Close())
+	})
 }
 
 func TestSetRowStyle(t *testing.T) {

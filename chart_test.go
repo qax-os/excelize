@@ -171,7 +171,7 @@ func TestAddChart(t *testing.T) {
 				Border: LineOptions{
 					Type:  LineSolid,
 					Dash:  LineDashDot,
-					Fill:  Fill{Type: "pattern", Color: []string{"#FFFF00"}, Pattern: 1},
+					Fill:  Fill{Type: "pattern", Color: []string{"FFFF00"}, Pattern: 1},
 					Width: 1,
 				},
 			},

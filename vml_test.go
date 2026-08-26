@@ -47,7 +47,7 @@ func TestAddComment(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddComments.xlsx")))
 
 	f.Comments["xl/comments2.xml"] = nil
-	f.Pkg.Store("xl/comments2.xml", []byte(xml.Header+`<comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author>Excelize: </author></authors><commentList><comment ref="B7" authorId="0"><text><t>Excelize: </t></text></comment></commentList></comments>`))
+	f.Pkg.Store("xl/comments2.xml", fmt.Appendf(nil, `%s<comments xmlns="%s"><authors><author>Excelize: </author></authors><commentList><comment ref="B7" authorId="0"><text><t>Excelize: </t></text></comment></commentList></comments>`, xml.Header, NameSpaceSpreadSheet.Value))
 	comments, err = f.GetComments("Sheet1")
 	assert.NoError(t, err)
 	assert.Len(t, comments, 2)
@@ -371,13 +371,13 @@ func TestFormControl(t *testing.T) {
 	assert.True(t, formControls[0].Paragraph[0].Font.Italic)
 	// Test get form controls with font format
 	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
-		Shape: []decodeShape{{Type: "#_x0000_t201", Val: "<v:textbox><div><font face=\"Calibri\" size=\"280\" color=\"#777777\">Text</font></div></v:textbox><x:ClientData ObjectType=\"Scroll\"><x:Anchor>0,0,0,0,0,0,0,0</x:Anchor></x:ClientData>"}},
+		Shape: []decodeShape{{Type: "#_x0000_t201", Val: "<v:textbox><div><font face=\"Calibri\" size=\"280\" color=\"777777\">Text</font></div></v:textbox><x:ClientData ObjectType=\"Scroll\"><x:Anchor>0,0,0,0,0,0,0,0</x:Anchor></x:ClientData>"}},
 	}
 	formControls, err = f.GetFormControls("Sheet1")
 	assert.NoError(t, err)
 	assert.Equal(t, "Calibri", formControls[0].Paragraph[0].Font.Family)
 	assert.Equal(t, 14.0, formControls[0].Paragraph[0].Font.Size)
-	assert.Equal(t, "#777777", formControls[0].Paragraph[0].Font.Color)
+	assert.Equal(t, "777777", formControls[0].Paragraph[0].Font.Color)
 	// Test get form controls with italic font format
 	f.DecodeVMLDrawing["xl/drawings/vmlDrawing1.vml"] = &decodeVmlDrawing{
 		Shape: []decodeShape{{Type: "#_x0000_t201", Val: "<v:textbox><div><font><i>Text</i></font></div></v:textbox><x:ClientData ObjectType=\"Scroll\"><x:Anchor>0,0,0,0,0,0,0,0</x:Anchor></x:ClientData>"}},

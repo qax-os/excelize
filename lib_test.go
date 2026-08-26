@@ -291,7 +291,7 @@ func TestGetRootElement(t *testing.T) {
 	assert.Len(t, getRootElement(xml.NewDecoder(strings.NewReader(""))), 0)
 	// Test get workbook root element which all workbook XML namespace has prefix
 	f := NewFile()
-	d := f.xmlNewDecoder(bytes.NewReader([]byte(`<x:workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"></x:workbook>`)))
+	d := f.xmlNewDecoder(bytes.NewReader(fmt.Appendf(nil, `<x:workbook xmlns:r="%s" xmlns:x="%s"></x:workbook>`, SourceRelationship.Value, NameSpaceSpreadSheet.Value)))
 	assert.Len(t, getRootElement(d), 3)
 }
 

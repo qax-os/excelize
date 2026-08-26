@@ -141,10 +141,18 @@ func TestSlicer(t *testing.T) {
 		TableName:  "PivotTable1",
 		Caption:    "Month",
 	}))
+	// Test add a pivot table slicer with different field name for the same pivot table
+	assert.NoError(t, f.AddSlicer("Sheet2", &SlicerOptions{
+		Name:       "Type",
+		Cell:       "O42",
+		TableSheet: "Sheet2",
+		TableName:  "PivotTable1",
+		Caption:    "Type",
+	}))
 	// Test add a pivot table slicer for another pivot table in a worksheet
 	assert.NoError(t, f.AddSlicer("Sheet2", &SlicerOptions{
 		Name:       "Region",
-		Cell:       "O42",
+		Cell:       "S42",
 		TableSheet: "Sheet2",
 		TableName:  "PivotTable2",
 		Caption:    "Region",
@@ -153,6 +161,7 @@ func TestSlicer(t *testing.T) {
 	// Test get pivot table slicers
 	slicers, err = f.GetSlicers("Sheet2")
 	assert.NoError(t, err)
+	assert.Equal(t, "Slicer_Month", slicers[1].slicerCacheName)
 	assert.Equal(t, "Month", slicers[0].Name)
 	assert.Equal(t, "G42", slicers[0].Cell)
 	assert.Equal(t, "Sheet2", slicers[0].TableSheet)
@@ -164,12 +173,18 @@ func TestSlicer(t *testing.T) {
 	assert.Equal(t, "Sheet2", slicers[1].TableSheet)
 	assert.Equal(t, "PivotTable1", slicers[1].TableName)
 	assert.Equal(t, "Month", slicers[1].Caption)
-	assert.Equal(t, "Region", slicers[2].Name)
+	assert.Equal(t, "Slicer_Type", slicers[2].slicerCacheName)
+	assert.Equal(t, "Type", slicers[2].Name)
 	assert.Equal(t, "O42", slicers[2].Cell)
 	assert.Equal(t, "Sheet2", slicers[2].TableSheet)
-	assert.Equal(t, "PivotTable2", slicers[2].TableName)
-	assert.Equal(t, "Region", slicers[2].Caption)
-	assert.True(t, slicers[2].ItemDesc)
+	assert.Equal(t, "PivotTable1", slicers[2].TableName)
+	assert.Equal(t, "Type", slicers[2].Caption)
+	assert.Equal(t, "Region", slicers[3].Name)
+	assert.Equal(t, "S42", slicers[3].Cell)
+	assert.Equal(t, "Sheet2", slicers[3].TableSheet)
+	assert.Equal(t, "PivotTable2", slicers[3].TableName)
+	assert.Equal(t, "Region", slicers[3].Caption)
+	assert.True(t, slicers[3].ItemDesc)
 	// Test add a table slicer with empty slicer options
 	assert.Equal(t, ErrParameterRequired, f.AddSlicer("Sheet1", nil))
 	// Test add a table slicer with invalid slicer options
@@ -264,12 +279,17 @@ func TestSlicer(t *testing.T) {
 	assert.Equal(t, "Sheet2", slicers[1].TableSheet)
 	assert.Equal(t, "PivotTable1", slicers[1].TableName)
 	assert.Equal(t, "Month", slicers[1].Caption)
-	assert.Equal(t, "Region", slicers[2].Name)
+	assert.Equal(t, "Type", slicers[2].Name)
 	assert.Equal(t, "O42", slicers[2].Cell)
 	assert.Equal(t, "Sheet2", slicers[2].TableSheet)
-	assert.Equal(t, "PivotTable2", slicers[2].TableName)
-	assert.Equal(t, "Region", slicers[2].Caption)
-	assert.True(t, slicers[2].ItemDesc)
+	assert.Equal(t, "PivotTable1", slicers[2].TableName)
+	assert.Equal(t, "Type", slicers[2].Caption)
+	assert.Equal(t, "Region", slicers[3].Name)
+	assert.Equal(t, "S42", slicers[3].Cell)
+	assert.Equal(t, "Sheet2", slicers[3].TableSheet)
+	assert.Equal(t, "PivotTable2", slicers[3].TableName)
+	assert.Equal(t, "Region", slicers[3].Caption)
+	assert.True(t, slicers[3].ItemDesc)
 
 	// Test add a pivot table slicer with workbook which contains timeline
 	f, err = OpenFile(workbookPath)
@@ -499,7 +519,7 @@ func TestSlicer(t *testing.T) {
 	for _, name := range []string{colName, "Column1 1", "Column1"} {
 		assert.NoError(t, f.DeleteSlicer(name))
 	}
-	for _, name := range []string{"Month", "Month 1", "Region"} {
+	for _, name := range []string{"Month", "Month 1", "Type", "Region"} {
 		assert.NoError(t, f.DeleteSlicer(name))
 	}
 	// Test delete slicer with no exits slicer name
