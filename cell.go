@@ -120,20 +120,6 @@ func (f *File) GetCellType(sheet, cell string) (CellType, error) {
 //	bool
 //	nil
 //
-// In addition, any value which implements the decimal number interface below
-// will be stored as a number instead of a string, this covers the arbitrary
-// precision decimal types provided by third-party packages, such as the
-// github.com/shopspring/decimal and the github.com/govalues/decimal, without
-// requiring a dependency on them:
-//
-//	interface {
-//	    Float64() (float64, bool)
-//	    String() string
-//	}
-//
-// The decimal string representation will be written to the cell as-is, so no
-// precision will be lost on the way to the spreadsheet.
-//
 // Note that default date format is m/d/yy h:mm of time.Time type value. You
 // can set numbers format by the SetCellStyle function. If you need to set the
 // specialized date in Excel like January 0, 1900 or February 29, 1900, these
@@ -167,9 +153,6 @@ func (f *File) SetCellValue(sheet, cell string, value interface{}) error {
 	case nil:
 		err = f.SetCellDefault(sheet, cell, "")
 	default:
-		if num, ok := setCellDecimal(value); ok {
-			return f.SetCellDefault(sheet, cell, num)
-		}
 		err = f.SetCellStr(sheet, cell, fmt.Sprint(value))
 	}
 	return err
@@ -306,37 +289,6 @@ func setCellDuration(value time.Duration) (t string, v string) {
 	return
 }
 
-// decimalValue defines the method set shared by the arbitrary precision
-// decimal number types, such as the github.com/shopspring/decimal and the
-// github.com/govalues/decimal. Values satisfying it are stored as a number
-// rather than a string, matching it structurally keeps those packages out of
-// the module dependencies.
-type decimalValue interface {
-	Float64() (float64, bool)
-	String() string
-}
-
-// setCellDecimal prepares the numeric cell value by a given value which
-// implements the decimalValue interface. The decimal string representation is
-// used in preference to its float64 form to avoid the precision loss which
-// matters for monetary values. It reports false for a value that is not a
-// decimal number, or whose string representation isn't a number Excel can
-// read, so that the caller can fall back to storing the value as a string.
-func setCellDecimal(value interface{}) (string, bool) {
-	d, ok := value.(decimalValue)
-	if !ok {
-		return "", false
-	}
-	if v := reflect.ValueOf(value); v.Kind() == reflect.Ptr && v.IsNil() {
-		return "", false
-	}
-	num := d.String()
-	if numeric, _, _ := isNumeric(num); !numeric {
-		return "", false
-	}
-	return num, true
-}
-
 // SetCellInt provides a function to set int type value of a cell by given
 // worksheet name, cell reference and cell value.
 func (f *File) SetCellInt(sheet, cell string, value int64) error {
@@ -460,13 +412,46 @@ func (f *File) SetCellFloat(sheet, cell string, value float64, precision, bitSiz
 
 // setCellFloat prepares cell type and string type cell value by a given float
 // value.
-func (c *xlsxC) setCellFloat(value float64, precision, bitSize int) {
+func (c *xlsxC) setCellFloat(value float64, prec, bitSize int) {
 	if math.IsNaN(value) || math.IsInf(value, 0) {
 		c.setInlineStr(fmt.Sprint(value))
 		return
 	}
-	c.T, c.V = "", strconv.FormatFloat(value, 'f', precision, bitSize)
+	c.T, c.V = "", formatCellFloat(value, prec, bitSize)
 	c.IS = nil
+}
+
+// formatCellFloat formats a floating point value with Excel's 15 significant
+// digit limit when automatic precision is requested.
+func formatCellFloat(value float64, prec, bitSize int) string {
+	str := strconv.FormatFloat(value, 'f', prec, bitSize)
+	if prec != -1 || math.Abs(value) == math.MaxFloat64 {
+		return str
+	}
+	const maxPrec = 15
+	decimal := strings.IndexByte(str, '.')
+	significant := 0
+	for idx := range str {
+		if str[idx] < '0' || str[idx] > '9' || significant == 0 && str[idx] == '0' {
+			continue
+		}
+		significant++
+		if significant <= maxPrec {
+			continue
+		}
+		if decimal >= 0 && idx > decimal {
+			return strings.TrimSuffix(str[:idx], ".")
+		}
+		if decimal < 0 {
+			decimal = len(str)
+		}
+		truncated := []byte(str[:decimal])
+		for ; idx < len(truncated); idx++ {
+			truncated[idx] = '0'
+		}
+		return string(truncated)
+	}
+	return str
 }
 
 // SetCellStr provides a function to set string type value of a cell. Total
@@ -631,7 +616,7 @@ func (c *xlsxC) setCellDefault(value string) {
 		c.T, c.V, c.IS = value, value, nil
 		return
 	}
-	c.T, c.V, c.IS = "", value, nil
+	c.T, c.V = "", value
 }
 
 // getCellDate parse cell value which contains a date in the ISO 8601 format.
@@ -689,15 +674,31 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 		}
 		return f.formattedValue(c, raw, CellTypeInlineString)
 	default:
-		if isNum, precision, decimal := isNumeric(c.V); isNum && !raw {
-			if precision > 15 {
-				c.V = strconv.FormatFloat(decimal, 'G', 15, 64)
-			} else {
-				c.V = strconv.FormatFloat(decimal, 'f', -1, 64)
-			}
-		}
+		c.getCellDefault(raw)
 		return f.formattedValue(c, raw, CellTypeNumber)
 	}
+}
+
+// getCellDefault provides a function to get default value from cell by given
+// raw option.
+func (c *xlsxC) getCellDefault(raw bool) {
+	if isNum, prec, decimal := isNumeric(c.V); isNum && !raw {
+		if prec > 15 && !isNumWithinPrecision(c.V) {
+			c.V = strconv.FormatFloat(decimal, 'G', 15, 64)
+		} else {
+			c.V = strconv.FormatFloat(decimal, 'f', -1, 64)
+		}
+	}
+}
+
+// isNumWithinPrecision checks for integers zero-filled after Excel's 15
+// significant digit limit.
+func isNumWithinPrecision(str string) bool {
+	if strings.ContainsAny(str, ".Ee") {
+		return false
+	}
+	str = strings.TrimLeft(str, "+-0")
+	return len(strings.TrimRight(str, "0")) <= 15
 }
 
 // SetCellDefault provides a function to set string type value of a cell as
@@ -1704,6 +1705,9 @@ func (ws *xlsxWorksheet) mergeCellsParser(cell string) (string, error) {
 				}
 				_ = sortCoordinates(rect)
 				ws.MergeCells.Cells[i].rect = rect
+			}
+			if len(ws.MergeCells.Cells[i].rect) == 0 {
+				continue
 			}
 			if cellInRange([]int{col, row}, ws.MergeCells.Cells[i].rect) {
 				cell = strings.Split(ws.MergeCells.Cells[i].Ref, ":")[0]
