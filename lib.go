@@ -860,9 +860,6 @@ func bstrUnmarshal(s string) (result string) {
 // bstrMarshal encode the escaped string literal which not permitted in an XML
 // 1.0 document.
 func bstrMarshal(s string) (result string) {
-	if !strings.Contains(s, "_x") {
-		return s
-	}
 	matches, l, cursor := bstrExp.FindAllStringSubmatchIndex(s, -1), len(s), 0
 	for _, match := range matches {
 		result += s[cursor:match[0]]
