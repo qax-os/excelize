@@ -291,7 +291,7 @@ func TestGetRootElement(t *testing.T) {
 	assert.Len(t, getRootElement(xml.NewDecoder(strings.NewReader(""))), 0)
 	// Test get workbook root element which all workbook XML namespace has prefix
 	f := NewFile()
-	d := f.xmlNewDecoder(bytes.NewReader([]byte(`<x:workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"></x:workbook>`)))
+	d := f.xmlNewDecoder(bytes.NewReader(fmt.Appendf(nil, `<x:workbook xmlns:r="%s" xmlns:x="%s"></x:workbook>`, SourceRelationship.Value, NameSpaceSpreadSheet.Value)))
 	assert.Len(t, getRootElement(d), 3)
 }
 
@@ -497,4 +497,12 @@ func TestFloat2Frac(t *testing.T) {
 	assert.Equal(t, "1/5", floatToFraction(0.19, 1, 1))
 	assert.Equal(t, "9999/10000", strings.Trim(floatToFraction(0.9999, 10, 10), " "))
 	assert.Equal(t, "954888175898973913/351283728530932463", floatToFraction(math.E, 1, 18))
+}
+
+func TestCheckFileSize(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.checkFileSize(1, 1))
+	assert.EqualError(t, f.checkFileSize(UnzipSizeLimit+1, 1), newUnzipSizeLimitError(UnzipSizeLimit).Error())
+	assert.EqualError(t, f.checkFileSize(1, UnzipSizeLimit+1), newUnzipSizeLimitError(UnzipSizeLimit).Error())
+	assert.EqualError(t, f.checkFileSize(-1, 1), newUnzipSizeLimitError(UnzipSizeLimit).Error())
 }

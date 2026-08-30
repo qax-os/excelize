@@ -546,7 +546,7 @@ func (ws *xlsxWorksheet) setColWidth(minVal, maxVal int, width float64) {
 // and check the worksheet columns.
 func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol) []xlsxCol {
 	var fc []xlsxCol
-	for i := col.Min; i <= col.Max; i++ {
+	for i := max(MinColumns, col.Min); i <= min(MaxColumns, col.Max); i++ {
 		var c xlsxCol
 		_ = deepcopy.Copy(&c, col)
 		c.Min, c.Max = i, i
@@ -561,7 +561,7 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 		return -1, false
 	}
 	for _, column := range cols {
-		for i := column.Min; i <= column.Max; i++ {
+		for i := max(MinColumns, column.Min); i <= min(MaxColumns, column.Max); i++ {
 			if idx, ok := inFlat(i, fc); ok {
 				fc[idx] = replacer(fc[idx], column)
 				continue

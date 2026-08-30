@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -256,6 +257,27 @@ func TestColumns(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestGetFromStringItem(t *testing.T) {
+	f := NewFile()
+	// Test get shared string item by a negative index on the streaming path,
+	// which the in-memory path already rejects in xlsxC.getValueFrom
+	tempFile, err := os.CreateTemp(f.options.TmpDir, "excelize-")
+	assert.NoError(t, err)
+	f.sharedStringTemp = tempFile
+	f.sharedStringItem = [][]uint{{0, 0}}
+	value, err := f.getFromStringItem(-1)
+	assert.Equal(t, newInvalidSharedStringIndex(-1), err)
+	assert.Empty(t, value)
+	value, err = f.getFromStringItem(1)
+	assert.Equal(t, newInvalidSharedStringIndex(1), err)
+	assert.Empty(t, value)
+	value, err = f.getFromStringItem(0)
+	assert.NoError(t, err)
+	assert.Empty(t, value)
+	assert.NoError(t, tempFile.Close())
+	assert.NoError(t, os.Remove(tempFile.Name()))
+}
+
 func TestSharedStringsReader(t *testing.T) {
 	f := NewFile()
 	// Test read shared string with unsupported charset
@@ -441,7 +463,7 @@ func prepareTestBook2() (*File, error) {
 
 func TestDuplicateRowFromSingleRow(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	cells := map[string]string{
 		"A1": "A1 Value",
@@ -458,7 +480,7 @@ func TestDuplicateRowFromSingleRow(t *testing.T) {
 		assert.NoError(t, f.SetCellStr(sheet, "B1", cells["B1"]))
 
 		assert.NoError(t, f.DuplicateRow(sheet, 1))
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "FromSingleRow_1"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "FromSingleRow_1"))) {
 			t.FailNow()
 		}
 		expect := map[string]string{
@@ -474,7 +496,7 @@ func TestDuplicateRowFromSingleRow(t *testing.T) {
 		}
 
 		assert.NoError(t, f.DuplicateRow(sheet, 2))
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "FromSingleRow_2"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "FromSingleRow_2"))) {
 			t.FailNow()
 		}
 		expect = map[string]string{
@@ -494,7 +516,7 @@ func TestDuplicateRowFromSingleRow(t *testing.T) {
 
 func TestDuplicateRowUpdateDuplicatedRows(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	cells := map[string]string{
 		"A1": "A1 Value",
@@ -515,7 +537,7 @@ func TestDuplicateRowUpdateDuplicatedRows(t *testing.T) {
 		assert.NoError(t, f.SetCellStr(sheet, "A2", cells["A2"]))
 		assert.NoError(t, f.SetCellStr(sheet, "B2", cells["B2"]))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "UpdateDuplicatedRows"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "UpdateDuplicatedRows"))) {
 			t.FailNow()
 		}
 		expect := map[string]string{
@@ -534,7 +556,7 @@ func TestDuplicateRowUpdateDuplicatedRows(t *testing.T) {
 
 func TestDuplicateRowFirstOfMultipleRows(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 	cells := map[string]string{
 		"A1": "A1 Value",
 		"A2": "A2 Value",
@@ -548,7 +570,7 @@ func TestDuplicateRowFirstOfMultipleRows(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRow(sheet, 1))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "FirstOfMultipleRows"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "FirstOfMultipleRows"))) {
 			t.FailNow()
 		}
 		expect := map[string]string{
@@ -569,14 +591,14 @@ func TestDuplicateRowFirstOfMultipleRows(t *testing.T) {
 
 func TestDuplicateRowZeroWithNoRows(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	t.Run("ZeroWithNoRows", func(t *testing.T) {
 		f := NewFile()
 
 		assert.EqualError(t, f.DuplicateRow(sheet, 0), newInvalidRowNumberError(0).Error())
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "ZeroWithNoRows"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "ZeroWithNoRows"))) {
 			t.FailNow()
 		}
 
@@ -611,14 +633,14 @@ func TestDuplicateRowZeroWithNoRows(t *testing.T) {
 
 func TestDuplicateRowMiddleRowOfEmptyFile(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	t.Run("MiddleRowOfEmptyFile", func(t *testing.T) {
 		f := NewFile()
 
 		assert.NoError(t, f.DuplicateRow(sheet, 99))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "MiddleRowOfEmptyFile"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "MiddleRowOfEmptyFile"))) {
 			t.FailNow()
 		}
 		expect := map[string]string{
@@ -638,7 +660,7 @@ func TestDuplicateRowMiddleRowOfEmptyFile(t *testing.T) {
 
 func TestDuplicateRowWithLargeOffsetToMiddleOfData(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 
 	cells := map[string]string{
 		"A1": "A1 Value",
@@ -653,7 +675,7 @@ func TestDuplicateRowWithLargeOffsetToMiddleOfData(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRowTo(sheet, 1, 3))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "WithLargeOffsetToMiddleOfData"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "WithLargeOffsetToMiddleOfData"))) {
 			t.FailNow()
 		}
 		expect := map[string]string{
@@ -674,7 +696,7 @@ func TestDuplicateRowWithLargeOffsetToMiddleOfData(t *testing.T) {
 
 func TestDuplicateRowWithLargeOffsetToEmptyRows(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 	cells := map[string]string{
 		"A1": "A1 Value",
 		"A2": "A2 Value",
@@ -688,7 +710,7 @@ func TestDuplicateRowWithLargeOffsetToEmptyRows(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRowTo(sheet, 1, 7))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "WithLargeOffsetToEmptyRows"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "WithLargeOffsetToEmptyRows"))) {
 			t.FailNow()
 		}
 		expect := map[string]string{
@@ -709,7 +731,7 @@ func TestDuplicateRowWithLargeOffsetToEmptyRows(t *testing.T) {
 
 func TestDuplicateRowInsertBefore(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 	cells := map[string]string{
 		"A1": "A1 Value",
 		"A2": "A2 Value",
@@ -724,7 +746,7 @@ func TestDuplicateRowInsertBefore(t *testing.T) {
 		assert.NoError(t, f.DuplicateRowTo(sheet, 2, 1))
 		assert.NoError(t, f.DuplicateRowTo(sheet, 10, 4))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "InsertBefore"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "InsertBefore"))) {
 			t.FailNow()
 		}
 
@@ -746,7 +768,7 @@ func TestDuplicateRowInsertBefore(t *testing.T) {
 
 func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 	cells := map[string]string{
 		"A1": "A1 Value",
 		"A2": "A2 Value",
@@ -760,7 +782,7 @@ func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NoError(t, f.DuplicateRowTo(sheet, 3, 1))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "InsertBeforeWithLargeOffset"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "InsertBeforeWithLargeOffset"))) {
 			t.FailNow()
 		}
 
@@ -782,7 +804,7 @@ func TestDuplicateRowInsertBeforeWithLargeOffset(t *testing.T) {
 
 func TestDuplicateRowInsertBeforeWithMergeCells(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.%s.xlsx")
 	t.Run("InsertBeforeWithLargeOffset", func(t *testing.T) {
 		f, err := prepareTestBook2()
 		assert.NoError(t, err)
@@ -792,7 +814,7 @@ func TestDuplicateRowInsertBeforeWithMergeCells(t *testing.T) {
 		assert.NoError(t, f.DuplicateRowTo(sheet, 2, 1))
 		assert.NoError(t, f.DuplicateRowTo(sheet, 1, 8))
 
-		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, "InsertBeforeWithMergeCells"))) {
+		if !assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, "InsertBeforeWithMergeCells"))) {
 			t.FailNow()
 		}
 
@@ -814,7 +836,7 @@ func TestDuplicateRowInsertBeforeWithMergeCells(t *testing.T) {
 
 func TestDuplicateRowInvalidRowNum(t *testing.T) {
 	const sheet = "Sheet1"
-	outFile := filepath.Join("test", "TestDuplicateRow.InvalidRowNum.%s.xlsx")
+	savePath := filepath.Join("test", "TestDuplicateRow.InvalidRowNum.%s.xlsx")
 
 	cells := map[string]string{
 		"A1": "A1 Value",
@@ -844,7 +866,7 @@ func TestDuplicateRowInvalidRowNum(t *testing.T) {
 					t.FailNow()
 				}
 			}
-			assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, name)))
+			assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, name)))
 		})
 	}
 
@@ -866,7 +888,7 @@ func TestDuplicateRowInvalidRowNum(t *testing.T) {
 						t.FailNow()
 					}
 				}
-				assert.NoError(t, f.SaveAs(fmt.Sprintf(outFile, name)))
+				assert.NoError(t, f.SaveAs(fmt.Sprintf(savePath, name)))
 			})
 		}
 	}
@@ -997,15 +1019,30 @@ func TestErrSheetNotExistError(t *testing.T) {
 
 func TestCheckRow(t *testing.T) {
 	f := NewFile()
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="F2"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `%s<worksheet xmlns="%s"><sheetData><row r="2"><c><v>1</v></c><c r="F2"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`, xml.Header, NameSpaceSpreadSheet.Value))
 	_, err := f.GetRows("Sheet1")
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", false))
 	f = NewFile()
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(xml.Header+`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="2"><c><v>1</v></c><c r="-"><v>2</v></c><c><v>3</v></c><c><v>4</v></c><c r="M2"><v>5</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
 	f.checked.Delete("xl/worksheets/sheet1.xml")
 	assert.EqualError(t, f.SetCellValue("Sheet1", "A1", false), newCellNameToCoordinatesError("-", newInvalidCellNameError("-")).Error())
+	t.Run("with_columns_sorted_in_descending_order", func(t *testing.T) {
+		f := NewFile()
+		f.Sheet.Delete("xl/worksheets/sheet1.xml")
+		f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c r="D1"><v>d</v></c><c r="B1"><v>b</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
+		f.checked = sync.Map{}
+		value, err := f.GetCellValue("Sheet1", "D1")
+		assert.NoError(t, err)
+		assert.Equal(t, "d", value)
+		ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+		assert.True(t, ok)
+		assert.Len(t, ws.(*xlsxWorksheet).SheetData.Row[0].C, 4)
+		assert.Equal(t, "b", ws.(*xlsxWorksheet).SheetData.Row[0].C[1].V)
+		assert.Equal(t, "d", ws.(*xlsxWorksheet).SheetData.Row[0].C[3].V)
+		assert.NoError(t, f.Close())
+	})
 }
 
 func TestSetRowStyle(t *testing.T) {
@@ -1156,7 +1193,7 @@ func TestNumberFormats(t *testing.T) {
 
 func TestCellXMLHandler(t *testing.T) {
 	var (
-		content      = []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData><row r="1"><c r="A1" t="s"><v>10</v></c><c r="B1"><is><t>String</t></is></c></row><row r="2"><c r="A2" s="4" t="str"><f>2*A1</f><v>0</v></c><c r="C2" s="1"><f>A3</f><v>2422.3000000000002</v></c><c r="D2" t="d"><v>2022-10-22T15:05:29Z</v></c><c r="F2"></c><c r="G2"></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
+		content      = fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c r="A1" t="s"><v>10</v></c><c r="B1"><is><t>String</t></is></c></row><row r="2"><c r="A2" s="4" t="str"><f>2*A1</f><v>0</v></c><c r="C2" s="1"><f>A3</f><v>2422.3000000000002</v></c><c r="D2" t="d"><v>2022-10-22T15:05:29Z</v></c><c r="F2"></c><c r="G2"></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value)
 		expected, ws xlsxWorksheet
 		row          *xlsxRow
 		scratch      []byte
@@ -1192,7 +1229,7 @@ func TestCellXMLHandler(t *testing.T) {
 		`<row spans="1:17" r="1"><c r="B1"><is><t>`,                                                 // incorrect data
 	} {
 		ws := xlsxWorksheet{}
-		content := []byte(fmt.Sprintf(`<worksheet xmlns="%s"><sheetData>%s</sheetData></worksheet>`, NameSpaceSpreadSheet.Value, rowXML))
+		content := fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData>%s</sheetData></worksheet>`, NameSpaceSpreadSheet.Value, rowXML)
 		expected := xml.Unmarshal(content, &ws)
 		assert.Error(t, expected)
 		decoder := xml.NewDecoder(bytes.NewReader(content))
@@ -1344,7 +1381,7 @@ func BenchmarkRowsColumnsMixed(b *testing.B) {
 
 func BenchmarkRows(b *testing.B) {
 	f, _ := OpenFile(filepath.Join("test", "Book1.xlsx"))
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		rows, _ := f.Rows("Sheet2")
 		for rows.Next() {
 			row, _ := rows.Columns()

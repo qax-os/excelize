@@ -1517,15 +1517,19 @@ func TestCalcCellValue(t *testing.T) {
 		"T(N(10))":    "",
 		// Logical Functions
 		// AND
-		"AND(0)":                  "FALSE",
-		"AND(1)":                  "TRUE",
-		"AND(1,0)":                "FALSE",
-		"AND(0,1)":                "FALSE",
-		"AND(1=1)":                "TRUE",
-		"AND(1<2)":                "TRUE",
-		"AND(1>2,2<3,2>0,3>1)":    "FALSE",
-		"AND(1=1),1=1":            "TRUE",
-		"AND(\"TRUE\",\"FALSE\")": "FALSE",
+		"AND(0)":                    "FALSE",
+		"AND(1)":                    "TRUE",
+		"AND(1,0)":                  "FALSE",
+		"AND(0,1)":                  "FALSE",
+		"AND(1=1)":                  "TRUE",
+		"AND(1<2)":                  "TRUE",
+		"AND(1>2,2<3,2>0,3>1)":      "FALSE",
+		"AND(1=1),1=1":              "TRUE",
+		"AND(\"TRUE\",\"FALSE\")":   "FALSE",
+		"AND(A1:B1)":                "TRUE",
+		"AND(C2:C5)":                "TRUE",
+		"AND({\"TRUE\",\"FALSE\"})": "FALSE",
+		"AND({1,0})":                "FALSE",
 		// FALSE
 		"FALSE()": "FALSE",
 		// IFERROR
@@ -2001,6 +2005,7 @@ func TestCalcCellValue(t *testing.T) {
 		"IF(TRUE,ROUND(4/2,0),0)":                   "2",
 		"IF(A4>0.4,\"TRUE\",\"FALSE\")":             "FALSE",
 		"IF(A1=0,0,1+(SUM(ABS(A1))))":               "2",
+		"IF(C1=0,0,A1/C1+B1/C1)":                    "0",
 		// Excel Lookup and Reference Functions
 		// ADDRESS
 		"ADDRESS(1,1,1,TRUE)":            "$A$1",
@@ -2324,18 +2329,27 @@ func TestCalcCellValue(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	mathCalcError := map[string][]string{
-		"1/0":        {"", "#DIV/0!"},
-		"(1/0)":      {"", "#DIV/0!"},
-		"1^\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"^1": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"1+\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"+1": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"1-\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"-1": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"1*\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"*1": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"1/\"text\"": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
-		"\"text\"/1": {"", "strconv.ParseFloat: parsing \"text\": invalid syntax"},
+		"1/0":         {"#DIV/0!", "#DIV/0!"},
+		"(1/0)":       {"#DIV/0!", "#DIV/0!"},
+		"(A1/0+B1/0)": {"#DIV/0!", "#DIV/0!"},
+		"1^\"text\"":  {"#VALUE!", "#VALUE!"},
+		"\"text\"^1":  {"#VALUE!", "#VALUE!"},
+		"1+\"text\"":  {"#VALUE!", "#VALUE!"},
+		"\"text\"+1":  {"#VALUE!", "#VALUE!"},
+		"1-\"text\"":  {"#VALUE!", "#VALUE!"},
+		"\"text\"-1":  {"#VALUE!", "#VALUE!"},
+		"1*\"text\"":  {"#VALUE!", "#VALUE!"},
+		"\"text\"*1":  {"#VALUE!", "#VALUE!"},
+		"1/\"text\"":  {"#VALUE!", "#VALUE!"},
+		"\"text\"/1":  {"#VALUE!", "#VALUE!"},
+		"\"\"+1":      {"#VALUE!", "#VALUE!"},
+		"1+\"\"":      {"#VALUE!", "#VALUE!"},
+		"\"\"-1":      {"#VALUE!", "#VALUE!"},
+		"1-\"\"":      {"#VALUE!", "#VALUE!"},
+		"\"\"*1":      {"#VALUE!", "#VALUE!"},
+		"1*\"\"":      {"#VALUE!", "#VALUE!"},
+		"\"\"^1":      {"#VALUE!", "#VALUE!"},
+		"1/\"\"":      {"#VALUE!", "#VALUE!"},
 		// Engineering Functions
 		// BESSELI
 		"BESSELI()":       {"#VALUE!", "BESSELI requires 2 numeric arguments"},
@@ -3721,7 +3735,7 @@ func TestCalcCellValue(t *testing.T) {
 		// Logical Functions
 		// AND
 		"AND(\"text\")":                          {"#VALUE!", "#VALUE!"},
-		"AND(A1:B1)":                             {"#VALUE!", "#VALUE!"},
+		"AND({\"TRUE\",\"text\"})":               {"#VALUE!", "#VALUE!"},
 		"AND(\"1\",\"TRUE\",\"FALSE\")":          {"#VALUE!", "#VALUE!"},
 		"AND()":                                  {"#VALUE!", "AND requires at least 1 argument"},
 		"AND(1" + strings.Repeat(",1", 30) + ")": {"#VALUE!", "AND accepts at most 30 arguments"},
@@ -4057,9 +4071,10 @@ func TestCalcCellValue(t *testing.T) {
 		"UPPER(1,2)": {"#VALUE!", "UPPER requires 1 argument"},
 		// Conditional Functions
 		// IF
-		"IF()":        {"#VALUE!", "IF requires at least 1 argument"},
-		"IF(0,1,2,3)": {"#VALUE!", "IF accepts at most 3 arguments"},
-		"IF(D1,1,2)":  {"#VALUE!", "strconv.ParseBool: parsing \"Month\": invalid syntax"},
+		"IF(A1/C1+B1/C1,0,1)": {"#DIV/0!", "#DIV/0!"},
+		"IF()":                {"#VALUE!", "IF requires at least 1 argument"},
+		"IF(0,1,2,3)":         {"#VALUE!", "IF accepts at most 3 arguments"},
+		"IF(D1,1,2)":          {"#VALUE!", "strconv.ParseBool: parsing \"Month\": invalid syntax"},
 		// Excel Lookup and Reference Functions
 		// ADDRESS
 		"ADDRESS()":                        {"#VALUE!", "ADDRESS requires at least 2 arguments"},
@@ -4748,7 +4763,7 @@ func TestCalcCellValue(t *testing.T) {
 		// MDETERM
 		"MDETERM(A1:B3)": {"#VALUE!", "#VALUE!"},
 		// SUM
-		"1+SUM(SUM(A1+A2/A4)*(2-3),2)": {"#VALUE!", "#DIV/0!"},
+		"1+SUM(SUM(A1+A2/A4)*(2-3),2)": {"#DIV/0!", "#DIV/0!"},
 	}
 	for formula, expected := range referenceCalcError {
 		f := prepareCalcData(cellData)
@@ -4852,6 +4867,19 @@ func TestCalcWithDefinedName(t *testing.T) {
 	})
 }
 
+func TestCalcAND(t *testing.T) {
+	argsList := list.New()
+	argsList.PushBack(formulaArg{Type: ArgUnknown})
+	fn := formulaFuncs{}
+	assert.Equal(t, newBoolFormulaArg(true), fn.AND(argsList))
+	argsList = list.New()
+	argsList.PushBack(formulaArg{
+		Type:   ArgMatrix,
+		Matrix: [][]formulaArg{{{Type: ArgUnknown}}},
+	})
+	assert.Equal(t, newBoolFormulaArg(true), fn.AND(argsList))
+}
+
 func TestCalcISBLANK(t *testing.T) {
 	argsList := list.New()
 	argsList.PushBack(formulaArg{
@@ -4860,17 +4888,6 @@ func TestCalcISBLANK(t *testing.T) {
 	fn := formulaFuncs{}
 	result := fn.ISBLANK(argsList)
 	assert.Equal(t, "TRUE", result.Value())
-	assert.Empty(t, result.Error)
-}
-
-func TestCalcAND(t *testing.T) {
-	argsList := list.New()
-	argsList.PushBack(formulaArg{
-		Type: ArgUnknown,
-	})
-	fn := formulaFuncs{}
-	result := fn.AND(argsList)
-	assert.Equal(t, result.String, "")
 	assert.Empty(t, result.Error)
 }
 
@@ -6668,17 +6685,6 @@ func TestFormulaRawCellValueOption(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, test.expected, val)
 	}
-}
-
-func TestFormulaArgToToken(t *testing.T) {
-	assert.Equal(t,
-		efp.Token{
-			TType:    efp.TokenTypeOperand,
-			TSubType: efp.TokenSubTypeLogical,
-			TValue:   "TRUE",
-		},
-		formulaArgToToken(newBoolFormulaArg(true)),
-	)
 }
 
 func TestPrepareTrendGrowth(t *testing.T) {

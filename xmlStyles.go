@@ -87,20 +87,20 @@ type xlsxFonts struct {
 // xlsxFont directly maps the font element. This element defines the
 // properties for one of the fonts used in this workbook.
 type xlsxFont struct {
-	Name      *attrValString `xml:"name"`
-	Charset   *attrValInt    `xml:"charset"`
-	Family    *attrValInt    `xml:"family"`
 	B         *attrValBool   `xml:"b"`
 	I         *attrValBool   `xml:"i"`
 	Strike    *attrValBool   `xml:"strike"`
-	Outline   *attrValBool   `xml:"outline"`
-	Shadow    *attrValBool   `xml:"shadow"`
 	Condense  *attrValBool   `xml:"condense"`
 	Extend    *attrValBool   `xml:"extend"`
-	Color     *xlsxColor     `xml:"color"`
-	Sz        *attrValFloat  `xml:"sz"`
+	Outline   *attrValBool   `xml:"outline"`
+	Shadow    *attrValBool   `xml:"shadow"`
 	U         *attrValString `xml:"u"`
 	VertAlign *attrValString `xml:"vertAlign"`
+	Sz        *attrValFloat  `xml:"sz"`
+	Color     *xlsxColor     `xml:"color"`
+	Name      *attrValString `xml:"name"`
+	Family    *attrValInt    `xml:"family"`
+	Charset   *attrValInt    `xml:"charset"`
 	Scheme    *attrValString `xml:"scheme"`
 }
 

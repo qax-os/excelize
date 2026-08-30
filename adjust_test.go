@@ -983,7 +983,7 @@ func TestAdjustFormula(t *testing.T) {
 
 func TestAdjustVolatileDeps(t *testing.T) {
 	f := NewFile()
-	f.Pkg.Store(defaultXMLPathVolatileDeps, []byte(fmt.Sprintf(`<volTypes xmlns="%s"><volType><main><tp><tr r="C2" s="2"/><tr r="C2" s="1"/><tr r="D3" s="1"/></tp></main></volType></volTypes>`, NameSpaceSpreadSheet.Value)))
+	f.Pkg.Store(defaultXMLPathVolatileDeps, fmt.Appendf(nil, `<volTypes xmlns="%s"><volType><main><tp><tr r="C2" s="2"/><tr r="C2" s="1"/><tr r="D3" s="1"/></tp></main></volType></volTypes>`, NameSpaceSpreadSheet.Value))
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
 	assert.NoError(t, f.InsertRows("Sheet1", 2, 1))
 	assert.Equal(t, "D3", f.VolatileDeps.VolType[0].Main[0].Tp[0].Tr[1].R)
@@ -996,7 +996,7 @@ func TestAdjustVolatileDeps(t *testing.T) {
 	assert.EqualError(t, f.InsertRows("Sheet1", 2, 1), "XML syntax error on line 1: invalid UTF-8")
 
 	f = NewFile()
-	f.Pkg.Store(defaultXMLPathVolatileDeps, []byte(fmt.Sprintf(`<volTypes xmlns="%s"><volType><main><tp><tr r="A" s="1"/></tp></main></volType></volTypes>`, NameSpaceSpreadSheet.Value)))
+	f.Pkg.Store(defaultXMLPathVolatileDeps, fmt.Appendf(nil, `<volTypes xmlns="%s"><volType><main><tp><tr r="A" s="1"/></tp></main></volType></volTypes>`, NameSpaceSpreadSheet.Value))
 	assert.Equal(t, newCellNameToCoordinatesError("A", newInvalidCellNameError("A")), f.InsertCols("Sheet1", "A", 1))
 	f.volatileDepsWriter()
 }
@@ -1038,7 +1038,7 @@ func TestAdjustConditionalFormats(t *testing.T) {
 			Criteria: "=",
 			MinType:  "min",
 			MaxType:  "max",
-			BarColor: "#638EC6",
+			BarColor: "638EC6",
 		}}
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:D3", format))
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D5", format))
@@ -1054,7 +1054,7 @@ func TestAdjustConditionalFormats(t *testing.T) {
 			Criteria: "=",
 			MinType:  "min",
 			MaxType:  "max",
-			BarColor: "#638EC6",
+			BarColor: "638EC6",
 		}}
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:E2", format))
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", "F2", format))
@@ -1070,7 +1070,7 @@ func TestAdjustConditionalFormats(t *testing.T) {
 			Criteria: "=",
 			MinType:  "min",
 			MaxType:  "max",
-			BarColor: "#638EC6",
+			BarColor: "638EC6",
 		}}
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D2:D3", format))
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D5", format))
@@ -1217,8 +1217,8 @@ func TestAdjustDrawings(t *testing.T) {
 	cells, err := f.GetPictureCells("Sheet1")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"D3", "B21", "D13"}, cells)
-	wb := filepath.Join("test", "TestAdjustDrawings.xlsx")
-	assert.NoError(t, f.SaveAs(wb))
+	savePath := filepath.Join("test", "TestAdjustDrawings.xlsx")
+	assert.NoError(t, f.SaveAs(savePath))
 
 	// Test adjust pictures on deleting columns and rows
 	assert.NoError(t, f.RemoveCol("Sheet1", "A"))
@@ -1228,7 +1228,7 @@ func TestAdjustDrawings(t *testing.T) {
 	assert.Equal(t, []string{"C2", "B21", "C12"}, cells)
 
 	// Test adjust existing pictures on inserting columns and rows
-	f, err = OpenFile(wb)
+	f, err = OpenFile(savePath)
 	assert.NoError(t, err)
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
 	assert.NoError(t, f.InsertRows("Sheet1", 1, 1))
@@ -1240,7 +1240,7 @@ func TestAdjustDrawings(t *testing.T) {
 	assert.Equal(t, []string{"F4", "B21", "F15"}, cells)
 
 	// Test adjust drawings with unsupported charset
-	f, err = OpenFile(wb)
+	f, err = OpenFile(savePath)
 	assert.NoError(t, err)
 	f.Pkg.Store("xl/drawings/drawing1.xml", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.InsertCols("Sheet1", "A", 1), "XML syntax error on line 1: invalid UTF-8")
@@ -1251,8 +1251,8 @@ func TestAdjustDrawings(t *testing.T) {
 		f = NewFile()
 		assert.NoError(t, f.AddPicture("Sheet1", cell, filepath.Join("test", "images", "excel.jpg"), nil))
 		assert.Equal(t, errors[i], f.InsertCols("Sheet1", "A", 1))
-		assert.NoError(t, f.SaveAs(wb))
-		f, err = OpenFile(wb)
+		assert.NoError(t, f.SaveAs(savePath))
+		f, err = OpenFile(savePath)
 		assert.NoError(t, err)
 		assert.Equal(t, errors[i], f.InsertCols("Sheet1", "A", 1))
 	}
@@ -1262,8 +1262,8 @@ func TestAdjustDrawings(t *testing.T) {
 		f = NewFile()
 		assert.NoError(t, f.AddPicture("Sheet1", cell, filepath.Join("test", "images", "excel.jpg"), nil))
 		assert.Equal(t, errors[i], f.InsertRows("Sheet1", 1, 1))
-		assert.NoError(t, f.SaveAs(wb))
-		f, err = OpenFile(wb)
+		assert.NoError(t, f.SaveAs(savePath))
+		f, err = OpenFile(savePath)
 		assert.NoError(t, err)
 		assert.Equal(t, errors[i], f.InsertRows("Sheet1", 1, 1))
 	}
@@ -1273,12 +1273,12 @@ func TestAdjustDrawings(t *testing.T) {
 	p := xlsxCellAnchorPos{}
 	assert.NoError(t, p.adjustDrawings(columns, 0, 0, ""))
 
-	f, err = OpenFile(wb)
+	f, err = OpenFile(savePath)
 	assert.NoError(t, err)
 	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(xml.Header+`<wsDr xmlns="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"><twoCellAnchor><from><col>0</col><colOff>0</colOff><row>0</row><rowOff>0</rowOff></from><to><col>1</col><colOff>0</colOff><row>1</row><rowOff>0</rowOff></to><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"></mc:AlternateContent><clientData/></twoCellAnchor></wsDr>`))
 	assert.NoError(t, f.InsertCols("Sheet1", "A", 1))
 
-	f, err = OpenFile(wb)
+	f, err = OpenFile(savePath)
 	assert.NoError(t, err)
 	f.Pkg.Store("xl/drawings/drawing1.xml", []byte(xml.Header+fmt.Sprintf(`<wsDr xmlns="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"><oneCellAnchor><from><col>%d</col><row>0</row></from><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"></mc:AlternateContent><clientData/></oneCellAnchor></wsDr>`, MaxColumns)))
 	assert.Equal(t, ErrColumnNumber, f.InsertCols("Sheet1", "A", 1))

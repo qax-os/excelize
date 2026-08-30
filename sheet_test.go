@@ -123,7 +123,7 @@ func TestPanes(t *testing.T) {
 	f = NewFile()
 	f.checked = sync.Map{}
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData/></worksheet>`))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData/></worksheet>`, NameSpaceSpreadSheet.Value))
 	assert.NoError(t, f.SetPanes("Sheet1",
 		&Panes{
 			Freeze:      true,
@@ -513,8 +513,8 @@ func TestWorksheetWriter(t *testing.T) {
 	f := NewFile()
 	// Test set cell value with alternate content
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	worksheet := xml.Header + `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetData><row r="1"><c r="A1"><v>%d</v></c></row></sheetData><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main" Requires="a14"><xdr:twoCellAnchor editAs="oneCell"></xdr:twoCellAnchor></mc:Choice><mc:Fallback/></mc:AlternateContent></worksheet>`
-	f.Pkg.Store("xl/worksheets/sheet1.xml", []byte(fmt.Sprintf(worksheet, 1)))
+	worksheet := xml.Header + `<worksheet xmlns="` + NameSpaceSpreadSheet.Value + `" xmlns:r="` + SourceRelationship.Value + `"><sheetData><row r="1"><c r="A1"><v>%d</v></c></row></sheetData><mc:AlternateContent xmlns:mc="` + SourceRelationshipCompatibility.Value + `"><mc:Choice xmlns:a14="` + NameSpaceDrawingMLA14.Value + `" Requires="a14"><xdr:twoCellAnchor editAs="oneCell"></xdr:twoCellAnchor></mc:Choice><mc:Fallback/></mc:AlternateContent></worksheet>`
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, worksheet, 1))
 	f.checked = sync.Map{}
 	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 2))
 	f.workSheetWriter()
@@ -694,11 +694,11 @@ func BenchmarkNewSheet(b *testing.B) {
 }
 
 func newSheetWithSet() {
-	file := NewFile()
+	f := NewFile()
 	for i := 0; i < 1000; i++ {
-		_ = file.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), int64(i))
+		_ = f.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), int64(i))
 	}
-	file = nil
+	f = nil
 }
 
 func BenchmarkFile_SaveAs(b *testing.B) {
@@ -710,11 +710,11 @@ func BenchmarkFile_SaveAs(b *testing.B) {
 }
 
 func newSheetWithSave() {
-	file := NewFile()
+	f := NewFile()
 	for i := 0; i < 1000; i++ {
-		_ = file.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), int64(i))
+		_ = f.SetCellInt("Sheet1", "A"+strconv.Itoa(i+1), int64(i))
 	}
-	_ = file.Save()
+	_ = f.Save()
 }
 
 func TestAttrValToBool(t *testing.T) {

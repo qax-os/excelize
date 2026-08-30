@@ -409,7 +409,7 @@ func (f *File) setSlicerCache(colIdx int, opts *SlicerOptions, table *Table, piv
 			}
 			if pivotTable != nil && slicerCache.PivotTables != nil {
 				for _, tbl := range slicerCache.PivotTables.PivotTable {
-					if tbl.Name == pivotTable.Name {
+					if tbl.Name == pivotTable.Name && strings.EqualFold(slicerCache.SourceName, opts.Name) {
 						ok, slicerCacheName = true, slicerCache.Name
 						return false
 					}

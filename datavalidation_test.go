@@ -23,7 +23,7 @@ import (
 )
 
 func TestDataValidation(t *testing.T) {
-	resultFile := filepath.Join("test", "TestDataValidation.xlsx")
+	savePath := filepath.Join("test", "TestDataValidation.xlsx")
 
 	f := NewFile()
 
@@ -39,7 +39,7 @@ func TestDataValidation(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, dataValidations, 1)
 
-	assert.NoError(t, f.SaveAs(resultFile))
+	assert.NoError(t, f.SaveAs(savePath))
 
 	dv = NewDataValidation(true)
 	dv.Sqref = "A3:B4"
@@ -51,7 +51,7 @@ func TestDataValidation(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, dataValidations, 2)
 
-	assert.NoError(t, f.SaveAs(resultFile))
+	assert.NoError(t, f.SaveAs(savePath))
 
 	_, err = f.NewSheet("Sheet2")
 	assert.NoError(t, err)
@@ -99,7 +99,7 @@ func TestDataValidation(t *testing.T) {
 	_, err = f.GetDataValidations("Sheet:1")
 	assert.EqualError(t, err, ErrSheetNameInvalid.Error())
 
-	assert.NoError(t, f.SaveAs(resultFile))
+	assert.NoError(t, f.SaveAs(savePath))
 
 	// Test get data validation on a worksheet without data validation settings
 	f = NewFile()
@@ -134,7 +134,7 @@ func TestDataValidation(t *testing.T) {
 }
 
 func TestDataValidationError(t *testing.T) {
-	resultFile := filepath.Join("test", "TestDataValidationError.xlsx")
+	savePath := filepath.Join("test", "TestDataValidationError.xlsx")
 
 	f := NewFile()
 	assert.NoError(t, f.SetCellStr("Sheet1", "E1", "E1"))
@@ -186,7 +186,7 @@ func TestDataValidationError(t *testing.T) {
 	assert.EqualError(t, dv.SetRange(
 		math.SmallestNonzeroFloat64, math.MaxFloat64,
 		DataValidationTypeWhole, DataValidationOperatorGreaterThan), ErrDataValidationRange.Error())
-	assert.NoError(t, f.SaveAs(resultFile))
+	assert.NoError(t, f.SaveAs(savePath))
 
 	// Test add data validation on no exists worksheet
 	f = NewFile()

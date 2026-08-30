@@ -291,7 +291,7 @@ func (c *xlsxC) setCellTime(value time.Time, date1904 bool) (isNum bool, err err
 // setCellDuration prepares cell type and value by given Go time.Duration type
 // time duration.
 func setCellDuration(value time.Duration) (t string, v string) {
-	v = strconv.FormatFloat(value.Seconds()/86400, 'f', -1, 32)
+	v = strconv.FormatFloat(value.Seconds()/86400, 'f', -1, 64)
 	return
 }
 
@@ -418,13 +418,46 @@ func (f *File) SetCellFloat(sheet, cell string, value float64, precision, bitSiz
 
 // setCellFloat prepares cell type and string type cell value by a given float
 // value.
-func (c *xlsxC) setCellFloat(value float64, precision, bitSize int) {
+func (c *xlsxC) setCellFloat(value float64, prec, bitSize int) {
 	if math.IsNaN(value) || math.IsInf(value, 0) {
 		c.setInlineStr(fmt.Sprint(value))
 		return
 	}
-	c.T, c.V = "", strconv.FormatFloat(value, 'f', precision, bitSize)
+	c.T, c.V = "", formatCellFloat(value, prec, bitSize)
 	c.IS = nil
+}
+
+// formatCellFloat formats a floating point value with Excel's 15 significant
+// digit limit when automatic precision is requested.
+func formatCellFloat(value float64, prec, bitSize int) string {
+	str := strconv.FormatFloat(value, 'f', prec, bitSize)
+	if prec != -1 || math.Abs(value) == math.MaxFloat64 {
+		return str
+	}
+	const maxPrec = 15
+	decimal := strings.IndexByte(str, '.')
+	significant := 0
+	for idx := range str {
+		if str[idx] < '0' || str[idx] > '9' || significant == 0 && str[idx] == '0' {
+			continue
+		}
+		significant++
+		if significant <= maxPrec {
+			continue
+		}
+		if decimal >= 0 && idx > decimal {
+			return strings.TrimSuffix(str[:idx], ".")
+		}
+		if decimal < 0 {
+			decimal = len(str)
+		}
+		truncated := []byte(str[:decimal])
+		for ; idx < len(truncated); idx++ {
+			truncated[idx] = '0'
+		}
+		return string(truncated)
+	}
+	return str
 }
 
 // SetCellStr provides a function to set string type value of a cell. Total
@@ -631,7 +664,11 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 		if c.V != "" {
 			xlsxSI, _ := strconv.Atoi(strings.TrimSpace(c.V))
 			if _, ok := f.tempFiles.Load(defaultXMLPathSharedStrings); ok {
-				return f.formattedValue(&xlsxC{S: c.S, V: f.getFromStringItem(xlsxSI)}, raw, CellTypeSharedString)
+				val, err := f.getFromStringItem(xlsxSI)
+				if err != nil {
+					return "", err
+				}
+				return f.formattedValue(&xlsxC{S: c.S, V: val}, raw, CellTypeSharedString)
 			}
 			d.mu.Lock()
 			defer d.mu.Unlock()
@@ -649,17 +686,31 @@ func (c *xlsxC) getValueFrom(f *File, d *xlsxSST, raw bool) (string, error) {
 		}
 		return f.formattedValue(c, raw, CellTypeInlineString)
 	default:
-		if !raw && !isCanonicalNumber(c.V) {
-			if isNum, precision, decimal := isNumeric(c.V); isNum {
-				if precision > 15 {
-					c.V = strconv.FormatFloat(decimal, 'G', 15, 64)
-				} else {
-					c.V = strconv.FormatFloat(decimal, 'f', -1, 64)
-				}
-			}
-		}
+		c.getCellDefault(raw)
 		return f.formattedValue(c, raw, CellTypeNumber)
 	}
+}
+
+// getCellDefault provides a function to get default value from cell by given
+// raw option.
+func (c *xlsxC) getCellDefault(raw bool) {
+	if isNum, prec, decimal := isNumeric(c.V); isNum && !raw {
+		if prec > 15 && !isNumWithinPrecision(c.V) {
+			c.V = strconv.FormatFloat(decimal, 'G', 15, 64)
+		} else {
+			c.V = strconv.FormatFloat(decimal, 'f', -1, 64)
+		}
+	}
+}
+
+// isNumWithinPrecision checks for integers zero-filled after Excel's 15
+// significant digit limit.
+func isNumWithinPrecision(str string) bool {
+	if strings.ContainsAny(str, ".Ee") {
+		return false
+	}
+	str = strings.TrimLeft(str, "+-0")
+	return len(strings.TrimRight(str, "0")) <= 15
 }
 
 // SetCellDefault provides a function to set string type value of a cell as
@@ -1666,6 +1717,9 @@ func (ws *xlsxWorksheet) mergeCellsParser(cell string) (string, error) {
 				}
 				_ = sortCoordinates(rect)
 				ws.MergeCells.Cells[i].rect = rect
+			}
+			if len(ws.MergeCells.Cells[i].rect) == 0 {
+				continue
 			}
 			if cellInRange([]int{col, row}, ws.MergeCells.Cells[i].rect) {
 				cell = strings.Split(ws.MergeCells.Cells[i].Ref, ":")[0]

@@ -1131,7 +1131,7 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 					// calculate trigger
 					topOpt := opftStack.Peek().(efp.Token)
 					if err := calculate(opfdStack, topOpt); err != nil {
-						argsStack.Peek().(*list.List).PushFront(newErrorFormulaArg(formulaErrorVALUE, err.Error()))
+						opfdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
 					}
 					opftStack.Pop()
 				}
@@ -1163,7 +1163,7 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 	for optStack.Len() != 0 {
 		topOpt := optStack.Peek().(efp.Token)
 		if err = calculate(opdStack, topOpt); err != nil {
-			return newEmptyFormulaArg(), err
+			return newErrorFormulaArg(err.Error(), err.Error()), err
 		}
 		optStack.Pop()
 	}
@@ -1171,7 +1171,7 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 		return newEmptyFormulaArg(), ErrInvalidFormula
 	}
 	if result := opdStack.Peek().(formulaArg); result.Type == ArgError {
-		return newEmptyFormulaArg(), errors.New(result.Error)
+		return result, errors.New(result.Error)
 	}
 	return opdStack.Peek().(formulaArg), err
 }
@@ -1217,7 +1217,7 @@ func prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack *Stack) {
 		// calculate trigger
 		topOpt := opftStack.Peek().(efp.Token)
 		if err := calculate(opfdStack, topOpt); err != nil {
-			argsStack.Peek().(*list.List).PushBack(newErrorFormulaArg(err.Error(), err.Error()))
+			opfdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
 			opftStack.Pop()
 			continue
 		}
@@ -1254,11 +1254,11 @@ func prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack *Stack) {
 func calcPow(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	lOpdVal := lOpd.ToNumber()
 	if lOpdVal.Type != ArgNumber {
-		return errors.New(lOpdVal.Value())
+		return errors.New(lOpdVal.String)
 	}
 	rOpdVal := rOpd.ToNumber()
 	if rOpdVal.Type != ArgNumber {
-		return errors.New(rOpdVal.Value())
+		return errors.New(rOpdVal.String)
 	}
 	opdStack.Push(newNumberFormulaArg(math.Pow(lOpdVal.Number, rOpdVal.Number)))
 	return nil
@@ -1362,11 +1362,11 @@ func calcSplice(rOpd, lOpd formulaArg, opdStack *Stack) error {
 func calcAdd(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	lOpdVal := lOpd.ToNumber()
 	if lOpdVal.Type != ArgNumber {
-		return errors.New(lOpdVal.Value())
+		return errors.New(lOpdVal.String)
 	}
 	rOpdVal := rOpd.ToNumber()
 	if rOpdVal.Type != ArgNumber {
-		return errors.New(rOpdVal.Value())
+		return errors.New(rOpdVal.String)
 	}
 	opdStack.Push(newNumberFormulaArg(lOpdVal.Number + rOpdVal.Number))
 	return nil
@@ -1374,19 +1374,19 @@ func calcAdd(rOpd, lOpd formulaArg, opdStack *Stack) error {
 
 // calcSubtract evaluate subtraction arithmetic operations.
 func calcSubtract(rOpd, lOpd formulaArg, opdStack *Stack) error {
-	if rOpd.Value() == "" {
+	if rOpd.Type == ArgEmpty {
 		rOpd = newNumberFormulaArg(0)
 	}
-	if lOpd.Value() == "" {
+	if lOpd.Type == ArgEmpty {
 		lOpd = newNumberFormulaArg(0)
 	}
 	lOpdVal := lOpd.ToNumber()
 	if lOpdVal.Type != ArgNumber {
-		return errors.New(lOpdVal.Value())
+		return errors.New(lOpdVal.String)
 	}
 	rOpdVal := rOpd.ToNumber()
 	if rOpdVal.Type != ArgNumber {
-		return errors.New(rOpdVal.Value())
+		return errors.New(rOpdVal.String)
 	}
 	opdStack.Push(newNumberFormulaArg(lOpdVal.Number - rOpdVal.Number))
 	return nil
@@ -1396,11 +1396,11 @@ func calcSubtract(rOpd, lOpd formulaArg, opdStack *Stack) error {
 func calcMultiply(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	lOpdVal := lOpd.ToNumber()
 	if lOpdVal.Type != ArgNumber {
-		return errors.New(lOpdVal.Value())
+		return errors.New(lOpdVal.String)
 	}
 	rOpdVal := rOpd.ToNumber()
 	if rOpdVal.Type != ArgNumber {
-		return errors.New(rOpdVal.Value())
+		return errors.New(rOpdVal.String)
 	}
 	opdStack.Push(newNumberFormulaArg(lOpdVal.Number * rOpdVal.Number))
 	return nil
@@ -1410,11 +1410,11 @@ func calcMultiply(rOpd, lOpd formulaArg, opdStack *Stack) error {
 func calcDiv(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	lOpdVal := lOpd.ToNumber()
 	if lOpdVal.Type != ArgNumber {
-		return errors.New(lOpdVal.Value())
+		return errors.New(lOpdVal.String)
 	}
 	rOpdVal := rOpd.ToNumber()
 	if rOpdVal.Type != ArgNumber {
-		return errors.New(rOpdVal.Value())
+		return errors.New(rOpdVal.String)
 	}
 	if rOpdVal.Number == 0 {
 		return errors.New(formulaErrorDIV)
@@ -1462,18 +1462,18 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		rOpd := opdStack.Pop().(formulaArg)
 		lOpd := opdStack.Pop().(formulaArg)
 		if opt.TValue != "&" {
-			if rOpd.Value() == "" {
+			if rOpd.Type == ArgEmpty {
 				rOpd = newNumberFormulaArg(0)
 			}
-			if lOpd.Value() == "" {
+			if lOpd.Type == ArgEmpty {
 				lOpd = newNumberFormulaArg(0)
 			}
 		}
 		if rOpd.Type == ArgError {
-			return errors.New(rOpd.Value())
+			return errors.New(rOpd.String)
 		}
 		if lOpd.Type == ArgError {
-			return errors.New(lOpd.Value())
+			return errors.New(lOpd.String)
 		}
 		return fn(rOpd, lOpd, opdStack)
 	}
@@ -1558,19 +1558,6 @@ func tokenToFormulaArg(token efp.Token) formulaArg {
 	}
 }
 
-// formulaArgToToken create a token by given formula argument.
-func formulaArgToToken(arg formulaArg) efp.Token {
-	switch arg.Type {
-	case ArgNumber:
-		if arg.Boolean {
-			return efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeLogical}
-		}
-		return efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeNumber}
-	default:
-		return efp.Token{TValue: arg.Value(), TType: efp.TokenTypeOperand, TSubType: efp.TokenSubTypeText}
-	}
-}
-
 // parseToken parse basic arithmetic operator priority and evaluate based on
 // operators and operands.
 func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdStack, optStack *Stack) error {
@@ -1584,7 +1571,8 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 		if err != nil {
 			return errors.New(formulaErrorNAME)
 		}
-		token = formulaArgToToken(result)
+		opdStack.Push(result)
+		return nil
 	}
 	if isOperatorPrefixToken(token) {
 		f.parseOperatorPrefixToken(optStack, opdStack, token)
@@ -1598,7 +1586,7 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 			if err := calculate(opdStack, topOpt); err != nil {
 				opdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
 				optStack.Pop()
-				break
+				continue
 			}
 			optStack.Pop()
 		}
@@ -12086,6 +12074,32 @@ func (fn *formulaFuncs) T(argsList *list.List) formulaArg {
 
 // Logical Functions
 
+// and is a part of implementation of the formula function AND.
+func (fn *formulaFuncs) and(token formulaArg) formulaArg {
+	switch token.Type {
+	case ArgUnknown:
+		return newBoolFormulaArg(true)
+	case ArgString:
+		if token.String == "TRUE" {
+			return newBoolFormulaArg(true)
+		}
+		if token.String == "FALSE" {
+			return newStringFormulaArg(token.String)
+		}
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	case ArgNumber:
+		return newBoolFormulaArg(token.Number != 0)
+	case ArgMatrix:
+		for _, item := range token.ToList() {
+			result := fn.and(item)
+			if result.Type == ArgError || result.Value() == "FALSE" {
+				return result
+			}
+		}
+	}
+	return newBoolFormulaArg(true)
+}
+
 // AND function tests a number of supplied conditions and returns TRUE or
 // FALSE. The syntax of the function is:
 //
@@ -12100,23 +12114,11 @@ func (fn *formulaFuncs) AND(argsList *list.List) formulaArg {
 	and := true
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		token := arg.Value.(formulaArg)
-		switch token.Type {
-		case ArgUnknown:
-			continue
-		case ArgString:
-			if token.String == "TRUE" {
-				continue
-			}
-			if token.String == "FALSE" {
-				return newStringFormulaArg(token.String)
-			}
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-		case ArgNumber:
-			and = and && token.Number != 0
-		case ArgMatrix:
-			// TODO
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		result := fn.and(token)
+		if result.Type == ArgError || result.Type == ArgString || token.Type == ArgMatrix && result.Number == 0 {
+			return result
 		}
+		and = and && result.Number != 0
 	}
 	return newBoolFormulaArg(and)
 }
@@ -14892,12 +14894,12 @@ func transposeFormulaArgsList(args []formulaArg, cols, rows int) ([]formulaArg, 
 // concatValues concatenates the values of a slice of formulaArg into a single
 // string.
 func concatValues(args []formulaArg) string {
-	val := ""
+	var val strings.Builder
 	for _, arg := range args {
 		// Call to Value is cheap.
-		val += arg.Value()
+		val.WriteString(arg.Value())
 	}
-	return val
+	return val.String()
 }
 
 // uniqueArgs holds the parsed arguments for the UNIQUE function.
@@ -15042,6 +15044,8 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 		result formulaArg
 	)
 	switch token.Type {
+	case ArgError:
+		return token
 	case ArgString:
 		if cond, err = strconv.ParseBool(token.Value()); err != nil {
 			return newErrorFormulaArg(formulaErrorVALUE, err.Error())

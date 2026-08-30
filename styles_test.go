@@ -172,7 +172,7 @@ func TestSetConditionalFormat(t *testing.T) {
 	// Test creating a conditional format with a solid color data bar style
 	f := NewFile()
 	condFmts := []ConditionalFormatOptions{
-		{Type: "data_bar", BarColor: "#A9D08E", BarSolid: true, Format: intPtr(0), Criteria: "=", MinType: "min", MaxType: "max"},
+		{Type: "data_bar", BarColor: "A9D08E", BarSolid: true, Format: intPtr(0), Criteria: "=", MinType: "min", MaxType: "max"},
 	}
 	for _, ref := range []string{"A1:A2", "B1:B2"} {
 		assert.NoError(t, f.SetConditionalFormat("Sheet1", ref, condFmts))
@@ -186,7 +186,7 @@ func TestSetConditionalFormat(t *testing.T) {
 	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:slicerList /></ext><ext uri="%s"><x14:sparklineGroups /></ext>`, ExtURISlicerListX14, ExtURISparklineGroups)}
-	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarSolid: true}}))
+	assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "0000FF", BarColor: "638EC6", BarSolid: true}}))
 	f = NewFile()
 	// Test creating a conditional format with invalid extension list characters
 	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
@@ -202,9 +202,9 @@ func TestSetConditionalFormat(t *testing.T) {
 		f := NewFile()
 		var condFmts []ConditionalFormatOptions
 		for _, color := range []string{
-			"#264B96", // Blue
-			"#F9A73E", // Yellow
-			"#006F3C", // Green
+			"264B96", // Blue
+			"F9A73E", // Yellow
+			"006F3C", // Green
 		} {
 			condFmts = append(condFmts, ConditionalFormatOptions{
 				Type:     "data_bar",
@@ -267,10 +267,10 @@ func TestGetConditionalFormats(t *testing.T) {
 		{{Type: "average", AboveAverage: true, Format: &idx, Criteria: "="}},
 		{{Type: "duplicate", Format: &idx, Criteria: "="}},
 		{{Type: "unique", Format: &idx, Criteria: "="}},
-		{{Type: "3_color_scale", Criteria: "=", MinType: "num", MidType: "num", MaxType: "num", MinValue: "-10", MidValue: "50", MaxValue: "10", MinColor: "#FF0000", MidColor: "#00FF00", MaxColor: "#0000FF"}},
-		{{Type: "2_color_scale", Criteria: "=", MinType: "num", MaxType: "num", MinColor: "#FF0000", MaxColor: "#0000FF"}},
-		{{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true}},
-		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: true, StopIfTrue: true}},
+		{{Type: "3_color_scale", Criteria: "=", MinType: "num", MidType: "num", MaxType: "num", MinValue: "-10", MidValue: "50", MaxValue: "10", MinColor: "FF0000", MidColor: "00FF00", MaxColor: "0000FF"}},
+		{{Type: "2_color_scale", Criteria: "=", MinType: "num", MaxType: "num", MinColor: "FF0000", MaxColor: "0000FF"}},
+		{{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "0000FF", BarColor: "638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true}},
+		{{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "0000FF", BarColor: "638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: true, StopIfTrue: true}},
 		{{Type: "formula", Format: &idx, Criteria: "1"}},
 		{{Type: "blanks", Format: &idx}},
 		{{Type: "no_blanks", Format: &idx}},
@@ -312,8 +312,8 @@ func TestGetConditionalFormats(t *testing.T) {
 	// Test get multiple conditional formats
 	f = NewFile()
 	expected := []ConditionalFormatOptions{
-		{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true},
-		{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "#0000FF", BarColor: "#638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: false, StopIfTrue: true},
+		{Type: "data_bar", Criteria: "=", MinType: "num", MaxType: "num", MinValue: "-10", MaxValue: "10", BarBorderColor: "0000FF", BarColor: "638EC6", BarOnly: true, BarSolid: true, StopIfTrue: true},
+		{Type: "data_bar", Criteria: "=", MinType: "min", MaxType: "max", BarBorderColor: "0000FF", BarColor: "638EC6", BarDirection: "rightToLeft", BarOnly: true, BarSolid: false, StopIfTrue: true},
 	}
 	err = f.SetConditionalFormat("Sheet1", "A2:A1,B:B,2:2", expected)
 	assert.NoError(t, err)
@@ -334,6 +334,25 @@ func TestGetConditionalFormats(t *testing.T) {
 	ws.ExtLst = &xlsxExtLst{Ext: fmt.Sprintf(`<ext uri="%s"><x14:conditionalFormattings></ext>`, ExtURIConditionalFormattings)}
 	_, err = f.GetConditionalFormats("Sheet1")
 	assert.EqualError(t, err, "XML syntax error on line 1: element <conditionalFormattings> closed by </ext>")
+
+	t.Run("with_invalid_rules", func(t *testing.T) {
+		for _, condFmt := range []string{
+			// Test get conditional formats with cellIs rule without formula
+			`<conditionalFormatting sqref="A1"><cfRule type="cellIs" operator="equal" priority="1" dxfId="0"/></conditionalFormatting>`,
+			// Test get conditional formats with colorScale element absent rule
+			`<conditionalFormatting sqref="A1"><cfRule type="colorScale" priority="1"/></conditionalFormatting>`,
+			// Test get conditional formats with dataBar element empty rule
+			`<conditionalFormatting sqref="A1"><cfRule type="dataBar" priority="1"><dataBar></dataBar></cfRule></conditionalFormatting>`,
+			// Test get conditional formats with three colors rule but one cfvo
+			`<conditionalFormatting sqref="A1"><cfRule type="colorScale" priority="1"><colorScale><cfvo type="min"/><color rgb="FFFF0000"/><color rgb="FF00FF00"/><color rgb="FF0000FF"/></colorScale></cfRule></conditionalFormatting>`,
+		} {
+			f := NewFile()
+			f.Sheet.Delete("xl/worksheets/sheet1.xml")
+			f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData/>%s</worksheet>`, NameSpaceSpreadSheet.Value, condFmt))
+			_, err := f.GetConditionalFormats("Sheet1")
+			assert.NoError(t, err)
+		}
+	})
 }
 
 func TestUnsetConditionalFormat(t *testing.T) {
@@ -897,4 +916,32 @@ func TestGetStyle(t *testing.T) {
 	style, err = f.GetStyle(1)
 	assert.Nil(t, style)
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+
+	t.Run("with_negative_index", func(t *testing.T) {
+		styleSheet := `<styleSheet xmlns="%s"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="1"><fill><patternFill patternType="none"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" %s xfId="0" applyFont="1" applyFill="1" applyBorder="1"/></cellXfs></styleSheet>`
+		for _, testCase := range []struct {
+			label string
+			attrs string
+		}{
+			{"negative fill index", `fontId="0" fillId="-1" borderId="0"`},
+			{"negative border index", `fontId="0" fillId="0" borderId="-1"`},
+			{"negative font index", `fontId="-1" fillId="0" borderId="0"`},
+		} {
+			f := NewFile()
+			f.Styles = nil
+			f.Pkg.Store(defaultXMLPathStyles, fmt.Appendf(nil, styleSheet, NameSpaceSpreadSheet.Value, testCase.attrs))
+			style, err := f.GetStyle(1)
+			assert.NoError(t, err, testCase.label)
+			assert.NotNil(t, style, testCase.label)
+			assert.NoError(t, f.Close(), testCase.label)
+		}
+	})
+	t.Run("without_fill_pattern", func(t *testing.T) {
+		f := NewFile()
+		f.Styles = nil
+		f.Pkg.Store(defaultXMLPathStyles, fmt.Appendf(nil, `<styleSheet xmlns="%s"><fills count="1"><fill><patternFill/></fill></fills><cellXfs count="1"><xf fillId="0"></xf></cellXfs></styleSheet>`, NameSpaceSpreadSheet.Value))
+		style, err := f.GetStyle(0)
+		assert.NoError(t, err)
+		assert.Zero(t, style.Fill.Pattern)
+	})
 }

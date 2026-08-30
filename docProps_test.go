@@ -175,12 +175,12 @@ func TestCustomProps(t *testing.T) {
 	assert.EqualError(t, f.SetCustomProps(CustomProperty{Name: "Prop"}), "XML syntax error on line 1: invalid UTF-8")
 
 	// Test get custom property with unsupported charset
-	f.Pkg.Store(defaultXMLPathDocPropsCustom, []byte(fmt.Sprintf(`<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="%s"><property fmtid="%s" pid="2" name="Prop"><vt:filetime>x</vt:filetime></property></Properties>`, NameSpaceDocumentPropertiesVariantTypes, EXtURICustomPropertyFmtID)))
+	f.Pkg.Store(defaultXMLPathDocPropsCustom, fmt.Appendf(nil, `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="%s"><property fmtid="%s" pid="2" name="Prop"><vt:filetime>x</vt:filetime></property></Properties>`, NameSpaceDocumentPropertiesVariantTypes, EXtURICustomPropertyFmtID))
 	_, err = f.GetCustomProps()
 	assert.EqualError(t, err, "parsing time \"x\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"x\" as \"2006\"")
 
 	// Test get custom property with unsupported value data type
-	f.Pkg.Store(defaultXMLPathDocPropsCustom, []byte(fmt.Sprintf(`<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="%s"><property fmtid="%s" pid="2" name="Prop"><vt:cy></vt:cy></property></Properties>`, NameSpaceDocumentPropertiesVariantTypes, EXtURICustomPropertyFmtID)))
+	f.Pkg.Store(defaultXMLPathDocPropsCustom, fmt.Appendf(nil, `<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="%s"><property fmtid="%s" pid="2" name="Prop"><vt:cy></vt:cy></property></Properties>`, NameSpaceDocumentPropertiesVariantTypes, EXtURICustomPropertyFmtID))
 	props, err = f.GetCustomProps()
 	assert.Equal(t, []CustomProperty{{Name: "Prop"}}, props)
 	assert.NoError(t, err)

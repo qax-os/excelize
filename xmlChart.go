@@ -477,10 +477,10 @@ type cSer struct {
 	Order            *attrValInt  `xml:"order"`
 	Tx               *cTx         `xml:"tx"`
 	SpPr             *cSpPr       `xml:"spPr"`
+	InvertIfNegative *attrValBool `xml:"invertIfNegative"`
+	Marker           *cMarker     `xml:"marker"`
 	DPt              []*cDPt      `xml:"dPt"`
 	DLbls            *cDLbls      `xml:"dLbls"`
-	Marker           *cMarker     `xml:"marker"`
-	InvertIfNegative *attrValBool `xml:"invertIfNegative"`
 	Cat              *cCat        `xml:"cat"`
 	Val              *cVal        `xml:"val"`
 	XVal             *cCat        `xml:"xVal"`
