@@ -654,7 +654,7 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 	for idx := 0; idx < len(ws.TableParts.TableParts); idx++ {
 		tbl := ws.TableParts.TableParts[idx]
 		target := f.getSheetRelationshipsTargetByID(sheet, tbl.RID)
-		tableXML := strings.ReplaceAll(target, "..", "xl")
+		tableXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
 		content, ok := f.Pkg.Load(tableXML)
 		if !ok {
 			continue

@@ -106,6 +106,17 @@ func TestGetTables(t *testing.T) {
 	tables, err = f.GetTables("Sheet1")
 	assert.Len(t, tables, 0)
 	assert.NoError(t, err)
+
+	// Try to get tables with absolute target path in the sheet relationship
+	f = NewFile()
+	assert.NoError(t, err)
+	assert.NoError(t, f.AddTable("Sheet1", &Table{Range: "B26:A21"}))
+	rels, err := f.relsReader("xl/worksheets/_rels/sheet1.xml.rels")
+	assert.NoError(t, err)
+	rels.Relationships[0].Target = "/xl/tables/table1.xml"
+	tables, err = f.GetTables("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, tables, 1)
 }
 
 func TestDeleteTable(t *testing.T) {

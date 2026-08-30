@@ -952,7 +952,7 @@ func (f *File) GetFormControls(sheet string) ([]FormControl, error) {
 		return formControls, err
 	}
 	target := f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
-	drawingVML := strings.ReplaceAll(target, "..", "xl")
+	drawingVML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
 	vml := f.VMLDrawing[drawingVML]
 	if vml == nil {
 		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml

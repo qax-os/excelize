@@ -12,7 +12,6 @@
 package excelize
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/xml"
 	"io"
@@ -86,7 +85,6 @@ func (f *File) GetRows(sheet string, opts ...Options) ([][]string, error) {
 type Rows struct {
 	err                     error
 	curRow, seekRow         int
-	lastRowWidth            int
 	needClose, rawCellValue bool
 	sheet                   string
 	f                       *File
@@ -95,8 +93,6 @@ type Rows struct {
 	decoder                 *xml.Decoder
 	token                   xml.Token
 	curRowOpts, seekRowOpts RowOpts
-	colCell                 xlsxC
-	cellScratch             []byte
 }
 
 // Next will return true if it finds the next row element.
@@ -169,14 +165,6 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 	if rows.sst, rowIterator.err = rows.f.sharedStringsReader(); rowIterator.err != nil {
 		return rowIterator.cells, rowIterator.err
 	}
-	if rows.lastRowWidth > 0 {
-		rowIterator.cells = make([]string, 0, rows.lastRowWidth)
-	}
-	defer func() {
-		if len(rowIterator.cells) > rows.lastRowWidth {
-			rows.lastRowWidth = len(rowIterator.cells)
-		}
-	}()
 	for {
 		if rows.token != nil {
 			token = rows.token
@@ -249,9 +237,8 @@ type rowXMLIterator struct {
 func (rows *Rows) rowXMLHandler(rowIterator *rowXMLIterator, xmlElement *xml.StartElement, raw bool) {
 	if rowIterator.inElement == "c" {
 		rowIterator.cellCol++
-		rows.colCell = xlsxC{}
-		colCell := &rows.colCell
-		_ = colCell.cellXMLHandler(rows.decoder, xmlElement, &rows.cellScratch)
+		colCell := xlsxC{}
+		_ = colCell.cellXMLHandler(rows.decoder, xmlElement)
 		if colCell.R != "" {
 			if rowIterator.cellCol, _, rowIterator.err = CellNameToCoordinates(colCell.R); rowIterator.err != nil {
 				return
@@ -286,116 +273,8 @@ func (cell *xlsxC) cellXMLAttrHandler(start *xml.StartElement) error {
 	return nil
 }
 
-// charDataXMLHandler collects the character data directly inside the element
-// opened by start, skipping nested elements, without the reflection overhead
-// of Decoder.DecodeElement. The scratch buffer is reused across calls to
-// avoid a per-cell allocation.
-func charDataXMLHandler(decoder *xml.Decoder, start *xml.StartElement, scratch *[]byte) (string, error) {
-	buf := (*scratch)[:0]
-	depth := 0
-	for {
-		tok, err := decoder.Token()
-		if err != nil {
-			*scratch = buf
-			return "", err
-		}
-		switch el := tok.(type) {
-		case xml.StartElement:
-			depth++
-		case xml.CharData:
-			if depth == 0 {
-				buf = append(buf, el...)
-			}
-		case xml.EndElement:
-			if depth == 0 && el == start.End() {
-				*scratch = buf
-				return string(buf), nil
-			}
-			if depth > 0 {
-				depth--
-			}
-		}
-	}
-}
-
-// xlsxSIWithT bundles a string item and a text element so that parsing the
-// common single text inline string costs one allocation instead of two.
-type xlsxSIWithT struct {
-	si xlsxSI
-	t  xlsxT
-}
-
-// inlineStrXMLHandler parses an inline string element of a cell, collecting
-// the plain text and rich text runs used to express the string value, without
-// the reflection overhead of Decoder.DecodeElement. The scratch buffer is
-// reused across calls to avoid a per-cell allocation.
-func (cell *xlsxC) inlineStrXMLHandler(decoder *xml.Decoder, start *xml.StartElement, scratch *[]byte) error {
-	var (
-		bundle = &xlsxSIWithT{}
-		is     = &bundle.si
-		run    *xlsxR
-		text   *xlsxT
-		buf    = (*scratch)[:0]
-	)
-	for {
-		tok, err := decoder.Token()
-		if err != nil {
-			*scratch = buf
-			return err
-		}
-		switch el := tok.(type) {
-		case xml.StartElement:
-			switch el.Name.Local {
-			case "t":
-				if run == nil && is.T == nil {
-					text = &bundle.t
-					*text = xlsxT{XMLName: el.Name}
-				} else {
-					text = &xlsxT{XMLName: el.Name}
-				}
-				for _, attr := range el.Attr {
-					if attr.Name.Local == "space" {
-						text.Space = attr
-					}
-				}
-				buf = buf[:0]
-			case "r":
-				is.R = append(is.R, xlsxR{XMLName: el.Name})
-				run = &is.R[len(is.R)-1]
-			default:
-				if err := decoder.Skip(); err != nil {
-					*scratch = buf
-					return err
-				}
-			}
-		case xml.CharData:
-			if text != nil {
-				buf = append(buf, el...)
-			}
-		case xml.EndElement:
-			switch {
-			case text != nil && el.Name.Local == "t":
-				text.Val = string(buf)
-				if run != nil {
-					run.T = text
-				} else {
-					is.T = text
-				}
-				text = nil
-			case el.Name.Local == "r":
-				run = nil
-			case el == start.End():
-				cell.IS = is
-				*scratch = buf
-				return nil
-			}
-		}
-	}
-}
-
-// cellXMLHandler parse the cell XML element of the worksheet. The scratch
-// buffer is reused across calls to avoid per-cell allocations.
-func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement, scratch *[]byte) error {
+// cellXMLHandler parse the cell XML element of the worksheet.
+func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement) error {
 	cell.XMLName = start.Name
 	err := cell.cellXMLAttrHandler(start)
 	if err != nil {
@@ -412,11 +291,11 @@ func (cell *xlsxC) cellXMLHandler(decoder *xml.Decoder, start *xml.StartElement,
 			se = el
 			switch se.Name.Local {
 			case "v":
-				cell.V, err = charDataXMLHandler(decoder, &se, scratch)
+				err = decoder.DecodeElement(&cell.V, &se)
 			case "f":
 				err = decoder.DecodeElement(&cell.F, &se)
 			case "is":
-				err = cell.inlineStrXMLHandler(decoder, &se, scratch)
+				err = decoder.DecodeElement(&cell.IS, &se)
 			}
 			if err != nil {
 				return err
@@ -540,10 +419,7 @@ func (f *File) xmlDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
 		return false, f.xmlNewDecoder(bytes.NewReader(content)), tempFile, err
 	}
 	tempFile, err = f.readTemp(name)
-	if err != nil {
-		return true, f.xmlNewDecoder(tempFile), tempFile, err
-	}
-	return true, f.xmlNewDecoder(bufio.NewReaderSize(tempFile, 1<<20)), tempFile, err
+	return true, f.xmlNewDecoder(tempFile), tempFile, err
 }
 
 // SetRowHeight provides a function to set the height of a single row. If the

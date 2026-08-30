@@ -934,26 +934,13 @@ func (f *File) CalcCellValue(sheet, cell string, opts ...Options) (result string
 func (f *File) storeCalcCache(entry, result string, rawCellValue bool) {
 	if rawCellValue {
 		f.calcRawCache.Store(entry, result)
-	} else {
-		f.calcCache.Store(entry, result)
-	}
-	f.calcCacheUsed.Store(true)
-}
-
-// storeFormulaArgCache stores an intermediate formula argument in the cache
-// with the given cell reference as the key.
-func (f *File) storeFormulaArgCache(ref string, arg formulaArg) {
-	f.formulaArgCache.Store(ref, arg)
-	f.calcCacheUsed.Store(true)
-}
-
-// clearCalcCache clear all calculation related caches. Clearing a sync.Map
-// allocates, and cell mutations invalidate the caches on every call, so skip
-// the work while nothing has been cached since the last clear.
-func (f *File) clearCalcCache() {
-	if !f.calcCacheUsed.CompareAndSwap(true, false) {
 		return
 	}
+	f.calcCache.Store(entry, result)
+}
+
+// clearCalcCache clear all calculation related caches.
+func (f *File) clearCalcCache() {
 	f.calcCache.Clear()
 	f.calcRawCache.Clear()
 	f.formulaArgCache.Clear()
@@ -1839,7 +1826,7 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 				ctx.mu.Unlock()
 				arg, _ = f.calcCellValue(ctx, sheet, cell)
 				ctx.iterationsCache[ref] = arg
-				f.storeFormulaArgCache(ref, arg)
+				f.formulaArgCache.Store(ref, arg)
 				return arg, nil
 			}
 			ctx.mu.Unlock()
@@ -1875,7 +1862,7 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 	default:
 		arg = newErrorFormulaArg(value, value)
 	}
-	f.storeFormulaArgCache(ref, arg)
+	f.formulaArgCache.Store(ref, arg)
 	return arg, err
 }
 

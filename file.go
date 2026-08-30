@@ -175,7 +175,6 @@ func (f *File) writeToZip(zw ZipWriter) error {
 	f.styleSheetWriter()
 	f.themeWriter()
 
-	var copyBuf []byte
 	for path, stream := range f.streams {
 		fi, err := zw.Create(path)
 		if err != nil {
@@ -186,10 +185,7 @@ func (f *File) writeToZip(zw ZipWriter) error {
 			_ = stream.rawData.Close()
 			return err
 		}
-		if copyBuf == nil {
-			copyBuf = make([]byte, 1<<20)
-		}
-		written, err := io.CopyBuffer(fi, from, copyBuf)
+		written, err := io.Copy(fi, from)
 		if err != nil {
 			return err
 		}

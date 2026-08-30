@@ -138,7 +138,7 @@ func (f *File) GetTables(sheet string) ([]Table, error) {
 	for _, tbl := range ws.TableParts.TableParts {
 		if tbl != nil {
 			target := f.getSheetRelationshipsTargetByID(sheet, tbl.RID)
-			tableXML := strings.ReplaceAll(target, "..", "xl")
+			tableXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
 			content, ok := f.Pkg.Load(tableXML)
 			if !ok {
 				continue

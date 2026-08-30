@@ -160,12 +160,6 @@ func (f *File) SetCellValue(sheet, cell string, value interface{}) error {
 
 // String extracts characters from a string item.
 func (x xlsxSI) String() string {
-	if len(x.R) == 0 {
-		if x.T == nil {
-			return ""
-		}
-		return bstrUnmarshal(x.T.Val)
-	}
 	var value strings.Builder
 	if x.T != nil {
 		value.WriteString(x.T.Val)
@@ -524,20 +518,14 @@ func (f *File) sharedStringsLoader() (err error) {
 
 // setSharedString provides a function to add string to the share string table.
 func (f *File) setSharedString(val string) (int, error) {
-	f.mu.Lock()
-	sst := f.SharedStrings
-	_, pending := f.tempFiles.Load(defaultXMLPathSharedStrings)
-	if sst == nil || pending || f.sharedStringTemp != nil {
-		f.mu.Unlock()
-		if err := f.sharedStringsLoader(); err != nil {
-			return 0, err
-		}
-		var err error
-		if sst, err = f.sharedStringsReader(); err != nil {
-			return 0, err
-		}
-		f.mu.Lock()
+	if err := f.sharedStringsLoader(); err != nil {
+		return 0, err
 	}
+	sst, err := f.sharedStringsReader()
+	if err != nil {
+		return 0, err
+	}
+	f.mu.Lock()
 	defer f.mu.Unlock()
 	if i, ok := f.sharedStringsMap[val]; ok {
 		return i, nil
@@ -570,7 +558,7 @@ func trimCellValue(value string, escape bool) (v string, ns xml.Attr) {
 			}
 		}
 
-		if escape && !xmlPlainText(value) {
+		if escape {
 			var buf strings.Builder
 			_ = xml.EscapeText(&buf, []byte(value))
 			value = strings.ReplaceAll(buf.String(), "&#xA;", "\n")
