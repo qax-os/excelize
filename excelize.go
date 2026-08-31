@@ -27,6 +27,14 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
+// SheetStats contains calculated statistics about a worksheet's data extent.
+type SheetStats struct {
+	Rows    int    // Total number of rows with data
+	Cols    int    // Maximum column index used
+	Cells   int64  // Total number of non-empty cells
+	MaxCell string // Cell reference of the bottom-right used cell (e.g., "Z100")
+}
+
 // File define a populated spreadsheet file struct.
 type File struct {
 	mu               sync.Mutex
@@ -34,6 +42,7 @@ type File struct {
 	formulaChecked   bool
 	zip64Entries     []string
 	options          *Options
+	sheetStats       map[string]*SheetStats
 	sharedStringItem [][]uint
 	sharedStringsMap map[string]int
 	sharedStringTemp *os.File
