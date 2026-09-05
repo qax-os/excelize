@@ -860,6 +860,9 @@ func (ws *xlsxWorksheet) setPanes(panes *Panes) error {
 	}
 	if panes.Freeze {
 		p.State = "frozen"
+		if panes.Split {
+			p.State = "frozenSplit"
+		}
 	}
 	if ws.SheetViews == nil {
 		ws.SheetViews = &xlsxSheetViews{SheetView: []xlsxSheetView{{}}}
@@ -1031,8 +1034,15 @@ func (ws *xlsxWorksheet) getPanes() Panes {
 		return panes
 	}
 	panes.ActivePane = sw.Pane.ActivePane
-	if sw.Pane.State == "frozen" {
+	switch sw.Pane.State {
+	case "frozen":
 		panes.Freeze = true
+	case "frozenSplit":
+		panes.Freeze, panes.Split = true, true
+	case "split":
+		panes.Split = true
+	default:
+		panes.Split = sw.Pane.XSplit > 0 || sw.Pane.YSplit > 0
 	}
 	panes.TopLeftCell = sw.Pane.TopLeftCell
 	panes.XSplit = int(sw.Pane.XSplit)

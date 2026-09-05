@@ -45,7 +45,7 @@ func TestPanes(t *testing.T) {
 	_, err := f.NewSheet("Panes 2")
 	assert.NoError(t, err)
 
-	expected := Panes{
+	pane2 := Panes{
 		Freeze:      true,
 		Split:       false,
 		XSplit:      1,
@@ -56,29 +56,38 @@ func TestPanes(t *testing.T) {
 			{SQRef: "K16", ActiveCell: "K16", Pane: "topRight"},
 		},
 	}
-	assert.NoError(t, f.SetPanes("Panes 2", &expected))
+	assert.NoError(t, f.SetPanes("Panes 2", &pane2))
 	panes, err := f.GetPanes("Panes 2")
 	assert.NoError(t, err)
-	assert.Equal(t, expected, panes)
+	assert.Equal(t, pane2, panes)
 
+	panes3 := Panes{
+		Freeze:      false,
+		Split:       true,
+		XSplit:      3270,
+		YSplit:      1800,
+		TopLeftCell: "N57",
+		ActivePane:  "bottomLeft",
+		Selection: []Selection{
+			{SQRef: "I36", ActiveCell: "I36"},
+			{SQRef: "G33", ActiveCell: "G33", Pane: "topRight"},
+			{SQRef: "J60", ActiveCell: "J60", Pane: "bottomLeft"},
+			{SQRef: "O60", ActiveCell: "O60", Pane: "bottomRight"},
+		},
+	}
 	_, err = f.NewSheet("Panes 3")
 	assert.NoError(t, err)
-	assert.NoError(t, f.SetPanes("Panes 3",
-		&Panes{
-			Freeze:      false,
-			Split:       true,
-			XSplit:      3270,
-			YSplit:      1800,
-			TopLeftCell: "N57",
-			ActivePane:  "bottomLeft",
-			Selection: []Selection{
-				{SQRef: "I36", ActiveCell: "I36"},
-				{SQRef: "G33", ActiveCell: "G33", Pane: "topRight"},
-				{SQRef: "J60", ActiveCell: "J60", Pane: "bottomLeft"},
-				{SQRef: "O60", ActiveCell: "O60", Pane: "bottomRight"},
-			},
-		},
-	))
+	assert.NoError(t, f.SetPanes("Panes 3", &panes3))
+	panes, err = f.GetPanes("Panes 3")
+	assert.NoError(t, err)
+	assert.Equal(t, panes3, panes)
+	ws, ok := f.Sheet.Load("xl/worksheets/sheet3.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).SheetViews.SheetView[0].Pane.State = "split"
+	panes, err = f.GetPanes("Panes 3")
+	assert.NoError(t, err)
+	assert.Equal(t, panes3, panes)
+
 	_, err = f.NewSheet("Panes 4")
 	assert.NoError(t, err)
 	assert.NoError(t, f.SetPanes("Panes 4",
@@ -94,7 +103,27 @@ func TestPanes(t *testing.T) {
 			},
 		},
 	))
-	assert.EqualError(t, f.SetPanes("Panes 4", nil), ErrParameterInvalid.Error())
+	// Test frozen and split panes
+	_, err = f.NewSheet("Panes 5")
+	assert.NoError(t, err)
+	pane5 := Panes{
+		Freeze:      true,
+		Split:       true,
+		XSplit:      2,
+		YSplit:      4,
+		TopLeftCell: "C5",
+		ActivePane:  "bottomRight",
+		Selection: []Selection{
+			{SQRef: "C1", ActiveCell: "C1"},
+			{SQRef: "A5", ActiveCell: "A5", Pane: "bottomLeft"},
+			{SQRef: "C5", ActiveCell: "C5", Pane: "bottomRight"},
+		},
+	}
+	assert.NoError(t, f.SetPanes("Panes 5", &pane5))
+	panes, err = f.GetPanes("Panes 5")
+	assert.NoError(t, err)
+	assert.Equal(t, pane5, panes)
+	assert.EqualError(t, f.SetPanes("Panes 5", nil), ErrParameterInvalid.Error())
 	assert.EqualError(t, f.SetPanes("SheetN", nil), "sheet SheetN does not exist")
 	// Test set panes with invalid sheet name
 	assert.EqualError(t, f.SetPanes("Sheet:1", &Panes{Freeze: false, Split: false}), ErrSheetNameInvalid.Error())
@@ -102,7 +131,7 @@ func TestPanes(t *testing.T) {
 
 	// Test get panes with empty sheet views
 	f = NewFile()
-	ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
 	assert.True(t, ok)
 	ws.(*xlsxWorksheet).SheetViews = &xlsxSheetViews{}
 	_, err = f.GetPanes("Sheet1")
