@@ -48,6 +48,7 @@ var (
 	packageOffset               = 8 // First 8 bytes are the size of the stream
 	sheetProtectionSpinCount    = 1e5
 	workbookProtectionSpinCount = 1e5
+	maxSpinCount                = 1e7
 )
 
 // Encryption specifies the encryption structure, streams, and storages are
@@ -429,6 +430,11 @@ func agileDecrypt(encryptionInfoBuf, encryptedPackageBuf []byte, opts *Options) 
 // convertPasswdToKey convert the password into an encryption key.
 func convertPasswdToKey(passwd string, blockKey []byte, encryption Encryption) (key []byte, err error) {
 	var b bytes.Buffer
+	spinCount := encryption.KeyEncryptors.KeyEncryptor[0].EncryptedKey.SpinCount
+	if spinCount < 0 || spinCount > int(maxSpinCount) {
+		err = ErrMaxSpinCount
+		return
+	}
 	saltValue, err := base64.StdEncoding.DecodeString(encryption.KeyEncryptors.KeyEncryptor[0].EncryptedKey.SaltValue)
 	if err != nil {
 		return
@@ -443,7 +449,7 @@ func convertPasswdToKey(passwd string, blockKey []byte, encryption Encryption) (
 	// Generate the initial hash.
 	key = hashing(encryption.KeyData.HashAlgorithm, b.Bytes())
 	// Now regenerate until spin count.
-	for i := 0; i < encryption.KeyEncryptors.KeyEncryptor[0].EncryptedKey.SpinCount; i++ {
+	for i := 0; i < spinCount; i++ {
 		iterator := createUInt32LEBuffer(i, 4)
 		key = hashing(encryption.KeyData.HashAlgorithm, iterator, key)
 	}

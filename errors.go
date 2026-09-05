@@ -100,6 +100,9 @@ var (
 	// ErrMaxRows defined the error message on receive a row number exceeds
 	// maximum limit.
 	ErrMaxRows = errors.New("row number exceeds maximum limit")
+	// ErrMaxSpinCount defined the error message on receiving a spin count in
+	// the encryption info exceeds the maximum limit.
+	ErrMaxSpinCount = errors.New("spin count exceeds maximum limit")
 	// ErrNameLength defined the error message on receiving the defined name or
 	// table name length exceeds the limit.
 	ErrNameLength = fmt.Errorf("the name length exceeds the %d characters limit", MaxFieldLength)
