@@ -227,3 +227,25 @@ func TestGenISOPasswdHash(t *testing.T) {
 		assert.Equal(t, expected[1], saltValue)
 	}
 }
+
+func TestMaxSpinCount(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("test", "encryptSHA1.xlsx"))
+	assert.NoError(t, err)
+	doc, err := mscfb.New(bytes.NewReader(raw))
+	assert.NoError(t, err)
+	encryptionInfoBuf, _, err := extractPart(doc)
+	assert.NoError(t, err)
+	// Test decrypt spreadsheet with a spin count exceeds the maximum limit
+	tampered := bytes.Replace(encryptionInfoBuf,
+		[]byte(`spinCount="100000"`), []byte(`spinCount="100000000"`), 1)
+	assert.NotEqual(t, encryptionInfoBuf, tampered)
+	_, err = agileDecrypt(tampered, blockKey, &Options{Password: "password"})
+	assert.Equal(t, ErrMaxSpinCount, err)
+	// Test convert the password into an encryption key with a negative spin count
+	_, err = convertPasswdToKey("password", nil, Encryption{
+		KeyEncryptors: KeyEncryptors{KeyEncryptor: []KeyEncryptor{
+			{EncryptedKey: EncryptedKey{SpinCount: -1}},
+		}},
+	})
+	assert.Equal(t, ErrMaxSpinCount, err)
+}
