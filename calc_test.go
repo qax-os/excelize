@@ -1898,6 +1898,16 @@ func TestCalcCellValue(t *testing.T) {
 		"RIGHT(\"オリジナルテキスト\",4)":      "テキスト",
 		"RIGHT(\"オリジナルテキスト\",7)":      "ジナルテキスト",
 		"RIGHT(\"オリジナルテキスト\",20)":     "オリジナルテキスト",
+		// RIGHT with supplementary-plane characters, which count as 2 UTF-16
+		// code units each, so a count between the rune count and the UTF-16
+		// count must not walk off the front of the string
+		"RIGHT(\"\U0001D7D9\U0001D7D9\",1)": "",
+		"RIGHT(\"\U0001D7D9\U0001D7D9\",2)": "\U0001D7D9",
+		"RIGHT(\"\U0001D7D9\U0001D7D9\",3)": "\U0001D7D9",
+		"RIGHT(\"\U0001D7D9\U0001D7D9\",4)": "\U0001D7D9\U0001D7D9",
+		"RIGHT(\"\U0001D7D9\U0001D7D9\",5)": "\U0001D7D9\U0001D7D9",
+		"RIGHT(\"a\U0001D7D9\",2)":          "\U0001D7D9",
+		"RIGHT(\"a\U0001D7D9\",3)":          "a\U0001D7D9",
 		// RIGHTB
 		"RIGHTB(\"Original Text\")":    "t",
 		"RIGHTB(\"Original Text\",4)":  "Text",

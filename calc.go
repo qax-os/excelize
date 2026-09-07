@@ -14238,7 +14238,7 @@ func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
 			return newStringFormulaArg(truncateUTF16Units(text, numChars))
 		}
 		// RIGHT
-		return newStringFormulaArg(string([]rune(text)[utf8.RuneCountInString(text)-numChars:]))
+		return newStringFormulaArg(takeRightUTF16Units(text, numChars))
 	}
 	return newStringFormulaArg(text)
 }

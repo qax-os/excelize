@@ -1021,6 +1021,23 @@ func truncateUTF16Units(s string, length int) string {
 	return s
 }
 
+// takeRightUTF16Units returns the trailing part of a string that fits in a
+// maximum number of UTF-16 code units. It is the counterpart of
+// truncateUTF16Units and, like it, never splits a surrogate pair.
+func takeRightUTF16Units(s string, length int) string {
+	if length <= 0 {
+		return ""
+	}
+	cnt := countUTF16String(s)
+	for i, r := range s {
+		if cnt <= length {
+			return s[i:]
+		}
+		cnt -= utf16.RuneLen(r)
+	}
+	return ""
+}
+
 // Stack defined an abstract data type that serves as a collection of elements.
 type Stack struct {
 	list *list.List
