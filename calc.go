@@ -329,6 +329,19 @@ func (fa formulaArg) Value() (value string) {
 	return
 }
 
+// ToResult returns a formula argument as the result of a formula function.
+// A reference to a blank cell is preserved as blank so that the consumer
+// of the result applies the required coercion
+func (fa formulaArg) ToResult() formulaArg {
+	switch fa.Type {
+	case ArgNumber:
+		return fa.ToNumber()
+	case ArgEmpty:
+		return fa
+	}
+	return newStringFormulaArg(fa.Value())
+}
+
 // ToNumber returns a formula argument with number data type.
 func (fa formulaArg) ToNumber() formulaArg {
 	var n float64
@@ -15045,23 +15058,10 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 		return newBoolFormulaArg(cond)
 	}
 	if cond {
-		value := fn.implicitIntersect(argsList.Front().Next().Value.(formulaArg))
-		switch value.Type {
-		case ArgNumber:
-			result = value.ToNumber()
-		default:
-			result = newStringFormulaArg(value.Value())
-		}
-		return result
+		return fn.implicitIntersect(argsList.Front().Next().Value.(formulaArg)).ToResult()
 	}
 	if argsList.Len() == 3 {
-		value := fn.implicitIntersect(argsList.Back().Value.(formulaArg))
-		switch value.Type {
-		case ArgNumber:
-			result = value.ToNumber()
-		default:
-			result = newStringFormulaArg(value.Value())
-		}
+		result = fn.implicitIntersect(argsList.Back().Value.(formulaArg)).ToResult()
 	}
 	return result
 }
