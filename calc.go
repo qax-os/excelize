@@ -14211,7 +14211,7 @@ func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
 	if argsList.Len() > 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s allows at most 2 arguments", name))
 	}
-	text, numChars := argsList.Front().Value.(formulaArg).Value(), 1
+	text, numChars := []rune(argsList.Front().Value.(formulaArg).Value()), 1
 	if argsList.Len() == 2 {
 		numArg := argsList.Back().Value.(formulaArg).ToNumber()
 		if numArg.Type != ArgNumber {
@@ -14220,27 +14220,15 @@ func (fn *formulaFuncs) leftRight(name string, argsList *list.List) formulaArg {
 		if numArg.Number < 0 {
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
-		numChars = int(numArg.Number)
+		numChars = int(math.Min(numArg.Number, float64(len(text))))
 	}
-	if name == "LEFTB" || name == "RIGHTB" {
-		if len(text) > numChars {
-			if name == "LEFTB" {
-				return newStringFormulaArg(text[:numChars])
-			}
-			// RIGHTB
-			return newStringFormulaArg(text[len(text)-numChars:])
+	if len(text) > numChars {
+		if name == "LEFT" || name == "LEFTB" {
+			return newStringFormulaArg(string(text[:numChars]))
 		}
-		return newStringFormulaArg(text)
+		return newStringFormulaArg(string(text[len(text)-numChars:]))
 	}
-	// LEFT/RIGHT
-	if countUTF16String(text) > numChars {
-		if name == "LEFT" {
-			return newStringFormulaArg(truncateUTF16Units(text, numChars))
-		}
-		// RIGHT
-		return newStringFormulaArg(string([]rune(text)[utf8.RuneCountInString(text)-numChars:]))
-	}
-	return newStringFormulaArg(text)
+	return newStringFormulaArg(string(text))
 }
 
 // LEN returns the length of a supplied text string. The syntax of the
