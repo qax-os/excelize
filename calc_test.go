@@ -1993,6 +1993,8 @@ func TestCalcCellValue(t *testing.T) {
 		"VALUETOTEXT(D1,1)": "\"Month\"",
 		// Conditional Functions
 		// IF
+		"A1-IF(FALSE,1,C1)":                         "1",
+		"IF(TRUE,C1,1)":                             "",
 		"IF(1=1)":                                   "TRUE",
 		"IF(1<>1)":                                  "FALSE",
 		"IF(5<0, \"negative\", \"positive\")":       "positive",
@@ -4878,24 +4880,6 @@ func TestCalcAND(t *testing.T) {
 		Matrix: [][]formulaArg{{{Type: ArgUnknown}}},
 	})
 	assert.Equal(t, newBoolFormulaArg(true), fn.AND(argsList))
-}
-
-func TestCalcEmptyCellRef(t *testing.T) {
-	f := NewFile()
-	assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1))
-
-	formulaList := map[string]string{
-		"=A1-B1":                "1",
-		"=A1-IF(FALSE,1,B1)":    "1",
-		"=IF(FALSE,1,B1)&\"x\"": "x",
-		"=IF(FALSE,1,\"\")":     "",
-	}
-	for formula, expected := range formulaList {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "D1", formula), formula)
-		result, err := f.CalcCellValue("Sheet1", "D1")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
-	}
 }
 
 func TestCalcISBLANK(t *testing.T) {
