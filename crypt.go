@@ -142,6 +142,14 @@ type encryption struct {
 // standard encryption. Support cryptographic algorithm: MD4, MD5, RIPEMD-160,
 // SHA1, SHA256, SHA384 and SHA512 currently.
 func Decrypt(raw []byte, opts *Options) (packageBuf []byte, err error) {
+	// Malformed CFB/EncryptionInfo content must surface as an error, never a
+	// runtime panic: parse failures here originate from attacker-controlled
+	// bytes handed to OpenFile/OpenReader/OpenBytes.
+	defer func() {
+		if r := recover(); r != nil {
+			packageBuf, err = nil, ErrWorkbookFileFormat
+		}
+	}()
 	doc, err := mscfb.New(bytes.NewReader(raw))
 	if err != nil {
 		return
