@@ -228,10 +228,10 @@ func ColumnNameToNumber(name string) (int, error) {
 		} else {
 			return -1, newInvalidColumnNameError(name)
 		}
+		if col > MaxColumns {
+			return -1, ErrColumnNumber
+		}
 		multi *= 26
-	}
-	if col > MaxColumns {
-		return -1, ErrColumnNumber
 	}
 	return col, nil
 }
