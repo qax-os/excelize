@@ -2045,6 +2045,8 @@ func TestCalcCellValue(t *testing.T) {
 		"VALUETOTEXT(D1,1)": "\"Month\"",
 		// Conditional Functions
 		// IF
+		"A1-IF(FALSE,1,C1)":                         "1",
+		"IF(TRUE,C1,1)":                             "",
 		"IF(1=1)":                                   "TRUE",
 		"IF(1<>1)":                                  "FALSE",
 		"IF(5<0, \"negative\", \"positive\")":       "positive",

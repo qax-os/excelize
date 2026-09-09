@@ -15037,6 +15037,8 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 		switch value.Type {
 		case ArgNumber:
 			result = value.ToNumber()
+		case ArgEmpty:
+			result = value
 		default:
 			result = newStringFormulaArg(value.Value())
 		}
@@ -15047,6 +15049,8 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 		switch value.Type {
 		case ArgNumber:
 			result = value.ToNumber()
+		case ArgEmpty:
+			result = value
 		default:
 			result = newStringFormulaArg(value.Value())
 		}
