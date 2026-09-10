@@ -55,6 +55,7 @@ var invalidColumns = []struct {
 	{Name: "_ ", Num: -1},
 	{Name: "_1", Num: -1},
 	{Name: "1_", Num: -1},
+	{Name: "CRPXNLSKVLJFHH", Num: -1}, // Column name corresponding to math.MaxInt64+1
 }
 
 var invalidCells = []string{"", "A", "AA", " A", "A ", "1A", "A1A", "A1 ", " A1", "1A1", "a-1", "A-1"}
