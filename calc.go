@@ -15138,20 +15138,7 @@ func (fn *formulaFuncs) ANCHORARRAY(argsList *list.List) formulaArg {
 		var row []formulaArg
 		for r := coordinates[1]; r <= coordinates[3]; r++ {
 			cellName, _ := CoordinatesToCellName(c, r)
-			// Evaluate through the CURRENT calculation context so the entry
-			// marker and iteration budget of the running calculation apply.
-			// Calling the exported CalcCellValue here builds a fresh
-			// calcContext per spill cell, which lets mutually-referencing
-			// array formulas recurse unboundedly (fatal stack overflow).
-			ctx := fn.ctx
-			if ctx == nil {
-				ctx = &calcContext{
-					maxCalcIterations: fn.f.options.MaxCalcIterations,
-					iterations:        make(map[string]uint),
-					iterationsCache:   make(map[string]formulaArg),
-				}
-			}
-			arg, err := fn.f.cellResolver(ctx, ref.Sheet, cellName)
+			arg, err := fn.f.cellResolver(fn.ctx, ref.Sheet, cellName)
 			if err != nil {
 				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 			}
