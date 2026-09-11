@@ -701,3 +701,70 @@ func TestGetImageCells(t *testing.T) {
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
 }
+
+func TestAddEmbeddedObject(t *testing.T) {
+	f := NewFile()
+	defer func() {
+		assert.NoError(t, f.Close())
+	}()
+
+	// Test data for embedding
+	testData := []byte("This is a test document content")
+
+	// Test adding embedded object with default options
+	err := f.AddEmbeddedObject("Sheet1", "A1", "test.txt", testData, nil)
+	assert.NoError(t, err)
+
+	// Verify the EMBED formula was set
+	formula, err := f.GetCellFormula("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, `EMBED("Package","")`, formula)
+
+	// Test adding embedded object with custom options
+	err = f.AddEmbeddedObject("Sheet1", "B1", "document.pdf", testData, 
+		&EmbeddedObjectOptions{
+			ObjectType: "Package",
+			AltText:    "Embedded PDF Document",
+		})
+	assert.NoError(t, err)
+
+	// Verify the second EMBED formula
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, `EMBED("Package","")`, formula)
+
+	// Test with invalid sheet name
+	err = f.AddEmbeddedObject("", "A1", "test.txt", testData, nil)
+	assert.EqualError(t, err, ErrSheetNameBlank.Error())
+
+	// Test with invalid cell reference
+	err = f.AddEmbeddedObject("Sheet1", "", "test.txt", testData, nil)
+	assert.EqualError(t, err, `cannot convert cell "" to coordinates: invalid cell name ""`)
+}
+
+func TestSetCellEmbedFormula(t *testing.T) {
+	f := NewFile()
+	defer func() {
+		assert.NoError(t, f.Close())
+	}()
+
+	// Test setting EMBED formula with default Package type
+	err := f.SetCellEmbedFormula("Sheet1", "A1", "")
+	assert.NoError(t, err)
+
+	formula, err := f.GetCellFormula("Sheet1", "A1")
+	assert.NoError(t, err)
+	assert.Equal(t, `EMBED("Package","")`, formula)
+
+	// Test setting EMBED formula with custom object type
+	err = f.SetCellEmbedFormula("Sheet1", "B1", "Document")
+	assert.NoError(t, err)
+
+	formula, err = f.GetCellFormula("Sheet1", "B1")
+	assert.NoError(t, err)
+	assert.Equal(t, `EMBED("Document","")`, formula)
+
+	// Test with invalid sheet name
+	err = f.SetCellEmbedFormula("", "A1", "Package")
+	assert.EqualError(t, err, ErrSheetNameBlank.Error())
+}
