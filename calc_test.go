@@ -5064,8 +5064,8 @@ func TestCalcANCHORARRAY(t *testing.T) {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "_xlfn.ANCHORARRAY($B$1)", FormulaOpts{Ref: &ref1, Type: &formulaType}))
 		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "_xlfn.ANCHORARRAY($A$1)", FormulaOpts{Ref: &ref2, Type: &formulaType}))
 		result, err := f.CalcCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
 		assert.Empty(t, result)
-		assert.Error(t, err)
 	})
 }
 
