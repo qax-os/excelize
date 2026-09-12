@@ -146,8 +146,12 @@ func Decrypt(raw []byte, opts *Options) (packageBuf []byte, err error) {
 	if err != nil {
 		return
 	}
+	maxStreamSize := min(int64(len(raw)), MaxCFBStreamSizeV4)
+	if ver := binary.LittleEndian.Uint16(raw[26:28]); ver == 3 {
+		maxStreamSize = min(int64(len(raw)), MaxCFBStreamSizeV3)
+	}
 	var encryptionInfoBuf, encryptedPackageBuf []byte
-	if encryptionInfoBuf, encryptedPackageBuf, err = extractPart(doc); err != nil {
+	if encryptionInfoBuf, encryptedPackageBuf, err = extractPart(doc, maxStreamSize); err != nil {
 		return
 	}
 	mechanism, err := encryptionMechanism(encryptionInfoBuf)
@@ -193,30 +197,24 @@ func Encrypt(raw []byte, opts *Options) ([]byte, error) {
 // maxEncryptedPartSize bounds the buffer extractPart allocates from a CFB
 // directory entry's declared stream size (1 GiB is far above any real
 // encrypted workbook part).
-const maxEncryptedPartSize = 1 << 30
-
-func extractPart(doc *mscfb.Reader) ([]byte, []byte, error) {
+func extractPart(doc *mscfb.Reader, maxStreamSize int64) ([]byte, []byte, error) {
 	var encryptionInfoBuf, encryptedPackageBuf []byte
 	for entry, err := doc.Next(); err == nil; entry, err = doc.Next() {
 		switch entry.Name {
-		case "EncryptionInfo":
-			if entry.Size < 0 || entry.Size > maxEncryptedPartSize {
-				return nil, nil, ErrWorkbookFileFormat
+		case "EncryptionInfo", "EncryptedPackage":
+			if entry.Size < 0 || maxStreamSize < entry.Size {
+				return encryptionInfoBuf, encryptedPackageBuf, ErrWorkbookFileFormat
 			}
 			buf := make([]byte, entry.Size)
 			if _, err := doc.Read(buf); err != nil {
 				return encryptionInfoBuf, encryptedPackageBuf, err
 			}
-			encryptionInfoBuf = buf
-		case "EncryptedPackage":
-			if entry.Size < 0 || entry.Size > maxEncryptedPartSize {
-				return nil, nil, ErrWorkbookFileFormat
+			if entry.Name == "EncryptionInfo" {
+				encryptionInfoBuf = buf
 			}
-			buf := make([]byte, entry.Size)
-			if _, err := doc.Read(buf); err != nil {
-				return encryptionInfoBuf, encryptedPackageBuf, err
+			if entry.Name == "EncryptedPackage" {
+				encryptedPackageBuf = buf
 			}
-			encryptedPackageBuf = buf
 		}
 	}
 	return encryptionInfoBuf, encryptedPackageBuf, nil
