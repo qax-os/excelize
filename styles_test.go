@@ -239,6 +239,19 @@ func TestSetConditionalFormat(t *testing.T) {
 		assert.Equal(t, expected, priorities)
 		assert.NoError(t, f.Close())
 	})
+	t.Run("with_style_index_that_is_not_a_differential_style", func(t *testing.T) {
+		f := NewFile()
+		// NewStyle indexes the cell styles, not the differential styles the
+		// Format field refers to
+		cellStyleID, err := f.NewStyle(&Style{Font: &Font{Color: "FF0000"}})
+		assert.NoError(t, err)
+		assert.Equal(t, newInvalidStyleID(cellStyleID), f.SetConditionalFormat("Sheet1", "A1:A10",
+			[]ConditionalFormatOptions{{Type: "cell", Format: &cellStyleID, Criteria: "greater than", Value: "6"}}))
+		negative := -1
+		assert.Equal(t, newInvalidStyleID(negative), f.SetConditionalFormat("Sheet1", "A1:A10",
+			[]ConditionalFormatOptions{{Type: "cell", Format: &negative, Criteria: "greater than", Value: "6"}}))
+		assert.NoError(t, f.Close())
+	})
 }
 
 func TestGetConditionalFormats(t *testing.T) {
