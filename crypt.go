@@ -194,9 +194,6 @@ func Encrypt(raw []byte, opts *Options) ([]byte, error) {
 }
 
 // extractPart extract data from storage by specified part name.
-// maxEncryptedPartSize bounds the buffer extractPart allocates from a CFB
-// directory entry's declared stream size (1 GiB is far above any real
-// encrypted workbook part).
 func extractPart(doc *mscfb.Reader, maxStreamSize int64) ([]byte, []byte, error) {
 	var encryptionInfoBuf, encryptedPackageBuf []byte
 	for entry, err := doc.Next(); err == nil; entry, err = doc.Next() {
