@@ -290,6 +290,22 @@ func TestGetConditionalFormats(t *testing.T) {
 		assert.Equal(t, format, opts[fmt.Sprintf("%s1:%s10", col, col)])
 	}
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestGetConditionalFormats.xlsx")))
+	// Test get conditional formats for a range reference carrying more than
+	// one conditional formatting block, which Excel writes whenever a rule is
+	// added to a range that already has one
+	repeatedBlocks := NewFile()
+	repeatedStyleID, err := repeatedBlocks.NewConditionalStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1}})
+	assert.NoError(t, err)
+	for _, format := range [][]ConditionalFormatOptions{
+		{{Type: "cell", Format: &repeatedStyleID, Criteria: "less than", Value: "5"}},
+		{{Type: "cell", Format: &repeatedStyleID, Criteria: "greater than", Value: "10"}},
+	} {
+		assert.NoError(t, repeatedBlocks.SetConditionalFormat("Sheet1", "A1:A10", format))
+	}
+	repeated, err := repeatedBlocks.GetConditionalFormats("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, repeated["A1:A10"], 2)
+	assert.NoError(t, repeatedBlocks.Close())
 	// Test unset all conditional formats
 	f, err = OpenFile(filepath.Join("test", "TestGetConditionalFormats.xlsx"))
 	assert.NoError(t, f.AddSparkline("Sheet1", &SparklineOptions{
