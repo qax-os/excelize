@@ -3278,7 +3278,7 @@ func (f *File) GetConditionalFormats(sheet string) (map[string][]ConditionalForm
 				opts = append(opts, extractFunc(f, mastCell, cr, ws.ExtLst))
 			}
 		}
-		conditionalFormats[cf.SQRef] = opts
+		conditionalFormats[cf.SQRef] = append(conditionalFormats[cf.SQRef], opts...)
 	}
 	if ws.ExtLst != nil {
 		decodeExtLst := new(decodeExtLst)

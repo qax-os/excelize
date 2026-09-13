@@ -290,6 +290,24 @@ func TestGetConditionalFormats(t *testing.T) {
 		assert.Equal(t, format, opts[fmt.Sprintf("%s1:%s10", col, col)])
 	}
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestGetConditionalFormats.xlsx")))
+
+	t.Run("with_multiple_rules_in_a_range", func(t *testing.T) {
+		f := NewFile()
+		format, err := f.NewConditionalStyle(&Style{Fill: Fill{Type: "pattern", Color: []string{"FEC7CE"}, Pattern: 1}})
+		assert.NoError(t, err)
+		expected := []ConditionalFormatOptions{
+			{Type: "cell", Format: &format, Criteria: "less than", Value: "5"},
+			{Type: "cell", Format: &format, Criteria: "greater than", Value: "10"},
+		}
+		for _, format := range expected {
+			assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A10", []ConditionalFormatOptions{format}))
+		}
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, expected, opts["A1:A10"])
+		assert.NoError(t, f.Close())
+	})
+
 	// Test unset all conditional formats
 	f, err = OpenFile(filepath.Join("test", "TestGetConditionalFormats.xlsx"))
 	assert.NoError(t, f.AddSparkline("Sheet1", &SparklineOptions{
