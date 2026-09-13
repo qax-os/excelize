@@ -3278,10 +3278,6 @@ func (f *File) GetConditionalFormats(sheet string) (map[string][]ConditionalForm
 				opts = append(opts, extractFunc(f, mastCell, cr, ws.ExtLst))
 			}
 		}
-		// A worksheet may hold more than one conditional formatting block for
-		// the same range reference, which Excel writes whenever a rule is
-		// added to a range that already has one. Append so that those rules
-		// are all reported instead of the last block replacing the others.
 		conditionalFormats[cf.SQRef] = append(conditionalFormats[cf.SQRef], opts...)
 	}
 	if ws.ExtLst != nil {
