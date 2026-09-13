@@ -1731,7 +1731,8 @@ func (f *File) getStyleID(ss *xlsxStyleSheet, style *Style) (int, error) {
 
 // NewConditionalStyle provides a function to create style for conditional
 // format by given style format. The parameters are the same with the NewStyle
-// function.
+// function. Use the returned index, not one from NewStyle, as the Format of
+// ConditionalFormatOptions.
 func (f *File) NewConditionalStyle(style *Style) (int, error) {
 	f.mu.Lock()
 	s, err := f.stylesReader()
@@ -1772,7 +1773,8 @@ func (f *File) NewConditionalStyle(style *Style) (int, error) {
 }
 
 // GetConditionalStyle returns conditional format style definition by specified
-// style index.
+// style index, as returned by NewConditionalStyle. The GetStyle function does
+// not accept this index.
 func (f *File) GetConditionalStyle(idx int) (*Style, error) {
 	var style *Style
 	f.mu.Lock()
@@ -2836,6 +2838,32 @@ func (f *File) SetCellStyle(sheet, topLeftCell, bottomRightCell string, styleID 
 // formatting rule when more than one rule is applied to a cell or a range of
 // cells. When this parameter is set then subsequent rules are not evaluated
 // if the current rule is true.
+// condFmtTypesWithoutDxf lists the conditional formatting rule types whose
+// generated rule carries no dxfId attribute.
+var condFmtTypesWithoutDxf = []string{"2_color_scale", "3_color_scale", "data_bar", "icon_set"}
+
+// validateConditionalFormatStyleID checks that every style index given in the
+// conditional format options refers to an existing differential style.
+func (f *File) validateConditionalFormatStyleID(opts []ConditionalFormatOptions) error {
+	f.mu.Lock()
+	s, err := f.stylesReader()
+	if err != nil {
+		f.mu.Unlock()
+		return err
+	}
+	f.mu.Unlock()
+	for _, opt := range opts {
+		// Color scales, data bars and icon sets never write a dxfId
+		if opt.Format == nil || inStrSlice(condFmtTypesWithoutDxf, opt.Type, true) != -1 {
+			continue
+		}
+		if *opt.Format < 0 || s.Dxfs == nil || len(s.Dxfs.Dxfs) <= *opt.Format {
+			return newInvalidStyleID(*opt.Format)
+		}
+	}
+	return nil
+}
+
 func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFormatOptions) error {
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
@@ -2843,6 +2871,9 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 	}
 	SQRef, mastCell, err := prepareConditionalFormatRange(rangeRef)
 	if err != nil {
+		return err
+	}
+	if err := f.validateConditionalFormatStyleID(opts); err != nil {
 		return err
 	}
 	// Create a pseudo GUID for each unique rule.
