@@ -197,7 +197,7 @@ func TestSetConditionalFormat(t *testing.T) {
 	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "unknown"}}))
 	// Test unsupported conditional formatting rule types
 	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1", []ConditionalFormatOptions{{Type: "unsupported"}}))
-	// Test get style with unsupported charset style sheet
+	// Test creating a conditional format with unsupported charset style sheet
 	f = NewFile()
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
