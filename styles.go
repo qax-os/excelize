@@ -2841,58 +2841,45 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 	if err != nil {
 		return err
 	}
-	SQRef, mastCell, err := prepareConditionalFormatRange(rangeRef)
+	SQRef, mastCell, err := prepareCfRange(rangeRef)
 	if err != nil {
 		return err
 	}
-	// Create a pseudo GUID for each unique rule.
+	f.mu.Lock()
+	s, err := f.stylesReader()
+	if err != nil {
+		f.mu.Unlock()
+		return err
+	}
+	f.mu.Unlock()
 	var rules int
 	for _, cf := range ws.ConditionalFormatting {
 		rules += len(cf.CfRule)
 	}
-	var (
-		cfRule          []*xlsxCfRule
-		noCriteriaTypes = []string{
-			"containsBlanks",
-			"notContainsBlanks",
-			"containsErrors",
-			"notContainsErrors",
-			"expression",
-			"iconSet",
-		}
-	)
+	var cfRule []*xlsxCfRule
 	for i, opt := range opts {
-		var vt, ct string
-		var ok bool
-		// "type" is a required parameter, check for valid validation types.
-		vt, ok = validType[opt.Type]
-		if ok {
-			// Check for valid criteria types.
-			ct, ok = criteriaType[opt.Criteria]
-			if ok || inStrSlice(noCriteriaTypes, vt, true) != -1 {
-				drawFunc, ok := drawContFmtFunc[vt]
-				if ok {
-					priority := rules + i
-					rule, x14rule := drawFunc(priority, ct, mastCell,
-						fmt.Sprintf("{00000000-0000-0000-%04X-%012X}", f.getSheetID(sheet), priority), &opt)
-					if rule == nil && x14rule == nil {
-						return ErrParameterInvalid
-					}
-					if rule != nil {
-						cfRule = append(cfRule, rule)
-					}
-					if x14rule != nil {
-						if err = f.appendCfRule(ws, x14rule, SQRef); err != nil {
-							return err
-						}
-						f.addSheetNameSpace(sheet, NameSpaceSpreadSheetX14)
-					}
-					continue
-				}
-			}
-			return ErrParameterInvalid
+		vt, ct, err := s.checkCfOptions(opt)
+		if err != nil {
+			return err
 		}
-		return ErrParameterInvalid
+		drawFunc, ok := drawContFmtFunc[vt]
+		if ok {
+			priority := rules + i
+			rule, x14rule := drawFunc(priority, ct, mastCell,
+				fmt.Sprintf("{00000000-0000-0000-%04X-%012X}", f.getSheetID(sheet), priority), &opt)
+			if rule == nil && x14rule == nil {
+				return ErrParameterInvalid
+			}
+			if rule != nil {
+				cfRule = append(cfRule, rule)
+			}
+			if x14rule != nil {
+				if err = f.appendCfRule(ws, x14rule, SQRef); err != nil {
+					return err
+				}
+				f.addSheetNameSpace(sheet, NameSpaceSpreadSheetX14)
+			}
+		}
 	}
 	if len(cfRule) > 0 {
 		ws.ConditionalFormatting = append(ws.ConditionalFormatting, &xlsxConditionalFormatting{
@@ -2903,9 +2890,43 @@ func (f *File) SetConditionalFormat(sheet, rangeRef string, opts []ConditionalFo
 	return err
 }
 
-// prepareConditionalFormatRange returns checked cell range and master cell
-// reference by giving conditional formatting range reference.
-func prepareConditionalFormatRange(rangeRef string) (string, string, error) {
+// checkCfOptions checks the validity of the conditional formatting options and
+// returns the validation type, criteria type and error.
+func (s *xlsxStyleSheet) checkCfOptions(opt ConditionalFormatOptions) (string, string, error) {
+	var (
+		ok              bool
+		vt, ct          string
+		noDxfTypes      = []string{"2_color_scale", "3_color_scale", "data_bar", "icon_set"}
+		noCriteriaTypes = []string{
+			"containsBlanks",
+			"notContainsBlanks",
+			"containsErrors",
+			"notContainsErrors",
+			"expression",
+			"iconSet",
+		}
+	)
+	if opt.Format != nil && inStrSlice(noDxfTypes, opt.Type, true) == -1 {
+		if *opt.Format < 0 || s.Dxfs == nil || len(s.Dxfs.Dxfs) <= *opt.Format {
+			return vt, ct, newInvalidStyleID(*opt.Format)
+		}
+	}
+	// "type" is a required parameter, check for valid validation types.
+	vt, ok = validType[opt.Type]
+	if !ok {
+		return vt, ct, ErrParameterInvalid
+	}
+	// Check for valid criteria types.
+	ct, ok = criteriaType[opt.Criteria]
+	if !ok && inStrSlice(noCriteriaTypes, vt, true) == -1 {
+		return vt, ct, ErrParameterInvalid
+	}
+	return vt, ct, nil
+}
+
+// prepareCfRange returns checked cell range and master cell reference by giving
+// conditional formatting range reference.
+func prepareCfRange(rangeRef string) (string, string, error) {
 	var SQRef, mastCell string
 	if rangeRef == "" {
 		return SQRef, mastCell, ErrParameterRequired
@@ -3269,7 +3290,7 @@ func (f *File) GetConditionalFormats(sheet string) (map[string][]ConditionalForm
 	}
 	for _, cf := range ws.ConditionalFormatting {
 		var opts []ConditionalFormatOptions
-		_, mastCell, err := prepareConditionalFormatRange(cf.SQRef)
+		_, mastCell, err := prepareCfRange(cf.SQRef)
 		if err != nil {
 			return conditionalFormats, err
 		}
