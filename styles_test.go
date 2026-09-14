@@ -197,6 +197,12 @@ func TestSetConditionalFormat(t *testing.T) {
 	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1:A2", []ConditionalFormatOptions{{Type: "icon_set", IconStyle: "unknown"}}))
 	// Test unsupported conditional formatting rule types
 	assert.Equal(t, ErrParameterInvalid, f.SetConditionalFormat("Sheet1", "A1", []ConditionalFormatOptions{{Type: "unsupported"}}))
+	// Test get style with unsupported charset style sheet
+	f = NewFile()
+	f.Styles = nil
+	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
+	style := 1
+	assert.EqualError(t, f.SetConditionalFormat("Sheet1", "A1", []ConditionalFormatOptions{{Type: "errors", Format: &style}}), "XML syntax error on line 1: invalid UTF-8")
 
 	t.Run("multi_conditional_formatting_rules_priority", func(t *testing.T) {
 		f := NewFile()
@@ -239,17 +245,13 @@ func TestSetConditionalFormat(t *testing.T) {
 		assert.Equal(t, expected, priorities)
 		assert.NoError(t, f.Close())
 	})
-	t.Run("with_style_index_that_is_not_a_differential_style", func(t *testing.T) {
+	t.Run("with_invalid_style_index", func(t *testing.T) {
 		f := NewFile()
-		// NewStyle indexes the cell styles, not the differential styles the
-		// Format field refers to
-		cellStyleID, err := f.NewStyle(&Style{Font: &Font{Color: "FF0000"}})
+		style, err := f.NewStyle(&Style{Font: &Font{Color: "FF0000"}})
 		assert.NoError(t, err)
-		assert.Equal(t, newInvalidStyleID(cellStyleID), f.SetConditionalFormat("Sheet1", "A1:A10",
-			[]ConditionalFormatOptions{{Type: "cell", Format: &cellStyleID, Criteria: "greater than", Value: "6"}}))
-		negative := -1
-		assert.Equal(t, newInvalidStyleID(negative), f.SetConditionalFormat("Sheet1", "A1:A10",
-			[]ConditionalFormatOptions{{Type: "cell", Format: &negative, Criteria: "greater than", Value: "6"}}))
+		assert.Equal(t, newInvalidStyleID(style), f.SetConditionalFormat("Sheet1", "A1:A10", []ConditionalFormatOptions{{Type: "cell", Format: &style, Criteria: "greater than", Value: "6"}}))
+		style = -1
+		assert.Equal(t, newInvalidStyleID(style), f.SetConditionalFormat("Sheet1", "A1:A10", []ConditionalFormatOptions{{Type: "cell", Format: &style, Criteria: "greater than", Value: "6"}}))
 		assert.NoError(t, f.Close())
 	})
 }
@@ -487,12 +489,12 @@ func TestNewStyle(t *testing.T) {
 	f = NewFile()
 	styleID, err := f.NewStyle(&Style{Font: &Font{Bold: true, Italic: true, Family: "Times New Roman", Size: 36, Color: "777777"}})
 	assert.NoError(t, err)
-	styles, err := f.stylesReader()
+	s, err := f.stylesReader()
 	assert.NoError(t, err)
-	fontID := styles.CellXfs.Xf[styleID].FontID
-	font := styles.Fonts.Font[*fontID]
+	fontID := s.CellXfs.Xf[styleID].FontID
+	font := s.Fonts.Font[*fontID]
 	assert.Contains(t, *font.Name.Val, "Times New Roman", "Stored font should contain font name")
-	assert.Equal(t, 2, styles.CellXfs.Count, "Should have 2 styles")
+	assert.Equal(t, 2, s.CellXfs.Count, "Should have 2 styles")
 	_, err = f.NewStyle(&Style{})
 	assert.NoError(t, err)
 	_, err = f.NewStyle(nil)
@@ -691,9 +693,9 @@ func TestConditionalStyle(t *testing.T) {
 
 func TestGetDefaultFont(t *testing.T) {
 	f := NewFile()
-	s, err := f.GetDefaultFont()
+	defaultFont, err := f.GetDefaultFont()
 	assert.NoError(t, err)
-	assert.Equal(t, s, "Calibri", "Default font should be Calibri")
+	assert.Equal(t, defaultFont, "Calibri", "Default font should be Calibri")
 	// Test get default font with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
@@ -704,12 +706,12 @@ func TestGetDefaultFont(t *testing.T) {
 func TestSetDefaultFont(t *testing.T) {
 	f := NewFile()
 	assert.NoError(t, f.SetDefaultFont("Arial"))
-	styles, err := f.stylesReader()
+	s, err := f.stylesReader()
 	assert.NoError(t, err)
-	s, err := f.GetDefaultFont()
+	defaultFont, err := f.GetDefaultFont()
 	assert.NoError(t, err)
-	assert.Equal(t, s, "Arial", "Default font should change to Arial")
-	assert.Equal(t, *styles.CellStyles.CellStyle[0].CustomBuiltIn, true)
+	assert.Equal(t, defaultFont, "Arial", "Default font should change to Arial")
+	assert.Equal(t, *s.CellStyles.CellStyle[0].CustomBuiltIn, true)
 	// Test set default font with unsupported charset style sheet
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
@@ -721,9 +723,9 @@ func TestStylesReader(t *testing.T) {
 	// Test read styles with unsupported charset
 	f.Styles = nil
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
-	styles, err := f.stylesReader()
+	s, err := f.stylesReader()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
-	assert.EqualValues(t, new(xlsxStyleSheet), styles)
+	assert.EqualValues(t, new(xlsxStyleSheet), s)
 }
 
 func TestThemeReader(t *testing.T) {

@@ -1612,19 +1612,19 @@ func (f *File) formattedValue(c *xlsxC, raw bool, cellType CellType) (string, er
 	if raw || c.S == 0 {
 		return c.V, nil
 	}
-	styleSheet, err := f.stylesReader()
+	s, err := f.stylesReader()
 	if err != nil {
 		return c.V, err
 	}
-	if styleSheet.CellXfs == nil {
+	if s.CellXfs == nil {
 		return c.V, err
 	}
-	if c.S >= len(styleSheet.CellXfs.Xf) || c.S < 0 {
+	if c.S >= len(s.CellXfs.Xf) || c.S < 0 {
 		return c.V, err
 	}
 	var numFmtID int
-	if styleSheet.CellXfs.Xf[c.S].NumFmtID != nil {
-		numFmtID = *styleSheet.CellXfs.Xf[c.S].NumFmtID
+	if s.CellXfs.Xf[c.S].NumFmtID != nil {
+		numFmtID = *s.CellXfs.Xf[c.S].NumFmtID
 	}
 	date1904 := false
 	wb, err := f.workbookReader()
@@ -1634,7 +1634,7 @@ func (f *File) formattedValue(c *xlsxC, raw bool, cellType CellType) (string, er
 	if wb != nil && wb.WorkbookPr != nil {
 		date1904 = wb.WorkbookPr.Date1904
 	}
-	if fmtCode, ok := styleSheet.getCustomNumFmtCode(numFmtID); ok {
+	if fmtCode, ok := s.getCustomNumFmtCode(numFmtID); ok {
 		return format(c.V, fmtCode, date1904, cellType, f.options), err
 	}
 	if fmtCode, ok := f.getBuiltInNumFmtCode(numFmtID); ok {
