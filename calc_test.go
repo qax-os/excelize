@@ -5057,6 +5057,16 @@ func TestCalcANCHORARRAY(t *testing.T) {
 	formulaArg = fn.ANCHORARRAY(argsList)
 	assert.Equal(t, ArgError, formulaArg.Type)
 	assert.Equal(t, "sheet SheetN does not exist", formulaArg.Value())
+
+	t.Run("with_circular_references", func(t *testing.T) {
+		f := NewFile()
+		formulaType, ref1, ref2 := STCellFormulaTypeArray, "A1:A1", "B1:B1"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", "_xlfn.ANCHORARRAY($B$1)", FormulaOpts{Ref: &ref1, Type: &formulaType}))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "_xlfn.ANCHORARRAY($A$1)", FormulaOpts{Ref: &ref2, Type: &formulaType}))
+		result, err := f.CalcCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Empty(t, result)
+	})
 }
 
 func TestCalcArrayFormula(t *testing.T) {

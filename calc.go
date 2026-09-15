@@ -15138,11 +15138,13 @@ func (fn *formulaFuncs) ANCHORARRAY(argsList *list.List) formulaArg {
 		var row []formulaArg
 		for r := coordinates[1]; r <= coordinates[3]; r++ {
 			cellName, _ := CoordinatesToCellName(c, r)
-			result, err := fn.f.CalcCellValue(ref.Sheet, cellName, Options{RawCellValue: true})
+			arg, err := fn.f.cellResolver(fn.ctx, ref.Sheet, cellName)
 			if err != nil {
 				return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 			}
-			arg := newStringFormulaArg(result)
+			if arg.Type == ArgEmpty {
+				arg = newStringFormulaArg("")
+			}
 			if num := arg.ToNumber(); num.Type == ArgNumber {
 				arg = num
 			}

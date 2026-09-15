@@ -64,7 +64,7 @@ func TestEncrypt(t *testing.T) {
 
 	doc, err := mscfb.New(bytes.NewReader(raw))
 	assert.NoError(t, err)
-	encryptionInfoBuf, encryptedPackageBuf, err := extractPart(doc)
+	encryptionInfoBuf, encryptedPackageBuf, err := extractPart(doc, int64(len(raw)))
 	assert.NoError(t, err)
 	binary.LittleEndian.PutUint64(encryptionInfoBuf[20:32], uint64(0))
 	_, err = standardDecrypt(encryptionInfoBuf, encryptedPackageBuf, &Options{Password: "password"})
@@ -219,6 +219,16 @@ func TestEncrypt(t *testing.T) {
 	assert.Equal(t, ErrWorkbookFileFormat, err)
 	_, err = createIV(0, Encryption{KeyData: KeyData{HashAlgorithm: "", BlockSize: 16}})
 	assert.Equal(t, ErrUnsupportedHashAlgorithm, err)
+
+	t.Run("with_negative_stream_size", func(t *testing.T) {
+		for _, name := range []string{"EncryptionInfo", "EncryptedPackage"} {
+			for _, size := range []int64{-1, MaxCFBStreamSizeV3 + 1} {
+				doc := &mscfb.Reader{File: []*mscfb.File{{}, {Name: name, Size: size}}}
+				_, _, err := extractPart(doc, MaxCFBStreamSizeV3)
+				assert.Equal(t, ErrWorkbookFileFormat, err, "name=%s, size=%d", name, size)
+			}
+		}
+	})
 }
 
 func TestEncryptionKeyAndIVPadding(t *testing.T) {
@@ -270,7 +280,7 @@ func TestMaxSpinCount(t *testing.T) {
 	assert.NoError(t, err)
 	doc, err := mscfb.New(bytes.NewReader(raw))
 	assert.NoError(t, err)
-	encryptionInfoBuf, _, err := extractPart(doc)
+	encryptionInfoBuf, _, err := extractPart(doc, int64(len(raw)))
 	assert.NoError(t, err)
 	// Test decrypt spreadsheet with a spin count exceeds the maximum limit
 	tampered := bytes.Replace(encryptionInfoBuf,
