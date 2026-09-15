@@ -1443,28 +1443,28 @@ func TestProtectSheet(t *testing.T) {
 	assert.Len(t, ws.SheetProtection.HashValue, 88)
 	assert.Equal(t, int(sheetProtectionSpinCount), ws.SheetProtection.SpinCount)
 	// Test remove sheet protection with an incorrect password
-	assert.EqualError(t, f.UnprotectSheet(sheetName, "wrongPassword"), ErrUnprotectSheetPassword.Error())
+	assert.Equal(t, f.UnprotectSheet(sheetName, "wrongPassword"), ErrUnprotectSheetPassword)
 	// Test remove sheet protection with invalid sheet name
-	assert.EqualError(t, f.UnprotectSheet("Sheet:1", "wrongPassword"), ErrSheetNameInvalid.Error())
+	assert.Equal(t, f.UnprotectSheet("Sheet:1", "wrongPassword"), ErrSheetNameInvalid)
 	// Test remove sheet protection with password verification
 	assert.NoError(t, f.UnprotectSheet(sheetName, "password"))
 	// Test protect worksheet with empty password
 	assert.NoError(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{}))
 	assert.Empty(t, ws.SheetProtection.Password)
 	// Test protect worksheet with password exceeds the limit length
-	assert.EqualError(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{
+	assert.Equal(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{
 		AlgorithmName: "MD4",
 		Password:      strings.Repeat("s", MaxFieldLength+1),
-	}), ErrPasswordLengthInvalid.Error())
+	}), ErrPasswordLengthInvalid)
 	// Test protect worksheet with unsupported hash algorithm
-	assert.EqualError(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{
+	assert.Equal(t, f.ProtectSheet(sheetName, &SheetProtectionOptions{
 		AlgorithmName: "RIPEMD-160",
 		Password:      "password",
-	}), ErrUnsupportedHashAlgorithm.Error())
+	}), ErrUnsupportedHashAlgorithm)
 	// Test protect not exists worksheet
 	assert.EqualError(t, f.ProtectSheet("SheetN", nil), "sheet SheetN does not exist")
 	// Test protect sheet with invalid sheet name
-	assert.EqualError(t, f.ProtectSheet("Sheet:1", nil), ErrSheetNameInvalid.Error())
+	assert.Equal(t, f.ProtectSheet("Sheet:1", nil), ErrSheetNameInvalid)
 	// Test get sheet protection on not exists worksheet
 	_, err = f.GetSheetProtection("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
@@ -1515,15 +1515,15 @@ func TestProtectWorkbook(t *testing.T) {
 	assert.Equal(t, int(workbookProtectionSpinCount), wb.WorkbookProtection.WorkbookSpinCount)
 
 	// Test protect workbook with password exceeds the limit length
-	assert.EqualError(t, f.ProtectWorkbook(&WorkbookProtectionOptions{
+	assert.Equal(t, f.ProtectWorkbook(&WorkbookProtectionOptions{
 		AlgorithmName: "MD4",
 		Password:      strings.Repeat("s", MaxFieldLength+1),
-	}), ErrPasswordLengthInvalid.Error())
+	}), ErrPasswordLengthInvalid)
 	// Test protect workbook with unsupported hash algorithm
-	assert.EqualError(t, f.ProtectWorkbook(&WorkbookProtectionOptions{
+	assert.Equal(t, f.ProtectWorkbook(&WorkbookProtectionOptions{
 		AlgorithmName: "RIPEMD-160",
 		Password:      "password",
-	}), ErrUnsupportedHashAlgorithm.Error())
+	}), ErrUnsupportedHashAlgorithm)
 	// Test protect workbook with unsupported charset workbook
 	f.WorkBook = nil
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)

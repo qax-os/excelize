@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -110,7 +111,7 @@ func TestEncrypt(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	// Test decryptPackage error with padding
+	// Test decryptPackage error with incomplete ciphertext
 	input := make([]byte, 18)
 	binary.LittleEndian.PutUint64(input[:8], 10)
 	for i := 8; i < 18; i++ {
@@ -123,7 +124,7 @@ func TestEncrypt(t *testing.T) {
 			SaltValue:     base64.StdEncoding.EncodeToString([]byte("")),
 		},
 	})
-	assert.NoError(t, err)
+	assert.Equal(t, ErrWorkbookFileFormat, err)
 	// Test IV creation error with invalid salt
 	input = make([]byte, 4104)
 	binary.LittleEndian.PutUint64(input[:8], 4096)
@@ -198,6 +199,36 @@ func TestEncrypt(t *testing.T) {
 	}
 	compoundFile.stream = make([]byte, 10000)
 	compoundFile.writeDirectoryEntry([]int{1, 0, 1, 0, 1, 0, 0, 0})
+	// Test agile decrypt with invalid initialization vector
+	encryption := `<encryption><keyData hashAlgorithm="%s"/><keyEncryptors><keyEncryptor><encryptedKey xmlns="http://schemas.microsoft.com/office/2006/keyEncryptor/password" keyBits="128"/></keyEncryptor></keyEncryptors></encryption>`
+	packageBuf, err := agileDecrypt(append(make([]byte, 8), fmt.Appendf(nil, encryption, "SHA1")...), nil, &Options{Password: "passwd"})
+	assert.Equal(t, ErrWorkbookFileFormat, err)
+	assert.Nil(t, packageBuf)
+	// Test agile decrypt with unsupported hash algorithm
+	packageBuf, err = agileDecrypt(append(make([]byte, 8), fmt.Appendf(nil, encryption, "")...), nil, &Options{Password: "passwd"})
+	assert.Equal(t, ErrUnsupportedHashAlgorithm, err)
+	assert.Nil(t, packageBuf)
+
+	encryptionInfo = make([]byte, 120)
+	binary.LittleEndian.PutUint32(encryptionInfo[8:12], 36)
+	for _, buf := range [][]byte{nil, make([]byte, 12), encryptionInfo[:48], encryptionInfo} {
+		_, err := standardDecrypt(buf, make([]byte, 24), &Options{})
+		assert.Equal(t, ErrWorkbookFileFormat, err, "encryption info size: %d", len(buf))
+	}
+	for _, buf := range [][]byte{nil, append(make([]byte, 8), []byte("<encryption/>")...)} {
+		_, err := agileDecrypt(buf, make([]byte, 24), &Options{})
+		assert.Equal(t, ErrWorkbookFileFormat, err, "encryption info size: %d", len(buf))
+	}
+	_, err = convertPasswdToKey("passwd", blockKey, Encryption{
+		KeyEncryptors: KeyEncryptors{KeyEncryptor: []KeyEncryptor{{}}},
+	})
+	assert.Equal(t, ErrWorkbookFileFormat, err)
+	_, err = decrypt(make([]byte, 16), nil, nil)
+	assert.Equal(t, ErrWorkbookFileFormat, err)
+	_, err = createIV(0, Encryption{KeyData: KeyData{HashAlgorithm: "SHA1", BlockSize: -16}})
+	assert.Equal(t, ErrWorkbookFileFormat, err)
+	_, err = createIV(0, Encryption{KeyData: KeyData{HashAlgorithm: "", BlockSize: 16}})
+	assert.Equal(t, ErrUnsupportedHashAlgorithm, err)
 
 	t.Run("with_negative_stream_size", func(t *testing.T) {
 		for _, name := range []string{"EncryptionInfo", "EncryptedPackage"} {
@@ -208,6 +239,22 @@ func TestEncrypt(t *testing.T) {
 			}
 		}
 	})
+}
+
+func TestEncryptionKeyAndIVPadding(t *testing.T) {
+	key, err := convertPasswdToKey("pw", blockKey, Encryption{
+		KeyData: KeyData{HashAlgorithm: "SHA1"},
+		KeyEncryptors: KeyEncryptors{KeyEncryptor: []KeyEncryptor{
+			{EncryptedKey: EncryptedKey{KeyData: KeyData{KeyBits: 256}}},
+		}},
+	})
+	assert.NoError(t, err)
+	assert.Len(t, key, 32)
+	assert.Equal(t, bytes.Repeat([]byte{0x36}, 12), key[20:])
+	iv, err := createIV(0, Encryption{KeyData: KeyData{HashAlgorithm: "MD5", BlockSize: 32}})
+	assert.NoError(t, err)
+	assert.Len(t, iv, 32)
+	assert.Equal(t, bytes.Repeat([]byte{0x36}, 16), iv[16:])
 }
 
 func TestEncryptionMechanism(t *testing.T) {
