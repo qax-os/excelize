@@ -1081,6 +1081,51 @@ func TestAdjustConditionalFormats(t *testing.T) {
 		assert.Equal(t, format, opts["D1:D2"])
 		assert.Equal(t, format, opts["D4:D4"])
 	})
+	t.Run("for_adjust_conditional_formats_on_first_row_of_range", func(t *testing.T) {
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "638EC6",
+		}}
+		for _, c := range []struct {
+			name, ref, expected string
+			dir                 adjustDirection
+			num, offset         int
+		}{
+			{"remove_first_row_of_range", "D5:D8", "D5:D7", rows, 5, -1},
+			{"remove_first_row_of_multiple_range", "A1:A2 D5:D8", "A1:A2 D5:D7", rows, 5, -1},
+			{"remove_first_column_of_range", "E1:H1", "E1:G1", columns, 5, -1},
+			{"remove_inner_row_of_range_control", "D5:D8", "D5:D7", rows, 6, -1},
+			{"remove_row_before_range_control", "D5:D8", "D4:D7", rows, 4, -1},
+			{"insert_first_row_of_range_control", "D5:D8", "D6:D9", rows, 5, 1},
+			{"insert_first_column_of_range_control", "E1:H1", "F1:I1", columns, 5, 1},
+		} {
+			t.Run(c.name, func(t *testing.T) {
+				f := NewFile()
+				assert.NoError(t, f.SetConditionalFormat("Sheet1", c.ref, format))
+				ref, err := f.adjustCellRef(c.ref, c.dir, c.num, c.offset)
+				assert.NoError(t, err)
+				assert.Equal(t, c.expected, ref)
+			})
+		}
+	})
+	t.Run("for_remove_first_row_of_conditional_formats_range", func(t *testing.T) {
+		f := NewFile()
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "638EC6",
+		}}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "D5:D8", format))
+		assert.NoError(t, f.RemoveRow("Sheet1", 5))
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, format, opts["D5:D7"])
+	})
 }
 
 func TestAdjustDataValidations(t *testing.T) {
@@ -1198,6 +1243,17 @@ func TestAdjustDataValidations(t *testing.T) {
 		dvs, err = f.GetDataValidations("Sheet2")
 		assert.NoError(t, err)
 		assert.Equal(t, "B5:C6", dvs[0].Sqref) // Adjusted range
+	})
+	t.Run("for_remove_first_row_of_data_validations_range", func(t *testing.T) {
+		f := NewFile()
+		dv := NewDataValidation(true)
+		dv.Sqref = "C5:C8"
+		assert.NoError(t, dv.SetDropList([]string{"1", "2", "3"}))
+		assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+		assert.NoError(t, f.RemoveRow("Sheet1", 5))
+		dvs, err := f.GetDataValidations("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, "C5:C7", dvs[0].Sqref)
 	})
 }
 
