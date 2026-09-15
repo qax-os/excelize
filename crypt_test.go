@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -198,6 +199,15 @@ func TestEncrypt(t *testing.T) {
 	}
 	compoundFile.stream = make([]byte, 10000)
 	compoundFile.writeDirectoryEntry([]int{1, 0, 1, 0, 1, 0, 0, 0})
+	// Test agile decrypt with invalid initialization vector
+	encryption := `<encryption><keyData hashAlgorithm="%s"/><keyEncryptors><keyEncryptor><encryptedKey xmlns="http://schemas.microsoft.com/office/2006/keyEncryptor/password" keyBits="128"/></keyEncryptor></keyEncryptors></encryption>`
+	packageBuf, err := agileDecrypt(append(make([]byte, 8), fmt.Appendf(nil, encryption, "SHA1")...), nil, &Options{Password: "passwd"})
+	assert.Equal(t, ErrWorkbookFileFormat, err)
+	assert.Nil(t, packageBuf)
+	// Test agile decrypt with unsupported hash algorithm
+	packageBuf, err = agileDecrypt(append(make([]byte, 8), fmt.Appendf(nil, encryption, "")...), nil, &Options{Password: "passwd"})
+	assert.Equal(t, ErrUnsupportedHashAlgorithm, err)
+	assert.Nil(t, packageBuf)
 
 	encryptionInfo = make([]byte, 120)
 	binary.LittleEndian.PutUint32(encryptionInfo[8:12], 36)
