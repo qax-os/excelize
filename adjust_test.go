@@ -979,6 +979,23 @@ func TestAdjustFormula(t *testing.T) {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", "XFD1:XFD1", FormulaOpts{Ref: &ref, Type: &formulaType}))
 		assert.Equal(t, ErrColumnNumber, f.InsertCols("Sheet1", "A", 1))
 	})
+	t.Run("for_shared_formula_ref_on_first_row_of_range", func(t *testing.T) {
+		f := NewFile()
+		formulaType, ref := STCellFormulaTypeShared, "D5:D8"
+		assert.NoError(t, f.SetCellFormula("Sheet1", "D6", "A1+B1", FormulaOpts{Ref: &ref, Type: &formulaType}))
+		assert.NoError(t, f.RemoveRow("Sheet1", 5))
+		ws, ok := f.Sheet.Load("xl/worksheets/sheet1.xml")
+		assert.True(t, ok)
+		var sharedRef string
+		for _, row := range ws.(*xlsxWorksheet).SheetData.Row {
+			for _, c := range row.C {
+				if c.F != nil && c.F.Ref != "" {
+					sharedRef = c.F.Ref
+				}
+			}
+		}
+		assert.Equal(t, "D5:D7", sharedRef)
+	})
 }
 
 func TestAdjustVolatileDeps(t *testing.T) {
@@ -1101,6 +1118,14 @@ func TestAdjustConditionalFormats(t *testing.T) {
 			{"remove_row_before_range_control", "D5:D8", "D4:D7", rows, 4, -1},
 			{"insert_first_row_of_range_control", "D5:D8", "D6:D9", rows, 5, 1},
 			{"insert_first_column_of_range_control", "E1:H1", "F1:I1", columns, 5, 1},
+			{"remove_first_row_of_range_at_first_row", "A1:A3", "A1:A2", rows, 1, -1},
+			{"remove_first_column_of_range_at_first_column", "A1:C1", "A1:B1", columns, 1, -1},
+			{"remove_first_row_of_absolute_range", "$D$5:$D$8", "D5:D7", rows, 5, -1},
+			{"remove_first_row_of_multiple_range_leading", "D5:D8 A1:A2", "D5:D7 A1:A2", rows, 5, -1},
+			{"remove_first_row_of_adjacent_multiple_range", "D5:D8 F5:F9", "D5:D7 F5:F8", rows, 5, -1},
+			{"remove_last_row_of_range_control", "D5:D8", "D5:D7", rows, 8, -1},
+			{"remove_row_after_range_control", "D5:D8", "D5:D8", rows, 10, -1},
+			{"adjust_range_with_zero_offset_control", "D5:D8", "D5:D8", rows, 5, 0},
 		} {
 			t.Run(c.name, func(t *testing.T) {
 				f := NewFile()
@@ -1125,6 +1150,36 @@ func TestAdjustConditionalFormats(t *testing.T) {
 		opts, err := f.GetConditionalFormats("Sheet1")
 		assert.NoError(t, err)
 		assert.Equal(t, format, opts["D5:D7"])
+	})
+	t.Run("for_remove_first_row_of_conditional_formats_range_at_first_row", func(t *testing.T) {
+		f := NewFile()
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "638EC6",
+		}}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "A1:A3", format))
+		assert.NoError(t, f.RemoveRow("Sheet1", 1))
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, format, opts["A1:A2"])
+	})
+	t.Run("for_remove_first_column_of_conditional_formats_range", func(t *testing.T) {
+		f := NewFile()
+		format := []ConditionalFormatOptions{{
+			Type:     "data_bar",
+			Criteria: "=",
+			MinType:  "min",
+			MaxType:  "max",
+			BarColor: "638EC6",
+		}}
+		assert.NoError(t, f.SetConditionalFormat("Sheet1", "E1:H1", format))
+		assert.NoError(t, f.RemoveCol("Sheet1", "E"))
+		opts, err := f.GetConditionalFormats("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, format, opts["E1:G1"])
 	})
 }
 
@@ -1254,6 +1309,39 @@ func TestAdjustDataValidations(t *testing.T) {
 		dvs, err := f.GetDataValidations("Sheet1")
 		assert.NoError(t, err)
 		assert.Equal(t, "C5:C7", dvs[0].Sqref)
+	})
+	t.Run("for_remove_first_column_of_data_validations_range", func(t *testing.T) {
+		f := NewFile()
+		dv := NewDataValidation(true)
+		dv.Sqref = "C1:F1"
+		assert.NoError(t, dv.SetDropList([]string{"1", "2", "3"}))
+		assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+		assert.NoError(t, f.RemoveCol("Sheet1", "C"))
+		dvs, err := f.GetDataValidations("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, "C1:E1", dvs[0].Sqref)
+	})
+	t.Run("for_remove_first_row_of_data_validations_range_at_first_row", func(t *testing.T) {
+		f := NewFile()
+		dv := NewDataValidation(true)
+		dv.Sqref = "A1:A3"
+		assert.NoError(t, dv.SetDropList([]string{"1", "2", "3"}))
+		assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+		assert.NoError(t, f.RemoveRow("Sheet1", 1))
+		dvs, err := f.GetDataValidations("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, "A1:A2", dvs[0].Sqref)
+	})
+	t.Run("for_remove_column_before_data_validations_range_control", func(t *testing.T) {
+		f := NewFile()
+		dv := NewDataValidation(true)
+		dv.Sqref = "C1:F1"
+		assert.NoError(t, dv.SetDropList([]string{"1", "2", "3"}))
+		assert.NoError(t, f.AddDataValidation("Sheet1", dv))
+		assert.NoError(t, f.RemoveCol("Sheet1", "B"))
+		dvs, err := f.GetDataValidations("Sheet1")
+		assert.NoError(t, err)
+		assert.Equal(t, "B1:E1", dvs[0].Sqref)
 	})
 }
 
