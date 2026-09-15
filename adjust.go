@@ -241,9 +241,7 @@ func (f *File) adjustSingleRowFormulas(sheet, sheetN string, r *xlsxRow, num, of
 func (f *File) adjustCellRef(cellRef string, dir adjustDirection, num, offset int) (string, error) {
 	var SQRef []string
 	applyOffset := func(coordinates []int, idx1, idx2, maxVal int) []int {
-		// On deleting, the start of the range moves only when it is after the
-		// removed row or column, a range starting on it shrinks in place
-		if start := coordinates[idx1]; (offset < 0 && start > num) || (offset >= 0 && start >= num) {
+		if coordinates[idx1] >= num {
 			coordinates[idx1] += offset
 		}
 		if coordinates[idx2] >= num {
