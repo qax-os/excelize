@@ -695,16 +695,14 @@ func (f *File) extractPictureFromAnchor(drawingRelationships string, a *xdrCellA
 		pic = &Picture{
 			Extension: filepath.Ext(r.Target),
 			File:      buffer.([]byte),
-			Format:    &GraphicOptions{ScaleX: defaultDrawingScale, ScaleY: defaultDrawingScale},
+			Format:    &GraphicOptions{ScaleX: defaultDrawingScale, ScaleY: defaultDrawingScale, Positioning: "oneCell"},
 		}
 		if a.ClientData != nil {
 			pic.Format.Locked = &a.ClientData.FLocksWithSheet
 			pic.Format.PrintObject = &a.ClientData.FPrintsWithSheet
 		}
-		if a.EditAs != "" {
+		if a.To != nil {
 			pic.Format.Positioning = a.EditAs
-		} else if a.To == nil {
-			pic.Format.Positioning = "oneCell"
 		}
 		if a.Pic != nil {
 			cx, cy = a.Pic.SpPr.Xfrm.Ext.Cx, a.Pic.SpPr.Xfrm.Ext.Cy
@@ -757,16 +755,14 @@ func (f *File) extractPictureFromDecodeAnchor(drawingRelationships string, a *de
 		pic = &Picture{
 			Extension: filepath.Ext(target),
 			File:      buffer.([]byte),
-			Format:    &GraphicOptions{ScaleX: defaultDrawingScale, ScaleY: defaultDrawingScale},
+			Format:    &GraphicOptions{ScaleX: defaultDrawingScale, ScaleY: defaultDrawingScale, Positioning: "oneCell"},
 		}
 		if a.ClientData != nil {
 			pic.Format.Locked = &a.ClientData.FLocksWithSheet
 			pic.Format.PrintObject = &a.ClientData.FPrintsWithSheet
 		}
-		if a.EditAs != "" {
+		if a.To != nil {
 			pic.Format.Positioning = a.EditAs
-		} else if a.To == nil {
-			pic.Format.Positioning = "oneCell"
 		}
 		if a.Pic != nil {
 			cx, cy = a.Pic.SpPr.Xfrm.Ext.Cx, a.Pic.SpPr.Xfrm.Ext.Cy
