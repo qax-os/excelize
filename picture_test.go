@@ -207,12 +207,12 @@ func TestAddPictureErrors(t *testing.T) {
 
 	// Test add picture with custom image decoder and encoder
 	decode := func(r io.Reader) (image.Image, error) { return nil, nil }
-	decodeConfig := func(r io.Reader) (image.Config, error) { return image.Config{Height: 100, Width: 90}, nil }
+	decodeConfig := func(r io.Reader) (image.Config, error) { return image.Config{Height: 128, Width: 200}, nil }
 	for cell, ext := range map[string]string{"Q1": "emf", "Q7": "wmf", "Q13": "emz", "Q19": "wmz"} {
 		image.RegisterFormat(ext, "", decode, decodeConfig)
-		assert.NoError(t, f.AddPicture("Sheet1", cell, filepath.Join("test", "images", fmt.Sprintf("excel.%s", ext)), nil))
+		assert.NoError(t, f.AddPicture("Sheet1", cell, filepath.Join("test", "images", fmt.Sprintf("excel.%s", ext)), &GraphicOptions{ScaleX: 0.8, ScaleY: 0.8}))
 	}
-	assert.NoError(t, f.AddPicture("Sheet1", "Q25", "excelize.svg", &GraphicOptions{ScaleX: 2.8}))
+	assert.NoError(t, f.AddPicture("Sheet1", "Q25", "excelize.svg", &GraphicOptions{ScaleX: 1.6}))
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddPicture2.xlsx")))
 	assert.NoError(t, f.Close())
 }
@@ -292,6 +292,14 @@ func TestGetPicture(t *testing.T) {
 	cells, err := f.GetPictureCells("Sheet2")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"K16"}, cells)
+
+	f.Drawings.Delete("xl/drawings/drawing2.xml")
+	f.Pkg.Store("xl/drawings/drawing2.xml", []byte(`<xdr:wsDr xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><xdr:twoCellAnchor editAs="oneCell"><xdr:from><xdr:col>10</xdr:col><xdr:row>15</xdr:row></xdr:from><xdr:to><xdr:col>13</xdr:col><xdr:row>22</xdr:row></xdr:to><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="2"></xdr:cNvPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId1"></a:blip></xdr:blipFill></xdr:pic></xdr:twoCellAnchor></xdr:wsDr>`))
+	pics, err = f.GetPictures("Sheet2", "K16")
+	assert.NoError(t, err)
+	if assert.Len(t, pics, 1) {
+		assert.Equal(t, "oneCell", pics[0].Format.Positioning)
+	}
 
 	// Try to get picture cells with absolute target path in the drawing relationship
 	rels, err := f.relsReader("xl/drawings/_rels/drawing2.xml.rels")

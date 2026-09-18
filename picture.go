@@ -695,14 +695,14 @@ func (f *File) extractPictureFromAnchor(drawingRelationships string, a *xdrCellA
 		pic = &Picture{
 			Extension: filepath.Ext(r.Target),
 			File:      buffer.([]byte),
-			Format:    &GraphicOptions{ScaleX: defaultDrawingScale, ScaleY: defaultDrawingScale},
+			Format:    &GraphicOptions{ScaleX: defaultDrawingScale, ScaleY: defaultDrawingScale, Positioning: "oneCell"},
 		}
 		if a.ClientData != nil {
 			pic.Format.Locked = &a.ClientData.FLocksWithSheet
 			pic.Format.PrintObject = &a.ClientData.FPrintsWithSheet
 		}
-		if a.To == nil {
-			pic.Format.Positioning = "oneCell"
+		if a.To != nil {
+			pic.Format.Positioning = a.EditAs
 		}
 		if a.Pic != nil {
 			cx, cy = a.Pic.SpPr.Xfrm.Ext.Cx, a.Pic.SpPr.Xfrm.Ext.Cy
@@ -755,14 +755,14 @@ func (f *File) extractPictureFromDecodeAnchor(drawingRelationships string, a *de
 		pic = &Picture{
 			Extension: filepath.Ext(target),
 			File:      buffer.([]byte),
-			Format:    &GraphicOptions{ScaleX: defaultDrawingScale, ScaleY: defaultDrawingScale},
+			Format:    &GraphicOptions{ScaleX: defaultDrawingScale, ScaleY: defaultDrawingScale, Positioning: "oneCell"},
 		}
 		if a.ClientData != nil {
 			pic.Format.Locked = &a.ClientData.FLocksWithSheet
 			pic.Format.PrintObject = &a.ClientData.FPrintsWithSheet
 		}
-		if a.To == nil {
-			pic.Format.Positioning = "oneCell"
+		if a.To != nil {
+			pic.Format.Positioning = a.EditAs
 		}
 		if a.Pic != nil {
 			cx, cy = a.Pic.SpPr.Xfrm.Ext.Cx, a.Pic.SpPr.Xfrm.Ext.Cy
@@ -825,6 +825,9 @@ func (f *File) extractDecodeCellAnchor(anchor *xdrCellAnchor, drawingRelationshi
 		deCellAnchor = new(decodeCellAnchor)
 	)
 	_ = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + anchor.GraphicFrame + "</decodeCellAnchor>")).Decode(&deCellAnchor)
+	if deCellAnchor.EditAs == "" {
+		deCellAnchor.EditAs = anchor.EditAs
+	}
 	if deCellAnchor.From != nil && deCellAnchor.Pic != nil {
 		if cond(deCellAnchor.From) {
 			if drawRel = f.getDrawingRelationships(drawingRelationships, deCellAnchor.Pic.BlipFill.Blip.Embed); drawRel != nil {
