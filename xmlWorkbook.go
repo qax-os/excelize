@@ -314,19 +314,19 @@ type xlsxDefinedName struct {
 // and details. Calculation is the process of computing formulas and then
 // displaying the results as values in the cells that contain the formulas.
 type xlsxCalcPr struct {
-	CalcCompleted         bool    `xml:"calcCompleted,attr,omitempty"`
-	CalcID                int     `xml:"calcId,attr,omitempty"`
-	CalcMode              string  `xml:"calcMode,attr,omitempty"`
-	CalcOnSave            bool    `xml:"calcOnSave,attr,omitempty"`
-	ConcurrentCalc        *bool   `xml:"concurrentCalc,attr"`
-	ConcurrentManualCount int     `xml:"concurrentManualCount,attr,omitempty"`
-	ForceFullCalc         bool    `xml:"forceFullCalc,attr,omitempty"`
-	FullCalcOnLoad        bool    `xml:"fullCalcOnLoad,attr,omitempty"`
-	FullPrecision         bool    `xml:"fullPrecision,attr,omitempty"`
-	Iterate               bool    `xml:"iterate,attr,omitempty"`
-	IterateCount          int     `xml:"iterateCount,attr,omitempty"`
-	IterateDelta          float64 `xml:"iterateDelta,attr,omitempty"`
-	RefMode               string  `xml:"refMode,attr,omitempty"`
+	CalcCompleted         *bool    `xml:"calcCompleted,attr"`
+	CalcID                *int     `xml:"calcId,attr"`
+	CalcMode              *string  `xml:"calcMode,attr"`
+	CalcOnSave            *bool    `xml:"calcOnSave,attr"`
+	ConcurrentCalc        *bool    `xml:"concurrentCalc,attr"`
+	ConcurrentManualCount *int     `xml:"concurrentManualCount,attr"`
+	ForceFullCalc         *bool    `xml:"forceFullCalc,attr"`
+	FullCalcOnLoad        *bool    `xml:"fullCalcOnLoad,attr"`
+	FullPrecision         *bool    `xml:"fullPrecision,attr"`
+	Iterate               *bool    `xml:"iterate,attr"`
+	IterateCount          *int     `xml:"iterateCount,attr"`
+	IterateDelta          *float64 `xml:"iterateDelta,attr"`
+	RefMode               *string  `xml:"refMode,attr"`
 }
 
 // xlsxCustomWorkbookViews defines the collection of custom workbook views that
