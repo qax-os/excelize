@@ -22,6 +22,42 @@ func prepareCalcData(cellData [][]interface{}) *File {
 	return f
 }
 
+// TestCalcCellValueNestedOperandAsArgument verifies that a deeply nested
+// function call used as an arithmetic operand inside another call keeps the
+// enclosing expression's pending operands out of its argument list.
+// Ref issue #2406.
+func TestCalcCellValueNestedOperandAsArgument(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "B6", 30))
+	assert.NoError(t, f.SetCellValue("Sheet1", "D6", 100))
+	assert.NoError(t, f.SetCellValue("Sheet1", "E6", 200))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B14", 0.3))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B15", 0.5))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B16", 0.7))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B17", 0.9))
+
+	// standalone nesting always worked
+	assert.NoError(t, f.SetCellFormula("Sheet1", "Z8",
+		`IF($B6<=30,$B$14,IF($B6<=90,$B$15,IF($B6<=180,$B$16,$B$17)))`))
+	result, err := f.CalcCellValue("Sheet1", "Z8")
+	assert.NoError(t, err)
+	assert.Equal(t, "0.3", result)
+
+	// shallow nesting as operand always worked
+	assert.NoError(t, f.SetCellFormula("Sheet1", "Z6",
+		`IF($B6>=1,-(D6+E6)*IF($B6<=30,$B$14,0.99),0)`))
+	result, err = f.CalcCellValue("Sheet1", "Z6")
+	assert.NoError(t, err)
+	assert.Equal(t, "-90", result)
+
+	// deep nesting as operand: -(100+200)*0.3 = -90
+	assert.NoError(t, f.SetCellFormula("Sheet1", "F6",
+		`IF($B6>=1,-(D6+E6)*IF($B6<=30,$B$14,IF($B6<=90,$B$15,IF($B6<=180,$B$16,$B$17))),0)`))
+	result, err = f.CalcCellValue("Sheet1", "F6")
+	assert.NoError(t, err)
+	assert.Equal(t, "-90", result)
+}
+
 func TestCalcCellValue(t *testing.T) {
 	cellData := [][]interface{}{
 		{1, 4, nil, "Month", "Team", "Sales"},
