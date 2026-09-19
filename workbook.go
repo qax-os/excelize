@@ -53,90 +53,6 @@ func (f *File) GetWorkbookProps() (WorkbookPropsOptions, error) {
 	return opts, err
 }
 
-const (
-	calcPrDefaultCalcCompleted         = true
-	calcPrDefaultCalcID                = 0
-	calcPrDefaultCalcMode              = "auto"
-	calcPrDefaultCalcOnSave            = true
-	calcPrDefaultConcurrentCalc        = true
-	calcPrDefaultConcurrentManualCount = 0
-	calcPrDefaultForceFullCalc         = false
-	calcPrDefaultFullCalcOnLoad        = false
-	calcPrDefaultFullPrecision         = true
-	calcPrDefaultIterate               = false
-	calcPrDefaultIterateCount          = 100
-	calcPrDefaultIterateDelta          = 0.001
-	calcPrDefaultRefMode               = "A1"
-)
-
-func calcPrSetBool(cur, val *bool, def bool) *bool {
-	if val == nil {
-		return cur
-	}
-	if *val == def {
-		return nil
-	}
-	return boolPtr(*val)
-}
-
-func calcPrSetInt(cur *int, val *uint, def int) *int {
-	if val == nil {
-		return cur
-	}
-	if int(*val) == def {
-		return nil
-	}
-	return intPtr(int(*val))
-}
-
-func calcPrSetFloat64(cur, val *float64, def float64) *float64 {
-	if val == nil {
-		return cur
-	}
-	if *val == def {
-		return nil
-	}
-	return float64Ptr(*val)
-}
-
-func calcPrSetString(cur, val *string, def string) *string {
-	if val == nil {
-		return cur
-	}
-	if *val == def {
-		return nil
-	}
-	return stringPtr(*val)
-}
-
-func calcPrGetBool(cur *bool, def bool) *bool {
-	if cur != nil {
-		return boolPtr(*cur)
-	}
-	return boolPtr(def)
-}
-
-func calcPrGetUint(cur *int, def int) *uint {
-	if cur != nil {
-		return uintPtr(uint(*cur))
-	}
-	return uintPtr(uint(def))
-}
-
-func calcPrGetFloat64(cur *float64, def float64) *float64 {
-	if cur != nil {
-		return float64Ptr(*cur)
-	}
-	return float64Ptr(def)
-}
-
-func calcPrGetString(cur *string, def string) *string {
-	if cur != nil {
-		return stringPtr(*cur)
-	}
-	return stringPtr(def)
-}
-
 // SetCalcProps provides a function to sets calculation properties. Optional
 // value of "CalcMode" property is: "manual", "auto" or "autoNoTable". Optional
 // value of "RefMode" property is: "A1" or "R1C1".
@@ -157,50 +73,43 @@ func (f *File) SetCalcProps(opts *CalcPropsOptions) error {
 	if opts.RefMode != nil && inStrSlice(supportedRefMode, *opts.RefMode, true) == -1 {
 		return newInvalidOptionalValue("RefMode", *opts.RefMode, supportedRefMode)
 	}
-	cp := wb.CalcPr
-	cp.CalcCompleted = calcPrSetBool(cp.CalcCompleted, opts.CalcCompleted, calcPrDefaultCalcCompleted)
-	cp.CalcOnSave = calcPrSetBool(cp.CalcOnSave, opts.CalcOnSave, calcPrDefaultCalcOnSave)
-	cp.ConcurrentCalc = calcPrSetBool(cp.ConcurrentCalc, opts.ConcurrentCalc, calcPrDefaultConcurrentCalc)
-	cp.ForceFullCalc = calcPrSetBool(cp.ForceFullCalc, opts.ForceFullCalc, calcPrDefaultForceFullCalc)
-	cp.FullCalcOnLoad = calcPrSetBool(cp.FullCalcOnLoad, opts.FullCalcOnLoad, calcPrDefaultFullCalcOnLoad)
-	cp.FullPrecision = calcPrSetBool(cp.FullPrecision, opts.FullPrecision, calcPrDefaultFullPrecision)
-	cp.Iterate = calcPrSetBool(cp.Iterate, opts.Iterate, calcPrDefaultIterate)
-	cp.CalcID = calcPrSetInt(cp.CalcID, opts.CalcID, calcPrDefaultCalcID)
-	cp.ConcurrentManualCount = calcPrSetInt(cp.ConcurrentManualCount, opts.ConcurrentManualCount, calcPrDefaultConcurrentManualCount)
-	cp.IterateCount = calcPrSetInt(cp.IterateCount, opts.IterateCount, calcPrDefaultIterateCount)
-	cp.IterateDelta = calcPrSetFloat64(cp.IterateDelta, opts.IterateDelta, calcPrDefaultIterateDelta)
-	cp.CalcMode = calcPrSetString(cp.CalcMode, opts.CalcMode, calcPrDefaultCalcMode)
-	cp.RefMode = calcPrSetString(cp.RefMode, opts.RefMode, calcPrDefaultRefMode)
+	setNoPtrFieldsVal([]string{
+		"CalcCompleted", "CalcOnSave", "ForceFullCalc", "FullCalcOnLoad", "FullPrecision", "Iterate",
+		"IterateDelta",
+		"CalcMode", "RefMode",
+	}, reflect.ValueOf(*opts), reflect.ValueOf(wb.CalcPr).Elem())
+	if opts.CalcID != nil {
+		wb.CalcPr.CalcID = int(*opts.CalcID)
+	}
+	if opts.ConcurrentManualCount != nil {
+		wb.CalcPr.ConcurrentManualCount = int(*opts.ConcurrentManualCount)
+	}
+	if opts.IterateCount != nil {
+		wb.CalcPr.IterateCount = int(*opts.IterateCount)
+	}
+	wb.CalcPr.ConcurrentCalc = opts.ConcurrentCalc
 	return err
 }
 
-// GetCalcProps provides a function to gets calculation properties. An attribute
-// absent from the workbook carries its ECMA-376 default value, so the returned
-// options report the effective calculation settings rather than only those
-// written to the file.
+// GetCalcProps provides a function to gets calculation properties.
 func (f *File) GetCalcProps() (CalcPropsOptions, error) {
 	var opts CalcPropsOptions
 	wb, err := f.workbookReader()
 	if err != nil {
 		return opts, err
 	}
-	cp := wb.CalcPr
-	if cp == nil {
-		cp = new(xlsxCalcPr)
+	if wb.CalcPr == nil {
+		return opts, err
 	}
-	opts.CalcCompleted = calcPrGetBool(cp.CalcCompleted, calcPrDefaultCalcCompleted)
-	opts.CalcOnSave = calcPrGetBool(cp.CalcOnSave, calcPrDefaultCalcOnSave)
-	opts.ConcurrentCalc = calcPrGetBool(cp.ConcurrentCalc, calcPrDefaultConcurrentCalc)
-	opts.ForceFullCalc = calcPrGetBool(cp.ForceFullCalc, calcPrDefaultForceFullCalc)
-	opts.FullCalcOnLoad = calcPrGetBool(cp.FullCalcOnLoad, calcPrDefaultFullCalcOnLoad)
-	opts.FullPrecision = calcPrGetBool(cp.FullPrecision, calcPrDefaultFullPrecision)
-	opts.Iterate = calcPrGetBool(cp.Iterate, calcPrDefaultIterate)
-	opts.CalcID = calcPrGetUint(cp.CalcID, calcPrDefaultCalcID)
-	opts.ConcurrentManualCount = calcPrGetUint(cp.ConcurrentManualCount, calcPrDefaultConcurrentManualCount)
-	opts.IterateCount = calcPrGetUint(cp.IterateCount, calcPrDefaultIterateCount)
-	opts.IterateDelta = calcPrGetFloat64(cp.IterateDelta, calcPrDefaultIterateDelta)
-	opts.CalcMode = calcPrGetString(cp.CalcMode, calcPrDefaultCalcMode)
-	opts.RefMode = calcPrGetString(cp.RefMode, calcPrDefaultRefMode)
+	setPtrFieldsVal([]string{
+		"CalcCompleted", "CalcOnSave", "ForceFullCalc", "FullCalcOnLoad", "FullPrecision", "Iterate",
+		"IterateDelta",
+		"CalcMode", "RefMode",
+	}, reflect.ValueOf(*wb.CalcPr), reflect.ValueOf(&opts).Elem())
+	opts.CalcID = uintPtr(uint(wb.CalcPr.CalcID))
+	opts.ConcurrentManualCount = uintPtr(uint(wb.CalcPr.ConcurrentManualCount))
+	opts.IterateCount = uintPtr(uint(wb.CalcPr.IterateCount))
+	opts.ConcurrentCalc = wb.CalcPr.ConcurrentCalc
 	return opts, err
 }
 
