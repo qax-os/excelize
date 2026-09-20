@@ -16071,7 +16071,14 @@ func (fn *formulaFuncs) INDIRECT(argsList *list.List) formulaArg {
 		cell, err = CoordinatesToCellName(col, row)
 		return
 	}
-	refs := strings.Split(refText, ":")
+	sheet, cellRef, ok := parseIndirectSheetRef(refText)
+	if !ok {
+		return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+	}
+	if sheet == "" {
+		sheet = fn.sheet
+	}
+	refs := strings.Split(cellRef, ":")
 	fromRef, toRef := refs[0], ""
 	if len(refs) == 2 {
 		toRef = refs[1]
@@ -16090,15 +16097,37 @@ func (fn *formulaFuncs) INDIRECT(argsList *list.List) formulaArg {
 			toRef = to
 		}
 	}
-	if len(refs) == 1 {
-		value, err := fn.f.GetCellValue(fn.sheet, fromRef)
-		if err != nil {
-			return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
-		}
-		return newStringFormulaArg(value)
+	if len(refs) == 2 {
+		fromRef += ":" + toRef
 	}
-	arg, _ := fn.f.parseReference(fn.ctx, fn.sheet, fromRef+":"+toRef)
+	arg, err := fn.f.parseReference(fn.ctx, sheet, fromRef)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+	}
 	return arg
+}
+
+// parseIndirectSheetRef splits the reference text of the INDIRECT function
+// into the worksheet name and the cell reference. A worksheet name which
+// contains spaces has to be enclosed in single quotes, an embedded single
+// quote is doubled. The returned flag reports whether the reference text is
+// well-formed.
+func parseIndirectSheetRef(refText string) (sheet, cellRef string, ok bool) {
+	if strings.HasPrefix(refText, "'") {
+		idx := strings.LastIndex(refText, "'!")
+		if idx < 1 {
+			return "", "", false
+		}
+		sheet, cellRef = strings.ReplaceAll(refText[1:idx], "''", "'"), refText[idx+2:]
+	} else if idx := strings.Index(refText, "!"); idx != -1 {
+		if sheet, cellRef = refText[:idx], refText[idx+1:]; sheet == "" ||
+			strings.ContainsAny(sheet, " \t") {
+			return "", "", false
+		}
+	} else {
+		cellRef = refText
+	}
+	return sheet, cellRef, !strings.Contains(cellRef, "!")
 }
 
 // LOOKUP function performs an approximate match lookup in a one-column or

@@ -7264,3 +7264,101 @@ func TestCalc3DRef(t *testing.T) {
 	assert.Empty(t, split3DReference(":Sheet1!A1"))
 	assert.Empty(t, split3DReference("!A1"))
 }
+
+func TestCalcINDIRECTSheetRef(t *testing.T) {
+	prepareCalcData := func() *File {
+		f := NewFile()
+		for _, sheet := range []string{"Daten", "I3", "Blatt Name", "Ruf!Zeichen"} {
+			_, err := f.NewSheet(sheet)
+			assert.NoError(t, err)
+		}
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 7))
+		assert.NoError(t, f.SetCellValue("Sheet1", "E2", 5))
+		assert.NoError(t, f.SetCellValue("Sheet1", "Q1", "Daten!$E"))
+		assert.NoError(t, f.SetCellValue("Daten", "A1", 3))
+		assert.NoError(t, f.SetCellValue("Daten", "E1", "Hamburg"))
+		assert.NoError(t, f.SetCellValue("Daten", "E2", 1))
+		assert.NoError(t, f.SetCellValue("Daten", "E4", 0))
+		assert.NoError(t, f.SetCellValue("I3", "E2", 1))
+		assert.NoError(t, f.SetCellValue("Blatt Name", "A1", 42))
+		assert.NoError(t, f.SetCellValue("Ruf!Zeichen", "A1", 77))
+		return f
+	}
+	formulaList := map[string]string{
+		// worksheet name with a single cell reference
+		"INDIRECT(\"Daten!$E$2\")":                       "1",
+		"INDIRECT(\"Daten!E2\")":                         "1",
+		"INDIRECT(\"Daten!$E2\")":                        "1",
+		"INDIRECT(\"Daten!E$2\")":                        "1",
+		"INDIRECT(\"I3!$E$2\")":                          "1",
+		"INDIRECT(\"'I3'!$E$2\")":                        "1",
+		"INDIRECT(\"daten!$E$2\")":                       "1",
+		"INDIRECT(\"'Daten'!$E$2\")":                     "1",
+		"INDIRECT(\"'Blatt Name'!A1\")":                  "42",
+		"INDIRECT(\"'Ruf!Zeichen'!A1\")":                 "77",
+		"INDIRECT(\"Daten!$E$1\")":                       "Hamburg",
+		"INDIRECT(\"Daten!A1\")":                         "3",
+		"INDIRECT(\"Daten!$E$4\")":                       "0",
+		"INDIRECT(\"Daten!$E$2\",TRUE)":                  "1",
+		"INDIRECT(\"Daten!$E$2\",1)":                     "1",
+		"INDIRECT(\"Daten!R2C5\",FALSE)":                 "1",
+		"INDIRECT($Q$1&\"$2\")":                          "1",
+		"INDIRECT($Q$1&\"$1\")":                          "Hamburg",
+		"SUM(INDIRECT(\"Daten!$E$2\"))":                  "1",
+		"INDIRECT(\"Daten!$E$2\")+1":                     "2",
+		"INDIRECT(\"Daten!$E$2\")&\"x\"":                 "1x",
+		"SUM(INDIRECT(\"Daten!$E$2\"),INDIRECT(\"A1\"))": "8",
+		// a single cell reference keeps the type of the referenced cell
+		"ISNUMBER(INDIRECT(\"Daten!$E$2\"))": "TRUE",
+		"ISNUMBER(INDIRECT(\"A1\"))":         "TRUE",
+		"ISTEXT(INDIRECT(\"Daten!$E$1\"))":   "TRUE",
+		"COUNT(INDIRECT(\"Daten!$E$2\"))":    "1",
+		// references which worked before, unchanged
+		"INDIRECT(\"$A$1\")":               "7",
+		"INDIRECT(\"A1\")":                 "7",
+		"INDIRECT(\"A1:A1\")":              "7",
+		"INDIRECT(\"Daten!$E$2:$E$2\")":    "1",
+		"INDIRECT(\"'Blatt Name'!A1:A1\")": "42",
+		"SUM(INDIRECT(\"Daten!E1:E2\"))":   "1",
+		"INDIRECT(\"R2C5\",FALSE)":         "5",
+		"INDIRECT(\"R1C1\",FALSE)":         "7",
+	}
+	for formula, expected := range formulaList {
+		f := prepareCalcData()
+		defer func() {
+			assert.NoError(t, f.Close())
+		}()
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string][]string{
+		// an unquoted worksheet name must not contain spaces or exclamation marks
+		"INDIRECT(\"Blatt Name!A1\")":    {"#REF!", "#REF!"},
+		"INDIRECT(\"Blatt Name!A1:A1\")": {"#REF!", "#REF!"},
+		"INDIRECT(\"Ruf!Zeichen!A1\")":   {"#REF!", "#REF!"},
+		"INDIRECT(\" Daten!$E$2\")":      {"#REF!", "#REF!"},
+		"INDIRECT(\"Daten!$E$2 \")":      {"#REF!", "#REF!"},
+		"INDIRECT(\"KeinBlatt!A1\")":     {"#REF!", "#REF!"},
+		"INDIRECT(\"Daten!E1048577\")":   {"#REF!", "#REF!"},
+		"INDIRECT(\"Daten!ZZZ1\")":       {"#REF!", "#REF!"},
+		"INDIRECT(\"Daten!5\")":          {"#REF!", "#REF!"},
+		"INDIRECT(\"Daten!E\")":          {"#REF!", "#REF!"},
+		"INDIRECT(\"Daten!$E$2\",0)":     {"#REF!", "#REF!"},
+		"INDIRECT(\"E2\",FALSE)":         {"#REF!", "#REF!"},
+		"INDIRECT(\"\")":                 {"#REF!", "#REF!"},
+	}
+	for formula, expected := range calcError {
+		f := prepareCalcData()
+		defer func() {
+			assert.NoError(t, f.Close())
+		}()
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, expected[1], formula)
+		assert.Equal(t, expected[0], result, formula)
+	}
+	sheet, cellRef, ok := parseIndirectSheetRef("'A1")
+	assert.Equal(t, []interface{}{"", "", false}, []interface{}{sheet, cellRef, ok})
+}
