@@ -4981,6 +4981,13 @@ func minor(sqMtx [][]float64, idx int) [][]float64 {
 
 // det determinant of the 2x2 matrix.
 func det(sqMtx [][]float64) float64 {
+	if len(sqMtx) == 1 {
+		// the determinant of a single element is that element. Without this
+		// the expansion below asks for the minor of a one by one matrix,
+		// which is empty, and every cofactor of a two by two matrix comes out
+		// as zero.
+		return sqMtx[0][0]
+	}
 	if len(sqMtx) == 2 {
 		m00 := sqMtx[0][0]
 		m01 := sqMtx[0][1]
