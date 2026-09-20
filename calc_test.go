@@ -2404,6 +2404,8 @@ func TestCalcCellValue(t *testing.T) {
 		"1*\"\"":      {"#VALUE!", "#VALUE!"},
 		"\"\"^1":      {"#VALUE!", "#VALUE!"},
 		"1/\"\"":      {"#VALUE!", "#VALUE!"},
+		"0(((;)))":    {"", ErrInvalidFormula.Error()},
+		"0((((;))))":  {"", ErrInvalidFormula.Error()},
 		// Engineering Functions
 		// BESSELI
 		"BESSELI()":       {"#VALUE!", "BESSELI requires 2 numeric arguments"},

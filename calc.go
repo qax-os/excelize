@@ -1568,7 +1568,7 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 		optStack.Push(token)
 	}
 	if isEndParenthesesToken(token) { // )
-		for !isBeginParenthesesToken(optStack.Peek().(efp.Token)) { // != (
+		for !optStack.Empty() && !isBeginParenthesesToken(optStack.Peek().(efp.Token)) { // != (
 			topOpt := optStack.Peek().(efp.Token)
 			if err := calculate(opdStack, topOpt); err != nil {
 				opdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
@@ -1576,6 +1576,9 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 				continue
 			}
 			optStack.Pop()
+		}
+		if optStack.Empty() {
+			return ErrInvalidFormula
 		}
 		optStack.Pop()
 	}
