@@ -15230,6 +15230,21 @@ func matchPattern(findText, withinText string, dbcs bool, startNum int) (int, bo
 	return offset, countUTF16String(withinText) != offset-1
 }
 
+// matchPatternWholeText reports whether the whole text matches the pattern
+// string, in which the '*' and '?' wildcards are supported. In contrast to
+// the matchPattern function, which serves the FIND and SEARCH functions and
+// reports any occurrence of the pattern, the match is anchored at both ends
+// of the text, as required by the wildcard match mode of the lookup
+// functions.
+func matchPatternWholeText(findText, withinText string) bool {
+	if !strings.ContainsAny(findText, "*?") {
+		return findText == withinText
+	}
+	exp, _ := matchPatternToRegExp(findText, false)
+	ok, _ := regexp.MatchString(fmt.Sprintf("(?s)%s$", exp), withinText)
+	return ok
+}
+
 // compareFormulaArg compares the left-hand sides and the right-hand sides'
 // formula arguments by given conditions such as case-sensitive, if exact
 // match, and make compare result as formula criteria condition type.
@@ -15251,10 +15266,8 @@ func compareFormulaArg(lhs, rhs, matchMode formulaArg, caseSensitive bool) byte 
 		if !caseSensitive {
 			ls, rs = strings.ToLower(ls), strings.ToLower(rs)
 		}
-		if matchMode.Number == matchModeWildcard {
-			if _, ok := matchPattern(rs, ls, false, 0); ok {
-				return criteriaEq
-			}
+		if matchMode.Number == matchModeWildcard && matchPatternWholeText(rs, ls) {
+			return criteriaEq
 		}
 		return map[int]byte{1: criteriaG, -1: criteriaL, 0: criteriaEq}[strings.Compare(ls, rs)]
 	case ArgEmpty:
