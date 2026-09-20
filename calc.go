@@ -12200,6 +12200,33 @@ func (fn *formulaFuncs) NOT(argsList *list.List) formulaArg {
 	return newErrorFormulaArg(formulaErrorVALUE, "NOT expects 1 boolean or numeric argument")
 }
 
+// or is part of the implementation of the formula function OR. It reduces a
+// single argument to a logical value, or to an error if the argument is
+// neither a logical value nor a number. A matrix is true as soon as one of
+// its elements is.
+func (fn *formulaFuncs) or(token formulaArg) formulaArg {
+	switch token.Type {
+	case ArgString:
+		if token.String == "TRUE" {
+			return newBoolFormulaArg(true)
+		}
+		if token.String == "FALSE" {
+			return newBoolFormulaArg(false)
+		}
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	case ArgNumber:
+		return newBoolFormulaArg(token.Number != 0)
+	case ArgMatrix:
+		for _, item := range token.ToList() {
+			result := fn.or(item)
+			if result.Type == ArgError || result.Number != 0 {
+				return result
+			}
+		}
+	}
+	return newBoolFormulaArg(false)
+}
+
 // OR function tests a number of supplied conditions and returns either TRUE
 // or FALSE. The syntax of the function is:
 //
@@ -12213,30 +12240,11 @@ func (fn *formulaFuncs) OR(argsList *list.List) formulaArg {
 	}
 	var or bool
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
-		token := arg.Value.(formulaArg)
-		switch token.Type {
-		case ArgUnknown:
-			continue
-		case ArgString:
-			if token.String == "FALSE" {
-				continue
-			}
-			if token.String == "TRUE" {
-				or = true
-				continue
-			}
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-		case ArgNumber:
-			if or = token.Number != 0; or {
-				return newStringFormulaArg(strings.ToUpper(strconv.FormatBool(or)))
-			}
-		case ArgMatrix:
-			args := list.New()
-			for _, arg := range token.ToList() {
-				args.PushBack(arg)
-			}
-			return fn.OR(args)
+		result := fn.or(arg.Value.(formulaArg))
+		if result.Type == ArgError {
+			return result
 		}
+		or = or || result.Number != 0
 	}
 	return newBoolFormulaArg(or)
 }
