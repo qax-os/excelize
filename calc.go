@@ -1037,10 +1037,6 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 		formulaArrayRow                 []formulaArg
 		opdStack, optStack, opfStack    = NewStack(), NewStack(), NewStack()
 		opfdStack, opftStack, argsStack = NewStack(), NewStack(), NewStack()
-		// opfdMarkStack records opfdStack.Len() at each function start, so
-		// the close logic can tell operands produced inside the call apart
-		// from pending operands of an enclosing arithmetic expression.
-		opfdMarkStack = NewStack()
 	)
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
@@ -1065,7 +1061,6 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 			opfStack.Push(token)
 			argsStack.Push(list.New().Init())
 			opftStack.Push(token) // to know which operators belong to a function use the function as a separator
-			opfdMarkStack.Push(opfdStack.Len())
 			continue
 		}
 
@@ -1147,7 +1142,7 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 				inArray = false
 				continue
 			}
-			if errArg := f.evalInfixExpFunc(ctx, sheet, cell, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack, opfdMarkStack); errArg.Type == ArgError {
+			if errArg := f.evalInfixExpFunc(ctx, sheet, cell, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); errArg.Type == ArgError {
 				return errArg, errors.New(errArg.Error)
 			}
 		}
@@ -1169,11 +1164,11 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 }
 
 // evalInfixExpFunc evaluate formula function in the infix expression.
-func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nextToken efp.Token, opfStack, opdStack, opftStack, opfdStack, argsStack, opfdMarkStack *Stack) formulaArg {
+func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nextToken efp.Token, opfStack, opdStack, opftStack, opfdStack, argsStack *Stack) formulaArg {
 	if !isFunctionStopToken(token) {
 		return newEmptyFormulaArg()
 	}
-	prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack, opfdMarkStack)
+	prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack)
 	// call formula function to evaluate
 	arg := callFuncByName(&formulaFuncs{f: f, sheet: sheet, cell: cell, ctx: ctx},
 		formulaFnNameReplacer.Replace(opfStack.Peek().(efp.Token).TValue),
@@ -1184,7 +1179,6 @@ func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nex
 	argsStack.Pop()
 	opftStack.Pop() // remove current function separator
 	opfStack.Pop()
-	opfdMarkStack.Pop()
 	if opfStack.Len() > 0 { // still in function stack
 		if nextToken.TType == efp.TokenTypeOperatorInfix || opftStack.Len() > 1 {
 			// mathematics calculate in formula function
@@ -1204,7 +1198,7 @@ func (f *File) evalInfixExpFunc(ctx *calcContext, sheet, cell string, token, nex
 
 // prepareEvalInfixExp check the token and stack state for formula function
 // evaluate.
-func prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack, opfdMarkStack *Stack) {
+func prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack *Stack) {
 	// current token is function stop
 	for opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
 		// calculate trigger
@@ -1224,14 +1218,8 @@ func prepareEvalInfixExp(opfStack, opftStack, opfdStack, argsStack, opfdMarkStac
 		}
 		opftStack.Push(topOpt)
 	}
-	// push opfd to args: only operands produced inside this call (above
-	// the watermark) belong to it; a pending operand of an enclosing
-	// arithmetic expression must stay on opfd.
-	mark := 0
-	if m, ok := opfdMarkStack.Peek().(int); ok {
-		mark = m
-	}
-	if argument && opfdStack.Len() > mark {
+	// push opfd to args
+	if argument && opfdStack.Len() > 0 {
 		argsStack.Peek().(*list.List).PushBack(opfdStack.Pop().(formulaArg))
 	}
 }
