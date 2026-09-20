@@ -2036,6 +2036,14 @@ func TestCalcCellValue(t *testing.T) {
 		"VALUE(\"20%\")":                 "0.2",
 		"VALUE(\"12:00:00\")":            "0.5",
 		"VALUE(\"01/02/2006 15:04:05\")": "38719.6278356481",
+		// an empty cell reads as zero and carries on into arithmetic, while an
+		// empty string stays an error, see the VALUE("") case among the errors
+		"VALUE(B3)":           "0",
+		"VALUE(B3)*2":         "0",
+		"VALUE(B3)+5":         "5",
+		"IF(VALUE(B3)=1,0,1)": "1",
+		"VALUE(B3)<>1":        "TRUE",
+		"VALUE(B3:B3)":        "0",
 		// VALUETOTEXT
 		"VALUETOTEXT(A1)":   "1",
 		"VALUETOTEXT(A1,0)": "1",
@@ -4932,6 +4940,34 @@ func TestCalcAND(t *testing.T) {
 		Matrix: [][]formulaArg{{{Type: ArgUnknown}}},
 	})
 	assert.Equal(t, newBoolFormulaArg(true), fn.AND(argsList))
+}
+
+func TestCalcVALUEOfEmptyCell(t *testing.T) {
+	// A1 is never written and stays an empty cell, B1 holds a formula that
+	// yields an empty string and C1 a single space. Only the first of the
+	// three is a number to VALUE.
+	f := prepareCalcData([][]interface{}{{nil, nil, " "}})
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=\"\""))
+	for formula, expected := range map[string]string{
+		"VALUE(A1)":           "0",
+		"VALUE(A1)*2":         "0",
+		"VALUE(A1)+5":         "5",
+		"VALUE(A1:A1)":        "0",
+		"IF(VALUE(A1)=1,0,1)": "1",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	// an empty string is not an empty cell, whether it is written out or comes
+	// out of a formula, and neither is a space
+	for _, formula := range []string{"VALUE(\"\")", "VALUE(B1)", "VALUE(C1)", "VALUE(B1)*2"} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.Equal(t, "#VALUE!", result, formula)
+		assert.EqualError(t, err, "#VALUE!", formula)
+	}
 }
 
 func TestCalcISBLANK(t *testing.T) {
