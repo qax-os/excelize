@@ -680,7 +680,7 @@ func TestCalcCellValue(t *testing.T) {
 		"IMPRODUCT(COMPLEX(5,2),COMPLEX(0,1))": "-2+5i",
 		"IMPRODUCT(A1:C1)":                     "4",
 		// MINVERSE
-		"MINVERSE(A1:B2)": "-0",
+		"MINVERSE(A1:B2)": "-1.66666666666667",
 		// MMULT
 		"MMULT(0,0)":         "0",
 		"MMULT(2,4)":         "8",
@@ -4963,6 +4963,41 @@ func TestCalcDet(t *testing.T) {
 		{3, 4, 5, 6},
 		{4, 5, 6, 7},
 	}), float64(0))
+	// the determinant of a single element is that element. The cofactors of a
+	// two by two matrix are one by one determinants, so MINVERSE of a two by
+	// two matrix rests on this case.
+	assert.Equal(t, float64(5), det([][]float64{{5}}))
+	assert.Equal(t, float64(-3), det([][]float64{{-3}}))
+	assert.Equal(t, float64(-3), det([][]float64{{1, 4}, {2, 5}}))
+}
+
+func TestCalcMINVERSE(t *testing.T) {
+	f := prepareCalcData([][]interface{}{
+		{1, 4, nil, 2, 0, 1},
+		{2, 5, nil, 1, 3, 2},
+		{nil, nil, nil, 1, 1, 2},
+	})
+	// A1:B2 has determinant -3, D1:F3 has determinant 6. Every element is
+	// checked, since the earlier expectation only looked at the top left one
+	// and a wrong inverse can still start with a plausible number.
+	for formula, expected := range map[string]string{
+		"INDEX(MINVERSE(A1:B2),1,1)": "-1.66666666666667",
+		"INDEX(MINVERSE(A1:B2),1,2)": "1.33333333333333",
+		"INDEX(MINVERSE(A1:B2),2,1)": "0.666666666666667",
+		"INDEX(MINVERSE(A1:B2),2,2)": "-0.333333333333333",
+		"INDEX(MINVERSE(D1:F3),1,1)": "0.666666666666667",
+		"INDEX(MINVERSE(D1:F3),1,2)": "0.166666666666667",
+		"INDEX(MINVERSE(D1:F3),1,3)": "-0.5",
+		"INDEX(MINVERSE(D1:F3),2,2)": "0.5",
+		"INDEX(MINVERSE(D1:F3),3,3)": "1",
+		"MDETERM(A1:B2)":             "-3",
+		"MDETERM(D1:F3)":             "6",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "H1", formula))
+		result, err := f.CalcCellValue("Sheet1", "H1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
 }
 
 func TestCalcToBool(t *testing.T) {
