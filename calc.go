@@ -979,6 +979,12 @@ func newNumberFormulaArg(n float64) formulaArg {
 	if math.IsNaN(n) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
+	if n == 0 {
+		// a negative zero is a zero, and has to be the same zero: it is
+		// formatted as "-0" and the equality operators compare the formatted
+		// text, so an unnormalised sign turns (x = 0) into FALSE
+		n = 0
+	}
 	return formulaArg{Type: ArgNumber, Number: n}
 }
 

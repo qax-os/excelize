@@ -4934,6 +4934,37 @@ func TestCalcAND(t *testing.T) {
 	assert.Equal(t, newBoolFormulaArg(true), fn.AND(argsList))
 }
 
+func TestCalcNegativeZero(t *testing.T) {
+	f := prepareCalcData([][]interface{}{{1}})
+	// B1 works out to a negative zero, which is the shape a guard of the form
+	// (condition)*IF(...,-1,...) takes as soon as the condition is false
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=0*-1"))
+	for formula, expected := range map[string]string{
+		"0*-1":          "0",
+		"(0*-1)=0":      "TRUE",
+		"(0*-1)<>0":     "FALSE",
+		"B1=0":          "TRUE",
+		"B1<>0":         "FALSE",
+		"IF(B1<>0,1,0)": "0",
+		"COUNTIF(B1,0)": "1",
+		"SUM(B1,5)":     "5",
+		// the ordering operators were already right and have to stay that way
+		"(0*-1)>0":   "FALSE",
+		"(0*-1)<0":   "FALSE",
+		"(0*-1)<=0":  "TRUE",
+		"SIGN(0*-1)": "0",
+		// a real negative number keeps its sign
+		"-1*1":     "-1",
+		"(-1*1)=0": "FALSE",
+		"(0-1)<0":  "TRUE",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "D1", formula))
+		result, err := f.CalcCellValue("Sheet1", "D1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
 func TestCalcISBLANK(t *testing.T) {
 	argsList := list.New()
 	argsList.PushBack(formulaArg{
