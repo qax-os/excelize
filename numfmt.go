@@ -5422,20 +5422,12 @@ func handleDigitsLiteral(text string, tokenValueLen, intPartLen, hashZeroPartLen
 	return l, result
 }
 
-// printNumberLiteral apply literal tokens for the pre-formatted text.
-func (nf *numberFormat) printNumberLiteral(text string) string {
-	var (
-		result                      string
-		frac                        float64
-		useFraction                 bool
-		intPartLen, hashZeroPartLen int
-	)
-	if nf.usePositive {
-		result += "-"
-	}
+// getNumberLiteralParts returns the fraction boundary and digit placeholder
+// count for a number literal.
+func (nf *numberFormat) getNumberLiteralParts() (int, int) {
+	var hashZeroPartLen int
 	lastNonFractionPartDigital := math.MaxInt
 	appearedFraction := false
-	numeratorPlaceHolder := 0
 	for idx := len(nf.section[nf.sectionIdx].Items) - 1; idx >= 0; idx-- {
 		token := nf.section[nf.sectionIdx].Items[idx]
 		if token.TType == nfp.TokenTypeFraction {
@@ -5455,29 +5447,42 @@ func (nf *numberFormat) printNumberLiteral(text string) string {
 			}
 		}
 	}
+	return lastNonFractionPartDigital, hashZeroPartLen
+}
+
+// printNumberLiteral apply literal tokens for the pre-formatted text.
+func (nf *numberFormat) printNumberLiteral(text string) string {
+	var (
+		result                           string
+		frac                             float64
+		useFraction                      bool
+		intPartLen, numeratorPlaceHolder int
+	)
+	if nf.usePositive {
+		result += "-"
+	}
+	lastNonFractionPartDigital, hashZeroPartLen := nf.getNumberLiteralParts()
 	for idx, token := range nf.section[nf.sectionIdx].Items {
-		if token.TType == nfp.TokenTypeCurrencyLanguage {
+		switch token.TType {
+		case nfp.TokenTypeCurrencyLanguage:
 			_, _ = nf.currencyLanguageHandler(token)
 			result += nf.currencyString
-		}
-		if token.TType == nfp.TokenTypeLiteral {
+		case nfp.TokenTypeLiteral:
 			if nf.scalingFactor > 0 && idx >= nf.scalingStart && token.TValue == "," {
 				continue
 			}
 			result += token.TValue
-		}
-		if token.TType == nfp.TokenTypeDigitalPlaceHolder && idx > lastNonFractionPartDigital {
-			// If it is a fraction part, it will be filled in by the fractalHandler()
-			// If not, fill placeHolder in directly here
-			if !useFraction { // numerator part
-				numeratorPlaceHolder = len(token.TValue)
+		case nfp.TokenTypeHashPlaceHolder, nfp.TokenTypeZeroPlaceHolder, nfp.TokenTypeDigitalPlaceHolder:
+			if token.TType == nfp.TokenTypeDigitalPlaceHolder && idx > lastNonFractionPartDigital {
+				if !useFraction {
+					numeratorPlaceHolder = len(token.TValue)
+				}
+			} else {
+				digits, str := handleDigitsLiteral(text, len(token.TValue), intPartLen, hashZeroPartLen, token.TType == nfp.TokenTypeDigitalPlaceHolder)
+				intPartLen += digits
+				result += str
 			}
-		} else if token.TType == nfp.TokenTypeHashPlaceHolder || token.TType == nfp.TokenTypeZeroPlaceHolder || token.TType == nfp.TokenTypeDigitalPlaceHolder {
-			digits, str := handleDigitsLiteral(text, len(token.TValue), intPartLen, hashZeroPartLen, token.TType == nfp.TokenTypeDigitalPlaceHolder)
-			intPartLen += digits
-			result += str
-		}
-		if token.TType == nfp.TokenTypeFraction {
+		case nfp.TokenTypeFraction:
 			_, frac = math.Modf(nf.number)
 			frac, useFraction = math.Abs(frac), true
 		}
