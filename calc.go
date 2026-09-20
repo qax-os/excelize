@@ -8150,20 +8150,12 @@ func (fn *formulaFuncs) COUNTA(argsList *list.List) formulaArg {
 	for token := argsList.Front(); token != nil; token = token.Next() {
 		arg := token.Value.(formulaArg)
 		switch arg.Type {
-		case ArgString:
-			if arg.String != "" {
-				count++
-			}
-		case ArgNumber:
+		case ArgString, ArgNumber:
 			count++
 		case ArgMatrix:
 			for _, row := range arg.ToList() {
 				switch row.Type {
-				case ArgString:
-					if row.String != "" {
-						count++
-					}
-				case ArgNumber:
+				case ArgString, ArgNumber:
 					count++
 				}
 			}

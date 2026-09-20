@@ -1071,6 +1071,11 @@ func TestCalcCellValue(t *testing.T) {
 		"COUNTA(A1:A5,B2:B5,\"text\",1,INT(2))": "8",
 		"COUNTA(COUNTA(1),MUNIT(1))":            "2",
 		"COUNTA(D1:D2)":                         "2",
+		// an empty string is a value, unlike an empty cell, so COUNTA counts it
+		"COUNTA(\"\")":      "1",
+		"COUNTA(1,\"\")":    "2",
+		"COUNTA(\"\",\"\")": "2",
+		"COUNTA(1,\"\",2)":  "3",
 		// COUNTBLANK
 		"COUNTBLANK(MUNIT(1))": "0",
 		"COUNTBLANK(1)":        "0",
