@@ -1573,6 +1573,9 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 	if isEndParenthesesToken(token) { // )
 		for !optStack.Empty() && !isBeginParenthesesToken(optStack.Peek().(efp.Token)) { // != (
 			topOpt := optStack.Peek().(efp.Token)
+			if isFunctionStartToken(topOpt) {
+				return ErrInvalidFormula
+			}
 			if err := calculate(opdStack, topOpt); err != nil {
 				opdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
 				optStack.Pop()
