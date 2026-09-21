@@ -1116,7 +1116,7 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 			}
 
 			// current token is arg
-			if token.TType == efp.TokenTypeArgument {
+			if token.TType == efp.TokenTypeArgument && !inArray {
 				for opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
 					// calculate trigger
 					topOpt := opftStack.Peek().(efp.Token)
