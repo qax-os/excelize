@@ -1066,6 +1066,9 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 
 		// in function stack, walk 2 token at once
 		if opfStack.Len() > 0 {
+			if opftStack.Empty() {
+				return newEmptyFormulaArg(), ErrInvalidFormula
+			}
 			var nextToken efp.Token
 			if i+1 < len(tokens) {
 				nextToken = tokens[i+1]
