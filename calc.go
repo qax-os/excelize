@@ -1040,6 +1040,9 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 	)
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
+		if token.TType == efp.TokenTypeUnknown {
+			return newEmptyFormulaArg(), ErrInvalidFormula
+		}
 
 		// out of function stack
 		if opfStack.Len() == 0 {
@@ -1066,9 +1069,6 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 
 		// in function stack, walk 2 token at once
 		if opfStack.Len() > 0 {
-			if opftStack.Empty() {
-				return newEmptyFormulaArg(), ErrInvalidFormula
-			}
 			var nextToken efp.Token
 			if i+1 < len(tokens) {
 				nextToken = tokens[i+1]
@@ -1571,20 +1571,14 @@ func (f *File) parseToken(ctx *calcContext, sheet string, token efp.Token, opdSt
 		optStack.Push(token)
 	}
 	if isEndParenthesesToken(token) { // )
-		for !optStack.Empty() && !isBeginParenthesesToken(optStack.Peek().(efp.Token)) { // != (
+		for !isBeginParenthesesToken(optStack.Peek().(efp.Token)) { // != (
 			topOpt := optStack.Peek().(efp.Token)
-			if isFunctionStartToken(topOpt) {
-				return ErrInvalidFormula
-			}
 			if err := calculate(opdStack, topOpt); err != nil {
 				opdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
 				optStack.Pop()
 				continue
 			}
 			optStack.Pop()
-		}
-		if optStack.Empty() {
-			return ErrInvalidFormula
 		}
 		optStack.Pop()
 	}
