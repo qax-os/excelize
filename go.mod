@@ -6,7 +6,7 @@ require (
 	github.com/richardlehane/mscfb v1.0.8
 	github.com/stretchr/testify v1.11.1
 	github.com/tiendc/go-deepcopy v1.7.2
-	github.com/xuri/efp v0.0.1
+	github.com/xuri/efp v0.0.2
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9
 	golang.org/x/crypto v0.57.0
 	golang.org/x/image v0.44.0

@@ -1040,6 +1040,9 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 	)
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
+		if token.TType == efp.TokenTypeUnknown {
+			return newEmptyFormulaArg(), ErrInvalidFormula
+		}
 
 		// out of function stack
 		if opfStack.Len() == 0 {
@@ -1113,7 +1116,7 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 			}
 
 			// current token is arg
-			if token.TType == efp.TokenTypeArgument {
+			if token.TType == efp.TokenTypeArgument && !inArray {
 				for opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
 					// calculate trigger
 					topOpt := opftStack.Peek().(efp.Token)
