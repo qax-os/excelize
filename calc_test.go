@@ -5200,6 +5200,91 @@ func TestCalcVLOOKUP(t *testing.T) {
 	assert.Equal(t, ArgError, err.Type)
 }
 
+func TestCalcLookupWildcardMatch(t *testing.T) {
+	// The lookup value has to match the whole cell, a substring of a cell
+	// must not be reported as a match, while the '*' and '?' wildcards keep
+	// working. The expected values were verified against the spreadsheet
+	// applications.
+	cellData := [][]interface{}{
+		{"45665-003", nil, nil, 11},
+		{"46027-001", nil, nil, 22},
+		{"46034-006", nil, nil, 33},
+		{"46176-006", nil, nil, 44},
+		{"ABC*DEF", nil, nil, 55},
+		{"MiXeD", nil, nil, 66},
+		{"001", nil, nil, 77},
+	}
+	f := prepareCalcData(cellData)
+	// the same table transposed, for the HLOOKUP function
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	for i, row := range cellData {
+		key, _ := CoordinatesToCellName(i+1, 1)
+		assert.NoError(t, f.SetCellValue("Sheet2", key, row[0]))
+		value, _ := CoordinatesToCellName(i+1, 4)
+		assert.NoError(t, f.SetCellValue("Sheet2", value, row[3]))
+	}
+	calc := map[string]string{
+		// exact match, the whole cell has to be equal
+		`VLOOKUP("46027-001",A1:D20,4,FALSE)`: "22",
+		`VLOOKUP("001",A1:D20,4,FALSE)`:       "77",
+		`VLOOKUP("mixed",A1:D20,4,FALSE)`:     "66",
+		// wildcards, anchored at both ends of the cell
+		`VLOOKUP("46027*",A1:D20,4,FALSE)`:          "22",
+		`VLOOKUP("?6027-001",A1:D20,4,FALSE)`:       "22",
+		`VLOOKUP("46027-00?",A1:D20,4,FALSE)`:       "22",
+		`VLOOKUP("*-001",A1:D20,4,FALSE)`:           "22",
+		`VLOOKUP("*001*",A1:D20,4,FALSE)`:           "22",
+		`VLOOKUP("*",A1:D20,4,FALSE)`:               "11",
+		`VLOOKUP("???",A1:D20,4,FALSE)`:             "77",
+		`HLOOKUP("46027-001",Sheet2!A1:I4,4,FALSE)`: "22",
+		`HLOOKUP("001",Sheet2!A1:I4,4,FALSE)`:       "77",
+		`HLOOKUP("46027*",Sheet2!A1:I4,4,FALSE)`:    "22",
+		`XLOOKUP("001",A1:A20,D1:D20,"NF",2)`:       "77",
+		`XLOOKUP("-001",A1:A20,D1:D20,"NF",2)`:      "NF",
+	}
+	for formula, expected := range calc {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "F1", formula))
+		result, err := f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string][]string{
+		// a substring of a cell is not a match
+		`VLOOKUP("-001",A1:D20,4,FALSE)`:    {"#N/A", "VLOOKUP no result found"},
+		`VLOOKUP("46027",A1:D20,4,FALSE)`:   {"#N/A", "VLOOKUP no result found"},
+		`VLOOKUP("6027-00",A1:D20,4,FALSE)`: {"#N/A", "VLOOKUP no result found"},
+		// the empty lookup value is a substring of every cell
+		`VLOOKUP("",A1:D20,4,FALSE)`: {"#N/A", "VLOOKUP no result found"},
+		// the wildcards have to cover the whole cell
+		`VLOOKUP("?",A1:D20,4,FALSE)`:          {"#N/A", "VLOOKUP no result found"},
+		`VLOOKUP("*XYZ*",A1:D20,4,FALSE)`:      {"#N/A", "VLOOKUP no result found"},
+		`HLOOKUP("-001",Sheet2!A1:I4,4,FALSE)`: {"#N/A", "HLOOKUP no result found"},
+		`HLOOKUP("",Sheet2!A1:I4,4,FALSE)`:     {"#N/A", "HLOOKUP no result found"},
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "F1", formula))
+		result, err := f.CalcCellValue("Sheet1", "F1")
+		assert.Equal(t, expected[0], result, formula)
+		assert.EqualError(t, err, expected[1], formula)
+	}
+	// the FIND and SEARCH functions report any occurrence and must not be
+	// affected by the anchored match of the lookup functions
+	occurrence := map[string]string{
+		`FIND("-001","46027-001")`:      "6",
+		`FIND("46027-001","46027-001")`: "1",
+		`SEARCH("-001","46027-001")`:    "6",
+		`SEARCH("6027*","46027-001")`:   "2",
+		`SEARCH("?01","46027-001")`:     "7",
+	}
+	for formula, expected := range occurrence {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "F1", formula))
+		result, err := f.CalcCellValue("Sheet1", "F1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
 func TestCalcBoolean(t *testing.T) {
 	cellData := [][]interface{}{{0.5, "TRUE", -0.5, "FALSE", true}}
 	f := prepareCalcData(cellData)
