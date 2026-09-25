@@ -1308,6 +1308,7 @@ func TestCalcCellValue(t *testing.T) {
 		// PERCENTILE.EXC
 		"PERCENTILE.EXC(A1:A4,0.2)": "0",
 		"PERCENTILE.EXC(A1:A4,0.6)": "2",
+		"PERCENTILE.EXC(A1:A4,0.8)": "3",
 		// PERCENTILE.INC
 		"PERCENTILE.INC(A1:A4,0.2)": "0.6",
 		// PERCENTILE
@@ -3557,6 +3558,8 @@ func TestCalcCellValue(t *testing.T) {
 		"PERCENTILE.EXC(A1:A4,-1)":   {"#NUM!", "#NUM!"},
 		"PERCENTILE.EXC(A1:A4,0)":    {"#NUM!", "#NUM!"},
 		"PERCENTILE.EXC(A1:A4,1)":    {"#NUM!", "#NUM!"},
+		"PERCENTILE.EXC(A1:A4,0.19)": {"#NUM!", "#NUM!"},
+		"PERCENTILE.EXC(A1:A4,0.81)": {"#NUM!", "#NUM!"},
 		"PERCENTILE.EXC(NA(),0.5)":   {"#NUM!", "#NUM!"},
 		// PERCENTILE.INC
 		"PERCENTILE.INC()": {"#VALUE!", "PERCENTILE.INC requires 2 arguments"},

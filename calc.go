@@ -10616,7 +10616,13 @@ func (fn *formulaFuncs) PERCENTILEdotEXC(argsList *list.List) formulaArg {
 	cnt := len(numbers)
 	sort.Float64s(numbers)
 	idx := k.Number * (float64(cnt) + 1)
+	if idx < 1 || idx > float64(cnt) {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+	}
 	base := math.Floor(idx)
+	if int(base) == cnt {
+		return newNumberFormulaArg(numbers[cnt-1])
+	}
 	next := base - 1
 	proportion := math.Nextafter(idx, idx) - base
 	return newNumberFormulaArg(numbers[int(next)] + ((numbers[int(base)] - numbers[int(next)]) * proportion))
