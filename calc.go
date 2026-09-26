@@ -14773,7 +14773,9 @@ func (fn *formulaFuncs) TRIM(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "TRIM requires 1 argument")
 	}
-	return newStringFormulaArg(strings.TrimSpace(argsList.Front().Value.(formulaArg).Value()))
+	return newStringFormulaArg(strings.Join(strings.FieldsFunc(argsList.Front().Value.(formulaArg).Value(), func(r rune) bool {
+		return r == ' '
+	}), " "))
 }
 
 // UNICHAR returns the Unicode character that is referenced by the given
