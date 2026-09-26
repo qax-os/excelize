@@ -1567,6 +1567,24 @@ func TestCalcCellValue(t *testing.T) {
 		"OR(1=1,2=3)":            "TRUE",
 		"OR(\"TRUE\",\"FALSE\")": "TRUE",
 		"OR(A1:B1)":              "TRUE",
+		"OR(1,0)":                "TRUE",
+		"OR(0,1)":                "TRUE",
+		// a true OR is a logical value, not the text "TRUE", so it carries on
+		// into arithmetic and into an aggregation instead of failing to parse
+		"OR(1)*1":           "1",
+		"OR(0,1)*1":         "1",
+		"OR(1,0)*1":         "1",
+		"OR(1=1,2>1)*1":     "1",
+		"SUM(OR(1))":        "1",
+		"OR(OR(1),FALSE)":   "TRUE",
+		"OR(OR(1),FALSE)*1": "1",
+		"ISLOGICAL(OR(1))":  "TRUE",
+		"ISNUMBER(OR(1))":   "TRUE",
+		"ISTEXT(OR(1))":     "FALSE",
+		// an argument after a matrix is still read, and a true argument is not
+		// undone by a false one that follows it
+		"OR(A4:A4,1)":   "TRUE",
+		"OR(A4:A4,1)*1": "1",
 		// SWITCH
 		"SWITCH(1,1,\"A\",2,\"B\",3,\"C\",\"N\")": "A",
 		"SWITCH(3,1,\"A\",2,\"B\",3,\"C\",\"N\")": "C",
@@ -3825,7 +3843,11 @@ func TestCalcCellValue(t *testing.T) {
 		"NOT(NOT())": {"#VALUE!", "NOT requires 1 argument"},
 		"NOT(\"\")":  {"#VALUE!", "NOT expects 1 boolean or numeric argument"},
 		// OR
-		"OR(\"text\")":                          {"#VALUE!", "#VALUE!"},
+		"OR(\"text\")": {"#VALUE!", "#VALUE!"},
+		// a true argument does not end the evaluation, so a later invalid one
+		// is still rejected
+		"OR(1,\"text\")":                        {"#VALUE!", "#VALUE!"},
+		"OR(1=1,\"text\")":                      {"#VALUE!", "#VALUE!"},
 		"OR(\"1\",\"TRUE\",\"FALSE\")":          {"#VALUE!", "#VALUE!"},
 		"OR()":                                  {"#VALUE!", "OR requires at least 1 argument"},
 		"OR(1" + strings.Repeat(",1", 30) + ")": {"#VALUE!", "OR accepts at most 30 arguments"},
