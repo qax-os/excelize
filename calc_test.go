@@ -680,7 +680,7 @@ func TestCalcCellValue(t *testing.T) {
 		"IMPRODUCT(COMPLEX(5,2),COMPLEX(0,1))": "-2+5i",
 		"IMPRODUCT(A1:C1)":                     "4",
 		// MINVERSE
-		"MINVERSE(A1:B2)": "-0",
+		"MINVERSE(A1:B2)": "-1.66666666666667",
 		// MMULT
 		"MMULT(0,0)":         "0",
 		"MMULT(2,4)":         "8",
@@ -4952,6 +4952,37 @@ func TestCalcAND(t *testing.T) {
 	assert.Equal(t, newBoolFormulaArg(true), fn.AND(argsList))
 }
 
+func TestCalcNegativeZero(t *testing.T) {
+	f := prepareCalcData([][]interface{}{{1}})
+	// B1 works out to a negative zero, which is the shape a guard of the form
+	// (condition)*IF(...,-1,...) takes as soon as the condition is false
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=0*-1"))
+	for formula, expected := range map[string]string{
+		"0*-1":          "0",
+		"(0*-1)=0":      "TRUE",
+		"(0*-1)<>0":     "FALSE",
+		"B1=0":          "TRUE",
+		"B1<>0":         "FALSE",
+		"IF(B1<>0,1,0)": "0",
+		"COUNTIF(B1,0)": "1",
+		"SUM(B1,5)":     "5",
+		// the ordering operators were already right and have to stay that way
+		"(0*-1)>0":   "FALSE",
+		"(0*-1)<0":   "FALSE",
+		"(0*-1)<=0":  "TRUE",
+		"SIGN(0*-1)": "0",
+		// a real negative number keeps its sign
+		"-1*1":     "-1",
+		"(-1*1)=0": "FALSE",
+		"(0-1)<0":  "TRUE",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "D1", formula))
+		result, err := f.CalcCellValue("Sheet1", "D1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
 func TestCalcISBLANK(t *testing.T) {
 	argsList := list.New()
 	argsList.PushBack(formulaArg{
@@ -4981,6 +5012,41 @@ func TestCalcDet(t *testing.T) {
 		{3, 4, 5, 6},
 		{4, 5, 6, 7},
 	}), float64(0))
+	// the determinant of a single element is that element. The cofactors of a
+	// two by two matrix are one by one determinants, so MINVERSE of a two by
+	// two matrix rests on this case.
+	assert.Equal(t, float64(5), det([][]float64{{5}}))
+	assert.Equal(t, float64(-3), det([][]float64{{-3}}))
+	assert.Equal(t, float64(-3), det([][]float64{{1, 4}, {2, 5}}))
+}
+
+func TestCalcMINVERSE(t *testing.T) {
+	f := prepareCalcData([][]interface{}{
+		{1, 4, nil, 2, 0, 1},
+		{2, 5, nil, 1, 3, 2},
+		{nil, nil, nil, 1, 1, 2},
+	})
+	// A1:B2 has determinant -3, D1:F3 has determinant 6. Every element is
+	// checked, since the earlier expectation only looked at the top left one
+	// and a wrong inverse can still start with a plausible number.
+	for formula, expected := range map[string]string{
+		"INDEX(MINVERSE(A1:B2),1,1)": "-1.66666666666667",
+		"INDEX(MINVERSE(A1:B2),1,2)": "1.33333333333333",
+		"INDEX(MINVERSE(A1:B2),2,1)": "0.666666666666667",
+		"INDEX(MINVERSE(A1:B2),2,2)": "-0.333333333333333",
+		"INDEX(MINVERSE(D1:F3),1,1)": "0.666666666666667",
+		"INDEX(MINVERSE(D1:F3),1,2)": "0.166666666666667",
+		"INDEX(MINVERSE(D1:F3),1,3)": "-0.5",
+		"INDEX(MINVERSE(D1:F3),2,2)": "0.5",
+		"INDEX(MINVERSE(D1:F3),3,3)": "1",
+		"MDETERM(A1:B2)":             "-3",
+		"MDETERM(D1:F3)":             "6",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "H1", formula))
+		result, err := f.CalcCellValue("Sheet1", "H1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
 }
 
 func TestCalcToBool(t *testing.T) {
