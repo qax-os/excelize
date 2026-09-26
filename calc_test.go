@@ -1069,6 +1069,10 @@ func TestCalcCellValue(t *testing.T) {
 		"COUNT(E1:F2,\"text\",1,INT(2),\"0\")": "4",
 		// COUNTA
 		"COUNTA()":                              "0",
+		"COUNTA(\"\")":                          "1",
+		"COUNTA(1,\"\")":                        "2",
+		"COUNTA(\"\",\"\")":                     "2",
+		"COUNTA(1,\"\",2)":                      "3",
 		"COUNTA(A1:A5,B2:B5,\"text\",1,INT(2))": "8",
 		"COUNTA(COUNTA(1),MUNIT(1))":            "2",
 		"COUNTA(D1:D2)":                         "2",
