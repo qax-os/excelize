@@ -2013,8 +2013,11 @@ func TestCalcCellValue(t *testing.T) {
 		"TEXTJOIN(\",\",TRUE,A1:C2)":    "1,4,2,5",
 		"TEXTJOIN(\",\",TRUE,MUNIT(2))": "1,0,0,1",
 		// TRIM
-		"TRIM(\" trim text \")": "trim text",
-		"TRIM(0)":               "0",
+		"TRIM(\" trim text \")":   "trim text",
+		"TRIM(0)":                 "0",
+		"TRIM(\"  a   b  \")":     "a b",
+		"TRIM(\"\u00a0a\u00a0\")": "\u00a0a\u00a0",
+		"TRIM(\"\ta\t\")":         "\ta\t",
 		// UNICHAR
 		"UNICHAR(65)": "A",
 		"UNICHAR(97)": "a",
