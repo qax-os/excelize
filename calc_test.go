@@ -5300,6 +5300,26 @@ func TestCalcAVERAGEIF(t *testing.T) {
 	}
 }
 
+func TestCalcCOUNT(t *testing.T) {
+	f := prepareCalcData([][]interface{}{{"5", true, 2, nil}})
+	for formula, expected := range map[string]string{
+		// numeric text and logical values in a reference are not counted
+		"COUNT(A1,D1)":    "0",
+		"COUNT(B1,D1)":    "0",
+		"COUNT(A1,B1,C1)": "1",
+		"COUNT(A1:D1)":    "1",
+		// numeric text and logical values typed directly as an argument are counted
+		"COUNT(\"5\",2)":  "2",
+		"COUNT(A1,\"5\")": "1",
+		"COUNT(TRUE,1)":   "2",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
+		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
 func TestCalcCOVAR(t *testing.T) {
 	cellData := [][]interface{}{
 		{"array1", "array2"},
