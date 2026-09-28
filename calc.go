@@ -1364,6 +1364,12 @@ func calcAdd(rOpd, lOpd formulaArg, opdStack *Stack) error {
 
 // calcSubtract evaluate subtraction arithmetic operations.
 func calcSubtract(rOpd, lOpd formulaArg, opdStack *Stack) error {
+	if lOpd.Type == ArgError {
+		return errors.New(lOpd.String)
+	}
+	if rOpd.Type == ArgError {
+		return errors.New(rOpd.String)
+	}
 	if rOpd.Type == ArgEmpty {
 		rOpd = newNumberFormulaArg(0)
 	}
@@ -1419,8 +1425,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		if opdStack.Len() < 1 {
 			return ErrInvalidFormula
 		}
-		opd := opdStack.Pop().(formulaArg)
-		opdStack.Push(newNumberFormulaArg(0 - opd.ToNumber().Number))
+		return calcSubtract(opdStack.Pop().(formulaArg), newNumberFormulaArg(0), opdStack)
 	}
 	if opt.TValue == "-" && opt.TType == efp.TokenTypeOperatorInfix {
 		if opdStack.Len() < 2 {
@@ -1428,9 +1433,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		}
 		rOpd := opdStack.Pop().(formulaArg)
 		lOpd := opdStack.Pop().(formulaArg)
-		if err := calcSubtract(rOpd, lOpd, opdStack); err != nil {
-			return err
-		}
+		return calcSubtract(rOpd, lOpd, opdStack)
 	}
 	tokenCalcFunc := map[string]func(rOpd, lOpd formulaArg, opdStack *Stack) error{
 		"^":  calcPow,
