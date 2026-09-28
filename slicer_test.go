@@ -1,7 +1,10 @@
 package excelize
 
 import (
+	"archive/zip"
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -699,4 +702,61 @@ func TestAddPivotCacheSlicer(t *testing.T) {
 		pivotCacheXML: pivotCacheXML,
 	})
 	assert.NoError(t, err)
+}
+
+// replaceZipEntry rebuilds a zip archive from raw bytes, replacing the
+// content of exactly one entry (identified by name) with newContent, leaving
+// every other entry byte-for-byte as it was.
+func replaceZipEntry(t *testing.T, original []byte, targetName string, newContent []byte) []byte {
+	t.Helper()
+	zr, err := zip.NewReader(bytes.NewReader(original), int64(len(original)))
+	assert.NoError(t, err)
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	found := false
+	for _, zf := range zr.File {
+		rc, err := zf.Open()
+		assert.NoError(t, err)
+		data, err := io.ReadAll(rc)
+		assert.NoError(t, rc.Close())
+		assert.NoError(t, err)
+		if zf.Name == targetName {
+			data, found = newContent, true
+		}
+		w, err := zw.Create(zf.Name)
+		assert.NoError(t, err)
+		_, err = w.Write(data)
+		assert.NoError(t, err)
+	}
+	assert.True(t, found, "target entry %s not found in source archive", targetName)
+	assert.NoError(t, zw.Close())
+	return buf.Bytes()
+}
+
+func TestGetSlicersNilDrawing(t *testing.T) {
+	// GetSlicers must not panic on a worksheet that has an <extLst> element
+	// but no <drawing> element. Drawing and ExtLst are two independently
+	// optional child elements of <worksheet>, populated separately depending
+	// on whether each tag is present in the worksheet XML part, so a
+	// worksheet can legally have one without the other.
+	f := NewFile()
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "hello"))
+	var buf bytes.Buffer
+	assert.NoError(t, f.Write(&buf))
+
+	f2, err := OpenReader(bytes.NewReader(buf.Bytes()))
+	assert.NoError(t, err)
+	sheetXML, ok := f2.Pkg.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	orig := string(sheetXML.([]byte))
+	assert.NotContains(t, orig, "<drawing")
+
+	tampered := strings.Replace(orig, "</worksheet>", "<extLst></extLst></worksheet>", 1)
+	malicious := replaceZipEntry(t, buf.Bytes(), "xl/worksheets/sheet1.xml", []byte(tampered))
+
+	f3, err := OpenReader(bytes.NewReader(malicious))
+	assert.NoError(t, err)
+	slicers, err := f3.GetSlicers("Sheet1")
+	assert.NoError(t, err)
+	assert.Empty(t, slicers)
 }
