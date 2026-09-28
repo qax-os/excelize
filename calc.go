@@ -1425,15 +1425,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		if opdStack.Len() < 1 {
 			return ErrInvalidFormula
 		}
-		opd := opdStack.Pop().(formulaArg)
-		if opd.Type == ArgError {
-			return errors.New(opd.String)
-		}
-		num := opd.ToNumber()
-		if num.Type != ArgNumber {
-			return errors.New(num.String)
-		}
-		opdStack.Push(newNumberFormulaArg(0 - num.Number))
+		return calcSubtract(opdStack.Pop().(formulaArg), newNumberFormulaArg(0), opdStack)
 	}
 	if opt.TValue == "-" && opt.TType == efp.TokenTypeOperatorInfix {
 		if opdStack.Len() < 2 {
@@ -1441,9 +1433,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		}
 		rOpd := opdStack.Pop().(formulaArg)
 		lOpd := opdStack.Pop().(formulaArg)
-		if err := calcSubtract(rOpd, lOpd, opdStack); err != nil {
-			return err
-		}
+		return calcSubtract(rOpd, lOpd, opdStack)
 	}
 	tokenCalcFunc := map[string]func(rOpd, lOpd formulaArg, opdStack *Stack) error{
 		"^":  calcPow,
