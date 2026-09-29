@@ -28,6 +28,12 @@ func TestGetRows(t *testing.T) {
 	f.checked = sync.Map{}
 	_, err = f.GetRows("Sheet1")
 	assert.Equal(t, ErrMaxRows, err)
+	// Test get rows with row number over max row number limit after a valid row
+	f = NewFile()
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c><v>1</v></c></row><row r="231999999999940"><c><v>2</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
+	_, err = f.GetRows("Sheet1")
+	assert.Equal(t, ErrMaxRows, err)
 }
 
 func TestRows(t *testing.T) {

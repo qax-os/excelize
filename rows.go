@@ -97,6 +97,9 @@ type Rows struct {
 
 // Next will return true if it finds the next row element.
 func (rows *Rows) Next() bool {
+	if rows.err != nil {
+		return false
+	}
 	rows.seekRow++
 	if rows.curRow >= rows.seekRow {
 		rows.curRowOpts = rows.seekRowOpts
@@ -176,7 +179,10 @@ func (rows *Rows) Columns(opts ...Options) ([]string, error) {
 			rowIterator.inElement = xmlElement.Name.Local
 			if rowIterator.inElement == "row" {
 				rowNum := 0
-				if rowNum, rowIterator.err = attrValToInt("r", xmlElement.Attr); rowNum != 0 {
+				if rowNum, rowIterator.err = attrValToInt("r", xmlElement.Attr); rowNum > TotalRows {
+					rows.err, rows.token = ErrMaxRows, nil
+					return rowIterator.cells, rows.err
+				} else if rowNum != 0 {
 					rows.curRow = rowNum
 				} else if rows.token == nil {
 					rows.curRow++
