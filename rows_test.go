@@ -31,7 +31,7 @@ func TestGetRows(t *testing.T) {
 	// Test get rows with row number over max row number limit after a valid row
 	f = NewFile()
 	f.Sheet.Delete("xl/worksheets/sheet1.xml")
-	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c><v>1</v></c></row><row r="231999999999940"><c><v>2</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value))
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="1"><c><v>1</v></c></row><row r="%d"><c><v>2</v></c></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value, TotalRows+1))
 	_, err = f.GetRows("Sheet1")
 	assert.Equal(t, ErrMaxRows, err)
 }
@@ -160,6 +160,17 @@ func TestRowsError(t *testing.T) {
 	}
 	_, err = f.Rows("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.NoError(t, f.Close())
+
+	f = NewFile()
+	f.Sheet.Delete("xl/worksheets/sheet1.xml")
+	f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData><row r="%d"/><row r="1"/></sheetData></worksheet>`, NameSpaceSpreadSheet.Value, TotalRows+1))
+	rows, err := f.Rows("Sheet1")
+	assert.NoError(t, err)
+	assert.False(t, rows.Next())
+	assert.False(t, rows.Next())
+	assert.Equal(t, ErrMaxRows, rows.Error())
+	assert.Equal(t, ErrMaxRows, rows.Close())
 	assert.NoError(t, f.Close())
 }
 
