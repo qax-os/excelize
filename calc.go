@@ -6109,26 +6109,35 @@ func (fn *formulaFuncs) SUBTOTAL(argsList *list.List) formulaArg {
 //	SUM(number1,[number2],...)
 func (fn *formulaFuncs) SUM(argsList *list.List) formulaArg {
 	var sum float64
-	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
-		token := arg.Value.(formulaArg)
-		switch token.Type {
-		case ArgError:
-			return token
+	var sumArg func(formulaArg, bool)
+	sumArg = func(arg formulaArg, isRef bool) {
+		isRef = isRef || (arg.cellRefs != nil && arg.cellRefs.Len() > 0) ||
+			(arg.cellRanges != nil && arg.cellRanges.Len() > 0)
+		switch arg.Type {
 		case ArgString:
-			if num := token.ToNumber(); num.Type == ArgNumber {
+			if isRef {
+				return
+			}
+			if num := arg.ToNumber(); num.Type == ArgNumber {
 				sum += num.Number
 			}
 		case ArgNumber:
-			sum += token.Number
-		case ArgMatrix:
-			for _, row := range token.Matrix {
-				for _, value := range row {
-					if num := value.ToNumber(); num.Type == ArgNumber {
-						sum += num.Number
-					}
-				}
+			if isRef && arg.Boolean {
+				return
+			}
+			sum += arg.Number
+		case ArgList, ArgMatrix:
+			for _, cell := range arg.ToList() {
+				sumArg(cell, true)
 			}
 		}
+	}
+	for token := argsList.Front(); token != nil; token = token.Next() {
+		arg := token.Value.(formulaArg)
+		if arg.Type == ArgError {
+			return arg
+		}
+		sumArg(arg, false)
 	}
 	return newNumberFormulaArg(sum)
 }
