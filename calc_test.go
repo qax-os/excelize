@@ -1070,6 +1070,15 @@ func TestCalcCellValue(t *testing.T) {
 		// COUNT
 		"COUNT()":                              "0",
 		"COUNT(E1:F2,\"text\",1,INT(2),\"0\")": "4",
+		"COUNT(D1,C2)":                         "0",
+		"COUNT(C2:F2)":                         "1",
+		"COUNT({\"5\"},C2)":                    "0",
+		"COUNT({TRUE},C2)":                     "0",
+		"COUNT({\"5\"},{TRUE},A2)":             "1",
+		"COUNT({\"5\",TRUE,2,\"\"})":           "1",
+		"COUNT(\"5\",2)":                       "2",
+		"COUNT({\"5\"},\"5\")":                 "1",
+		"COUNT(TRUE,1)":                        "2",
 		// COUNTA
 		"COUNTA()":                              "0",
 		"COUNTA(\"\")":                          "1",
@@ -5295,26 +5304,6 @@ func TestCalcAVERAGEIF(t *testing.T) {
 	} {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
-	}
-}
-
-func TestCalcCOUNT(t *testing.T) {
-	f := prepareCalcData([][]interface{}{{"5", true, 2, nil}})
-	for formula, expected := range map[string]string{
-		// numeric text and logical values in a reference are not counted
-		"COUNT(A1,D1)":    "0",
-		"COUNT(B1,D1)":    "0",
-		"COUNT(A1,B1,C1)": "1",
-		"COUNT(A1:D1)":    "1",
-		// numeric text and logical values typed directly as an argument are counted
-		"COUNT(\"5\",2)":  "2",
-		"COUNT(A1,\"5\")": "1",
-		"COUNT(TRUE,1)":   "2",
-	} {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
-		result, err := f.CalcCellValue("Sheet1", "E1")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
 	}

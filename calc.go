@@ -8125,35 +8125,31 @@ func (fn *formulaFuncs) CORREL(argsList *list.List) formulaArg {
 //	COUNT(value1,[value2],...)
 func (fn *formulaFuncs) COUNT(argsList *list.List) formulaArg {
 	var count int
-	for token := argsList.Front(); token != nil; token = token.Next() {
-		arg := token.Value.(formulaArg)
-		// numeric text and logical values are counted only when they are
-		// typed directly as an argument, values of that kind in a reference
-		// or an array are not counted
-		isRef := arg.cellRefs != nil && arg.cellRefs.Len() > 0 ||
-			arg.cellRanges != nil && arg.cellRanges.Len() > 0
+	var countArg func(formulaArg, bool)
+	countArg = func(arg formulaArg, isRef bool) {
+		isRef = isRef || (arg.cellRefs != nil && arg.cellRefs.Len() > 0) ||
+			(arg.cellRanges != nil && arg.cellRanges.Len() > 0)
 		switch arg.Type {
 		case ArgString:
 			if isRef {
-				continue
+				return
 			}
 			if num := arg.ToNumber(); num.Type == ArgNumber {
 				count++
 			}
 		case ArgNumber:
 			if isRef && arg.Boolean {
-				continue
+				return
 			}
 			count++
-		case ArgMatrix:
-			for _, row := range arg.Matrix {
-				for _, cell := range row {
-					if cell.Type == ArgNumber && !cell.Boolean {
-						count++
-					}
-				}
+		case ArgList, ArgMatrix:
+			for _, cell := range arg.ToList() {
+				countArg(cell, true)
 			}
 		}
+	}
+	for token := argsList.Front(); token != nil; token = token.Next() {
+		countArg(token.Value.(formulaArg), false)
 	}
 	return newNumberFormulaArg(float64(count))
 }
