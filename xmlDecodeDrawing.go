@@ -77,6 +77,8 @@ type decodeSp struct {
 	FPublished *bool         `xml:"fPublished,attr"`
 	NvSpPr     *decodeNvSpPr `xml:"nvSpPr"`
 	SpPr       *decodeSpPr   `xml:"spPr"`
+	Style      *decodeStyle  `xml:"style"`
+	TxBody     *decodeTxBody `xml:"txBody"`
 }
 
 // decodeNvSpPr (Non-Visual Properties for a Shape) directly maps the nvSpPr
@@ -239,8 +241,158 @@ type decodeBlipFill struct {
 // properties of a shape but are used here to describe the visual appearance
 // of a picture within a document.
 type decodeSpPr struct {
-	Xfrm     decodeXfrm     `xml:"xfrm"`
-	PrstGeom decodePrstGeom `xml:"prstGeom"`
+	Xfrm      decodeXfrm           `xml:"xfrm"`
+	PrstGeom  decodePrstGeom       `xml:"prstGeom"`
+	SolidFill *decodeSolidFill     `xml:"solidFill"`
+	Ln        decodeLineProperties `xml:"ln"`
+}
+
+// decodeStyle directly maps the xdr:style element. The element specifies the
+// style that is applied to a shape and the corresponding references for each of
+// the style components such as lines and fills.
+type decodeStyle struct {
+	LnRef     *decodeRef     `xml:"lnRef"`
+	FillRef   *decodeRef     `xml:"fillRef"`
+	EffectRef *decodeRef     `xml:"effectRef"`
+	FontRef   *decodeFontRef `xml:"fontRef"`
+}
+
+// decodeRef directly maps the a:lnRef, a:fillRef and a:effectRef element.
+type decodeRef struct {
+	Idx       int            `xml:"idx,attr"`
+	ScrgbClr  *aScrgbClr     `xml:"scrgbClr"`
+	SchemeClr *attrValString `xml:"schemeClr"`
+	SrgbClr   *attrValString `xml:"srgbClr"`
+}
+
+// decodeFontRef directly maps the a:fontRef element. This element represents a
+// reference to a themed font. When used it specifies which themed font to use
+// along with a choice of color.
+type decodeFontRef struct {
+	Idx       string         `xml:"idx,attr"`
+	SchemeClr *attrValString `xml:"schemeClr"`
+}
+
+// decodeTxBody directly maps the xdr:txBody element. This element specifies the
+// existence of text to be contained within the corresponding shape. All visible
+// text and visible text related properties are contained within this element.
+// There can be multiple paragraphs and within paragraphs multiple runs of text.
+type decodeTxBody struct {
+	BodyPr *aBodyPr  `xml:"bodyPr"`
+	P      []decodeP `xml:"p"`
+}
+
+// decodeP directly maps the a:p element. This element specifies a paragraph of
+// content in the document.
+type decodeP struct {
+	PPr        *decodePPr   `xml:"pPr"`
+	R          *decodeR     `xml:"r"`
+	EndParaRPr *aEndParaRPr `xml:"endParaRPr"`
+}
+
+// decodePPr directly maps the a:pPr element. This element specifies a set of
+// paragraph properties which shall be applied to the contents of the parent
+// paragraph after all style/numbering/table properties have been applied to the
+// text. These properties are defined as direct formatting, since they are
+// directly applied to the paragraph and supersede any formatting from styles.
+type decodePPr struct {
+	DefRPr decodeRPr `xml:"defRPr"`
+}
+
+// decodeR directly maps the a:r element.
+type decodeR struct {
+	RPr decodeRPr `xml:"rPr,omitempty"`
+	T   string    `xml:"t,omitempty"`
+}
+
+// decodeRPr directly maps the rPr element. This element specifies a set of run
+// properties which shall be applied to the contents of the parent run after all
+// style formatting has been applied to the text. These properties are defined
+// as direct formatting, since they are directly applied to the run and
+// supersede any formatting from styles.
+type decodeRPr struct {
+	AltLang    string           `xml:"altLang,attr,omitempty"`
+	B          bool             `xml:"b,attr"`
+	Baseline   int              `xml:"baseline,attr"`
+	Bmk        string           `xml:"bmk,attr,omitempty"`
+	Cap        string           `xml:"cap,attr,omitempty"`
+	Dirty      bool             `xml:"dirty,attr,omitempty"`
+	Err        bool             `xml:"err,attr,omitempty"`
+	I          bool             `xml:"i,attr"`
+	Kern       int              `xml:"kern,attr"`
+	Kumimoji   bool             `xml:"kumimoji,attr,omitempty"`
+	Lang       string           `xml:"lang,attr,omitempty"`
+	NoProof    bool             `xml:"noProof,attr,omitempty"`
+	NormalizeH bool             `xml:"normalizeH,attr,omitempty"`
+	SmtClean   bool             `xml:"smtClean,attr,omitempty"`
+	SmtID      uint64           `xml:"smtId,attr,omitempty"`
+	Spc        int              `xml:"spc,attr"`
+	Strike     string           `xml:"strike,attr,omitempty"`
+	Sz         float64          `xml:"sz,attr,omitempty"`
+	U          string           `xml:"u,attr,omitempty"`
+	SolidFill  *decodeSolidFill `xml:"solidFill"`
+	Latin      *xlsxCTTextFont  `xml:"latin"`
+	Ea         *aEa             `xml:"ea"`
+	Cs         *aCs             `xml:"cs"`
+}
+
+// decodeSolidFill directly maps the solidFill element. This element specifies a
+// solid color fill. The shape is filled entirely with the specified color.
+type decodeSolidFill struct {
+	SchemeClr *decodeSchemeClr `xml:"schemeClr"`
+	SrgbClr   *decodeSrgbClr   `xml:"srgbClr"`
+}
+
+// decodeSchemeClr directly maps the a:schemeClr element. This element specifies
+// a color bound to a user's theme. As with all elements which define a color,
+// it is possible to apply a list of color transforms to the base color defined.
+type decodeSchemeClr struct {
+	Val    string      `xml:"val,attr,omitempty"`
+	LumMod *attrValInt `xml:"lumMod"`
+	LumOff *attrValInt `xml:"lumOff"`
+}
+
+// decodeSrgbClr specifies a color using the red, green, blue RGB color model.
+// Red, green, and blue is expressed as sequence of hex digits, RRGGBB. A
+// perceptual gamma of 2.2 is used.
+type decodeSrgbClr struct {
+	Val      *string     `xml:"val,attr"`
+	Tint     *attrValInt `xml:"tint"`
+	Shade    *attrValInt `xml:"shade"`
+	Comp     *attrValInt `xml:"comp"`
+	Inv      *attrValInt `xml:"inv"`
+	Gray     *attrValInt `xml:"gray"`
+	Alpha    *attrValInt `xml:"alpha"`
+	AlphaOff *attrValInt `xml:"alphaOff"`
+	AlphaMod *attrValInt `xml:"alphaMod"`
+	Hue      *attrValInt `xml:"hue"`
+	HueOff   *attrValInt `xml:"hueOff"`
+	HueMod   *attrValInt `xml:"hueMod"`
+	Sat      *attrValInt `xml:"sat"`
+	SatOff   *attrValInt `xml:"satOff"`
+	SatMod   *attrValInt `xml:"satMod"`
+	Lum      *attrValInt `xml:"lum"`
+	LumOff   *attrValInt `xml:"lumOff"`
+	LumMod   *attrValInt `xml:"lumMod"`
+	Red      *attrValInt `xml:"red"`
+	RedOff   *attrValInt `xml:"redOff"`
+	RedMod   *attrValInt `xml:"redMod"`
+	Green    *attrValInt `xml:"green"`
+	GreenOff *attrValInt `xml:"greenOff"`
+	GreenMod *attrValInt `xml:"greenMod"`
+	Blue     *attrValInt `xml:"blue"`
+	BlueOff  *attrValInt `xml:"blueOff"`
+	BlueMod  *attrValInt `xml:"blueMod"`
+	Gamma    *attrValInt `xml:"gamma"`
+	InvGamma *attrValInt `xml:"invGamma"`
+}
+
+// decodeLineProperties specifies the width of a line in EMUs. This simple type
+// has a minimum value of greater than or equal to 0. This simple type has a
+// maximum value of less than or equal to 20116800.
+type decodeLineProperties struct {
+	W         int           `xml:"w,attr,omitempty"`
+	SolidFill *xlsxInnerXML `xml:"solidFill"`
 }
 
 // decodePic elements encompass the definition of pictures within the
