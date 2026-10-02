@@ -729,7 +729,13 @@ func TestCalcCellValue(t *testing.T) {
 		"PRODUCT(3,6)":            "18",
 		"PRODUCT(\"3\",\"6\")":    "18",
 		"PRODUCT(PRODUCT(1),3,6)": "18",
-		"PRODUCT(C1:C2)":          "1",
+		"PRODUCT(C1:C2)":          "0",
+		"PRODUCT(D1)":             "0",
+		"PRODUCT(D1,A2)":          "2",
+		"PRODUCT({\"5\"},A2)":     "2",
+		"PRODUCT({FALSE},A2)":     "2",
+		"PRODUCT(\"5\",A2)":       "10",
+		"PRODUCT(FALSE,A2)":       "0",
 		// QUOTIENT
 		"QUOTIENT(5,2)":             "2",
 		"QUOTIENT(4.5,3.1)":         "1",
@@ -861,6 +867,7 @@ func TestCalcCellValue(t *testing.T) {
 		"SUBTOTAL(4,A1:A6)":         "3",
 		"SUBTOTAL(5,A1:A6)":         "0",
 		"SUBTOTAL(6,A1:A6)":         "0",
+		"SUBTOTAL(6,A2,D1)":         "2",
 		"SUBTOTAL(7,A1:A6)":         "1.29099444873581",
 		"SUBTOTAL(8,A1:A6)":         "1.11803398874989",
 		"SUBTOTAL(9,A1:A6)":         "6",
@@ -882,7 +889,6 @@ func TestCalcCellValue(t *testing.T) {
 		// SUM
 		"SUM(1,2)":                           "3",
 		"SUM(\"1\",\"2\")":                   "3",
-		"SUM(\"\",1,2)":                      "3",
 		"SUM(1,2+3)":                         "6",
 		"SUM(SUM(1,2),2)":                    "5",
 		"(-2-SUM(-4+7))*5":                   "-25",
@@ -1088,6 +1094,7 @@ func TestCalcCellValue(t *testing.T) {
 		"COUNT(\"5\",2)":                       "2",
 		"COUNT({\"5\"},\"5\")":                 "1",
 		"COUNT(TRUE,1)":                        "2",
+		"COUNT(NA(),1)":                        "1",
 		// COUNTA
 		"COUNTA()":                              "0",
 		"COUNTA(\"\")":                          "1",
@@ -1185,6 +1192,7 @@ func TestCalcCellValue(t *testing.T) {
 		"GAUSS(2.5)":   "0.493790334674224",
 		// GEOMEAN
 		"GEOMEAN(2.5,3,0.5,1,3)": "1.6226711115996",
+		"GEOMEAN(D1,A2,A3)":      "2.44948974278318",
 		// HARMEAN
 		"HARMEAN(2.5,3,0.5,1,3)":               "1.22950819672131",
 		"HARMEAN(\"2.5\",3,0.5,1,INT(3),\"\")": "1.22950819672131",
@@ -2944,6 +2952,8 @@ func TestCalcCellValue(t *testing.T) {
 		// PRODUCT
 		"PRODUCT(\"X\")":    {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		"PRODUCT(\"\",3,6)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"PRODUCT(A2,I1:J1)": {"#N/A", "#N/A"},
+		"PRODUCT(J1,1/0)":   {"#DIV/0!", "#DIV/0!"},
 		// QUOTIENT
 		"QUOTIENT(\"X\",1)": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		"QUOTIENT(1,\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
@@ -3060,6 +3070,12 @@ func TestCalcCellValue(t *testing.T) {
 		"SUM(1*SUM(1/0)*1)": {"#DIV/0!", "#DIV/0!"},
 		"SUM(0:2)":          {"#NAME?", "invalid reference"},
 		"SUM(1:1048577)":    {"#NAME?", "invalid reference"},
+		"SUM(\"\",1,2)":     {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"SUM(\"abc\",2)":    {"#VALUE!", "strconv.ParseFloat: parsing \"abc\": invalid syntax"},
+		"SUM(NA(),1/0)":     {"#N/A", "#N/A"},
+		"SUM(A2,I1:J1)":     {"#N/A", "#N/A"},
+		"SUM(J1,1/0)":       {"#DIV/0!", "#DIV/0!"},
+		"SUM(J1,\"abc\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"abc\": invalid syntax"},
 		// SUMIF
 		"SUMIF()": {"#VALUE!", "SUMIF requires at least 2 arguments"},
 		// SUMSQ
@@ -3376,6 +3392,7 @@ func TestCalcCellValue(t *testing.T) {
 		"GEOMEAN(0)":     {"#NUM!", "#NUM!"},
 		"GEOMEAN(D1:D2)": {"#NUM!", "#NUM!"},
 		"GEOMEAN(\"\")":  {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"GEOMEAN(A2,J1)": {"#N/A", "#N/A"},
 		// HARMEAN
 		"HARMEAN()":   {"#VALUE!", "HARMEAN requires at least 1 argument"},
 		"HARMEAN(-1)": {"#N/A", "#N/A"},
@@ -4833,6 +4850,7 @@ func TestCalcCellValue(t *testing.T) {
 	}
 	for formula, expected := range mathCalcError {
 		f := prepareCalcData(cellData)
+		assert.NoError(t, f.SetCellFormula("Sheet1", "J1", "NA()"))
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.Equal(t, expected[0], result, formula)
@@ -4858,7 +4876,6 @@ func TestCalcCellValue(t *testing.T) {
 		"A1/A2/SUM(A1:A2:B1)":            "0.0416666666666667",
 		"A1/A2/SUM(A1:A2:B1)*A3":         "0.125",
 		"SUM(B1:D1)":                     "4",
-		"SUM(\"X\")":                     "0",
 	}
 	for formula, expected := range referenceCalc {
 		f := prepareCalcData(cellData)
@@ -4873,6 +4890,7 @@ func TestCalcCellValue(t *testing.T) {
 		"MDETERM(A1:B3)": {"#VALUE!", "#VALUE!"},
 		// SUM
 		"1+SUM(SUM(A1+A2/A4)*(2-3),2)": {"#DIV/0!", "#DIV/0!"},
+		"SUM(\"X\")":                   {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 	}
 	for formula, expected := range referenceCalcError {
 		f := prepareCalcData(cellData)
@@ -5490,9 +5508,11 @@ func TestCalcDatabase(t *testing.T) {
 		"DMIN(A4:E10,\"Tree\",A1:F3)":       "0",
 		"DMIN(A4:E10,\"Profit\",A1:F3)":     "45",
 		"DPRODUCT(A4:E10,\"Profit\",A1:F3)": "24948000",
+		"DPRODUCT(A4:E10,\"Tree\",A1:F3)":   "0",
 		"DSTDEV(A4:E10,\"Profit\",A1:F3)":   "21.077238908358",
 		"DSTDEVP(A4:E10,\"Profit\",A1:F3)":  "18.2534243362718",
 		"DSUM(A4:E10,\"Profit\",A1:F3)":     "293",
+		"DSUM(A4:E10,\"Tree\",A1:F3)":       "0",
 		"DVAR(A4:E10,\"Profit\",A1:F3)":     "444.25",
 		"DVARP(A4:E10,\"Profit\",A1:F3)":    "333.1875",
 	}
@@ -5528,12 +5548,14 @@ func TestCalcDatabase(t *testing.T) {
 		"DMIN(A4:E10,\"x\",A1:F3)":           {"#VALUE!", "#VALUE!"},
 		"DPRODUCT()":                         {"#VALUE!", "DPRODUCT requires 3 arguments"},
 		"DPRODUCT(A4:E10,\"x\",A1:F3)":       {"#VALUE!", "#VALUE!"},
+		"DPRODUCT(A4:E10,\"Age\",A1:F3)":     {"#N/A", "#N/A"},
 		"DSTDEV()":                           {"#VALUE!", "DSTDEV requires 3 arguments"},
 		"DSTDEV(A4:E10,\"x\",A1:F3)":         {"#VALUE!", "#VALUE!"},
 		"DSTDEVP()":                          {"#VALUE!", "DSTDEVP requires 3 arguments"},
 		"DSTDEVP(A4:E10,\"x\",A1:F3)":        {"#VALUE!", "#VALUE!"},
 		"DSUM()":                             {"#VALUE!", "DSUM requires 3 arguments"},
 		"DSUM(A4:E10,\"x\",A1:F3)":           {"#VALUE!", "#VALUE!"},
+		"DSUM(A4:E10,\"Age\",A1:F3)":         {"#N/A", "#N/A"},
 		"DVAR()":                             {"#VALUE!", "DVAR requires 3 arguments"},
 		"DVAR(A4:E10,\"x\",A1:F3)":           {"#VALUE!", "#VALUE!"},
 		"DVARP()":                            {"#VALUE!", "DVARP requires 3 arguments"},
