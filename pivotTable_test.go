@@ -1,10 +1,7 @@
 package excelize
 
 import (
-	"archive/zip"
-	"bytes"
 	"fmt"
-	"io"
 	"math/rand"
 	"path/filepath"
 	"strings"
@@ -12,35 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
-
-// tamperZipEntry rebuilds a zip archive from raw bytes, replacing the
-// content of exactly one entry (identified by name) with newContent, leaving
-// every other entry byte-for-byte as it was.
-func tamperZipEntry(t *testing.T, original []byte, targetName string, newContent []byte) []byte {
-	t.Helper()
-	zr, err := zip.NewReader(bytes.NewReader(original), int64(len(original)))
-	assert.NoError(t, err)
-	var buf bytes.Buffer
-	zw := zip.NewWriter(&buf)
-	found := false
-	for _, zf := range zr.File {
-		rc, err := zf.Open()
-		assert.NoError(t, err)
-		data, err := io.ReadAll(rc)
-		assert.NoError(t, rc.Close())
-		assert.NoError(t, err)
-		if zf.Name == targetName {
-			data, found = newContent, true
-		}
-		w, err := zw.Create(zf.Name)
-		assert.NoError(t, err)
-		_, err = w.Write(data)
-		assert.NoError(t, err)
-	}
-	assert.True(t, found, "target entry %s not found in source archive", targetName)
-	assert.NoError(t, zw.Close())
-	return buf.Bytes()
-}
 
 func TestPivotTable(t *testing.T) {
 	f := NewFile()
@@ -775,79 +743,28 @@ func TestDeleteWorkbookPivotCache(t *testing.T) {
 	assert.EqualError(t, f.deleteWorkbookPivotCache(PivotTableOptions{pivotCacheXML: "pivotCache/pivotCacheDefinition1.xml"}), "XML syntax error on line 1: invalid UTF-8")
 }
 
-// newPivotTableWorkbook builds a minimal workbook with one pivot table and
-// returns its saved bytes, for tests that need to tamper with the pivot
-// table or pivot cache XML parts directly.
-func newPivotTableWorkbook(t *testing.T) []byte {
-	t.Helper()
+func TestExtractPivotTableFields(t *testing.T) {
 	f := NewFile()
-	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Revenue"}))
-	for row := 2; row <= 5; row++ {
-		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), "Jan"))
-		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", row), 100*row))
+	// Test skipping all pivot and data fields when cache fields are missing
+	pt := &xlsxPivotTableDefinition{
+		PivotFields: &xlsxPivotFields{PivotField: []*xlsxPivotField{{Axis: "axisRow"}}},
+		DataFields: &xlsxDataFields{
+			DataField: []*xlsxDataField{
+				{Fld: -1}, {Fld: 1}, {Fld: 2},
+				{Fld: 0, Subtotal: "sum"},
+			},
+		},
 	}
-	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
-		DataRange:       "Sheet1!A1:B5",
-		PivotTableRange: "Sheet1!D1:F10",
-		Rows:            []PivotTableField{{Data: "Month"}},
-		Data:            []PivotTableField{{Data: "Revenue", Subtotal: "Sum", Name: "Summarize by Sum"}},
-	}))
-	var buf bytes.Buffer
-	assert.NoError(t, f.Write(&buf))
-	return buf.Bytes()
-}
-
-func TestExtractPivotTableFieldsOutOfRange(t *testing.T) {
-	// extractPivotTableFields must not index order (built from the pivot
-	// cache's field list) out of range when a pivot table's <dataField
-	// fld="N"/> attribute, or the pivot table's own field count, doesn't
-	// match the pivot cache's <cacheFields> count. Both values are parsed
-	// from separate, independently attacker-controlled XML parts with no
-	// cross-validation.
-	original := newPivotTableWorkbook(t)
-
-	t.Run("DataFieldFldAttributeOutOfRange", func(t *testing.T) {
-		f, err := OpenReader(bytes.NewReader(original))
-		assert.NoError(t, err)
-		ptContent, ok := f.Pkg.Load("xl/pivotTables/pivotTable1.xml")
-		assert.True(t, ok)
-		ptXML := string(ptContent.([]byte))
-		assert.Contains(t, ptXML, `<dataField`)
-		// Only the fld attribute is tampered with; the pivot cache
-		// definition (2 cache fields: Month, Revenue) is left untouched.
-		tampered := strings.Replace(ptXML, `fld="1"`, `fld="99999"`, 1)
-		assert.NotEqual(t, ptXML, tampered)
-
-		malicious := tamperZipEntry(t, original, "xl/pivotTables/pivotTable1.xml", []byte(tampered))
-		f2, err := OpenReader(bytes.NewReader(malicious))
-		assert.NoError(t, err)
-		pts, err := f2.GetPivotTables("Sheet1")
-		assert.NoError(t, err)
-		assert.Len(t, pts, 1)
-		assert.Empty(t, pts[0].Data)
-	})
-
-	t.Run("CacheFieldsTrimmed", func(t *testing.T) {
-		f, err := OpenReader(bytes.NewReader(original))
-		assert.NoError(t, err)
-		pcContent, ok := f.Pkg.Load("xl/pivotCache/pivotCacheDefinition1.xml")
-		assert.True(t, ok)
-		pcXML := string(pcContent.([]byte))
-		// Replace the whole <cacheFields>...</cacheFields> block with an
-		// empty one (0 cache fields), while pivotTable1.xml still has 2
-		// pivotFields and a <dataField fld="1"/> referencing cache field 1.
-		start, end := strings.Index(pcXML, "<cacheFields"), strings.Index(pcXML, "</cacheFields>")
-		assert.NotEqual(t, -1, start)
-		assert.NotEqual(t, -1, end)
-		tampered := pcXML[:start] + `<cacheFields count="0"></cacheFields>` + pcXML[end+len("</cacheFields>"):]
-
-		malicious := tamperZipEntry(t, original, "xl/pivotCache/pivotCacheDefinition1.xml", []byte(tampered))
-		f2, err := OpenReader(bytes.NewReader(malicious))
-		assert.NoError(t, err)
-		pts, err := f2.GetPivotTables("Sheet1")
-		assert.NoError(t, err)
-		assert.Len(t, pts, 1)
-		assert.Empty(t, pts[0].Rows)
-		assert.Empty(t, pts[0].Data)
-	})
+	pc := &xlsxPivotCacheDefinition{}
+	opt := &PivotTableOptions{}
+	f.extractPivotTableFields(pt, pc, opt)
+	assert.Equal(t, &PivotTableOptions{}, opt)
+	// Test extracting valid fields while skipping negative and out-of-range data field indices
+	pc.CacheFields = &xlsxCacheFields{CacheField: []*xlsxCacheField{{Name: "Revenue"}}}
+	f.extractPivotTableFields(pt, pc, opt)
+	assert.Equal(t, &PivotTableOptions{
+		Rows: []PivotTableField{{Data: "Revenue"}},
+		Data: []PivotTableField{{Data: "Revenue", Subtotal: "Sum"}},
+	}, opt)
+	assert.NoError(t, f.Close())
 }

@@ -1427,7 +1427,7 @@ func (f *File) pivotCacheReader(path string) (*xlsxPivotCacheDefinition, error) 
 func (f *File) extractPivotTableFields(pt *xlsxPivotTableDefinition, pc *xlsxPivotCacheDefinition, opts *PivotTableOptions) {
 	order := pc.getPivotCacheFieldsName()
 	for fieldIdx, field := range pt.PivotFields.PivotField {
-		if fieldIdx < 0 || fieldIdx >= len(order) {
+		if fieldIdx >= len(order) {
 			continue
 		}
 		if field.Axis == "axisRow" {
