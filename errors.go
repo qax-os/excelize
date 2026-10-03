@@ -27,6 +27,9 @@ var (
 	// ErrCellCharsLength defined the error message for receiving a cell
 	// characters length that exceeds the limit.
 	ErrCellCharsLength = fmt.Errorf("cell value must be 0-%d characters", TotalCellChars)
+	// ErrCellNoFormula defined the error message on attempting to refresh the
+	// cached value of a cell that does not hold a formula.
+	ErrCellNoFormula = errors.New("cell does not contain a formula")
 	// ErrCellStyles defined the error message on cell styles exceeds the limit.
 	ErrCellStyles = fmt.Errorf("the cell styles exceeds the %d limit", MaxCellStyles)
 	// ErrChartTitle defined the error message on both formula and rich text for
