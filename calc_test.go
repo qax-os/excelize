@@ -1611,10 +1611,8 @@ func TestCalcCellValue(t *testing.T) {
 		"OR(1=1,2>1)*1":          "1",
 		"OR(OR(1),FALSE)":        "TRUE",
 		"OR(OR(1),FALSE)*1":      "1",
-		// an argument after a matrix is still read, and a true argument is not
-		// undone by a false one that follows it
-		"OR(A4:A4,1)":   "TRUE",
-		"OR(A4:A4,1)*1": "1",
+		"OR(A4:A4,1)":            "TRUE",
+		"OR(A4:A4,1)*1":          "1",
 		// SWITCH
 		"SWITCH(1,1,\"A\",2,\"B\",3,\"C\",\"N\")": "A",
 		"SWITCH(3,1,\"A\",2,\"B\",3,\"C\",\"N\")": "C",
@@ -3892,9 +3890,7 @@ func TestCalcCellValue(t *testing.T) {
 		"NOT(NOT())": {"#VALUE!", "NOT requires 1 argument"},
 		"NOT(\"\")":  {"#VALUE!", "NOT expects 1 boolean or numeric argument"},
 		// OR
-		"OR(\"text\")": {"#VALUE!", "#VALUE!"},
-		// a true argument does not end the evaluation, so a later invalid one
-		// is still rejected
+		"OR(\"text\")":                          {"#VALUE!", "#VALUE!"},
 		"OR(1,\"text\")":                        {"#VALUE!", "#VALUE!"},
 		"OR(1=1,\"text\")":                      {"#VALUE!", "#VALUE!"},
 		"OR(\"1\",\"TRUE\",\"FALSE\")":          {"#VALUE!", "#VALUE!"},
