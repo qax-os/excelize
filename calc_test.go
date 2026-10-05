@@ -896,10 +896,8 @@ func TestCalcCellValue(t *testing.T) {
 		"SUM((SUM(2))+1)":                    "3",
 		"SUM(1+(ABS(A1)+A1)/2)":              "2",
 		"SUM(1+(-ABS(A1)))":                  "0",
-		"IF(2<0, 1, (4))":                    "4",
-		"IF(2>0, (1), 4)":                    "1",
-		"IF(2>0, (A1)*2.5, 4)":               "2.5",
 		"SUM({1,2,3,4,\"\"})":                "10",
+		"SUM(OR(1))":                         "1",
 		// SUMIF
 		"SUMIF(F1:F5, \"\")":             "0",
 		"SUMIF(A1:A5, \"3\")":            "3",
@@ -1469,6 +1467,7 @@ func TestCalcCellValue(t *testing.T) {
 		"ISLOGICAL(\"false\")": "TRUE",
 		"ISLOGICAL(A1)":        "FALSE",
 		"ISLOGICAL(20/5)":      "FALSE",
+		"ISLOGICAL(OR(1))":     "TRUE",
 		// ISNA
 		"ISNA(A1)":   "FALSE",
 		"ISNA(NA())": "TRUE",
@@ -1478,9 +1477,24 @@ func TestCalcCellValue(t *testing.T) {
 		"ISNONTEXT(\"Excelize\")": "FALSE",
 		"ISNONTEXT(NA())":         "TRUE",
 		// ISNUMBER
-		"ISNUMBER(A1)":    "TRUE",
-		"ISNUMBER(D1)":    "FALSE",
-		"ISNUMBER(A1:B1)": "TRUE",
+		"ISNUMBER(0)":       "TRUE",
+		"ISNUMBER(1)":       "TRUE",
+		"ISNUMBER(A1)":      "TRUE",
+		"ISNUMBER(D1)":      "FALSE",
+		"ISNUMBER(A1:B1)":   "TRUE",
+		"ISNUMBER(\"1\")":   "FALSE",
+		"ISNUMBER(TRUE)":    "FALSE",
+		"ISNUMBER(FALSE)":   "FALSE",
+		"ISNUMBER(TRUE())":  "FALSE",
+		"ISNUMBER(FALSE())": "FALSE",
+		"ISNUMBER(1=1)":     "FALSE",
+		"ISNUMBER(1=2)":     "FALSE",
+		"ISNUMBER({TRUE})":  "FALSE",
+		"ISNUMBER({FALSE})": "FALSE",
+		"ISNUMBER(OR(1))":   "FALSE",
+		"ISNUMBER(OR(0))":   "FALSE",
+		"ISNUMBER(OR(1)*1)": "TRUE",
+		"ISNUMBER(OR(0)*1)": "TRUE",
 		// ISODD
 		"ISODD(A1)": "TRUE",
 		"ISODD(A2)": "FALSE",
@@ -1490,8 +1504,9 @@ func TestCalcCellValue(t *testing.T) {
 		"ISREF(\"text\")": "FALSE",
 		"ISREF(B1*B2)":    "FALSE",
 		// ISTEXT
-		"ISTEXT(D1)": "TRUE",
-		"ISTEXT(A1)": "FALSE",
+		"ISTEXT(D1)":    "TRUE",
+		"ISTEXT(A1)":    "FALSE",
+		"ISTEXT(OR(1))": "FALSE",
 		// N
 		"N(10)":     "10",
 		"N(\"10\")": "10",
@@ -1563,18 +1578,12 @@ func TestCalcCellValue(t *testing.T) {
 		"OR(A1:B1)":              "TRUE",
 		"OR(1,0)":                "TRUE",
 		"OR(0,1)":                "TRUE",
-		// a true OR is a logical value, not the text "TRUE", so it carries on
-		// into arithmetic and into an aggregation instead of failing to parse
-		"OR(1)*1":           "1",
-		"OR(0,1)*1":         "1",
-		"OR(1,0)*1":         "1",
-		"OR(1=1,2>1)*1":     "1",
-		"SUM(OR(1))":        "1",
-		"OR(OR(1),FALSE)":   "TRUE",
-		"OR(OR(1),FALSE)*1": "1",
-		"ISLOGICAL(OR(1))":  "TRUE",
-		"ISNUMBER(OR(1))":   "TRUE",
-		"ISTEXT(OR(1))":     "FALSE",
+		"OR(1)*1":                "1",
+		"OR(0,1)*1":              "1",
+		"OR(1,0)*1":              "1",
+		"OR(1=1,2>1)*1":          "1",
+		"OR(OR(1),FALSE)":        "TRUE",
+		"OR(OR(1),FALSE)*1":      "1",
 		// an argument after a matrix is still read, and a true argument is not
 		// undone by a false one that follows it
 		"OR(A4:A4,1)":   "TRUE",
@@ -2078,6 +2087,9 @@ func TestCalcCellValue(t *testing.T) {
 		"IF(A4>0.4,\"TRUE\",\"FALSE\")":             "FALSE",
 		"IF(A1=0,0,1+(SUM(ABS(A1))))":               "2",
 		"IF(C1=0,0,A1/C1+B1/C1)":                    "0",
+		"IF(2<0, 1, (4))":                           "4",
+		"IF(2>0, (1), 4)":                           "1",
+		"IF(2>0, (A1)*2.5, 4)":                      "2.5",
 		// Excel Lookup and Reference Functions
 		// ADDRESS
 		"ADDRESS(1,1,1,TRUE)":            "$A$1",
@@ -5215,6 +5227,8 @@ func TestCalcBoolean(t *testing.T) {
 	cellData := [][]interface{}{{0.5, "TRUE", -0.5, "FALSE", true}}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
+		"ISNUMBER(E1)":     "FALSE",
+		"ISNUMBER(E1:E1)":  "FALSE",
 		"AVERAGEA(A1:C1)":  "0.333333333333333",
 		"MAX(0.5,B1)":      "0.5",
 		"MAX(A1:B1)":       "0.5",

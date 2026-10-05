@@ -11868,7 +11868,7 @@ func (fn *formulaFuncs) ISNUMBER(argsList *list.List) formulaArg {
 	}
 	arg := argsList.Front().Value.(formulaArg)
 	arg = fn.implicitIntersect(arg)
-	if arg.Type == ArgNumber {
+	if arg.Type == ArgNumber && !arg.Boolean {
 		return newBoolFormulaArg(true)
 	}
 	return newBoolFormulaArg(false)
@@ -12201,9 +12201,9 @@ func (fn *formulaFuncs) NOT(argsList *list.List) formulaArg {
 }
 
 // or is part of the implementation of the formula function OR. It reduces a
-// single argument to a logical value, or to an error if the argument is
-// neither a logical value nor a number. A matrix is true as soon as one of
-// its elements is.
+// single argument to a logical value, or to an error if the argument is neither
+// a logical value nor a number. A matrix is true as soon as one of its elements
+// is.
 func (fn *formulaFuncs) or(token formulaArg) formulaArg {
 	switch token.Type {
 	case ArgString:
