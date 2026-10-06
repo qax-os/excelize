@@ -14989,10 +14989,6 @@ func (fn *formulaFuncs) VALUE(argsList *list.List) formulaArg {
 			arg = values[0]
 		}
 	}
-	// An empty cell reads as zero. An empty string does not: it holds no
-	// number, and VALUE("") is an error just as VALUE(" ") is. The two reach
-	// the function as different argument types, so the distinction is drawn
-	// on the type and not on the text, which is empty either way.
 	if arg.Type == ArgEmpty {
 		return newNumberFormulaArg(0)
 	}
