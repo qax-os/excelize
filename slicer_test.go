@@ -426,6 +426,14 @@ func TestSlicer(t *testing.T) {
 	_, err = f.GetSlicers("Sheet1")
 	assert.Error(t, err)
 	assert.NoError(t, f.Close())
+	// Test get sheet slicers without drawing part
+	f = NewFile()
+	ws, ok = f.Sheet.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	ws.(*xlsxWorksheet).ExtLst = &xlsxExtLst{}
+	slicers, err = f.GetSlicers("Sheet1")
+	assert.NoError(t, err)
+	assert.Empty(t, slicers)
 
 	f, err = OpenFile(workbookPath)
 	assert.NoError(t, err)
