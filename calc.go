@@ -14983,7 +14983,16 @@ func (fn *formulaFuncs) VALUE(argsList *list.List) formulaArg {
 	if argsList.Len() != 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "VALUE requires 1 argument")
 	}
-	text := strings.ReplaceAll(argsList.Front().Value.(formulaArg).Value(), ",", "")
+	arg := argsList.Front().Value.(formulaArg)
+	if arg.Type == ArgMatrix {
+		if values := arg.ToList(); len(values) > 0 {
+			arg = values[0]
+		}
+	}
+	if arg.Type == ArgEmpty {
+		return newNumberFormulaArg(0)
+	}
+	text := strings.ReplaceAll(arg.Value(), ",", "")
 	percent := 1.0
 	if strings.HasSuffix(text, "%") {
 		percent, text = 0.01, strings.TrimSuffix(text, "%")

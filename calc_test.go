@@ -2091,6 +2091,11 @@ func TestCalcCellValue(t *testing.T) {
 		"VALUE(\"20%\")":                 "0.2",
 		"VALUE(\"12:00:00\")":            "0.5",
 		"VALUE(\"01/02/2006 15:04:05\")": "38719.6278356481",
+		"VALUE(B3)":                      "0",
+		"VALUE(B3)*2":                    "0",
+		"VALUE(B3)+5":                    "5",
+		"VALUE(B3)<>1":                   "TRUE",
+		"VALUE(B3:B3)":                   "0",
 		// VALUETOTEXT
 		"VALUETOTEXT(A1)":   "1",
 		"VALUETOTEXT(A1,0)": "1",
@@ -2118,6 +2123,7 @@ func TestCalcCellValue(t *testing.T) {
 		"IF(2<0,1,(4))":                           "4",
 		"IF(2>0,(1),4)":                           "1",
 		"IF(2>0,(A1)*2.5,4)":                      "2.5",
+		"IF(VALUE(B3)=1,0,1)":                     "1",
 		// Excel Lookup and Reference Functions
 		// ADDRESS
 		"ADDRESS(1,1,1,TRUE)":            "$A$1",
@@ -4198,8 +4204,10 @@ func TestCalcCellValue(t *testing.T) {
 		"UNICODE()":     {"#VALUE!", "UNICODE requires 1 argument"},
 		"UNICODE(\"\")": {"#VALUE!", "#VALUE!"},
 		// VALUE
-		"VALUE()":     {"#VALUE!", "VALUE requires 1 argument"},
-		"VALUE(\"\")": {"#VALUE!", "#VALUE!"},
+		"VALUE()":       {"#VALUE!", "VALUE requires 1 argument"},
+		"VALUE(\"\")":   {"#VALUE!", "#VALUE!"},
+		"VALUE(\"\")*2": {"#VALUE!", "#VALUE!"},
+		"VALUE(\" \")":  {"#VALUE!", "#VALUE!"},
 		// VALUETOTEXT
 		"VALUETOTEXT()":        {"#VALUE!", "VALUETOTEXT requires at least 1 argument"},
 		"VALUETOTEXT(A1,0,0)":  {"#VALUE!", "VALUETOTEXT allows at most 2 arguments"},
