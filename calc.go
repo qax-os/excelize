@@ -5346,29 +5346,67 @@ func (fn *formulaFuncs) POWER(argsList *list.List) formulaArg {
 //
 //	PRODUCT(number1,[number2],...)
 func (fn *formulaFuncs) PRODUCT(argsList *list.List) formulaArg {
-	product := 1.0
-	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
-		token := arg.Value.(formulaArg)
-		switch token.Type {
-		case ArgString:
-			num := token.ToNumber()
-			if num.Type != ArgNumber {
-				return num
-			}
-			product = product * num.Number
-		case ArgNumber:
-			product = product * token.Number
-		case ArgMatrix:
-			for _, row := range token.Matrix {
-				for _, cell := range row {
-					if cell.Type == ArgNumber {
-						product *= cell.Number
-					}
-				}
-			}
-		}
+	product, count := 1.0, 0
+	if arg := eachNumber(argsList, func(num float64) {
+		product *= num
+		count++
+	}); arg.Type == ArgError {
+		return arg
+	}
+	if count == 0 {
+		return newNumberFormulaArg(0)
 	}
 	return newNumberFormulaArg(product)
+}
+
+func isReference(arg formulaArg) bool {
+	return (arg.cellRefs != nil && arg.cellRefs.Len() > 0) ||
+		(arg.cellRanges != nil && arg.cellRanges.Len() > 0)
+}
+
+func keepNumber(arg formulaArg, isRef bool) (formulaArg, bool) {
+	switch arg.Type {
+	case ArgNumber:
+		return arg, !isRef || !arg.Boolean
+	case ArgString:
+		if isRef {
+			return arg, false
+		}
+		return arg.ToNumber(), true
+	case ArgError:
+		return arg, true
+	}
+	return arg, false
+}
+
+func eachNumber(argsList *list.List, visit func(float64)) formulaArg {
+	var errArg formulaArg
+	var errFromRef bool
+	var walk func(formulaArg, bool)
+	walk = func(arg formulaArg, isRef bool) {
+		isRef = isRef || isReference(arg)
+		if arg.Type == ArgList || arg.Type == ArgMatrix {
+			for _, cell := range arg.ToList() {
+				walk(cell, true)
+			}
+			return
+		}
+		num, ok := keepNumber(arg, isRef)
+		if !ok {
+			return
+		}
+		if num.Type == ArgNumber {
+			visit(num.Number)
+			return
+		}
+		if errArg.Type != ArgError || (errFromRef && !isRef) {
+			errArg, errFromRef = num, isRef
+		}
+	}
+	for token := argsList.Front(); token != nil; token = token.Next() {
+		walk(token.Value.(formulaArg), false)
+	}
+	return errArg
 }
 
 // QUOTIENT function returns the integer portion of a division between two
@@ -6109,35 +6147,8 @@ func (fn *formulaFuncs) SUBTOTAL(argsList *list.List) formulaArg {
 //	SUM(number1,[number2],...)
 func (fn *formulaFuncs) SUM(argsList *list.List) formulaArg {
 	var sum float64
-	var sumArg func(formulaArg, bool)
-	sumArg = func(arg formulaArg, isRef bool) {
-		isRef = isRef || (arg.cellRefs != nil && arg.cellRefs.Len() > 0) ||
-			(arg.cellRanges != nil && arg.cellRanges.Len() > 0)
-		switch arg.Type {
-		case ArgString:
-			if isRef {
-				return
-			}
-			if num := arg.ToNumber(); num.Type == ArgNumber {
-				sum += num.Number
-			}
-		case ArgNumber:
-			if isRef && arg.Boolean {
-				return
-			}
-			sum += arg.Number
-		case ArgList, ArgMatrix:
-			for _, cell := range arg.ToList() {
-				sumArg(cell, true)
-			}
-		}
-	}
-	for token := argsList.Front(); token != nil; token = token.Next() {
-		arg := token.Value.(formulaArg)
-		if arg.Type == ArgError {
-			return arg
-		}
-		sumArg(arg, false)
+	if arg := eachNumber(argsList, func(num float64) { sum += num }); arg.Type == ArgError {
+		return arg
 	}
 	return newNumberFormulaArg(sum)
 }
@@ -8134,32 +8145,7 @@ func (fn *formulaFuncs) CORREL(argsList *list.List) formulaArg {
 //	COUNT(value1,[value2],...)
 func (fn *formulaFuncs) COUNT(argsList *list.List) formulaArg {
 	var count int
-	var countArg func(formulaArg, bool)
-	countArg = func(arg formulaArg, isRef bool) {
-		isRef = isRef || (arg.cellRefs != nil && arg.cellRefs.Len() > 0) ||
-			(arg.cellRanges != nil && arg.cellRanges.Len() > 0)
-		switch arg.Type {
-		case ArgString:
-			if isRef {
-				return
-			}
-			if num := arg.ToNumber(); num.Type == ArgNumber {
-				count++
-			}
-		case ArgNumber:
-			if isRef && arg.Boolean {
-				return
-			}
-			count++
-		case ArgList, ArgMatrix:
-			for _, cell := range arg.ToList() {
-				countArg(cell, true)
-			}
-		}
-	}
-	for token := argsList.Front(); token != nil; token = token.Next() {
-		countArg(token.Value.(formulaArg), false)
-	}
+	eachNumber(argsList, func(float64) { count++ })
 	return newNumberFormulaArg(float64(count))
 }
 
@@ -19240,23 +19226,26 @@ func (fn *formulaFuncs) database(name string, argsList *list.List) formulaArg {
 	if db == nil {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
-	args := list.New()
+	args, cells := list.New(), list.New()
+	var values []formulaArg
 	for db.next() {
 		args.PushBack(db.value())
+		values = append(values, db.value())
 	}
+	cells.PushBack(newListFormulaArg(values))
 	switch name {
 	case "DMAX":
 		return fn.MAX(args)
 	case "DMIN":
 		return fn.MIN(args)
 	case "DPRODUCT":
-		return fn.PRODUCT(args)
+		return fn.PRODUCT(cells)
 	case "DSTDEV":
 		return fn.STDEV(args)
 	case "DSTDEVP":
 		return fn.STDEVP(args)
 	case "DSUM":
-		return fn.SUM(args)
+		return fn.SUM(cells)
 	case "DVAR":
 		return fn.VAR(args)
 	case "DVARP":
