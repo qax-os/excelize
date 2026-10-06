@@ -686,6 +686,78 @@ func TestAddPivotColFields(t *testing.T) {
 		DataRange: "Sheet1!A1:A1",
 		Columns:   []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
 	}), `parameter 'DataRange' parsing error: parameter is invalid`)
+	// Test pivot table with DataColumnFirst enabled: the Values field (-2)
+	// should be placed before user-defined column fields
+	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Revenue"}))
+	for row := 2; row < 32; row++ {
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), "Jan"))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", row), 2017))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("C%d", row), "Meat"))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("D%d", row), 100))
+	}
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:D31",
+		PivotTableRange: "Sheet1!G4:M30",
+		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
+		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
+		Data: []PivotTableField{
+			{Data: "Revenue", Subtotal: "Sum", Name: "Sum of Revenue"},
+			{Data: "Revenue", Subtotal: "Average", Name: "Average of Revenue"},
+		},
+		DataColumnFirst: true,
+		RowGrandTotals:  true,
+		ColGrandTotals:  true,
+		ShowDrill:       true,
+		ShowRowHeaders:  true,
+		ShowColHeaders:  true,
+		ShowLastColumn:  true,
+	}))
+	pivotTables, err := f.GetPivotTables("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, pivotTables, 1)
+	assert.True(t, pivotTables[0].DataColumnFirst)
+	pt, err := f.pivotTableReader("xl/pivotTables/pivotTable1.xml")
+	assert.NoError(t, err)
+	assert.NotNil(t, pt.ColFields)
+	assert.Greater(t, len(pt.ColFields.Field), 1)
+	assert.Equal(t, -2, pt.ColFields.Field[0].X)
+
+	// Test default behavior: Values field (-2) after user-defined column fields
+	f = NewFile()
+	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]string{"Month", "Year", "Type", "Revenue"}))
+	for row := 2; row < 32; row++ {
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("A%d", row), "Jan"))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("B%d", row), 2017))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("C%d", row), "Meat"))
+		assert.NoError(t, f.SetCellValue("Sheet1", fmt.Sprintf("D%d", row), 100))
+	}
+	assert.NoError(t, f.AddPivotTable(&PivotTableOptions{
+		DataRange:       "Sheet1!A1:D31",
+		PivotTableRange: "Sheet1!G4:M30",
+		Rows:            []PivotTableField{{Data: "Month", DefaultSubtotal: true}, {Data: "Year"}},
+		Columns:         []PivotTableField{{Data: "Type", DefaultSubtotal: true}},
+		Data: []PivotTableField{
+			{Data: "Revenue", Subtotal: "Sum", Name: "Sum of Revenue"},
+			{Data: "Revenue", Subtotal: "Average", Name: "Average of Revenue"},
+		},
+		RowGrandTotals: true,
+		ColGrandTotals: true,
+		ShowDrill:      true,
+		ShowRowHeaders: true,
+		ShowColHeaders: true,
+		ShowLastColumn: true,
+	}))
+	pivotTables, err = f.GetPivotTables("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, pivotTables, 1)
+	assert.False(t, pivotTables[0].DataColumnFirst)
+	pt, err = f.pivotTableReader("xl/pivotTables/pivotTable1.xml")
+	assert.NoError(t, err)
+	assert.NotNil(t, pt.ColFields)
+	assert.Greater(t, len(pt.ColFields.Field), 1)
+	assert.NotEqual(t, -2, pt.ColFields.Field[0].X)
+	assert.Equal(t, -2, pt.ColFields.Field[len(pt.ColFields.Field)-1].X)
+	assert.NoError(t, f.Close())
 }
 
 func TestExtractPivotSharedItems(t *testing.T) {
@@ -767,4 +839,43 @@ func TestExtractPivotTableFields(t *testing.T) {
 		Data: []PivotTableField{{Data: "Revenue", Subtotal: "Sum"}},
 	}, opt)
 	assert.NoError(t, f.Close())
+	// Test extracting DataColumnFirst when the Values field (-2) is positioned
+	// before user-defined column fields on the column axis
+	pc2 := &xlsxPivotCacheDefinition{}
+	pc2.CacheFields = &xlsxCacheFields{CacheField: []*xlsxCacheField{
+		{Name: "Region"}, {Name: "Type"}, {Name: "Month"}, {Name: "Revenue"},
+	}}
+	pt2 := &xlsxPivotTableDefinition{
+		PivotFields: &xlsxPivotFields{},
+		ColFields: &xlsxColFields{
+			Count: 3,
+			Field: []*xlsxField{{X: -2}, {X: 0}, {X: 1}},
+		},
+		DataFields: &xlsxDataFields{
+			DataField: []*xlsxDataField{
+				{Fld: 3, Subtotal: "sum"},
+				{Fld: 3, Subtotal: "average"},
+			},
+		},
+	}
+	opt2 := &PivotTableOptions{}
+	f.extractPivotTableFields(pt2, pc2, opt2)
+	assert.True(t, opt2.DataColumnFirst)
+	// Test DataColumnFirst is false when the Values field (-2) is after user columns
+	pt3 := &xlsxPivotTableDefinition{
+		PivotFields: &xlsxPivotFields{},
+		ColFields: &xlsxColFields{
+			Count: 3,
+			Field: []*xlsxField{{X: 0}, {X: 1}, {X: -2}},
+		},
+		DataFields: &xlsxDataFields{
+			DataField: []*xlsxDataField{
+				{Fld: 3, Subtotal: "sum"},
+				{Fld: 3, Subtotal: "average"},
+			},
+		},
+	}
+	opt3 := &PivotTableOptions{}
+	f.extractPivotTableFields(pt3, pc2, opt3)
+	assert.False(t, opt3.DataColumnFirst)
 }
