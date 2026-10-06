@@ -822,7 +822,9 @@ func TestExtractPivotTableFields(t *testing.T) {
 		PivotFields: &xlsxPivotFields{PivotField: []*xlsxPivotField{{Axis: "axisRow"}}},
 		DataFields: &xlsxDataFields{
 			DataField: []*xlsxDataField{
-				{Fld: -1}, {Fld: 1}, {Fld: 2},
+				{Fld: -1},
+				{Fld: 1},
+				{Fld: 2},
 				{Fld: 0, Subtotal: "sum"},
 			},
 		},
