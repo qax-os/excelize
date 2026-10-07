@@ -682,6 +682,7 @@ func TestCalcCellValue(t *testing.T) {
 		"IMPRODUCT(\"1-i\",\"5+10i\",2)":       "30+10i",
 		"IMPRODUCT(COMPLEX(5,2),COMPLEX(0,1))": "-2+5i",
 		"IMPRODUCT(A1:C1)":                     "4",
+		"IMPRODUCT(Sheet1!A1:Sheet1!A1:A2,A2)": "4",
 		// MINVERSE
 		"MINVERSE(A1:B2)": "-1.66666666666667",
 		// MMULT
@@ -726,10 +727,11 @@ func TestCalcCellValue(t *testing.T) {
 		"POWER(4,2)":          "16",
 		"POWER(4,POWER(1,1))": "4",
 		// PRODUCT
-		"PRODUCT(3,6)":            "18",
-		"PRODUCT(\"3\",\"6\")":    "18",
-		"PRODUCT(PRODUCT(1),3,6)": "18",
-		"PRODUCT(C1:C2)":          "1",
+		"PRODUCT(3,6)":                       "18",
+		"PRODUCT(\"3\",\"6\")":               "18",
+		"PRODUCT(PRODUCT(1),3,6)":            "18",
+		"PRODUCT(C1:C2)":                     "1",
+		"PRODUCT(Sheet1!A1:Sheet1!A1:A2,A2)": "4",
 		// QUOTIENT
 		"QUOTIENT(5,2)":             "2",
 		"QUOTIENT(4.5,3.1)":         "1",
@@ -911,6 +913,23 @@ func TestCalcCellValue(t *testing.T) {
 		"SUM(\"5\",2)":                       "7",
 		"SUM({\"5\"},\"5\")":                 "5",
 		"SUM(TRUE,1)":                        "2",
+		"SUM(INDEX(A1:B1,1))":                "5",
+		"SUM(INDEX(A1:B1,1,0))":              "5",
+		"SUM(INDEX(A1:B2,2,0))":              "7",
+		"SUM(INDEX(A1:B4,0,2))":              "9",
+		"SUM(INDEX(E1:F5,5,2))":              "34440",
+		"A1/A3":                              "0.333333333333333",
+		"SUM(A1:A2)":                         "3",
+		"SUM(Sheet1!A1:Sheet1!A2)":           "3",
+		"SUM(Sheet1!A1,A2)":                  "3",
+		"(-2-SUM(-4+A2))*5":                  "0",
+		"SUM(Sheet1!A1:Sheet1!A1:A2,A2)":     "5",
+		"SUM(A1,A2,A3)*SUM(2,3)":             "30",
+		"1+SUM(SUM(A1+A2/A3)*(2-3),2)":       "1.33333333333333",
+		"A1/A2/SUM(A1:A2:B1)":                "0.0416666666666667",
+		"A1/A2/SUM(A1:A2:B1)*A3":             "0.125",
+		"SUM(B1:D1)":                         "4",
+		"SUM(\"X\")":                         "0",
 		// SUMIF
 		"SUMIF(F1:F5, \"\")":             "0",
 		"SUMIF(A1:A5, \"3\")":            "3",
@@ -1303,6 +1322,8 @@ func TestCalcCellValue(t *testing.T) {
 		"MAXA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "36693",
 		// MAXIFS
 		"MAXIFS(F2:F4,A2:A4,\">0\")": "36693",
+		// MDETERM
+		"MDETERM(A1:B2)": "-3",
 		// MEDIAN
 		"MEDIAN(A1:A5,12)":               "2",
 		"MEDIAN(A1:A5)":                  "1.5",
@@ -2179,14 +2200,13 @@ func TestCalcCellValue(t *testing.T) {
 		"VLOOKUP(A1:A2,A1:A1,1)":             "1",
 		"VLOOKUP(MUNIT(1),MUNIT(1),1,FALSE)": "1",
 		// INDEX
-		"INDEX(0,0,0)":          "0",
-		"INDEX(A1,0,0)":         "1",
-		"INDEX(A1:A1,0,0)":      "1",
-		"SUM(INDEX(A1:B1,1))":   "5",
-		"SUM(INDEX(A1:B1,1,0))": "5",
-		"SUM(INDEX(A1:B2,2,0))": "7",
-		"SUM(INDEX(A1:B4,0,2))": "9",
-		"SUM(INDEX(E1:F5,5,2))": "34440",
+		"INDEX(0,0,0)":               "0",
+		"INDEX(A1,0,0)":              "1",
+		"INDEX(A1:A1,0,0)":           "1",
+		"INDEX(MINVERSE(A1:B2),1,1)": "-1.66666666666667",
+		"INDEX(MINVERSE(A1:B2),1,2)": "1.33333333333333",
+		"INDEX(MINVERSE(A1:B2),2,1)": "0.666666666666667",
+		"INDEX(MINVERSE(A1:B2),2,2)": "-0.333333333333333",
 		// INDIRECT
 		"INDIRECT(\"E1\")":                   "Team",
 		"INDIRECT(\"E\"&1)":                  "Team",
@@ -2930,7 +2950,8 @@ func TestCalcCellValue(t *testing.T) {
 		"LOG10()":      {"#VALUE!", "LOG10 requires 1 numeric argument"},
 		"LOG10(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		// MDETERM
-		"MDETERM()": {"#VALUE!", "MDETERM requires 1 argument"},
+		"MDETERM()":      {"#VALUE!", "MDETERM requires 1 argument"},
+		"MDETERM(A1:B3)": {"#VALUE!", "#VALUE!"},
 		// MINVERSE
 		"MINVERSE()":      {"#VALUE!", "MINVERSE requires 1 argument"},
 		"MINVERSE(B3:C4)": {"#VALUE!", "#VALUE!"},
@@ -3076,18 +3097,19 @@ func TestCalcCellValue(t *testing.T) {
 		"SUBTOTAL(0,A4:A5)":    {"#VALUE!", "SUBTOTAL has invalid function_num"},
 		"SUBTOTAL(1,A5:A6)":    {"#DIV/0!", "#DIV/0!"},
 		// SUM
-		"SUM((":             {"", ErrInvalidFormula.Error()},
-		"SUM(-)":            {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
-		"SUM(1+)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
-		"SUM(1-)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
-		"SUM(1*)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
-		"SUM(1/)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
-		"SUM(0((;(0())),)":  {"", ErrInvalidFormula.Error()},
-		"SUM((0(((;)))))":   {"", ErrInvalidFormula.Error()},
-		"SUM(1*SUM(1/0))":   {"#DIV/0!", "#DIV/0!"},
-		"SUM(1*SUM(1/0)*1)": {"#DIV/0!", "#DIV/0!"},
-		"SUM(0:2)":          {"#NAME?", "invalid reference"},
-		"SUM(1:1048577)":    {"#NAME?", "invalid reference"},
+		"SUM((":                        {"", ErrInvalidFormula.Error()},
+		"SUM(-)":                       {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
+		"SUM(1+)":                      {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
+		"SUM(1-)":                      {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
+		"SUM(1*)":                      {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
+		"SUM(1/)":                      {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
+		"SUM(0((;(0())),)":             {"", ErrInvalidFormula.Error()},
+		"SUM((0(((;)))))":              {"", ErrInvalidFormula.Error()},
+		"SUM(1*SUM(1/0))":              {"#DIV/0!", "#DIV/0!"},
+		"SUM(1*SUM(1/0)*1)":            {"#DIV/0!", "#DIV/0!"},
+		"1+SUM(SUM(A1+A2/A4)*(2-3),2)": {"#DIV/0!", "#DIV/0!"},
+		"SUM(0:2)":                     {"#NAME?", "invalid reference"},
+		"SUM(1:1048577)":               {"#NAME?", "invalid reference"},
 		// SUMIF
 		"SUMIF()": {"#VALUE!", "SUMIF requires at least 2 arguments"},
 		// SUMSQ
@@ -4868,50 +4890,6 @@ func TestCalcCellValue(t *testing.T) {
 		assert.Equal(t, expected[0], result, formula)
 		assert.EqualError(t, err, expected[1], formula)
 	}
-
-	referenceCalc := map[string]string{
-		// MDETERM
-		"MDETERM(A1:B2)": "-3",
-		// PRODUCT
-		"PRODUCT(Sheet1!A1:Sheet1!A1:A2,A2)": "4",
-		// IMPRODUCT
-		"IMPRODUCT(Sheet1!A1:Sheet1!A1:A2,A2)": "4",
-		// SUM
-		"A1/A3":                          "0.333333333333333",
-		"SUM(A1:A2)":                     "3",
-		"SUM(Sheet1!A1:Sheet1!A2)":       "3",
-		"SUM(Sheet1!A1,A2)":              "3",
-		"(-2-SUM(-4+A2))*5":              "0",
-		"SUM(Sheet1!A1:Sheet1!A1:A2,A2)": "5",
-		"SUM(A1,A2,A3)*SUM(2,3)":         "30",
-		"1+SUM(SUM(A1+A2/A3)*(2-3),2)":   "1.33333333333333",
-		"A1/A2/SUM(A1:A2:B1)":            "0.0416666666666667",
-		"A1/A2/SUM(A1:A2:B1)*A3":         "0.125",
-		"SUM(B1:D1)":                     "4",
-		"SUM(\"X\")":                     "0",
-	}
-	for formula, expected := range referenceCalc {
-		f := prepareCalcData(cellData)
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.NoError(t, err)
-		assert.Equal(t, expected, result, formula)
-	}
-
-	referenceCalcError := map[string][]string{
-		// MDETERM
-		"MDETERM(A1:B3)": {"#VALUE!", "#VALUE!"},
-		// SUM
-		"1+SUM(SUM(A1+A2/A4)*(2-3),2)": {"#DIV/0!", "#DIV/0!"},
-	}
-	for formula, expected := range referenceCalcError {
-		f := prepareCalcData(cellData)
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.Equal(t, expected[0], result, formula)
-		assert.EqualError(t, err, expected[1], formula)
-	}
-
 	volatileFuncs := []string{
 		"NOW()",
 		"RAND()",
@@ -5048,41 +5026,9 @@ func TestCalcDet(t *testing.T) {
 		{3, 4, 5, 6},
 		{4, 5, 6, 7},
 	}), float64(0))
-	// the determinant of a single element is that element. The cofactors of a
-	// two by two matrix are one by one determinants, so MINVERSE of a two by
-	// two matrix rests on this case.
-	assert.Equal(t, float64(5), det([][]float64{{5}}))
-	assert.Equal(t, float64(-3), det([][]float64{{-3}}))
-	assert.Equal(t, float64(-3), det([][]float64{{1, 4}, {2, 5}}))
-}
-
-func TestCalcMINVERSE(t *testing.T) {
-	f := prepareCalcData([][]interface{}{
-		{1, 4, nil, 2, 0, 1},
-		{2, 5, nil, 1, 3, 2},
-		{nil, nil, nil, 1, 1, 2},
-	})
-	// A1:B2 has determinant -3, D1:F3 has determinant 6. Every element is
-	// checked, since the earlier expectation only looked at the top left one
-	// and a wrong inverse can still start with a plausible number.
-	for formula, expected := range map[string]string{
-		"INDEX(MINVERSE(A1:B2),1,1)": "-1.66666666666667",
-		"INDEX(MINVERSE(A1:B2),1,2)": "1.33333333333333",
-		"INDEX(MINVERSE(A1:B2),2,1)": "0.666666666666667",
-		"INDEX(MINVERSE(A1:B2),2,2)": "-0.333333333333333",
-		"INDEX(MINVERSE(D1:F3),1,1)": "0.666666666666667",
-		"INDEX(MINVERSE(D1:F3),1,2)": "0.166666666666667",
-		"INDEX(MINVERSE(D1:F3),1,3)": "-0.5",
-		"INDEX(MINVERSE(D1:F3),2,2)": "0.5",
-		"INDEX(MINVERSE(D1:F3),3,3)": "1",
-		"MDETERM(A1:B2)":             "-3",
-		"MDETERM(D1:F3)":             "6",
-	} {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "H1", formula))
-		result, err := f.CalcCellValue("Sheet1", "H1")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
-	}
+	assert.Equal(t, 5.0, det([][]float64{{5}}))
+	assert.Equal(t, -3.0, det([][]float64{{-3}}))
+	assert.Equal(t, -3.0, det([][]float64{{1, 4}, {2, 5}}))
 }
 
 func TestCalcToBool(t *testing.T) {
