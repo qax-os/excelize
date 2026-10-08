@@ -2155,6 +2155,8 @@ func TestCalcCellValue(t *testing.T) {
 		"IF(2>0,(1),4)":                           "1",
 		"IF(2>0,(A1)*2.5,4)":                      "2.5",
 		"IF(VALUE(B3)=1,0,1)":                     "1",
+		"IF(1=2,1)":                               "FALSE",
+		"IF(1=2,1,IF(1=2,1))*2":                   "0",
 		// Excel Lookup and Reference Functions
 		// ADDRESS
 		"ADDRESS(1,1,1,TRUE)":            "$A$1",

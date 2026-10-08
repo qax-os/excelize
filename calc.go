@@ -15099,8 +15099,9 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 		default:
 			result = newStringFormulaArg(value.Value())
 		}
+		return result
 	}
-	return result
+	return newBoolFormulaArg(false)
 }
 
 // Lookup and Reference Functions
