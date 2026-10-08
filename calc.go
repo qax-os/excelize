@@ -979,6 +979,9 @@ func newNumberFormulaArg(n float64) formulaArg {
 	if math.IsNaN(n) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
+	if n == 0 {
+		n = 0
+	}
 	return formulaArg{Type: ArgNumber, Number: n}
 }
 
