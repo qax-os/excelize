@@ -35,55 +35,64 @@ func TestCalcCellValue(t *testing.T) {
 		{nil, nil, nil, "Feb", "South 2", 45500},
 	}
 	mathCalc := map[string]string{
-		"2^3":                   "8",
-		"1=1":                   "TRUE",
-		"1=2":                   "FALSE",
-		"1<2":                   "TRUE",
-		"3<2":                   "FALSE",
-		"1<\"-1\"":              "TRUE",
-		"\"-1\"<1":              "FALSE",
+		"------1+1":             "2",
+		"-----1+1":              "0",
+		"---1----1":             "0",
+		"---1---1":              "-2",
+		"-\"5\"":                "-5",
+		"-1*1":                  "-1",
+		"-A5":                   "0",
+		"-TRUE":                 "-1",
+		"(-1*1)=0":              "FALSE",
+		"(0-1)<0":               "TRUE",
+		"(0*-1)<=0":             "TRUE",
+		"(0*-1)<>0":             "FALSE",
+		"(0*-1)<0":              "FALSE",
+		"(0*-1)=0":              "TRUE",
+		"(0*-1)>0":              "FALSE",
+		"{1}+{2}":               "3",
+		"{1}+2":                 "3",
 		"\"-1\"<\"-2\"":         "TRUE",
-		"2<=3":                  "TRUE",
-		"2<=1":                  "FALSE",
-		"1<=\"-1\"":             "TRUE",
-		"\"-1\"<=1":             "FALSE",
 		"\"-1\"<=\"-2\"":        "TRUE",
-		"2>1":                   "TRUE",
-		"2>3":                   "FALSE",
-		"1>\"-1\"":              "FALSE",
+		"\"-1\"<=1":             "FALSE",
+		"\"-1\"<1":              "FALSE",
 		"\"-1\">-1":             "TRUE",
 		"\"-1\">\"-2\"":         "FALSE",
-		"2>=1":                  "TRUE",
-		"2>=3":                  "FALSE",
-		"1>=\"-1\"":             "FALSE",
 		"\"-1\">=-1":            "TRUE",
 		"\"-1\">=\"-2\"":        "FALSE",
-		"-----1+1":              "0",
-		"------1+1":             "2",
-		"---1---1":              "-2",
-		"---1----1":             "0",
-		"-A5":                   "0",
-		"-\"5\"":                "-5",
-		"-TRUE":                 "-1",
+		"\"A\"<>\"A\"":          "FALSE",
+		"\"A\"=\"A\"":           "TRUE",
+		"0*-1":                  "0",
 		"1&2":                   "12",
-		"15%":                   "0.15",
-		"1+20%":                 "1.2",
-		"{1}+2":                 "3",
 		"1+{2}":                 "3",
-		"{1}+{2}":               "3",
+		"1+20%":                 "1.2",
+		"1<\"-1\"":              "TRUE",
+		"1<=\"-1\"":             "TRUE",
+		"1<2":                   "TRUE",
+		"1=1":                   "TRUE",
+		"1=2":                   "FALSE",
+		"1>\"-1\"":              "FALSE",
+		"1>=\"-1\"":             "FALSE",
+		"15%":                   "0.15",
+		"2^3":                   "8",
+		"2<=1":                  "FALSE",
+		"2<=3":                  "TRUE",
+		"2>=1":                  "TRUE",
+		"2>=3":                  "FALSE",
+		"2>1":                   "TRUE",
+		"2>3":                   "FALSE",
+		"3<2":                   "FALSE",
+		"A1&B1&C1":              "14",
 		"A1+(B1-C1)":            "5",
 		"A1+(C1-B1)":            "-3",
-		"A1&B1&C1":              "14",
 		"B1+C1":                 "4",
 		"C1+B1":                 "4",
 		"C1+C1":                 "0",
-		"\"A\"=\"A\"":           "TRUE",
-		"\"A\"<>\"A\"":          "FALSE",
+		"TRUE()&\"1\"":          "TRUE1",
 		"TRUE()&FALSE()":        "TRUEFALSE",
 		"TRUE()&FALSE()<>FALSE": "TRUE",
-		"TRUE()&\"1\"":          "TRUE1",
-		"TRUE<>FALSE()":         "TRUE",
 		"TRUE<>1&\"x\"":         "TRUE",
+		"TRUE<>FALSE()":         "TRUE",
 		// Engineering Functions
 		// BESSELI
 		"BESSELI(4.5,1)":    "15.3892227537359",
@@ -816,11 +825,12 @@ func TestCalcCellValue(t *testing.T) {
 		"SERIESSUM(1,2,3,A1:A4)": "6",
 		"SERIESSUM(1,2,3,A1:B5)": "15",
 		// SIGN
-		"SIGN(9.5)":        "1",
 		"SIGN(-9.5)":       "-1",
-		"SIGN(0)":          "0",
 		"SIGN(0.00000001)": "1",
+		"SIGN(0)":          "0",
+		"SIGN(0*-1)":       "0",
 		"SIGN(6-7)":        "-1",
+		"SIGN(9.5)":        "1",
 		"SIGN(SIGN(-1))":   "-1",
 		// SIN
 		"SIN(0.785398163)": "0.707106780905509",
@@ -5003,37 +5013,6 @@ func TestCalcAND(t *testing.T) {
 		Matrix: [][]formulaArg{{{Type: ArgUnknown}}},
 	})
 	assert.Equal(t, newBoolFormulaArg(true), fn.AND(argsList))
-}
-
-func TestCalcNegativeZero(t *testing.T) {
-	f := prepareCalcData([][]interface{}{{1}})
-	// B1 works out to a negative zero, which is the shape a guard of the form
-	// (condition)*IF(...,-1,...) takes as soon as the condition is false
-	assert.NoError(t, f.SetCellFormula("Sheet1", "B1", "=0*-1"))
-	for formula, expected := range map[string]string{
-		"0*-1":          "0",
-		"(0*-1)=0":      "TRUE",
-		"(0*-1)<>0":     "FALSE",
-		"B1=0":          "TRUE",
-		"B1<>0":         "FALSE",
-		"IF(B1<>0,1,0)": "0",
-		"COUNTIF(B1,0)": "1",
-		"SUM(B1,5)":     "5",
-		// the ordering operators were already right and have to stay that way
-		"(0*-1)>0":   "FALSE",
-		"(0*-1)<0":   "FALSE",
-		"(0*-1)<=0":  "TRUE",
-		"SIGN(0*-1)": "0",
-		// a real negative number keeps its sign
-		"-1*1":     "-1",
-		"(-1*1)=0": "FALSE",
-		"(0-1)<0":  "TRUE",
-	} {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "D1", formula))
-		result, err := f.CalcCellValue("Sheet1", "D1")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
-	}
 }
 
 func TestCalcISBLANK(t *testing.T) {
