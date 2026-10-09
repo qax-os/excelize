@@ -776,29 +776,32 @@ func TestCalcCellValue(t *testing.T) {
 		"ROUNDUP(-11.111,-1)":        "-20",
 		"ROUNDUP(ROUNDUP(100,1),-1)": "100",
 		// SEARCH
-		"SEARCH(\"s\",F1)":           "1",
-		"SEARCH(\"s\",F1,2)":         "5",
-		"SEARCH(\"e\",F1)":           "4",
-		"SEARCH(\"e*\",F1)":          "4",
-		"SEARCH(\"?e\",F1)":          "3",
-		"SEARCH(\"??e\",F1)":         "2",
-		"SEARCH(6,F2)":               "2",
-		"SEARCH(\"?\",\"你好world\")":  "1",
-		"SEARCH(\"?l\",\"你好world\")": "5",
-		"SEARCH(\"?+\",\"你好 1+2\")":  "4",
-		"SEARCH(\" ?+\",\"你好 1+2\")": "3",
+		"SEARCH(\"s\",F1)":                            "1",
+		"SEARCH(\"s\",F1,2)":                          "5",
+		"SEARCH(\"e\",F1)":                            "4",
+		"SEARCH(\"e*\",F1)":                           "4",
+		"SEARCH(\"?e\",F1)":                           "3",
+		"SEARCH(\"??e\",F1)":                          "2",
+		"SEARCH(6,F2)":                                "2",
+		"SEARCH(\"?\",\"你好world\")":                   "1",
+		"SEARCH(\"?l\",\"你好world\")":                  "5",
+		"SEARCH(\"?+\",\"你好 1+2\")":                   "4",
+		"SEARCH(\" ?+\",\"你好 1+2\")":                  "3",
+		`SEARCH("\?","C:\one C:\two",4)`:              "10",
+		`SEARCH("\?eports","prefix C:\reports done")`: "10",
 		// SEARCHB
-		"SEARCHB(\"s\",F1)":           "1",
-		"SEARCHB(\"s\",F1,2)":         "5",
-		"SEARCHB(\"e\",F1)":           "4",
-		"SEARCHB(\"e*\",F1)":          "4",
-		"SEARCHB(\"?e\",F1)":          "3",
-		"SEARCHB(\"??e\",F1)":         "2",
-		"SEARCHB(6,F2)":               "2",
-		"SEARCHB(\"?\",\"你好world\")":  "5",
-		"SEARCHB(\"?l\",\"你好world\")": "7",
-		"SEARCHB(\"?+\",\"你好 1+2\")":  "6",
-		"SEARCHB(\" ?+\",\"你好 1+2\")": "5",
+		"SEARCHB(\"s\",F1)":                            "1",
+		"SEARCHB(\"s\",F1,2)":                          "5",
+		"SEARCHB(\"e\",F1)":                            "4",
+		"SEARCHB(\"e*\",F1)":                           "4",
+		"SEARCHB(\"?e\",F1)":                           "3",
+		"SEARCHB(\"??e\",F1)":                          "2",
+		"SEARCHB(6,F2)":                                "2",
+		"SEARCHB(\"?\",\"你好world\")":                   "5",
+		"SEARCHB(\"?l\",\"你好world\")":                  "7",
+		"SEARCHB(\"?+\",\"你好 1+2\")":                   "6",
+		"SEARCHB(\" ?+\",\"你好 1+2\")":                  "5",
+		`SEARCHB("\?eports","prefix C:\reports done")`: "10",
 		// SEC
 		"_xlfn.SEC(-3.14159265358979)": "-1",
 		"_xlfn.SEC(0)":                 "1",
@@ -1800,22 +1803,24 @@ func TestCalcCellValue(t *testing.T) {
 		"FIXED(5123.591,-5)":      "0",
 		"FIXED(-77262.23973,-5)":  "-100,000",
 		// FIND
-		"FIND(\"T\",\"Original Text\")":   "10",
-		"FIND(\"t\",\"Original Text\")":   "13",
-		"FIND(\"i\",\"Original Text\")":   "3",
-		"FIND(\"i\",\"Original Text\",4)": "5",
-		"FIND(\"\",\"Original Text\")":    "1",
-		"FIND(\"\",\"Original Text\",2)":  "2",
-		"FIND(\"s\",\"Sales\",2)":         "5",
-		"FIND(D1:E2,\"Month\")":           "1",
+		"FIND(\"T\",\"Original Text\")":      "10",
+		"FIND(\"t\",\"Original Text\")":      "13",
+		"FIND(\"i\",\"Original Text\")":      "3",
+		"FIND(\"i\",\"Original Text\",4)":    "5",
+		"FIND(\"\",\"Original Text\")":       "1",
+		"FIND(\"\",\"Original Text\",2)":     "2",
+		"FIND(\"s\",\"Sales\",2)":            "5",
+		"FIND(D1:E2,\"Month\")":              "1",
+		`FIND("\","prefix C:\reports done")`: "10",
 		// FINDB
-		"FINDB(\"T\",\"Original Text\")":   "10",
-		"FINDB(\"t\",\"Original Text\")":   "13",
-		"FINDB(\"i\",\"Original Text\")":   "3",
-		"FINDB(\"i\",\"Original Text\",4)": "5",
-		"FINDB(\"\",\"Original Text\")":    "1",
-		"FINDB(\"\",\"Original Text\",2)":  "2",
-		"FINDB(\"s\",\"Sales\",2)":         "5",
+		"FINDB(\"T\",\"Original Text\")":      "10",
+		"FINDB(\"t\",\"Original Text\")":      "13",
+		"FINDB(\"i\",\"Original Text\")":      "3",
+		"FINDB(\"i\",\"Original Text\",4)":    "5",
+		"FINDB(\"\",\"Original Text\")":       "1",
+		"FINDB(\"\",\"Original Text\",2)":     "2",
+		"FINDB(\"s\",\"Sales\",2)":            "5",
+		`FINDB("\","prefix C:\reports done")`: "10",
 		// LEFT
 		"LEFT(\"Original Text\")":    "O",
 		"LEFT(\"Original Text\",4)":  "Orig",
@@ -2101,25 +2106,49 @@ func TestCalcCellValue(t *testing.T) {
 		"COLUMNS(E5:B1)":                "4",
 		"COLUMNS(EM38:HZ81)":            "92",
 		// HLOOKUP
-		"HLOOKUP(D2,D2:D8,1,FALSE)":          "Jan",
-		"HLOOKUP(F3,F3:F8,3,FALSE)":          "34440",
-		"HLOOKUP(INT(F3),F3:F8,3,FALSE)":     "34440",
-		"HLOOKUP(MUNIT(1),MUNIT(1),1,FALSE)": "1",
+		"HLOOKUP(D2,D2:D8,1,FALSE)":                             "Jan",
+		"HLOOKUP(F3,F3:F8,3,FALSE)":                             "34440",
+		"HLOOKUP(INT(F3),F3:F8,3,FALSE)":                        "34440",
+		"HLOOKUP(MUNIT(1),MUNIT(1),1,FALSE)":                    "1",
+		`HLOOKUP("001",{"46027-001","001";22,77},2,FALSE)`:      "77",
+		`HLOOKUP("46027*",{"46027-001";22},2,FALSE)`:            "22",
+		`HLOOKUP("C:\*",{"C:\reports";99},2,FALSE)`:             "99",
+		`HLOOKUP("C:\?eports",{"C:\reports";99},2,FALSE)`:       "99",
+		`HLOOKUP("*\",{"price$tail","folder\";88,110},2,FALSE)`: "110",
 		// HYPERLINK
 		"HYPERLINK(\"https://github.com/xuri/excelize\")":              "https://github.com/xuri/excelize",
 		"HYPERLINK(\"https://github.com/xuri/excelize\",\"Excelize\")": "Excelize",
 		// VLOOKUP
-		"VLOOKUP(D2,D:D,1,FALSE)":            "Jan",
-		"VLOOKUP(D2,D1:D10,1)":               "Jan",
-		"VLOOKUP(D2,D1:D11,1)":               "Feb",
-		"VLOOKUP(D2,D1:D10,1,FALSE)":         "Jan",
-		"VLOOKUP(INT(36693),F2:F2,1,FALSE)":  "36693",
-		"VLOOKUP(INT(F2),F3:F9,1)":           "32080",
-		"VLOOKUP(INT(F2),F3:F9,1,TRUE)":      "32080",
-		"VLOOKUP(MUNIT(3),MUNIT(3),1)":       "0",
-		"VLOOKUP(A1,A3:B5,1)":                "0",
-		"VLOOKUP(A1:A2,A1:A1,1)":             "1",
-		"VLOOKUP(MUNIT(1),MUNIT(1),1,FALSE)": "1",
+		"VLOOKUP(D2,D:D,1,FALSE)":                                      "Jan",
+		"VLOOKUP(D2,D1:D10,1)":                                         "Jan",
+		"VLOOKUP(D2,D1:D11,1)":                                         "Feb",
+		"VLOOKUP(D2,D1:D10,1,FALSE)":                                   "Jan",
+		"VLOOKUP(INT(36693),F2:F2,1,FALSE)":                            "36693",
+		"VLOOKUP(INT(F2),F3:F9,1)":                                     "32080",
+		"VLOOKUP(INT(F2),F3:F9,1,TRUE)":                                "32080",
+		"VLOOKUP(MUNIT(3),MUNIT(3),1)":                                 "0",
+		"VLOOKUP(A1,A3:B5,1)":                                          "0",
+		"VLOOKUP(A1:A2,A1:A1,1)":                                       "1",
+		"VLOOKUP(MUNIT(1),MUNIT(1),1,FALSE)":                           "1",
+		`VLOOKUP("001",{"46027-001",22;"001",77},2,FALSE)`:             "77",
+		`VLOOKUP("mixed",{"MiXeD",66},2,FALSE)`:                        "66",
+		`VLOOKUP("???",{"46027-001",22;"001",77},2,FALSE)`:             "77",
+		`VLOOKUP("?6027-001",{"45665-003",11;"46027-001",22},2,FALSE)`: "22",
+		`VLOOKUP("46027-00?",{"46027-001",22},2,FALSE)`:                "22",
+		`VLOOKUP("46027*",{"45665-003",11;"46027-001",22},2,FALSE)`:    "22",
+		`VLOOKUP("*-001",{"45665-003",11;"46027-001",22},2,FALSE)`:     "22",
+		`VLOOKUP("*",{"45665-003",11;"46027-001",22},2,FALSE)`:         "11",
+		`VLOOKUP("C:\reports",{"C:\reports",99},2,FALSE)`:              "99",
+		`VLOOKUP("C:\*",{"C:\reports",99},2,FALSE)`:                    "99",
+		`VLOOKUP("C:\?eports",{"C:\reports",99},2,FALSE)`:              "99",
+		`VLOOKUP("*\",{"price$tail",88;"folder\",110},2,FALSE)`:        "110",
+		// XLOOKUP
+		`XLOOKUP("001",{"46027-001";"001"},{22;77},"NF",2)`:      "77",
+		`XLOOKUP("-001",{"46027-001";"001"},{22;77},"NF",2)`:     "NF",
+		`XLOOKUP("C:\*",{"C:\reports"},{99},"NF",2)`:             "99",
+		`XLOOKUP("C:\?eports",{"C:\reports"},{99},"NF",2)`:       "99",
+		`XLOOKUP("*\",{"price$tail";"folder\"},{88;110},"NF",2)`: "110",
+		`XLOOKUP("*\",{"price$tail"},{88},"NF",2)`:               "NF",
 		// INDEX
 		"INDEX(0,0,0)":          "0",
 		"INDEX(A1,0,0)":         "1",
@@ -4164,18 +4193,21 @@ func TestCalcCellValue(t *testing.T) {
 		"FORMULATEXT()":  {"#VALUE!", "FORMULATEXT requires 1 argument"},
 		"FORMULATEXT(1)": {"#VALUE!", "#VALUE!"},
 		// HLOOKUP
-		"HLOOKUP()":                     {"#VALUE!", "HLOOKUP requires at least 3 arguments"},
-		"HLOOKUP(D2,D1,1,FALSE)":        {"#VALUE!", "HLOOKUP requires second argument of table array"},
-		"HLOOKUP(D2,D:D,FALSE,FALSE)":   {"#VALUE!", "HLOOKUP requires numeric row argument"},
-		"HLOOKUP(D2,D:D,1,FALSE,FALSE)": {"#VALUE!", "HLOOKUP requires at most 4 arguments"},
-		"HLOOKUP(D2,D:D,1,2)":           {"#N/A", "HLOOKUP no result found"},
-		"HLOOKUP(D2,D10:D10,1,FALSE)":   {"#N/A", "HLOOKUP no result found"},
-		"HLOOKUP(D2,D2:D3,4,FALSE)":     {"#N/A", "HLOOKUP has invalid row index"},
-		"HLOOKUP(D2,C:C,1,FALSE)":       {"#N/A", "HLOOKUP no result found"},
-		"HLOOKUP(ISNUMBER(1),F3:F9,1)":  {"#N/A", "HLOOKUP no result found"},
-		"HLOOKUP(INT(1),E2:E9,1)":       {"#N/A", "HLOOKUP no result found"},
-		"HLOOKUP(MUNIT(2),MUNIT(3),1)":  {"#N/A", "HLOOKUP no result found"},
-		"HLOOKUP(A1:B2,B2:B3,1)":        {"#N/A", "HLOOKUP no result found"},
+		"HLOOKUP()":                                {"#VALUE!", "HLOOKUP requires at least 3 arguments"},
+		"HLOOKUP(D2,D1,1,FALSE)":                   {"#VALUE!", "HLOOKUP requires second argument of table array"},
+		"HLOOKUP(D2,D:D,FALSE,FALSE)":              {"#VALUE!", "HLOOKUP requires numeric row argument"},
+		"HLOOKUP(D2,D:D,1,FALSE,FALSE)":            {"#VALUE!", "HLOOKUP requires at most 4 arguments"},
+		"HLOOKUP(D2,D:D,1,2)":                      {"#N/A", "HLOOKUP no result found"},
+		"HLOOKUP(D2,D10:D10,1,FALSE)":              {"#N/A", "HLOOKUP no result found"},
+		"HLOOKUP(D2,D2:D3,4,FALSE)":                {"#N/A", "HLOOKUP has invalid row index"},
+		"HLOOKUP(D2,C:C,1,FALSE)":                  {"#N/A", "HLOOKUP no result found"},
+		"HLOOKUP(ISNUMBER(1),F3:F9,1)":             {"#N/A", "HLOOKUP no result found"},
+		"HLOOKUP(INT(1),E2:E9,1)":                  {"#N/A", "HLOOKUP no result found"},
+		"HLOOKUP(MUNIT(2),MUNIT(3),1)":             {"#N/A", "HLOOKUP no result found"},
+		"HLOOKUP(A1:B2,B2:B3,1)":                   {"#N/A", "HLOOKUP no result found"},
+		`HLOOKUP("-001",{"46027-001";22},2,FALSE)`: {"#N/A", "HLOOKUP no result found"},
+		`HLOOKUP("",{"46027-001";22},2,FALSE)`:     {"#N/A", "HLOOKUP no result found"},
+		`HLOOKUP("*\",{"price$tail";88},2,FALSE)`:  {"#N/A", "HLOOKUP no result found"},
 		// MATCH
 		"MATCH()":              {"#VALUE!", "MATCH requires 1 or 2 arguments"},
 		"MATCH(0,A1:A1,0,0)":   {"#VALUE!", "MATCH requires 1 or 2 arguments"},
@@ -4189,17 +4221,24 @@ func TestCalcCellValue(t *testing.T) {
 		"HYPERLINK()": {"#VALUE!", "HYPERLINK requires at least 1 argument"},
 		"HYPERLINK(\"https://github.com/xuri/excelize\",\"Excelize\",\"\")": {"#VALUE!", "HYPERLINK allows at most 2 arguments"},
 		// VLOOKUP
-		"VLOOKUP()":                     {"#VALUE!", "VLOOKUP requires at least 3 arguments"},
-		"VLOOKUP(D2,D1,1,FALSE)":        {"#VALUE!", "VLOOKUP requires second argument of table array"},
-		"VLOOKUP(D2,D:D,FALSE,FALSE)":   {"#VALUE!", "VLOOKUP requires numeric col argument"},
-		"VLOOKUP(D2,D:D,1,FALSE,FALSE)": {"#VALUE!", "VLOOKUP requires at most 4 arguments"},
-		"VLOOKUP(D2,D10:D10,1,FALSE)":   {"#N/A", "VLOOKUP no result found"},
-		"VLOOKUP(D2,D:D,2,FALSE)":       {"#N/A", "VLOOKUP has invalid column index"},
-		"VLOOKUP(D2,C:C,1,FALSE)":       {"#N/A", "VLOOKUP no result found"},
-		"VLOOKUP(ISNUMBER(1),F3:F9,1)":  {"#N/A", "VLOOKUP no result found"},
-		"VLOOKUP(INT(1),E2:E9,1)":       {"#N/A", "VLOOKUP no result found"},
-		"VLOOKUP(MUNIT(2),MUNIT(3),1)":  {"#N/A", "VLOOKUP no result found"},
-		"VLOOKUP(1,G1:H2,1,FALSE)":      {"#N/A", "VLOOKUP no result found"},
+		"VLOOKUP()":                                   {"#VALUE!", "VLOOKUP requires at least 3 arguments"},
+		"VLOOKUP(D2,D1,1,FALSE)":                      {"#VALUE!", "VLOOKUP requires second argument of table array"},
+		"VLOOKUP(D2,D:D,FALSE,FALSE)":                 {"#VALUE!", "VLOOKUP requires numeric col argument"},
+		"VLOOKUP(D2,D:D,1,FALSE,FALSE)":               {"#VALUE!", "VLOOKUP requires at most 4 arguments"},
+		"VLOOKUP(D2,D10:D10,1,FALSE)":                 {"#N/A", "VLOOKUP no result found"},
+		"VLOOKUP(D2,D:D,2,FALSE)":                     {"#N/A", "VLOOKUP has invalid column index"},
+		"VLOOKUP(D2,C:C,1,FALSE)":                     {"#N/A", "VLOOKUP no result found"},
+		"VLOOKUP(ISNUMBER(1),F3:F9,1)":                {"#N/A", "VLOOKUP no result found"},
+		"VLOOKUP(INT(1),E2:E9,1)":                     {"#N/A", "VLOOKUP no result found"},
+		"VLOOKUP(MUNIT(2),MUNIT(3),1)":                {"#N/A", "VLOOKUP no result found"},
+		"VLOOKUP(1,G1:H2,1,FALSE)":                    {"#N/A", "VLOOKUP no result found"},
+		`VLOOKUP("-001",{"46027-001",22},2,FALSE)`:    {"#N/A", "VLOOKUP no result found"},
+		`VLOOKUP("46027",{"46027-001",22},2,FALSE)`:   {"#N/A", "VLOOKUP no result found"},
+		`VLOOKUP("6027-00",{"46027-001",22},2,FALSE)`: {"#N/A", "VLOOKUP no result found"},
+		`VLOOKUP("",{"46027-001",22},2,FALSE)`:        {"#N/A", "VLOOKUP no result found"},
+		`VLOOKUP("?",{"46027-001",22},2,FALSE)`:       {"#N/A", "VLOOKUP no result found"},
+		`VLOOKUP("*XYZ*",{"46027-001",22},2,FALSE)`:   {"#N/A", "VLOOKUP no result found"},
+		`VLOOKUP("*\",{"price$tail",88},2,FALSE)`:     {"#N/A", "VLOOKUP no result found"},
 		// INDEX
 		"INDEX()":          {"#VALUE!", "INDEX requires 2 or 3 arguments"},
 		"INDEX(A1,2)":      {"#REF!", "INDEX row_num out of range"},
@@ -5187,91 +5226,6 @@ func TestCalcVLOOKUP(t *testing.T) {
 	argsList.PushBack(newStringFormulaArg(""))
 	_, _, _, _, err := checkHVLookupArgs("VLOOKUP", argsList)
 	assert.Equal(t, ArgError, err.Type)
-}
-
-func TestCalcLookupWildcardMatch(t *testing.T) {
-	// The lookup value has to match the whole cell, a substring of a cell
-	// must not be reported as a match, while the '*' and '?' wildcards keep
-	// working. The expected values were verified against the spreadsheet
-	// applications.
-	cellData := [][]interface{}{
-		{"45665-003", nil, nil, 11},
-		{"46027-001", nil, nil, 22},
-		{"46034-006", nil, nil, 33},
-		{"46176-006", nil, nil, 44},
-		{"ABC*DEF", nil, nil, 55},
-		{"MiXeD", nil, nil, 66},
-		{"001", nil, nil, 77},
-	}
-	f := prepareCalcData(cellData)
-	// the same table transposed, for the HLOOKUP function
-	_, err := f.NewSheet("Sheet2")
-	assert.NoError(t, err)
-	for i, row := range cellData {
-		key, _ := CoordinatesToCellName(i+1, 1)
-		assert.NoError(t, f.SetCellValue("Sheet2", key, row[0]))
-		value, _ := CoordinatesToCellName(i+1, 4)
-		assert.NoError(t, f.SetCellValue("Sheet2", value, row[3]))
-	}
-	calc := map[string]string{
-		// exact match, the whole cell has to be equal
-		`VLOOKUP("46027-001",A1:D20,4,FALSE)`: "22",
-		`VLOOKUP("001",A1:D20,4,FALSE)`:       "77",
-		`VLOOKUP("mixed",A1:D20,4,FALSE)`:     "66",
-		// wildcards, anchored at both ends of the cell
-		`VLOOKUP("46027*",A1:D20,4,FALSE)`:          "22",
-		`VLOOKUP("?6027-001",A1:D20,4,FALSE)`:       "22",
-		`VLOOKUP("46027-00?",A1:D20,4,FALSE)`:       "22",
-		`VLOOKUP("*-001",A1:D20,4,FALSE)`:           "22",
-		`VLOOKUP("*001*",A1:D20,4,FALSE)`:           "22",
-		`VLOOKUP("*",A1:D20,4,FALSE)`:               "11",
-		`VLOOKUP("???",A1:D20,4,FALSE)`:             "77",
-		`HLOOKUP("46027-001",Sheet2!A1:I4,4,FALSE)`: "22",
-		`HLOOKUP("001",Sheet2!A1:I4,4,FALSE)`:       "77",
-		`HLOOKUP("46027*",Sheet2!A1:I4,4,FALSE)`:    "22",
-		`XLOOKUP("001",A1:A20,D1:D20,"NF",2)`:       "77",
-		`XLOOKUP("-001",A1:A20,D1:D20,"NF",2)`:      "NF",
-	}
-	for formula, expected := range calc {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "F1", formula))
-		result, err := f.CalcCellValue("Sheet1", "F1")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
-	}
-	calcError := map[string][]string{
-		// a substring of a cell is not a match
-		`VLOOKUP("-001",A1:D20,4,FALSE)`:    {"#N/A", "VLOOKUP no result found"},
-		`VLOOKUP("46027",A1:D20,4,FALSE)`:   {"#N/A", "VLOOKUP no result found"},
-		`VLOOKUP("6027-00",A1:D20,4,FALSE)`: {"#N/A", "VLOOKUP no result found"},
-		// the empty lookup value is a substring of every cell
-		`VLOOKUP("",A1:D20,4,FALSE)`: {"#N/A", "VLOOKUP no result found"},
-		// the wildcards have to cover the whole cell
-		`VLOOKUP("?",A1:D20,4,FALSE)`:          {"#N/A", "VLOOKUP no result found"},
-		`VLOOKUP("*XYZ*",A1:D20,4,FALSE)`:      {"#N/A", "VLOOKUP no result found"},
-		`HLOOKUP("-001",Sheet2!A1:I4,4,FALSE)`: {"#N/A", "HLOOKUP no result found"},
-		`HLOOKUP("",Sheet2!A1:I4,4,FALSE)`:     {"#N/A", "HLOOKUP no result found"},
-	}
-	for formula, expected := range calcError {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "F1", formula))
-		result, err := f.CalcCellValue("Sheet1", "F1")
-		assert.Equal(t, expected[0], result, formula)
-		assert.EqualError(t, err, expected[1], formula)
-	}
-	// the FIND and SEARCH functions report any occurrence and must not be
-	// affected by the anchored match of the lookup functions
-	occurrence := map[string]string{
-		`FIND("-001","46027-001")`:      "6",
-		`FIND("46027-001","46027-001")`: "1",
-		`SEARCH("-001","46027-001")`:    "6",
-		`SEARCH("6027*","46027-001")`:   "2",
-		`SEARCH("?01","46027-001")`:     "7",
-	}
-	for formula, expected := range occurrence {
-		assert.NoError(t, f.SetCellFormula("Sheet1", "F1", formula))
-		result, err := f.CalcCellValue("Sheet1", "F1")
-		assert.NoError(t, err, formula)
-		assert.Equal(t, expected, result, formula)
-	}
 }
 
 func TestCalcBoolean(t *testing.T) {

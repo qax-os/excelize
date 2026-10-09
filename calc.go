@@ -15177,7 +15177,8 @@ func (fn *formulaFuncs) CHOOSE(argsList *list.List) formulaArg {
 	return arg.Value.(formulaArg)
 }
 
-// matchPatternToRegExp convert find text pattern to regular expression.
+// matchPatternToRegExp converts a wildcard pattern to a regular expression,
+// escaping literal characters.
 func matchPatternToRegExp(findText string, dbcs bool) (string, bool) {
 	var (
 		exp      string
@@ -15188,10 +15189,6 @@ func matchPatternToRegExp(findText string, dbcs bool) (string, bool) {
 		mark = "(?:(?:[\\x00-\\x0081])|(?:[\\xFF61-\\xFFA0])|(?:[\\xF8F1-\\xF8F4])|[0-9A-Za-z])"
 	}
 	for _, char := range findText {
-		if strings.ContainsAny(string(char), ".+$^[](){}|/") {
-			exp += fmt.Sprintf("\\%s", string(char))
-			continue
-		}
 		if char == '?' {
 			wildCard = true
 			exp += mark
@@ -15202,7 +15199,7 @@ func matchPatternToRegExp(findText string, dbcs bool) (string, bool) {
 			exp += ".*"
 			continue
 		}
-		exp += string(char)
+		exp += regexp.QuoteMeta(string(char))
 	}
 	return fmt.Sprintf("^%s", exp), wildCard
 }
