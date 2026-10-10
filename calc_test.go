@@ -62,6 +62,9 @@ func TestCalcCellValue(t *testing.T) {
 		"------1+1":             "2",
 		"---1---1":              "-2",
 		"---1----1":             "0",
+		"-A5":                   "0",
+		"-\"5\"":                "-5",
+		"-TRUE":                 "-1",
 		"1&2":                   "12",
 		"15%":                   "0.15",
 		"1+20%":                 "1.2",
@@ -679,8 +682,9 @@ func TestCalcCellValue(t *testing.T) {
 		"IMPRODUCT(\"1-i\",\"5+10i\",2)":       "30+10i",
 		"IMPRODUCT(COMPLEX(5,2),COMPLEX(0,1))": "-2+5i",
 		"IMPRODUCT(A1:C1)":                     "4",
+		"IMPRODUCT(Sheet1!A1:Sheet1!A1:A2,A2)": "4",
 		// MINVERSE
-		"MINVERSE(A1:B2)": "-0",
+		"MINVERSE(A1:B2)": "-1.66666666666667",
 		// MMULT
 		"MMULT(0,0)":         "0",
 		"MMULT(2,4)":         "8",
@@ -723,10 +727,11 @@ func TestCalcCellValue(t *testing.T) {
 		"POWER(4,2)":          "16",
 		"POWER(4,POWER(1,1))": "4",
 		// PRODUCT
-		"PRODUCT(3,6)":            "18",
-		"PRODUCT(\"3\",\"6\")":    "18",
-		"PRODUCT(PRODUCT(1),3,6)": "18",
-		"PRODUCT(C1:C2)":          "1",
+		"PRODUCT(3,6)":                       "18",
+		"PRODUCT(\"3\",\"6\")":               "18",
+		"PRODUCT(PRODUCT(1),3,6)":            "18",
+		"PRODUCT(C1:C2)":                     "1",
+		"PRODUCT(Sheet1!A1:Sheet1!A1:A2,A2)": "4",
 		// QUOTIENT
 		"QUOTIENT(5,2)":             "2",
 		"QUOTIENT(4.5,3.1)":         "1",
@@ -896,10 +901,35 @@ func TestCalcCellValue(t *testing.T) {
 		"SUM((SUM(2))+1)":                    "3",
 		"SUM(1+(ABS(A1)+A1)/2)":              "2",
 		"SUM(1+(-ABS(A1)))":                  "0",
-		"IF(2<0, 1, (4))":                    "4",
-		"IF(2>0, (1), 4)":                    "1",
-		"IF(2>0, (A1)*2.5, 4)":               "2.5",
 		"SUM({1,2,3,4,\"\"})":                "10",
+		"SUM(OR(1))":                         "1",
+		"SUM(({1,2;3,4}))":                   "10",
+		"SUM(D1,C2)":                         "0",
+		"SUM(C2:F2)":                         "36693",
+		"SUM({\"5\"},C2)":                    "0",
+		"SUM({TRUE},C2)":                     "0",
+		"SUM({\"5\"},{TRUE},A2)":             "2",
+		"SUM({\"5\",TRUE,2,\"\"})":           "2",
+		"SUM(\"5\",2)":                       "7",
+		"SUM({\"5\"},\"5\")":                 "5",
+		"SUM(TRUE,1)":                        "2",
+		"SUM(INDEX(A1:B1,1))":                "5",
+		"SUM(INDEX(A1:B1,1,0))":              "5",
+		"SUM(INDEX(A1:B2,2,0))":              "7",
+		"SUM(INDEX(A1:B4,0,2))":              "9",
+		"SUM(INDEX(E1:F5,5,2))":              "34440",
+		"A1/A3":                              "0.333333333333333",
+		"SUM(A1:A2)":                         "3",
+		"SUM(Sheet1!A1:Sheet1!A2)":           "3",
+		"SUM(Sheet1!A1,A2)":                  "3",
+		"(-2-SUM(-4+A2))*5":                  "0",
+		"SUM(Sheet1!A1:Sheet1!A1:A2,A2)":     "5",
+		"SUM(A1,A2,A3)*SUM(2,3)":             "30",
+		"1+SUM(SUM(A1+A2/A3)*(2-3),2)":       "1.33333333333333",
+		"A1/A2/SUM(A1:A2:B1)":                "0.0416666666666667",
+		"A1/A2/SUM(A1:A2:B1)*A3":             "0.125",
+		"SUM(B1:D1)":                         "4",
+		"SUM(\"X\")":                         "0",
 		// SUMIF
 		"SUMIF(F1:F5, \"\")":             "0",
 		"SUMIF(A1:A5, \"3\")":            "3",
@@ -1066,8 +1096,21 @@ func TestCalcCellValue(t *testing.T) {
 		// COUNT
 		"COUNT()":                              "0",
 		"COUNT(E1:F2,\"text\",1,INT(2),\"0\")": "4",
+		"COUNT(D1,C2)":                         "0",
+		"COUNT(C2:F2)":                         "1",
+		"COUNT({\"5\"},C2)":                    "0",
+		"COUNT({TRUE},C2)":                     "0",
+		"COUNT({\"5\"},{TRUE},A2)":             "1",
+		"COUNT({\"5\",TRUE,2,\"\"})":           "1",
+		"COUNT(\"5\",2)":                       "2",
+		"COUNT({\"5\"},\"5\")":                 "1",
+		"COUNT(TRUE,1)":                        "2",
 		// COUNTA
 		"COUNTA()":                              "0",
+		"COUNTA(\"\")":                          "1",
+		"COUNTA(1,\"\")":                        "2",
+		"COUNTA(\"\",\"\")":                     "2",
+		"COUNTA(1,\"\",2)":                      "3",
 		"COUNTA(A1:A5,B2:B5,\"text\",1,INT(2))": "8",
 		"COUNTA(COUNTA(1),MUNIT(1))":            "2",
 		"COUNTA(D1:D2)":                         "2",
@@ -1279,6 +1322,8 @@ func TestCalcCellValue(t *testing.T) {
 		"MAXA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "36693",
 		// MAXIFS
 		"MAXIFS(F2:F4,A2:A4,\">0\")": "36693",
+		// MDETERM
+		"MDETERM(A1:B2)": "-3",
 		// MEDIAN
 		"MEDIAN(A1:A5,12)":               "2",
 		"MEDIAN(A1:A5)":                  "1.5",
@@ -1307,6 +1352,7 @@ func TestCalcCellValue(t *testing.T) {
 		// PERCENTILE.EXC
 		"PERCENTILE.EXC(A1:A4,0.2)": "0",
 		"PERCENTILE.EXC(A1:A4,0.6)": "2",
+		"PERCENTILE.EXC(A1:A4,0.8)": "3",
 		// PERCENTILE.INC
 		"PERCENTILE.INC(A1:A4,0.2)": "0.6",
 		// PERCENTILE
@@ -1469,6 +1515,7 @@ func TestCalcCellValue(t *testing.T) {
 		"ISLOGICAL(\"false\")": "TRUE",
 		"ISLOGICAL(A1)":        "FALSE",
 		"ISLOGICAL(20/5)":      "FALSE",
+		"ISLOGICAL(OR(1))":     "TRUE",
 		// ISNA
 		"ISNA(A1)":   "FALSE",
 		"ISNA(NA())": "TRUE",
@@ -1478,9 +1525,24 @@ func TestCalcCellValue(t *testing.T) {
 		"ISNONTEXT(\"Excelize\")": "FALSE",
 		"ISNONTEXT(NA())":         "TRUE",
 		// ISNUMBER
-		"ISNUMBER(A1)":    "TRUE",
-		"ISNUMBER(D1)":    "FALSE",
-		"ISNUMBER(A1:B1)": "TRUE",
+		"ISNUMBER(A1)":      "TRUE",
+		"ISNUMBER(D1)":      "FALSE",
+		"ISNUMBER(A1:B1)":   "TRUE",
+		"ISNUMBER(0)":       "TRUE",
+		"ISNUMBER(1)":       "TRUE",
+		"ISNUMBER(\"1\")":   "FALSE",
+		"ISNUMBER(TRUE)":    "FALSE",
+		"ISNUMBER(FALSE)":   "FALSE",
+		"ISNUMBER(TRUE())":  "FALSE",
+		"ISNUMBER(FALSE())": "FALSE",
+		"ISNUMBER(1=1)":     "FALSE",
+		"ISNUMBER(1=2)":     "FALSE",
+		"ISNUMBER({TRUE})":  "FALSE",
+		"ISNUMBER({FALSE})": "FALSE",
+		"ISNUMBER(OR(1))":   "FALSE",
+		"ISNUMBER(OR(0))":   "FALSE",
+		"ISNUMBER(OR(1)*1)": "TRUE",
+		"ISNUMBER(OR(0)*1)": "TRUE",
 		// ISODD
 		"ISODD(A1)": "TRUE",
 		"ISODD(A2)": "FALSE",
@@ -1490,8 +1552,9 @@ func TestCalcCellValue(t *testing.T) {
 		"ISREF(\"text\")": "FALSE",
 		"ISREF(B1*B2)":    "FALSE",
 		// ISTEXT
-		"ISTEXT(D1)": "TRUE",
-		"ISTEXT(A1)": "FALSE",
+		"ISTEXT(D1)":    "TRUE",
+		"ISTEXT(A1)":    "FALSE",
+		"ISTEXT(OR(1))": "FALSE",
 		// N
 		"N(10)":     "10",
 		"N(\"10\")": "10",
@@ -1561,6 +1624,16 @@ func TestCalcCellValue(t *testing.T) {
 		"OR(1=1,2=3)":            "TRUE",
 		"OR(\"TRUE\",\"FALSE\")": "TRUE",
 		"OR(A1:B1)":              "TRUE",
+		"OR(1,0)":                "TRUE",
+		"OR(0,1)":                "TRUE",
+		"OR(1)*1":                "1",
+		"OR(0,1)*1":              "1",
+		"OR(1,0)*1":              "1",
+		"OR(1=1,2>1)*1":          "1",
+		"OR(OR(1),FALSE)":        "TRUE",
+		"OR(OR(1),FALSE)*1":      "1",
+		"OR(A4:A4,1)":            "TRUE",
+		"OR(A4:A4,1)*1":          "1",
 		// SWITCH
 		"SWITCH(1,1,\"A\",2,\"B\",3,\"C\",\"N\")": "A",
 		"SWITCH(3,1,\"A\",2,\"B\",3,\"C\",\"N\")": "C",
@@ -2007,8 +2080,11 @@ func TestCalcCellValue(t *testing.T) {
 		"TEXTJOIN(\",\",TRUE,A1:C2)":    "1,4,2,5",
 		"TEXTJOIN(\",\",TRUE,MUNIT(2))": "1,0,0,1",
 		// TRIM
-		"TRIM(\" trim text \")": "trim text",
-		"TRIM(0)":               "0",
+		"TRIM(\" trim text \")":   "trim text",
+		"TRIM(0)":                 "0",
+		"TRIM(\"  a   b  \")":     "a b",
+		"TRIM(\"\u00a0a\u00a0\")": "\u00a0a\u00a0",
+		"TRIM(\"\ta\t\")":         "\ta\t",
 		// UNICHAR
 		"UNICHAR(65)": "A",
 		"UNICHAR(97)": "a",
@@ -2020,10 +2096,10 @@ func TestCalcCellValue(t *testing.T) {
 		"UNICODE(\"?\")":     "63",
 		"UNICODE(\"3\")":     "51",
 		// UNIQUE
-		"TEXTJOIN(\",\", TRUE, UNIQUE(D2:D9))":               "Jan,Feb",
-		"TEXTJOIN(\",\", TRUE, UNIQUE(D2:D9, FALSE, FALSE))": "Jan,Feb",
-		"TEXTJOIN(\",\", TRUE, UNIQUE(E2:E9, FALSE, FALSE))": "North 1,North 2,South 1,South 2",
-		"TEXTJOIN(\",\", TRUE, UNIQUE(D2:D9, FALSE, TRUE))":  "",
+		"TEXTJOIN(\",\",TRUE,UNIQUE(D2:D9))":               "Jan,Feb",
+		"TEXTJOIN(\",\",TRUE,UNIQUE(D2:D9, FALSE, FALSE))": "Jan,Feb",
+		"TEXTJOIN(\",\",TRUE,UNIQUE(E2:E9, FALSE, FALSE))": "North 1,North 2,South 1,South 2",
+		"TEXTJOIN(\",\",TRUE,UNIQUE(D2:D9, FALSE, TRUE))":  "",
 		// UPPER
 		"UPPER(\"test\")":     "TEST",
 		"UPPER(\"TEST\")":     "TEST",
@@ -2036,6 +2112,11 @@ func TestCalcCellValue(t *testing.T) {
 		"VALUE(\"20%\")":                 "0.2",
 		"VALUE(\"12:00:00\")":            "0.5",
 		"VALUE(\"01/02/2006 15:04:05\")": "38719.6278356481",
+		"VALUE(B3)":                      "0",
+		"VALUE(B3)*2":                    "0",
+		"VALUE(B3)+5":                    "5",
+		"VALUE(B3)<>1":                   "TRUE",
+		"VALUE(B3:B3)":                   "0",
 		// VALUETOTEXT
 		"VALUETOTEXT(A1)":   "1",
 		"VALUETOTEXT(A1,0)": "1",
@@ -2045,21 +2126,25 @@ func TestCalcCellValue(t *testing.T) {
 		"VALUETOTEXT(D1,1)": "\"Month\"",
 		// Conditional Functions
 		// IF
-		"A1-IF(FALSE,1,C1)":                         "1",
-		"IF(TRUE,C1,1)":                             "",
-		"IF(1=1)":                                   "TRUE",
-		"IF(1<>1)":                                  "FALSE",
-		"IF(5<0, \"negative\", \"positive\")":       "positive",
-		"IF(-2<0, \"negative\", \"positive\")":      "negative",
-		"IF(1=1, \"equal\", \"notequal\")":          "equal",
-		"IF(1<>1, \"equal\", \"notequal\")":         "notequal",
-		"IF(\"A\"=\"A\", \"equal\", \"notequal\")":  "equal",
-		"IF(\"A\"<>\"A\", \"equal\", \"notequal\")": "notequal",
-		"IF(FALSE,0,ROUND(4/2,0))":                  "2",
-		"IF(TRUE,ROUND(4/2,0),0)":                   "2",
-		"IF(A4>0.4,\"TRUE\",\"FALSE\")":             "FALSE",
-		"IF(A1=0,0,1+(SUM(ABS(A1))))":               "2",
-		"IF(C1=0,0,A1/C1+B1/C1)":                    "0",
+		"A1-IF(FALSE,1,C1)":                       "1",
+		"IF(TRUE,C1,1)":                           "",
+		"IF(1=1)":                                 "TRUE",
+		"IF(1<>1)":                                "FALSE",
+		"IF(5<0,\"negative\",\"positive\")":       "positive",
+		"IF(-2<0,\"negative\",\"positive\")":      "negative",
+		"IF(1=1,\"equal\",\"notequal\")":          "equal",
+		"IF(1<>1,\"equal\",\"notequal\")":         "notequal",
+		"IF(\"A\"=\"A\",\"equal\",\"notequal\")":  "equal",
+		"IF(\"A\"<>\"A\",\"equal\",\"notequal\")": "notequal",
+		"IF(FALSE,0,ROUND(4/2,0))":                "2",
+		"IF(TRUE,ROUND(4/2,0),0)":                 "2",
+		"IF(A4>0.4,\"TRUE\",\"FALSE\")":           "FALSE",
+		"IF(A1=0,0,1+(SUM(ABS(A1))))":             "2",
+		"IF(C1=0,0,A1/C1+B1/C1)":                  "0",
+		"IF(2<0,1,(4))":                           "4",
+		"IF(2>0,(1),4)":                           "1",
+		"IF(2>0,(A1)*2.5,4)":                      "2.5",
+		"IF(VALUE(B3)=1,0,1)":                     "1",
 		// Excel Lookup and Reference Functions
 		// ADDRESS
 		"ADDRESS(1,1,1,TRUE)":            "$A$1",
@@ -2121,14 +2206,13 @@ func TestCalcCellValue(t *testing.T) {
 		"VLOOKUP(A1:A2,A1:A1,1)":             "1",
 		"VLOOKUP(MUNIT(1),MUNIT(1),1,FALSE)": "1",
 		// INDEX
-		"INDEX(0,0,0)":          "0",
-		"INDEX(A1,0,0)":         "1",
-		"INDEX(A1:A1,0,0)":      "1",
-		"SUM(INDEX(A1:B1,1))":   "5",
-		"SUM(INDEX(A1:B1,1,0))": "5",
-		"SUM(INDEX(A1:B2,2,0))": "7",
-		"SUM(INDEX(A1:B4,0,2))": "9",
-		"SUM(INDEX(E1:F5,5,2))": "34440",
+		"INDEX(0,0,0)":               "0",
+		"INDEX(A1,0,0)":              "1",
+		"INDEX(A1:A1,0,0)":           "1",
+		"INDEX(MINVERSE(A1:B2),1,1)": "-1.66666666666667",
+		"INDEX(MINVERSE(A1:B2),1,2)": "1.33333333333333",
+		"INDEX(MINVERSE(A1:B2),2,1)": "0.666666666666667",
+		"INDEX(MINVERSE(A1:B2),2,2)": "-0.333333333333333",
 		// INDIRECT
 		"INDIRECT(\"E1\")":                   "Team",
 		"INDIRECT(\"E\"&1)":                  "Team",
@@ -2383,27 +2467,48 @@ func TestCalcCellValue(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	mathCalcError := map[string][]string{
-		"1/0":         {"#DIV/0!", "#DIV/0!"},
-		"(1/0)":       {"#DIV/0!", "#DIV/0!"},
-		"(A1/0+B1/0)": {"#DIV/0!", "#DIV/0!"},
-		"1^\"text\"":  {"#VALUE!", "#VALUE!"},
-		"\"text\"^1":  {"#VALUE!", "#VALUE!"},
-		"1+\"text\"":  {"#VALUE!", "#VALUE!"},
-		"\"text\"+1":  {"#VALUE!", "#VALUE!"},
-		"1-\"text\"":  {"#VALUE!", "#VALUE!"},
-		"\"text\"-1":  {"#VALUE!", "#VALUE!"},
-		"1*\"text\"":  {"#VALUE!", "#VALUE!"},
-		"\"text\"*1":  {"#VALUE!", "#VALUE!"},
-		"1/\"text\"":  {"#VALUE!", "#VALUE!"},
-		"\"text\"/1":  {"#VALUE!", "#VALUE!"},
-		"\"\"+1":      {"#VALUE!", "#VALUE!"},
-		"1+\"\"":      {"#VALUE!", "#VALUE!"},
-		"\"\"-1":      {"#VALUE!", "#VALUE!"},
-		"1-\"\"":      {"#VALUE!", "#VALUE!"},
-		"\"\"*1":      {"#VALUE!", "#VALUE!"},
-		"1*\"\"":      {"#VALUE!", "#VALUE!"},
-		"\"\"^1":      {"#VALUE!", "#VALUE!"},
-		"1/\"\"":      {"#VALUE!", "#VALUE!"},
+		"1/0":                {"#DIV/0!", "#DIV/0!"},
+		"(1/0)":              {"#DIV/0!", "#DIV/0!"},
+		"(A1/0+B1/0)":        {"#DIV/0!", "#DIV/0!"},
+		"1^\"text\"":         {"#VALUE!", "#VALUE!"},
+		"\"text\"^1":         {"#VALUE!", "#VALUE!"},
+		"1+\"text\"":         {"#VALUE!", "#VALUE!"},
+		"\"text\"+1":         {"#VALUE!", "#VALUE!"},
+		"1-\"text\"":         {"#VALUE!", "#VALUE!"},
+		"\"text\"-1":         {"#VALUE!", "#VALUE!"},
+		"1*\"text\"":         {"#VALUE!", "#VALUE!"},
+		"\"text\"*1":         {"#VALUE!", "#VALUE!"},
+		"1/\"text\"":         {"#VALUE!", "#VALUE!"},
+		"\"text\"/1":         {"#VALUE!", "#VALUE!"},
+		"\"\"+1":             {"#VALUE!", "#VALUE!"},
+		"1+\"\"":             {"#VALUE!", "#VALUE!"},
+		"\"\"-1":             {"#VALUE!", "#VALUE!"},
+		"1-\"\"":             {"#VALUE!", "#VALUE!"},
+		"\"\"*1":             {"#VALUE!", "#VALUE!"},
+		"1*\"\"":             {"#VALUE!", "#VALUE!"},
+		"\"\"^1":             {"#VALUE!", "#VALUE!"},
+		"1/\"\"":             {"#VALUE!", "#VALUE!"},
+		"1/0-1":              {"#DIV/0!", "#DIV/0!"},
+		"A1/0-B1":            {"#DIV/0!", "#DIV/0!"},
+		"1+\"text\"-1":       {"#VALUE!", "#VALUE!"},
+		"1-(1+\"text\")":     {"#VALUE!", "#VALUE!"},
+		"(1/0)-(1+\"text\")": {"#DIV/0!", "#DIV/0!"},
+		"(1+\"text\")-(1/0)": {"#VALUE!", "#VALUE!"},
+		"-(1/0)":             {"#DIV/0!", "#DIV/0!"},
+		"-(1+\"text\")":      {"#VALUE!", "#VALUE!"},
+		"-D1":                {"#VALUE!", "#VALUE!"},
+		"-\"text\"":          {"#VALUE!", "#VALUE!"},
+		"-\"\"":              {"#VALUE!", "#VALUE!"},
+		"-(-D1)":             {"#VALUE!", "#VALUE!"},
+		"1--D1":              {"#VALUE!", "#VALUE!"},
+		"0(((;)))":           {"", ErrInvalidFormula.Error()},
+		"0((((;))))":         {"", ErrInvalidFormula.Error()},
+		"0((;(0()))A":        {"", ErrInvalidFormula.Error()},
+		"0((;(0())),":        {"", ErrInvalidFormula.Error()},
+		"0((;(0())))":        {"", ErrInvalidFormula.Error()},
+		"0(((;(0()))))":      {"", ErrInvalidFormula.Error()},
+		"0(((;)1+2))":        {"", ErrInvalidFormula.Error()},
+		"0(((;)1/0))":        {"", ErrInvalidFormula.Error()},
 		// Engineering Functions
 		// BESSELI
 		"BESSELI()":       {"#VALUE!", "BESSELI requires 2 numeric arguments"},
@@ -2851,7 +2956,8 @@ func TestCalcCellValue(t *testing.T) {
 		"LOG10()":      {"#VALUE!", "LOG10 requires 1 numeric argument"},
 		"LOG10(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		// MDETERM
-		"MDETERM()": {"#VALUE!", "MDETERM requires 1 argument"},
+		"MDETERM()":      {"#VALUE!", "MDETERM requires 1 argument"},
+		"MDETERM(A1:B3)": {"#VALUE!", "#VALUE!"},
 		// MINVERSE
 		"MINVERSE()":      {"#VALUE!", "MINVERSE requires 1 argument"},
 		"MINVERSE(B3:C4)": {"#VALUE!", "#VALUE!"},
@@ -2997,16 +3103,19 @@ func TestCalcCellValue(t *testing.T) {
 		"SUBTOTAL(0,A4:A5)":    {"#VALUE!", "SUBTOTAL has invalid function_num"},
 		"SUBTOTAL(1,A5:A6)":    {"#DIV/0!", "#DIV/0!"},
 		// SUM
-		"SUM((":             {"", ErrInvalidFormula.Error()},
-		"SUM(-)":            {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
-		"SUM(1+)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
-		"SUM(1-)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
-		"SUM(1*)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
-		"SUM(1/)":           {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
-		"SUM(1*SUM(1/0))":   {"#DIV/0!", "#DIV/0!"},
-		"SUM(1*SUM(1/0)*1)": {"#DIV/0!", "#DIV/0!"},
-		"SUM(0:2)":          {"#NAME?", "invalid reference"},
-		"SUM(1:1048577)":    {"#NAME?", "invalid reference"},
+		"SUM((":                        {"", ErrInvalidFormula.Error()},
+		"SUM(-)":                       {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
+		"SUM(1+)":                      {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
+		"SUM(1-)":                      {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
+		"SUM(1*)":                      {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
+		"SUM(1/)":                      {ErrInvalidFormula.Error(), ErrInvalidFormula.Error()},
+		"SUM(0((;(0())),)":             {"", ErrInvalidFormula.Error()},
+		"SUM((0(((;)))))":              {"", ErrInvalidFormula.Error()},
+		"SUM(1*SUM(1/0))":              {"#DIV/0!", "#DIV/0!"},
+		"SUM(1*SUM(1/0)*1)":            {"#DIV/0!", "#DIV/0!"},
+		"1+SUM(SUM(A1+A2/A4)*(2-3),2)": {"#DIV/0!", "#DIV/0!"},
+		"SUM(0:2)":                     {"#NAME?", "invalid reference"},
+		"SUM(1:1048577)":               {"#NAME?", "invalid reference"},
 		// SUMIF
 		"SUMIF()": {"#VALUE!", "SUMIF requires at least 2 arguments"},
 		// SUMSQ
@@ -3546,6 +3655,8 @@ func TestCalcCellValue(t *testing.T) {
 		"PERCENTILE.EXC(A1:A4,-1)":   {"#NUM!", "#NUM!"},
 		"PERCENTILE.EXC(A1:A4,0)":    {"#NUM!", "#NUM!"},
 		"PERCENTILE.EXC(A1:A4,1)":    {"#NUM!", "#NUM!"},
+		"PERCENTILE.EXC(A1:A4,0.19)": {"#NUM!", "#NUM!"},
+		"PERCENTILE.EXC(A1:A4,0.81)": {"#NUM!", "#NUM!"},
 		"PERCENTILE.EXC(NA(),0.5)":   {"#NUM!", "#NUM!"},
 		// PERCENTILE.INC
 		"PERCENTILE.INC()": {"#VALUE!", "PERCENTILE.INC requires 2 arguments"},
@@ -3808,6 +3919,8 @@ func TestCalcCellValue(t *testing.T) {
 		"NOT(\"\")":  {"#VALUE!", "NOT expects 1 boolean or numeric argument"},
 		// OR
 		"OR(\"text\")":                          {"#VALUE!", "#VALUE!"},
+		"OR(1,\"text\")":                        {"#VALUE!", "#VALUE!"},
+		"OR(1=1,\"text\")":                      {"#VALUE!", "#VALUE!"},
 		"OR(\"1\",\"TRUE\",\"FALSE\")":          {"#VALUE!", "#VALUE!"},
 		"OR()":                                  {"#VALUE!", "OR requires at least 1 argument"},
 		"OR(1" + strings.Repeat(",1", 30) + ")": {"#VALUE!", "OR accepts at most 30 arguments"},
@@ -4113,8 +4226,10 @@ func TestCalcCellValue(t *testing.T) {
 		"UNICODE()":     {"#VALUE!", "UNICODE requires 1 argument"},
 		"UNICODE(\"\")": {"#VALUE!", "#VALUE!"},
 		// VALUE
-		"VALUE()":     {"#VALUE!", "VALUE requires 1 argument"},
-		"VALUE(\"\")": {"#VALUE!", "#VALUE!"},
+		"VALUE()":       {"#VALUE!", "VALUE requires 1 argument"},
+		"VALUE(\"\")":   {"#VALUE!", "#VALUE!"},
+		"VALUE(\"\")*2": {"#VALUE!", "#VALUE!"},
+		"VALUE(\" \")":  {"#VALUE!", "#VALUE!"},
 		// VALUETOTEXT
 		"VALUETOTEXT()":        {"#VALUE!", "VALUETOTEXT requires at least 1 argument"},
 		"VALUETOTEXT(A1,0,0)":  {"#VALUE!", "VALUETOTEXT allows at most 2 arguments"},
@@ -4783,50 +4898,6 @@ func TestCalcCellValue(t *testing.T) {
 		assert.Equal(t, expected[0], result, formula)
 		assert.EqualError(t, err, expected[1], formula)
 	}
-
-	referenceCalc := map[string]string{
-		// MDETERM
-		"MDETERM(A1:B2)": "-3",
-		// PRODUCT
-		"PRODUCT(Sheet1!A1:Sheet1!A1:A2,A2)": "4",
-		// IMPRODUCT
-		"IMPRODUCT(Sheet1!A1:Sheet1!A1:A2,A2)": "4",
-		// SUM
-		"A1/A3":                          "0.333333333333333",
-		"SUM(A1:A2)":                     "3",
-		"SUM(Sheet1!A1:Sheet1!A2)":       "3",
-		"SUM(Sheet1!A1,A2)":              "3",
-		"(-2-SUM(-4+A2))*5":              "0",
-		"SUM(Sheet1!A1:Sheet1!A1:A2,A2)": "5",
-		"SUM(A1,A2,A3)*SUM(2,3)":         "30",
-		"1+SUM(SUM(A1+A2/A3)*(2-3),2)":   "1.33333333333333",
-		"A1/A2/SUM(A1:A2:B1)":            "0.0416666666666667",
-		"A1/A2/SUM(A1:A2:B1)*A3":         "0.125",
-		"SUM(B1:D1)":                     "4",
-		"SUM(\"X\")":                     "0",
-	}
-	for formula, expected := range referenceCalc {
-		f := prepareCalcData(cellData)
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.NoError(t, err)
-		assert.Equal(t, expected, result, formula)
-	}
-
-	referenceCalcError := map[string][]string{
-		// MDETERM
-		"MDETERM(A1:B3)": {"#VALUE!", "#VALUE!"},
-		// SUM
-		"1+SUM(SUM(A1+A2/A4)*(2-3),2)": {"#DIV/0!", "#DIV/0!"},
-	}
-	for formula, expected := range referenceCalcError {
-		f := prepareCalcData(cellData)
-		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-		result, err := f.CalcCellValue("Sheet1", "C1")
-		assert.Equal(t, expected[0], result, formula)
-		assert.EqualError(t, err, expected[1], formula)
-	}
-
 	volatileFuncs := []string{
 		"NOW()",
 		"RAND()",
@@ -4963,6 +5034,9 @@ func TestCalcDet(t *testing.T) {
 		{3, 4, 5, 6},
 		{4, 5, 6, 7},
 	}), float64(0))
+	assert.Equal(t, 5.0, det([][]float64{{5}}))
+	assert.Equal(t, -3.0, det([][]float64{{-3}}))
+	assert.Equal(t, -3.0, det([][]float64{{1, 4}, {2, 5}}))
 }
 
 func TestCalcToBool(t *testing.T) {
@@ -5193,6 +5267,8 @@ func TestCalcBoolean(t *testing.T) {
 	cellData := [][]interface{}{{0.5, "TRUE", -0.5, "FALSE", true}}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
+		"ISNUMBER(E1)":     "FALSE",
+		"ISNUMBER(E1:E1)":  "FALSE",
 		"AVERAGEA(A1:C1)":  "0.333333333333333",
 		"MAX(0.5,B1)":      "0.5",
 		"MAX(A1:B1)":       "0.5",

@@ -742,3 +742,31 @@ func TestDeleteWorkbookPivotCache(t *testing.T) {
 	f.Pkg.Store("xl/_rels/workbook.xml.rels", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.deleteWorkbookPivotCache(PivotTableOptions{pivotCacheXML: "pivotCache/pivotCacheDefinition1.xml"}), "XML syntax error on line 1: invalid UTF-8")
 }
+
+func TestExtractPivotTableFields(t *testing.T) {
+	f := NewFile()
+	// Test skipping all pivot and data fields when cache fields are missing
+	pt := &xlsxPivotTableDefinition{
+		PivotFields: &xlsxPivotFields{PivotField: []*xlsxPivotField{{Axis: "axisRow"}}},
+		DataFields: &xlsxDataFields{
+			DataField: []*xlsxDataField{
+				{Fld: -1},
+				{Fld: 1},
+				{Fld: 2},
+				{Fld: 0, Subtotal: "sum"},
+			},
+		},
+	}
+	pc := &xlsxPivotCacheDefinition{}
+	opt := &PivotTableOptions{}
+	f.extractPivotTableFields(pt, pc, opt)
+	assert.Equal(t, &PivotTableOptions{}, opt)
+	// Test extracting valid fields while skipping negative and out-of-range data field indices
+	pc.CacheFields = &xlsxCacheFields{CacheField: []*xlsxCacheField{{Name: "Revenue"}}}
+	f.extractPivotTableFields(pt, pc, opt)
+	assert.Equal(t, &PivotTableOptions{
+		Rows: []PivotTableField{{Data: "Revenue"}},
+		Data: []PivotTableField{{Data: "Revenue", Subtotal: "Sum"}},
+	}, opt)
+	assert.NoError(t, f.Close())
+}
