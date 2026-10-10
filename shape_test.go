@@ -21,8 +21,12 @@ func TestAddShape(t *testing.T) {
 		},
 	}))
 	assert.NoError(t, f.AddShape("Sheet1", &Shape{Cell: "B30", Type: "rect", Paragraph: []RichTextRun{{Text: "Rectangle"}, {}}}))
-	shape1 := Shape{Cell: "C30", Type: "rect", Width: 160, Height: 160}
+	shape1 := Shape{Cell: "C30", Type: "rect", Width: 160, Height: 160, Format: GraphicOptions{Name: "Shape 8"}}
 	assert.NoError(t, f.AddShape("Sheet1", &shape1))
+	shapes, err := f.GetShapes("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, shapes, 3)
+	assert.Equal(t, shape1, shapes[2])
 	// Test add shape with invalid positioning types
 	assert.Equal(t, newInvalidOptionalValue("Positioning", "x", supportedPositioning), f.AddShape("Sheet1", &Shape{Cell: "C30", Type: "rect", Format: GraphicOptions{Positioning: "x"}}))
 	assert.EqualError(t, f.AddShape("Sheet3", &Shape{Cell: "C30", Type: "rect"}), "sheet Sheet3 does not exist")
@@ -76,6 +80,10 @@ func TestAddShape(t *testing.T) {
 		Height: 90,
 	}
 	assert.NoError(t, f.AddShape("Sheet1", &shape2))
+	shapes, err = f.GetShapes("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, shapes, 1)
+	assert.Equal(t, shape2, shapes[0])
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddShape2.xlsx")))
 	// Test add shape with invalid sheet name
 	assert.Equal(t, ErrSheetNameInvalid, f.AddShape("Sheet:1", &Shape{
@@ -97,6 +105,41 @@ func TestAddShape(t *testing.T) {
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.AddShape("Sheet1", &Shape{Cell: "B30", Type: "rect", Paragraph: []RichTextRun{{Text: "Rectangle"}, {}}}), "XML syntax error on line 1: invalid UTF-8")
+
+	// Test get shapes after from a worksheet which contains existing shapes
+	f, err = OpenFile(filepath.Join("test", "TestAddShape1.xlsx"))
+	assert.NoError(t, err)
+	shapes, err = f.GetShapes("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, shapes, 3)
+	assert.Equal(t, shape1, shapes[2])
+	// Test get shapes from a worksheet without shapes
+	shapes, err = f.GetShapes("Sheet2")
+	assert.NoError(t, err)
+	assert.Empty(t, shapes)
+	// Test get shapes after from a worksheet which contains existing shapes
+	f, err = OpenFile(filepath.Join("test", "TestAddShape2.xlsx"))
+	assert.NoError(t, err)
+	shapes, err = f.GetShapes("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, shapes, 1)
+	assert.Equal(t, shape2, shapes[0])
+	// Test get shapes with unsupported charset
+	path := "xl/drawings/drawing1.xml"
+	f.Drawings.Delete(path)
+	f.Pkg.Store(path, MacintoshCyrillicCharset)
+	_, err = f.GetShapes("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test get shapes from a sheet without shapes
+	f = NewFile()
+	shapes, err = f.GetShapes("Sheet1")
+	assert.NoError(t, err)
+	assert.Empty(t, shapes)
+	// Test get shapes on not exists worksheet
+	_, err = f.GetShapes("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+	assert.Nil(t, f.extractShapeFromAnchor("Sheet1", &xdrCellAnchor{Sp: &xdrSp{}, From: &xlsxFrom{Col: -1, Row: 0}}))
+	assert.Nil(t, f.extractShapeFromDecodeAnchor("Sheet1", "<from><col>-1</col><row>0</row></from><sp/>"))
 }
 
 func TestAddDrawingShape(t *testing.T) {

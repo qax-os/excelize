@@ -426,6 +426,9 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 		shape.NvSpPr.CNvPr.Name = opts.Format.Name
 	}
 	shape.SpPr.Ln = opts.Line.drawChartLn()
+	if shape.SpPr.Ln == nil && opts.Line.Width != defaultLineWidth {
+		shape.SpPr.Ln = &aLn{W: ptToEMUs(opts.Line.Width)}
+	}
 	if opts.Fill.Transparency > 0 {
 		val := (100 - opts.Fill.Transparency) * 1000
 		shape.SpPr.SolidFill = &aSolidFill{SrgbClr: &aSrgbClr{
@@ -527,4 +530,283 @@ func setShapeRef(color string, i int) *aRef {
 			Val: stringPtr(strings.ReplaceAll(strings.ToUpper(color), "#", "")),
 		},
 	}
+}
+
+// GetShapes provides the method to get all shapes in a sheet by given worksheet
+// name.
+func (f *File) GetShapes(sheet string) ([]Shape, error) {
+	var (
+		cells  []string
+		shapes []Shape
+		wsDr   *xlsxWsDr
+	)
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return shapes, err
+	}
+	if ws.Drawing == nil {
+		return shapes, nil
+	}
+	target := f.getSheetRelationshipsTargetByID(sheet, ws.Drawing.RID)
+	drawingXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
+	if wsDr, _, err = f.drawingParser(drawingXML); err != nil {
+		return shapes, err
+	}
+	for _, anchor := range wsDr.OneCellAnchor {
+		f.extractCellAnchorShape(sheet, anchor, &cells, &shapes)
+	}
+	for _, anchor := range wsDr.TwoCellAnchor {
+		f.extractCellAnchorShape(sheet, anchor, &cells, &shapes)
+	}
+	return shapes, err
+}
+
+// extractCellAnchorShape extracts shape from a cell anchor and appends it to
+// shapes if valid and not duplicate.
+func (f *File) extractCellAnchorShape(sheet string, anchor *xdrCellAnchor, cells *[]string, shapes *[]Shape) {
+	if anchor.GraphicFrame == "" {
+		if shape := f.extractShapeFromAnchor(sheet, anchor); shape != nil && inStrSlice(*cells, shape.Cell, true) == -1 {
+			*cells = append(*cells, shape.Cell)
+			*shapes = append(*shapes, *shape)
+			return
+		}
+	}
+	if shape := f.extractShapeFromDecodeAnchor(sheet, anchor.GraphicFrame); shape != nil && inStrSlice(*cells, shape.Cell, true) == -1 {
+		*cells = append(*cells, shape.Cell)
+		*shapes = append(*shapes, *shape)
+	}
+}
+
+// extractShapeFromAnchor extracts shape data from a cell anchor.
+func (f *File) extractShapeFromAnchor(sheet string, anchor *xdrCellAnchor) *Shape {
+	var (
+		cell  string
+		err   error
+		shape *Shape
+	)
+	if anchor.From == nil || anchor.Sp == nil {
+		return shape
+	}
+	if cell, err = CoordinatesToCellName(anchor.From.Col+1, anchor.From.Row+1); err != nil {
+		return shape
+	}
+	shape = &Shape{
+		Cell:  cell,
+		Type:  anchor.Sp.SpPr.PrstGeom.Prst,
+		Macro: anchor.Sp.Macro,
+		Format: GraphicOptions{
+			Name:    anchor.Sp.NvSpPr.CNvPr.Name,
+			AltText: anchor.Sp.NvSpPr.CNvPr.Descr,
+			ScaleX:  defaultDrawingScale,
+			ScaleY:  defaultDrawingScale,
+		},
+		Line: LineOptions{Width: defaultLineWidth},
+	}
+	if anchor.To != nil {
+		width, height := f.getCellAnchorShapeSize(sheet, anchor)
+		shape.Width, shape.Height, shape.Format.ScaleX, shape.Format.ScaleY = f.getShapeSizeAndScale(width, height, anchor.Sp.SpPr.Xfrm.Ext.Cx, anchor.Sp.SpPr.Xfrm.Ext.Cy)
+	} else {
+		shape.Format.Positioning = "oneCell"
+		if anchor.Ext != nil {
+			width, height := anchor.Ext.Cx/EMU, anchor.Ext.Cy/EMU
+			shape.Width, shape.Height, shape.Format.ScaleX, shape.Format.ScaleY = f.getShapeSizeAndScale(width, height, anchor.Sp.SpPr.Xfrm.Ext.Cx, anchor.Sp.SpPr.Xfrm.Ext.Cy)
+		}
+	}
+	if anchor.ClientData != nil {
+		shape.Format.PrintObject = boolPtr(anchor.ClientData.FPrintsWithSheet)
+		shape.Format.Locked = boolPtr(anchor.ClientData.FLocksWithSheet)
+	}
+	anchor.Sp.extractShapeFill(shape)
+	shape.Paragraph = anchor.Sp.TxBody.extractRichTextRun()
+	return shape
+}
+
+// extractShapeFromDecodeAnchor extracts shape data from a decoded cell anchor.
+func (f *File) extractShapeFromDecodeAnchor(sheet, graphicFrame string) *Shape {
+	var (
+		cell         string
+		err          error
+		shape        *Shape
+		deCellAnchor = new(decodeCellAnchor)
+	)
+	_ = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + graphicFrame + "</decodeCellAnchor>")).Decode(&deCellAnchor)
+	if deCellAnchor.From == nil || deCellAnchor.Sp == nil {
+		return shape
+	}
+	if cell, err = CoordinatesToCellName(deCellAnchor.From.Col+1, deCellAnchor.From.Row+1); err != nil {
+		return shape
+	}
+	shape = &Shape{
+		Cell:  cell,
+		Type:  deCellAnchor.Sp.SpPr.PrstGeom.Prst,
+		Macro: deCellAnchor.Sp.Macro,
+		Format: GraphicOptions{
+			Name:    deCellAnchor.Sp.NvSpPr.CNvPr.Name,
+			AltText: deCellAnchor.Sp.NvSpPr.CNvPr.Descr,
+			ScaleX:  defaultDrawingScale,
+			ScaleY:  defaultDrawingScale,
+		},
+		Line: LineOptions{Width: defaultLineWidth},
+	}
+	if deCellAnchor.To != nil {
+		width, height := f.getDecodeCellAnchorShapeSize(sheet, deCellAnchor)
+		shape.Width, shape.Height, shape.Format.ScaleX, shape.Format.ScaleY = f.getShapeSizeAndScale(width, height, deCellAnchor.Sp.SpPr.Xfrm.Ext.Cx, deCellAnchor.Sp.SpPr.Xfrm.Ext.Cy)
+	} else {
+		shape.Format.Positioning = "oneCell"
+		if deCellAnchor.Ext != nil {
+			width, height := deCellAnchor.Ext.Cx/EMU, deCellAnchor.Ext.Cy/EMU
+			shape.Width, shape.Height, shape.Format.ScaleX, shape.Format.ScaleY = f.getShapeSizeAndScale(width, height, deCellAnchor.Sp.SpPr.Xfrm.Ext.Cx, deCellAnchor.Sp.SpPr.Xfrm.Ext.Cy)
+		}
+	}
+	if deCellAnchor.ClientData != nil {
+		shape.Format.PrintObject = boolPtr(deCellAnchor.ClientData.FPrintsWithSheet)
+		shape.Format.Locked = boolPtr(deCellAnchor.ClientData.FLocksWithSheet)
+	}
+	deCellAnchor.Sp.extractShapeFill(shape)
+	shape.Paragraph = deCellAnchor.Sp.TxBody.extractRichTextRun()
+	return shape
+}
+
+// extractShapeFill extracts shape fill properties.
+func (sp *xdrSp) extractShapeFill(shape *Shape) {
+	if sp.SpPr != nil {
+		if sp.SpPr.SolidFill != nil && sp.SpPr.SolidFill.SrgbClr != nil {
+			if sp.SpPr.SolidFill.SrgbClr.Val != nil {
+				shape.Fill.Color = []string{*sp.SpPr.SolidFill.SrgbClr.Val}
+			}
+			if sp.SpPr.SolidFill.SrgbClr.Alpha != nil && sp.SpPr.SolidFill.SrgbClr.Alpha.Val != nil {
+				shape.Fill.Transparency = 100 - (*sp.SpPr.SolidFill.SrgbClr.Alpha.Val / 1000)
+			}
+		}
+		if sp.SpPr.Ln != nil && sp.SpPr.Ln.W != 0 {
+			shape.Line.Width = float64(sp.SpPr.Ln.W) / 12700
+		}
+	}
+	if sp.Style != nil && sp.Style.LnRef != nil && sp.Style.LnRef.SrgbClr != nil && sp.Style.LnRef.SrgbClr.Val != nil {
+		shape.Line.Fill = Fill{Type: "pattern", Pattern: 1, Color: []string{*sp.Style.LnRef.SrgbClr.Val}}
+	}
+}
+
+// extractShapeFill extracts shape fill properties.
+func (sp *decodeSp) extractShapeFill(shape *Shape) {
+	if sp.SpPr != nil {
+		if sp.SpPr.SolidFill != nil && sp.SpPr.SolidFill.SrgbClr != nil {
+			if sp.SpPr.SolidFill.SrgbClr.Val != nil {
+				shape.Fill.Color = []string{*sp.SpPr.SolidFill.SrgbClr.Val}
+			}
+			if sp.SpPr.SolidFill.SrgbClr.Alpha != nil && sp.SpPr.SolidFill.SrgbClr.Alpha.Val != nil {
+				shape.Fill.Transparency = 100 - (*sp.SpPr.SolidFill.SrgbClr.Alpha.Val / 1000)
+			}
+		}
+		if sp.SpPr.Ln.W != 0 {
+			shape.Line.Width = float64(sp.SpPr.Ln.W) / 12700
+		}
+	}
+	if sp.Style != nil && sp.Style.LnRef != nil && sp.Style.LnRef.SrgbClr != nil && sp.Style.LnRef.SrgbClr.Val != nil {
+		shape.Line.Fill = Fill{Type: "pattern", Pattern: 1, Color: []string{*sp.Style.LnRef.SrgbClr.Val}}
+	}
+}
+
+// extractRichTextRun extracts rich text runs from the text body.
+func (tb *xdrTxBody) extractRichTextRun() []RichTextRun {
+	var paragraphs []RichTextRun
+	for _, p := range tb.P {
+		run := RichTextRun{}
+		if p.R != nil {
+			run.Text = p.R.T
+			run.Font = &Font{
+				Bold:      p.R.RPr.B,
+				Italic:    p.R.RPr.I,
+				Underline: p.R.RPr.U,
+			}
+			if p.R.RPr.Sz > 0 {
+				run.Font.Size = p.R.RPr.Sz / 100
+			}
+			if p.R.RPr.Latin != nil {
+				run.Font.Family = p.R.RPr.Latin.Typeface
+			}
+			if p.R.RPr.SolidFill != nil && p.R.RPr.SolidFill.SrgbClr != nil && p.R.RPr.SolidFill.SrgbClr.Val != nil {
+				run.Font.Color = *p.R.RPr.SolidFill.SrgbClr.Val
+			}
+		}
+		paragraphs = append(paragraphs, run)
+	}
+	return paragraphs
+}
+
+// extractRichTextRun extracts rich text runs from decoded text body.
+func (tb *decodeTxBody) extractRichTextRun() []RichTextRun {
+	var paragraphs []RichTextRun
+	for _, p := range tb.P {
+		run := RichTextRun{}
+		if p.R != nil {
+			run.Text = p.R.T
+			run.Font = &Font{
+				Bold:      p.R.RPr.B,
+				Italic:    p.R.RPr.I,
+				Underline: p.R.RPr.U,
+			}
+			if p.R.RPr.Sz > 0 {
+				run.Font.Size = p.R.RPr.Sz / 100
+			}
+			if p.R.RPr.Latin != nil {
+				run.Font.Family = p.R.RPr.Latin.Typeface
+			}
+			if p.R.RPr.SolidFill != nil && p.R.RPr.SolidFill.SrgbClr != nil && p.R.RPr.SolidFill.SrgbClr.Val != nil {
+				run.Font.Color = *p.R.RPr.SolidFill.SrgbClr.Val
+			}
+		}
+		paragraphs = append(paragraphs, run)
+	}
+	return paragraphs
+}
+
+// getCellAnchorShapeSize calculates the shape size in pixels by given cell
+// anchor.
+func (f *File) getCellAnchorShapeSize(sheet string, cellAnchor *xdrCellAnchor) (int, int) {
+	var width, height int
+	for col := cellAnchor.From.Col; col < cellAnchor.To.Col; col++ {
+		width += f.getColWidth(sheet, col+1)
+	}
+	width += cellAnchor.To.ColOff/EMU - cellAnchor.From.ColOff/EMU
+	for row := cellAnchor.From.Row; row < cellAnchor.To.Row; row++ {
+		height += f.getRowHeight(sheet, row+1)
+	}
+	height += cellAnchor.To.RowOff/EMU - cellAnchor.From.RowOff/EMU
+	return width, height
+}
+
+// getDecodeCellAnchorShapeSize calculates the shape size in pixels by given
+// decode cell anchor.
+func (f *File) getDecodeCellAnchorShapeSize(sheet string, deCellAnchor *decodeCellAnchor) (int, int) {
+	var width, height int
+	for col := deCellAnchor.From.Col; col < deCellAnchor.To.Col; col++ {
+		width += f.getColWidth(sheet, col+1)
+	}
+	width += deCellAnchor.To.ColOff/EMU - deCellAnchor.From.ColOff/EMU
+	for row := deCellAnchor.From.Row; row < deCellAnchor.To.Row; row++ {
+		height += f.getRowHeight(sheet, row+1)
+	}
+	height += deCellAnchor.To.RowOff/EMU - deCellAnchor.From.RowOff/EMU
+	return width, height
+}
+
+// getShapeSizeAndScale calculates the shape size and scale by given actual
+// width and height in pixels, and the original cx and cy in EMU.
+func (f *File) getShapeSizeAndScale(w, h, cx, cy int) (uint, uint, float64, float64) {
+	var (
+		width, height  uint
+		scaleX, scaleY float64 = defaultDrawingScale, defaultDrawingScale
+	)
+	if cx > 0 && cy > 0 {
+		width = uint(cx / EMU)
+		height = uint(cy / EMU)
+		if width > 0 {
+			scaleX = float64(w) / float64(width)
+		}
+		if height > 0 {
+			scaleY = float64(h) / float64(height)
+		}
+	}
+	return width, height, scaleX, scaleY
 }

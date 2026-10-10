@@ -332,8 +332,8 @@ type decodeRPr struct {
 	U          string           `xml:"u,attr,omitempty"`
 	SolidFill  *decodeSolidFill `xml:"solidFill"`
 	Latin      *xlsxCTTextFont  `xml:"latin"`
-	Ea         *aEa             `xml:"ea"`
-	Cs         *aCs             `xml:"cs"`
+	Ea         *xlsxCTTextFont  `xml:"ea"`
+	Cs         *xlsxCTTextFont  `xml:"cs"`
 }
 
 // decodeSolidFill directly maps the solidFill element. This element specifies a
