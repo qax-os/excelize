@@ -943,6 +943,10 @@ func TestCalcCellValue(t *testing.T) {
 		"A1/A2/SUM(A1:A2:B1)*A3":             "0.125",
 		"SUM(B1:D1)":                         "4",
 		"SUM(\"X\")":                         "0",
+		"SUM(INDIRECT(\"$A$1\"))":            "1",
+		"SUM(INDIRECT(\"A1:B2\"))":           "12",
+		"SUM(INDIRECT(\"A1:B2\",TRUE))":      "12",
+		"SUM(INDIRECT(\"R1C1:R2C2\",FALSE))": "12",
 		// SUMIF
 		"SUMIF(F1:F5, \"\")":             "0",
 		"SUMIF(A1:A5, \"3\")":            "3",
@@ -1118,6 +1122,7 @@ func TestCalcCellValue(t *testing.T) {
 		"COUNT(\"5\",2)":                       "2",
 		"COUNT({\"5\"},\"5\")":                 "1",
 		"COUNT(TRUE,1)":                        "2",
+		"COUNT(INDIRECT(\"A1\"))":              "1",
 		// COUNTA
 		"COUNTA()":                              "0",
 		"COUNTA(\"\")":                          "1",
@@ -1538,24 +1543,25 @@ func TestCalcCellValue(t *testing.T) {
 		"ISNONTEXT(\"Excelize\")": "FALSE",
 		"ISNONTEXT(NA())":         "TRUE",
 		// ISNUMBER
-		"ISNUMBER(A1)":      "TRUE",
-		"ISNUMBER(D1)":      "FALSE",
-		"ISNUMBER(A1:B1)":   "TRUE",
-		"ISNUMBER(0)":       "TRUE",
-		"ISNUMBER(1)":       "TRUE",
-		"ISNUMBER(\"1\")":   "FALSE",
-		"ISNUMBER(TRUE)":    "FALSE",
-		"ISNUMBER(FALSE)":   "FALSE",
-		"ISNUMBER(TRUE())":  "FALSE",
-		"ISNUMBER(FALSE())": "FALSE",
-		"ISNUMBER(1=1)":     "FALSE",
-		"ISNUMBER(1=2)":     "FALSE",
-		"ISNUMBER({TRUE})":  "FALSE",
-		"ISNUMBER({FALSE})": "FALSE",
-		"ISNUMBER(OR(1))":   "FALSE",
-		"ISNUMBER(OR(0))":   "FALSE",
-		"ISNUMBER(OR(1)*1)": "TRUE",
-		"ISNUMBER(OR(0)*1)": "TRUE",
+		"ISNUMBER(A1)":               "TRUE",
+		"ISNUMBER(D1)":               "FALSE",
+		"ISNUMBER(A1:B1)":            "TRUE",
+		"ISNUMBER(0)":                "TRUE",
+		"ISNUMBER(1)":                "TRUE",
+		"ISNUMBER(\"1\")":            "FALSE",
+		"ISNUMBER(TRUE)":             "FALSE",
+		"ISNUMBER(FALSE)":            "FALSE",
+		"ISNUMBER(TRUE())":           "FALSE",
+		"ISNUMBER(FALSE())":          "FALSE",
+		"ISNUMBER(1=1)":              "FALSE",
+		"ISNUMBER(1=2)":              "FALSE",
+		"ISNUMBER({TRUE})":           "FALSE",
+		"ISNUMBER({FALSE})":          "FALSE",
+		"ISNUMBER(OR(1))":            "FALSE",
+		"ISNUMBER(OR(0))":            "FALSE",
+		"ISNUMBER(OR(1)*1)":          "TRUE",
+		"ISNUMBER(OR(0)*1)":          "TRUE",
+		"ISNUMBER(INDIRECT(\"A1\"))": "TRUE",
 		// ISODD
 		"ISODD(A1)": "TRUE",
 		"ISODD(A2)": "FALSE",
@@ -1565,9 +1571,10 @@ func TestCalcCellValue(t *testing.T) {
 		"ISREF(\"text\")": "FALSE",
 		"ISREF(B1*B2)":    "FALSE",
 		// ISTEXT
-		"ISTEXT(D1)":    "TRUE",
-		"ISTEXT(A1)":    "FALSE",
-		"ISTEXT(OR(1))": "FALSE",
+		"ISTEXT(D1)":               "TRUE",
+		"ISTEXT(A1)":               "FALSE",
+		"ISTEXT(OR(1))":            "FALSE",
+		"ISTEXT(INDIRECT(\"E1\"))": "TRUE",
 		// N
 		"N(10)":     "10",
 		"N(\"10\")": "10",
@@ -2255,15 +2262,17 @@ func TestCalcCellValue(t *testing.T) {
 		"INDEX(MINVERSE(A1:B2),2,1)": "0.666666666666667",
 		"INDEX(MINVERSE(A1:B2),2,2)": "-0.333333333333333",
 		// INDIRECT
-		"INDIRECT(\"E1\")":                   "Team",
-		"INDIRECT(\"E\"&1)":                  "Team",
-		"INDIRECT(\"E\"&ROW())":              "Team",
-		"INDIRECT(\"E\"&ROW(),TRUE)":         "Team",
-		"INDIRECT(\"R1C5\",FALSE)":           "Team",
-		"INDIRECT(\"R\"&1&\"C\"&5,FALSE)":    "Team",
-		"SUM(INDIRECT(\"A1:B2\"))":           "12",
-		"SUM(INDIRECT(\"A1:B2\",TRUE))":      "12",
-		"SUM(INDIRECT(\"R1C1:R2C2\",FALSE))": "12",
+		"INDIRECT(\"E1\")":                "Team",
+		"INDIRECT(\"E\"&1)":               "Team",
+		"INDIRECT(\"E\"&ROW())":           "Team",
+		"INDIRECT(\"E\"&ROW(),TRUE)":      "Team",
+		"INDIRECT(\"R1C5\",FALSE)":        "Team",
+		"INDIRECT(\"R\"&1&\"C\"&5,FALSE)": "Team",
+		"INDIRECT(\"$A$1\")":              "1",
+		"INDIRECT(\"A1\")":                "1",
+		"INDIRECT(\"A1:A1\")":             "1",
+		"INDIRECT(\"R2C2\",FALSE)":        "5",
+		"INDIRECT(\"R1C1\",FALSE)":        "1",
 		// LOOKUP
 		"LOOKUP(F8,F8:F9,F8:F9)":      "32080",
 		"LOOKUP(F8,F8:F9,D8:D9)":      "Feb",
@@ -4387,6 +4396,10 @@ func TestCalcCellValue(t *testing.T) {
 		"INDIRECT(\"R C1\",FALSE)":       {"#REF!", "#REF!"},
 		"INDIRECT(\"R1C \",FALSE)":       {"#REF!", "#REF!"},
 		"INDIRECT(\"R1C1:R2C \",FALSE)":  {"#REF!", "#REF!"},
+		"INDIRECT(\"KeinBlatt!A1\")":     {"#REF!", "#REF!"},
+		"INDIRECT(\"E2\",FALSE)":         {"#REF!", "#REF!"},
+		"INDIRECT(\"\")":                 {"#REF!", "#REF!"},
+		"INDIRECT(\"'A1\")":              {"#REF!", "#REF!"},
 		// LOOKUP
 		"LOOKUP()":                     {"#VALUE!", "LOOKUP requires at least 2 arguments"},
 		"LOOKUP(D2,D1,D2)":             {"#VALUE!", "LOOKUP requires second argument of table array"},
@@ -7390,4 +7403,42 @@ func TestCalc3DRef(t *testing.T) {
 	assert.Empty(t, split3DReference("Sheet1:Sheet2:Sheet3!A1"))
 	assert.Empty(t, split3DReference(":Sheet1!A1"))
 	assert.Empty(t, split3DReference("!A1"))
+}
+
+func TestCalcINDIRECTSheetRef(t *testing.T) {
+	f := NewFile()
+	defer func() {
+		assert.NoError(t, f.Close())
+	}()
+	for sheet, value := range map[string]interface{}{
+		"Test": 1, "Test Sheet": "plain text", "Test!Sheet": 2,
+	} {
+		_, err := f.NewSheet(sheet)
+		assert.NoError(t, err)
+		assert.NoError(t, f.SetCellValue(sheet, "A1", value))
+	}
+	formulaList := map[string]string{
+		"COUNT(INDIRECT(\"Test!$A$1\"))":          "1",
+		"INDIRECT(\"'Test Sheet'!A1\")":           "plain text",
+		"INDIRECT(\"'Test!Sheet'!A1\")":           "2",
+		"INDIRECT(\"test!A1\")":                   "1",
+		"INDIRECT(\"Test!R1C1\",FALSE)":           "1",
+		"SUM(INDIRECT(\"Test!A1:A1\"))":           "1",
+		"SUM(INDIRECT(\"Test!R1C1:R1C1\",FALSE))": "1",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	for _, formula := range []string{
+		"INDIRECT(\"Test Sheet!A1\")",
+		"INDIRECT(\"Test!Sheet!A1\")",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.EqualError(t, err, "#REF!", formula)
+		assert.Equal(t, "#REF!", result, formula)
+	}
 }
