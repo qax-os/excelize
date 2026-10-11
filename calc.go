@@ -16082,78 +16082,28 @@ func (fn *formulaFuncs) INDEX(argsList *list.List) formulaArg {
 	return cells.List[colIdx]
 }
 
-// INDIRECT function converts a text string into a cell reference. The syntax
-// of the Indirect function is:
-//
-//	INDIRECT(ref_text,[a1])
-func (fn *formulaFuncs) INDIRECT(argsList *list.List) formulaArg {
-	if argsList.Len() != 1 && argsList.Len() != 2 {
-		return newErrorFormulaArg(formulaErrorVALUE, "INDIRECT requires 1 or 2 arguments")
+// parseIndirectR1C1 converts an absolute R1C1 reference to A1 cell reference.
+func parseIndirectR1C1(ref string) (cell string, err error) {
+	parts := strings.Split(strings.TrimLeft(ref, "R"), "C")
+	if len(parts) != 2 {
+		return "", errors.New("invalid reference")
 	}
-	refText := argsList.Front().Value.(formulaArg).Value()
-	a1 := newBoolFormulaArg(true)
-	if argsList.Len() == 2 {
-		if a1 = argsList.Back().Value.(formulaArg).ToBool(); a1.Type != ArgNumber {
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
-		}
-	}
-	R1C1ToA1 := func(ref string) (cell string, err error) {
-		parts := strings.Split(strings.TrimLeft(ref, "R"), "C")
-		if len(parts) != 2 {
-			return
-		}
-		row, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return
-		}
-		col, err := strconv.Atoi(parts[1])
-		if err != nil {
-			return
-		}
-		cell, err = CoordinatesToCellName(col, row)
+	row, err := strconv.Atoi(parts[0])
+	if err != nil {
 		return
 	}
-	sheet, cellRef, ok := parseIndirectSheetRef(refText)
-	if !ok {
-		return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
-	}
-	if sheet == "" {
-		sheet = fn.sheet
-	}
-	refs := strings.Split(cellRef, ":")
-	fromRef, toRef := refs[0], ""
-	if len(refs) == 2 {
-		toRef = refs[1]
-	}
-	if a1.Number == 0 {
-		from, err := R1C1ToA1(refs[0])
-		if err != nil {
-			return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
-		}
-		fromRef = from
-		if len(refs) == 2 {
-			to, err := R1C1ToA1(refs[1])
-			if err != nil {
-				return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
-			}
-			toRef = to
-		}
-	}
-	if len(refs) == 2 {
-		fromRef += ":" + toRef
-	}
-	arg, err := fn.f.parseReference(fn.ctx, sheet, fromRef)
+	col, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+		return
 	}
-	return arg
+	cell, err = CoordinatesToCellName(col, row)
+	return
 }
 
-// parseIndirectSheetRef splits the reference text of the INDIRECT function
-// into the worksheet name and the cell reference. A worksheet name which
-// contains spaces has to be enclosed in single quotes, an embedded single
-// quote is doubled. The returned flag reports whether the reference text is
-// well-formed.
+// parseIndirectSheetRef splits the reference text of the INDIRECT function into
+// the worksheet name and the cell reference. A worksheet name which contains
+// spaces has to be enclosed in single quotes, an embedded single quote is
+// doubled. The returned flag reports whether the reference text is well-formed.
 func parseIndirectSheetRef(refText string) (sheet, cellRef string, ok bool) {
 	if strings.HasPrefix(refText, "'") {
 		idx := strings.LastIndex(refText, "'!")
@@ -16170,6 +16120,57 @@ func parseIndirectSheetRef(refText string) (sheet, cellRef string, ok bool) {
 		cellRef = refText
 	}
 	return sheet, cellRef, !strings.Contains(cellRef, "!")
+}
+
+// INDIRECT function converts a text string into a cell reference. The syntax
+// of the Indirect function is:
+//
+//	INDIRECT(ref_text,[a1])
+func (fn *formulaFuncs) INDIRECT(argsList *list.List) formulaArg {
+	if argsList.Len() != 1 && argsList.Len() != 2 {
+		return newErrorFormulaArg(formulaErrorVALUE, "INDIRECT requires 1 or 2 arguments")
+	}
+	refText := argsList.Front().Value.(formulaArg).Value()
+	a1 := newBoolFormulaArg(true)
+	if argsList.Len() == 2 {
+		if a1 = argsList.Back().Value.(formulaArg).ToBool(); a1.Type != ArgNumber {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+	}
+	sheet, cellRef, ok := parseIndirectSheetRef(refText)
+	if !ok {
+		return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+	}
+	if sheet == "" {
+		sheet = fn.sheet
+	}
+	refs := strings.Split(cellRef, ":")
+	fromRef, toRef := refs[0], ""
+	if len(refs) == 2 {
+		toRef = refs[1]
+	}
+	if a1.Number == 0 {
+		from, err := parseIndirectR1C1(refs[0])
+		if err != nil {
+			return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+		}
+		fromRef = from
+		if len(refs) == 2 {
+			to, err := parseIndirectR1C1(refs[1])
+			if err != nil {
+				return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+			}
+			toRef = to
+		}
+	}
+	if len(refs) == 2 {
+		fromRef += ":" + toRef
+	}
+	arg, err := fn.f.parseReference(fn.ctx, sheet, fromRef)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorREF, formulaErrorREF)
+	}
+	return arg
 }
 
 // LOOKUP function performs an approximate match lookup in a one-column or
