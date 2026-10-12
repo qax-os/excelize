@@ -296,6 +296,9 @@ func TestAdjustAutoFilter(t *testing.T) {
 			Ref: "A1:A3",
 		},
 	}, "Sheet1", rows, 1, -1, 1))
+	ws := &xlsxWorksheet{AutoFilter: &xlsxAutoFilter{Ref: "B1:D3"}}
+	assert.NoError(t, f.adjustAutoFilter(ws, "Sheet1", columns, 2, -1, 1))
+	assert.Equal(t, "B1:C3", ws.AutoFilter.Ref)
 	// Test adjustAutoFilter with illegal cell reference
 	assert.Equal(t, f.adjustAutoFilter(&xlsxWorksheet{
 		AutoFilter: &xlsxAutoFilter{
@@ -339,6 +342,100 @@ func TestAdjustTable(t *testing.T) {
 	// Test adjust table with invalid table range reference
 	f.Pkg.Store("xl/tables/table1.xml", []byte(`<table ref="-" />`))
 	assert.Equal(t, ErrParameterInvalid, f.RemoveRow(sheetName, 1))
+
+	for _, c := range []struct {
+		ref, autoFilterRef        string
+		adjust                    func(f *File) error
+		expectedRef, expectedAuto string
+		expectedTotalsRowCount    int
+	}{
+		{"A1:B4", "A1:B3", func(f *File) error { return f.InsertRows(sheetName, 10, 1) }, "A1:B4", "A1:B3", 1},
+		{"A1:B4", "A1:B3", func(f *File) error { return f.InsertRows(sheetName, 3, 1) }, "A1:B5", "A1:B4", 1},
+		{"A1:B4", "A1:B3", func(f *File) error { return f.InsertRows(sheetName, 4, 1) }, "A1:B5", "A1:B4", 1},
+		{"A1:B4", "A1:B3", func(f *File) error { return f.DuplicateRow(sheetName, 2) }, "A1:B5", "A1:B4", 1},
+		{"A1:B4", "A1:B3", func(f *File) error { return f.InsertCols(sheetName, "A", 1) }, "B1:C4", "B1:C3", 1},
+		{"A1:B4", "A1:B3", func(f *File) error { return f.RemoveRow(sheetName, 2) }, "A1:B3", "A1:B2", 1},
+		{"A1:B4", "A1:B3", func(f *File) error { return f.RemoveRow(sheetName, 4) }, "A1:B3", "A1:B3", 0},
+		{"B1:C4", "B1:C3", func(f *File) error { return f.RemoveCol(sheetName, "B") }, "B1:B4", "B1:B3", 1},
+		{"A1:B3", "A1:B2", func(f *File) error { return f.RemoveRow(sheetName, 2) }, "A1:B2", "A1:B2", 0},
+	} {
+		f = NewFile()
+		assert.NoError(t, f.AddTable(sheetName, &Table{Range: c.ref, Name: "Table1"}))
+		f.Pkg.Store("xl/tables/table1.xml", fmt.Appendf(nil, `<table xmlns="%s" id="1" name="Table1" displayName="Table1" ref="%s" totalsRowCount="1"><autoFilter ref="%s"/><tableColumns count="2"><tableColumn id="1" name="Column1" totalsRowLabel="Total"/><tableColumn id="2" name="Column2" totalsRowFunction="sum"/></tableColumns></table>`, NameSpaceSpreadSheet.Value, c.ref, c.autoFilterRef))
+		assert.NoError(t, c.adjust(f))
+		content, ok := f.Pkg.Load("xl/tables/table1.xml")
+		assert.True(t, ok)
+		var tbl xlsxTable
+		assert.NoError(t, xml.Unmarshal(content.([]byte), &tbl))
+		assert.Equal(t, c.expectedRef, tbl.Ref)
+		assert.Equal(t, c.expectedAuto, tbl.AutoFilter.Ref)
+		assert.Equal(t, c.expectedTotalsRowCount, tbl.TotalsRowCount)
+	}
+
+	f = NewFile()
+	assert.NoError(t, f.AddTable(sheetName, &Table{Range: "C5:D8", Name: "Table1"}))
+	assert.NoError(t, f.RemoveRow(sheetName, 3))
+	tables, err := f.GetTables(sheetName)
+	assert.NoError(t, err)
+	assert.Len(t, tables, 1)
+	assert.Equal(t, "C4:D7", tables[0].Range)
+	assert.NoError(t, f.RemoveRow(sheetName, 4))
+	tables, err = f.GetTables(sheetName)
+	assert.NoError(t, err)
+	assert.Empty(t, tables)
+	_, ok := f.Pkg.Load("xl/tables/table1.xml")
+	assert.False(t, ok)
+	assert.NoError(t, f.AddTable(sheetName, &Table{Range: "C5:D8", Name: "Table1"}))
+
+	f = NewFile()
+	assert.NoError(t, f.SetCellValue(sheetName, "A2", 7))
+	assert.NoError(t, f.AddTable(sheetName, &Table{Range: "A1:B3", Name: "Table1", ShowHeaderRow: boolPtr(false)}))
+	assert.NoError(t, f.AddTable(sheetName, &Table{Range: "D1:E2", Name: "Table2", ShowHeaderRow: boolPtr(false)}))
+	assert.NoError(t, f.InsertRows(sheetName, 20, 1))
+	tables, err = f.GetTables(sheetName)
+	assert.NoError(t, err)
+	assert.Len(t, tables, 2)
+	cellType, err := f.GetCellType(sheetName, "A2")
+	assert.NoError(t, err)
+	assert.Equal(t, CellTypeUnset, cellType)
+	value, err := f.GetCellValue(sheetName, "B2")
+	assert.NoError(t, err)
+	assert.Empty(t, value)
+	assert.NoError(t, f.RemoveRow(sheetName, 2))
+	tables, err = f.GetTables(sheetName)
+	assert.NoError(t, err)
+	assert.Len(t, tables, 1)
+	assert.Equal(t, "A2:B2", tables[0].Range)
+
+	tableXML := `<table xmlns="%s" id="1" name="Table1" displayName="Table1" ref="A1:C5" totalsRowCount="1"><autoFilter ref="A1:C4"/><sortState ref="A2:C4"><sortCondition descending="1" ref="B2:B4"/></sortState><tableColumns count="3"><tableColumn id="1" name="Column1" totalsRowLabel="Total"/><tableColumn id="2" name="Column2" totalsRowFunction="sum" dataDxfId="0"/><tableColumn id="3" name="Column3" totalsRowFunction="custom"><calculatedColumnFormula>%s</calculatedColumnFormula><totalsRowFormula>SUBTOTAL(109,Table1[Column3])</totalsRowFormula></tableColumn></tableColumns><extLst><ext uri="{504A1905-F514-4f6f-8877-14C23A59335A}"/></extLst></table>`
+	f = NewFile()
+	assert.NoError(t, f.AddTable(sheetName, &Table{Range: "A1:C5", Name: "Table1"}))
+	f.Pkg.Store("xl/tables/table1.xml", fmt.Appendf(nil, tableXML, NameSpaceSpreadSheet.Value, "B2*2"))
+	assert.NoError(t, f.InsertRows(sheetName, 1, 1))
+	content, ok := f.Pkg.Load("xl/tables/table1.xml")
+	assert.True(t, ok)
+	var tbl xlsxTable
+	assert.NoError(t, xml.Unmarshal(content.([]byte), &tbl))
+	assert.Equal(t, "A2:C6", tbl.Ref)
+	assert.Equal(t, 1, tbl.TotalsRowCount)
+	assert.Equal(t, "A2:C5", tbl.AutoFilter.Ref)
+	assert.Equal(t, "A3:C5", tbl.SortState.Ref)
+	assert.Equal(t, []*xlsxSortCondition{{Descending: true, Ref: "B3:B5"}}, tbl.SortState.SortCondition)
+	assert.Equal(t, intPtr(0), tbl.TableColumns.TableColumn[1].DataDxfID)
+	assert.Equal(t, &xlsxTableFormula{Content: "B3*2"}, tbl.TableColumns.TableColumn[2].CalculatedColumnFormula)
+	assert.Equal(t, &xlsxTableFormula{Content: "SUBTOTAL(109,Table1[Column3])"}, tbl.TableColumns.TableColumn[2].TotalsRowFormula)
+	assert.NotNil(t, tbl.ExtLst)
+	assert.NoError(t, f.RemoveCol(sheetName, "B"))
+	content, ok = f.Pkg.Load("xl/tables/table1.xml")
+	assert.True(t, ok)
+	tbl = xlsxTable{}
+	assert.NoError(t, xml.Unmarshal(content.([]byte), &tbl))
+	assert.Nil(t, tbl.SortState)
+
+	f = NewFile()
+	assert.NoError(t, f.AddTable(sheetName, &Table{Range: "A1:C5", Name: "Table1"}))
+	f.Pkg.Store("xl/tables/table1.xml", fmt.Appendf(nil, tableXML, NameSpaceSpreadSheet.Value, "A1048576"))
+	assert.Equal(t, ErrMaxRows, f.InsertRows(sheetName, 1, 1))
 }
 
 func TestAdjustHelper(t *testing.T) {
@@ -566,9 +663,9 @@ func TestAdjustFormula(t *testing.T) {
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAdjustFormula.xlsx")))
 	assert.NoError(t, f.Close())
 
-	assert.NoError(t, f.adjustFormula("Sheet1", "Sheet1", &xlsxC{}, rows, 0, 0, false))
-	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.adjustFormula("Sheet1", "Sheet1", &xlsxC{F: &xlsxF{Ref: "-"}}, rows, 0, 0, false))
-	assert.Equal(t, ErrColumnNumber, f.adjustFormula("Sheet1", "Sheet1", &xlsxC{F: &xlsxF{Ref: "XFD1:XFD1"}}, columns, 0, 1, false))
+	assert.NoError(t, f.adjustFormula("Sheet1", "Sheet1", &xlsxC{}, rows, 0, 0))
+	assert.Equal(t, newCellNameToCoordinatesError("-", newInvalidCellNameError("-")), f.adjustFormula("Sheet1", "Sheet1", &xlsxC{F: &xlsxF{Ref: "-"}}, rows, 0, 0))
+	assert.Equal(t, ErrColumnNumber, f.adjustFormula("Sheet1", "Sheet1", &xlsxC{F: &xlsxF{Ref: "XFD1:XFD1"}}, columns, 0, 1))
 
 	_, err := f.adjustFormulaRef("Sheet1", "Sheet1", "XFE1", false, columns, 0, 1)
 	assert.Equal(t, ErrColumnNumber, err)
