@@ -33,19 +33,21 @@ type xlsxTable struct {
 	TotalsRowCount       int                 `xml:"totalsRowCount,attr,omitempty"`
 	TotalsRowShown       *bool               `xml:"totalsRowShown,attr"`
 	Published            bool                `xml:"published,attr,omitempty"`
-	HeaderRowDxfID       int                 `xml:"headerRowDxfId,attr,omitempty"`
-	DataDxfID            int                 `xml:"dataDxfId,attr,omitempty"`
-	TotalsRowDxfID       int                 `xml:"totalsRowDxfId,attr,omitempty"`
-	HeaderRowBorderDxfID int                 `xml:"headerRowBorderDxfId,attr,omitempty"`
-	TableBorderDxfID     int                 `xml:"tableBorderDxfId,attr,omitempty"`
-	TotalsRowBorderDxfID int                 `xml:"totalsRowBorderDxfId,attr,omitempty"`
+	HeaderRowDxfID       *int                `xml:"headerRowDxfId,attr"`
+	DataDxfID            *int                `xml:"dataDxfId,attr"`
+	TotalsRowDxfID       *int                `xml:"totalsRowDxfId,attr"`
+	HeaderRowBorderDxfID *int                `xml:"headerRowBorderDxfId,attr"`
+	TableBorderDxfID     *int                `xml:"tableBorderDxfId,attr"`
+	TotalsRowBorderDxfID *int                `xml:"totalsRowBorderDxfId,attr"`
 	HeaderRowCellStyle   string              `xml:"headerRowCellStyle,attr,omitempty"`
 	DataCellStyle        string              `xml:"dataCellStyle,attr,omitempty"`
 	TotalsRowCellStyle   string              `xml:"totalsRowCellStyle,attr,omitempty"`
 	ConnectionID         int                 `xml:"connectionId,attr,omitempty"`
 	AutoFilter           *xlsxAutoFilter     `xml:"autoFilter"`
+	SortState            *xlsxSortState      `xml:"sortState"`
 	TableColumns         *xlsxTableColumns   `xml:"tableColumns"`
 	TableStyleInfo       *xlsxTableStyleInfo `xml:"tableStyleInfo"`
+	ExtLst               *xlsxExtLst         `xml:"extLst"`
 }
 
 // xlsxAutoFilter temporarily hides rows based on a filter criteria, which is
@@ -177,18 +179,26 @@ type xlsxTableColumns struct {
 // xlsxTableColumn directly maps the element representing a single column for
 // this table.
 type xlsxTableColumn struct {
-	ID                 int    `xml:"id,attr"`
-	UniqueName         string `xml:"uniqueName,attr,omitempty"`
-	Name               string `xml:"name,attr"`
-	TotalsRowFunction  string `xml:"totalsRowFunction,attr,omitempty"`
-	TotalsRowLabel     string `xml:"totalsRowLabel,attr,omitempty"`
-	QueryTableFieldID  int    `xml:"queryTableFieldId,attr,omitempty"`
-	HeaderRowDxfID     int    `xml:"headerRowDxfId,attr,omitempty"`
-	DataDxfID          int    `xml:"dataDxfId,attr,omitempty"`
-	TotalsRowDxfID     int    `xml:"totalsRowDxfId,attr,omitempty"`
-	HeaderRowCellStyle string `xml:"headerRowCellStyle,attr,omitempty"`
-	DataCellStyle      string `xml:"dataCellStyle,attr,omitempty"`
-	TotalsRowCellStyle string `xml:"totalsRowCellStyle,attr,omitempty"`
+	ID                      int               `xml:"id,attr"`
+	UniqueName              string            `xml:"uniqueName,attr,omitempty"`
+	Name                    string            `xml:"name,attr"`
+	TotalsRowFunction       string            `xml:"totalsRowFunction,attr,omitempty"`
+	TotalsRowLabel          string            `xml:"totalsRowLabel,attr,omitempty"`
+	QueryTableFieldID       int               `xml:"queryTableFieldId,attr,omitempty"`
+	HeaderRowDxfID          *int              `xml:"headerRowDxfId,attr"`
+	DataDxfID               *int              `xml:"dataDxfId,attr"`
+	TotalsRowDxfID          *int              `xml:"totalsRowDxfId,attr"`
+	HeaderRowCellStyle      string            `xml:"headerRowCellStyle,attr,omitempty"`
+	DataCellStyle           string            `xml:"dataCellStyle,attr,omitempty"`
+	TotalsRowCellStyle      string            `xml:"totalsRowCellStyle,attr,omitempty"`
+	CalculatedColumnFormula *xlsxTableFormula `xml:"calculatedColumnFormula"`
+	TotalsRowFormula        *xlsxTableFormula `xml:"totalsRowFormula"`
+	ExtLst                  *xlsxExtLst       `xml:"extLst"`
+}
+
+type xlsxTableFormula struct {
+	Array   bool   `xml:"array,attr,omitempty"`
+	Content string `xml:",chardata"`
 }
 
 // xlsxTableStyleInfo directly maps the tableStyleInfo element. This element
