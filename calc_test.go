@@ -3056,8 +3056,6 @@ func TestCalcCellValue(t *testing.T) {
 		// PRODUCT
 		"PRODUCT(\"X\")":    {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		"PRODUCT(\"\",3,6)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
-		"PRODUCT(A2,I1:J1)": {"#N/A", "#N/A"},
-		"PRODUCT(J1,1/0)":   {"#DIV/0!", "#DIV/0!"},
 		// QUOTIENT
 		"QUOTIENT(\"X\",1)": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		"QUOTIENT(1,\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
@@ -3179,9 +3177,6 @@ func TestCalcCellValue(t *testing.T) {
 		"SUM(\"abc\",2)":               {"#VALUE!", "strconv.ParseFloat: parsing \"abc\": invalid syntax"},
 		"SUM(\"X\")":                   {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		"SUM(NA(),1/0)":                {"#N/A", "#N/A"},
-		"SUM(A2,I1:J1)":                {"#N/A", "#N/A"},
-		"SUM(J1,1/0)":                  {"#DIV/0!", "#DIV/0!"},
-		"SUM(J1,\"abc\")":              {"#VALUE!", "strconv.ParseFloat: parsing \"abc\": invalid syntax"},
 		// SUMIF
 		"SUMIF()": {"#VALUE!", "SUMIF requires at least 2 arguments"},
 		// SUMSQ
@@ -3498,7 +3493,6 @@ func TestCalcCellValue(t *testing.T) {
 		"GEOMEAN(0)":     {"#NUM!", "#NUM!"},
 		"GEOMEAN(D1:D2)": {"#NUM!", "#NUM!"},
 		"GEOMEAN(\"\")":  {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
-		"GEOMEAN(A2,J1)": {"#N/A", "#N/A"},
 		// HARMEAN
 		"HARMEAN()":   {"#VALUE!", "HARMEAN requires at least 1 argument"},
 		"HARMEAN(-1)": {"#N/A", "#N/A"},
@@ -4973,6 +4967,21 @@ func TestCalcCellValue(t *testing.T) {
 		"_xlfn.DISPIMG()": {"#VALUE!", "DISPIMG requires 2 numeric arguments"},
 	}
 	for formula, expected := range mathCalcError {
+		f := prepareCalcData(cellData)
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.Equal(t, expected[0], result, formula)
+		assert.EqualError(t, err, expected[1], formula)
+	}
+	errorCellCalc := map[string][]string{
+		"GEOMEAN(A2,J1)":    {"#N/A", "#N/A"},
+		"PRODUCT(A2,I1:J1)": {"#N/A", "#N/A"},
+		"PRODUCT(J1,1/0)":   {"#DIV/0!", "#DIV/0!"},
+		"SUM(A2,I1:J1)":     {"#N/A", "#N/A"},
+		"SUM(J1,1/0)":       {"#DIV/0!", "#DIV/0!"},
+		"SUM(J1,\"abc\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"abc\": invalid syntax"},
+	}
+	for formula, expected := range errorCellCalc {
 		f := prepareCalcData(cellData)
 		assert.NoError(t, f.SetCellFormula("Sheet1", "J1", "NA()"))
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
