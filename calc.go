@@ -15826,6 +15826,52 @@ func (fn *formulaFuncs) VLOOKUP(argsList *list.List) formulaArg {
 	return newErrorFormulaArg(formulaErrorNA, "VLOOKUP no result found")
 }
 
+// lookupSkipBlank returns the index of the nearest cell holding a value next
+// to the given position of the lookup array within the search interval, or
+// -1 when the interval holds no such cell.
+func lookupSkipBlank(tableArray []formulaArg, idx, low, high int) int {
+	for i := idx; i >= low; i-- {
+		if tableArray[i].Type != ArgEmpty {
+			return i
+		}
+	}
+	for i := idx; i <= high; i++ {
+		if tableArray[i].Type != ArgEmpty {
+			return i
+		}
+	}
+	return -1
+}
+
+// lookupSearchArg prepares a cell of the lookup array for the comparison
+// against the lookup value of the lookup functions.
+func lookupSearchArg(vertical bool, cell, lookupValue, lookupArray formulaArg) formulaArg {
+	if lookupValue.Type == ArgNumber {
+		if lhs := cell.ToNumber(); lhs.Type != ArgError {
+			return lhs
+		}
+		return cell
+	}
+	if lookupValue.Type == ArgMatrix && vertical {
+		return lookupArray
+	}
+	if lookupValue.Type == ArgString {
+		return newStringFormulaArg(cell.Value())
+	}
+	return cell
+}
+
+// lookupCompare compares a cell of the lookup array against the lookup value
+// and maps text met by a numeric search onto the lookup sort order, in which
+// all numbers come before all text.
+func lookupCompare(lhs, lookupValue, matchMode formulaArg) byte {
+	result := compareFormulaArg(lhs, lookupValue, matchMode, false)
+	if result == criteriaNe && lhs.Type == ArgString && lookupValue.Type == ArgNumber {
+		return criteriaG
+	}
+	return result
+}
+
 // lookupBinarySearch finds the position of a target value when range lookup
 // is TRUE, if the data of table array can't guarantee be sorted, it will
 // return wrong result.
@@ -15842,18 +15888,14 @@ func lookupBinarySearch(vertical bool, lookupValue, lookupArray, matchMode, sear
 	count := high
 	for low <= high {
 		mid := low + (high-low)/2
-		cell := tableArray[mid]
-		lhs := cell
-		if lookupValue.Type == ArgNumber {
-			if lhs = cell.ToNumber(); lhs.Type == ArgError {
-				lhs = cell
+		if tableArray[mid].Type == ArgEmpty {
+			if mid = lookupSkipBlank(tableArray, mid, low, high); mid == -1 {
+				break
 			}
-		} else if lookupValue.Type == ArgMatrix && vertical {
-			lhs = lookupArray
-		} else if lookupValue.Type == ArgString {
-			lhs = newStringFormulaArg(cell.Value())
 		}
-		result := compareFormulaArg(lhs, lookupValue, matchMode, false)
+		cell := tableArray[mid]
+		lhs := lookupSearchArg(vertical, cell, lookupValue, lookupArray)
+		result := lookupCompare(lhs, lookupValue, matchMode)
 		switch result {
 		case criteriaEq:
 			matchIdx, wasExact = mid, true
@@ -15872,6 +15914,9 @@ func lookupBinarySearch(vertical bool, lookupValue, lookupArray, matchMode, sear
 		default:
 			return -1, false
 		}
+	}
+	if matchMode.Number == matchModeExact {
+		return -1, false
 	}
 	matchIdx, wasExact = lastMatchIdx, true
 	return
@@ -15970,6 +16015,13 @@ func validateSearchMode(mode float64) bool {
 	return mode == searchModeLinear || mode == searchModeReverseLinear || mode == searchModeAscBinary || mode == searchModeDescBinary
 }
 
+// validateLookupMode check the combination of the match mode and the search
+// mode, the wildcard character match doesn't support the binary search.
+func validateLookupMode(matchMode, searchMode float64) bool {
+	return matchMode != matchModeWildcard ||
+		(searchMode != searchModeAscBinary && searchMode != searchModeDescBinary)
+}
+
 // prepareXlookupArgs checking and prepare arguments for the formula function
 // XLOOKUP.
 func (fn *formulaFuncs) prepareXlookupArgs(argsList *list.List) formulaArg {
@@ -16000,7 +16052,8 @@ func (fn *formulaFuncs) prepareXlookupArgs(argsList *list.List) formulaArg {
 	if lookupArray.Type != ArgMatrix || returnArray.Type != ArgMatrix {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
-	if !validateMatchMode(matchMode.Number) || !validateSearchMode(searchMode.Number) {
+	if !validateMatchMode(matchMode.Number) || !validateSearchMode(searchMode.Number) ||
+		!validateLookupMode(matchMode.Number, searchMode.Number) {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	return newListFormulaArg([]formulaArg{lookupValue, lookupArray, returnArray, ifNotFond, matchMode, searchMode})
