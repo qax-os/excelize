@@ -1146,6 +1146,7 @@ func TestCalcCellValue(t *testing.T) {
 		"COUNTIFS(A1:A9,2,D1:D9,\"Jan\")":          "1",
 		"COUNTIFS(F1:F9,\">20000\",D1:D9,\"Jan\")": "4",
 		"COUNTIFS(F1:F9,\">60000\",D1:D9,\"Jan\")": "0",
+		"COUNTIFS({1,1;0,1},1,{1,0;1,1},1)":        "2",
 		// CRITBINOM
 		"CRITBINOM(0,0.5,0.75)":   "0",
 		"CRITBINOM(0.1,0.1,0.75)": "0",
@@ -3384,8 +3385,15 @@ func TestCalcCellValue(t *testing.T) {
 		// COUNTIF
 		"COUNTIF()": {"#VALUE!", "COUNTIF requires 2 arguments"},
 		// COUNTIFS
-		"COUNTIFS()":              {"#VALUE!", "COUNTIFS requires at least 2 arguments"},
-		"COUNTIFS(A1:A9,2,D1:D9)": {"#N/A", "#N/A"},
+		"COUNTIFS()":                                  {"#VALUE!", "COUNTIFS requires at least 2 arguments"},
+		"COUNTIFS(A1:A9,2,D1:D9)":                     {"#N/A", "#N/A"},
+		"COUNTIFS(A1:A9,\">0\",1,\">0\")":             {"#VALUE!", "#VALUE!"},
+		"COUNTIFS(A1:A9,2,B1:B1,\">0\")":              {"#VALUE!", "#VALUE!"},
+		"COUNTIFS(A1:B2,\">0\",A1:A2,\">0\")":         {"#VALUE!", "#VALUE!"},
+		"COUNTIFS({1,2},\">0\",{1},\">0\")":           {"#VALUE!", "#VALUE!"},
+		"COUNTIFS({1;2},\">0\",{1},\">0\")":           {"#VALUE!", "#VALUE!"},
+		"COUNTIFS({1,2;3,4},\">0\",{1,2;3},\">0\")":   {"#VALUE!", "#VALUE!"},
+		"COUNTIFS(A1:A9,2,B1:B9,\">0\",B1:B1,\">0\")": {"#VALUE!", "#VALUE!"},
 		// CRITBINOM
 		"CRITBINOM()":             {"#VALUE!", "CRITBINOM requires 3 numeric arguments"},
 		"CRITBINOM(\"\",0.5,20%)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
@@ -5899,16 +5907,47 @@ func TestCalcMAXMINIFS(t *testing.T) {
 		assert.NoError(t, f.SetSheetRow("Sheet1", cell, &row))
 	}
 	formulaList := map[string]string{
-		"MAX(B1:B2)":                 "0",
-		"MAXIFS(B1:B2,A1:A2,\">0\")": "0",
-		"MIN(B3:B4)":                 "0",
-		"MINIFS(B3:B4,A3:A4,\"<0\")": "0",
+		"MAX(B1:B2)":                                "0",
+		"MAXIFS(B1:B2,A1:A2,\">0\")":                "0",
+		"MAXIFS(A1:A4,A1:A4,\"<0\")":                "0",
+		"MAXIFS({1,2;3,4},{1,1;0,1},1,{1,0;1,1},1)": "4",
+		"MIN(B3:B4)":                                "0",
+		"MINIFS(B3:B4,A3:A4,\"<0\")":                "0",
+		"MINIFS({1,2;3,4},{1,1;0,1},1,{1,0;1,1},1)": "1",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string][]string{
+		"MAXIFS(1,A1:A4,\">0\")":                               {"#VALUE!", "#VALUE!"},
+		"MAXIFS(A1:A2,A1:A4,\">0\")":                           {"#VALUE!", "#VALUE!"},
+		"MAXIFS(A1:A2,A1:B2,\"<0\")":                           {"#VALUE!", "#VALUE!"},
+		"MAXIFS({1},{1,2},\">0\")":                             {"#VALUE!", "#VALUE!"},
+		"MAXIFS(A1:A4,A1:A4,\">0\",1,\">0\")":                  {"#VALUE!", "#VALUE!"},
+		"MAXIFS(A1:A4,A1:A4,\">0\",A1:A2,\">0\")":              {"#VALUE!", "#VALUE!"},
+		"MAXIFS(A1:B2,A1:B2,\"<0\",A1:A2,\">0\")":              {"#VALUE!", "#VALUE!"},
+		"MAXIFS({1,2},{1,2},\">0\",{1},\">0\")":                {"#VALUE!", "#VALUE!"},
+		"MAXIFS({1;2},{1;2},\">0\",{1},\">0\")":                {"#VALUE!", "#VALUE!"},
+		"MAXIFS(A1:A4,A1:A4,\">0\",A1:A4,\">0\",A1:A2,\">0\")": {"#VALUE!", "#VALUE!"},
+		"MINIFS(1,A1:A4,\">0\")":                               {"#VALUE!", "#VALUE!"},
+		"MINIFS(A1:A2,A1:A4,\">0\")":                           {"#VALUE!", "#VALUE!"},
+		"MINIFS(A1:A2,A1:B2,\"<0\")":                           {"#VALUE!", "#VALUE!"},
+		"MINIFS({1},{1,2},\">0\")":                             {"#VALUE!", "#VALUE!"},
+		"MINIFS(A1:A4,A1:A4,\">0\",1,\">0\")":                  {"#VALUE!", "#VALUE!"},
+		"MINIFS(A1:A4,A1:A4,\">0\",A1:A2,\">0\")":              {"#VALUE!", "#VALUE!"},
+		"MINIFS(A1:B2,A1:B2,\"<0\",A1:A2,\">0\")":              {"#VALUE!", "#VALUE!"},
+		"MINIFS({1,2},{1,2},\">0\",{1},\">0\")":                {"#VALUE!", "#VALUE!"},
+		"MINIFS({1;2},{1;2},\">0\",{1},\">0\")":                {"#VALUE!", "#VALUE!"},
+		"MINIFS(A1:A4,A1:A4,\">0\",A1:A4,\">0\",A1:A2,\">0\")": {"#VALUE!", "#VALUE!"},
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.Equal(t, expected[0], result, formula)
+		assert.EqualError(t, err, expected[1], formula)
 	}
 }
 
@@ -5958,12 +5997,14 @@ func TestCalcSUMIFSAndAVERAGEIFS(t *testing.T) {
 	formulaList := map[string]string{
 		"AVERAGEIFS(D2:D13,A2:A13,1,B2:B13,\"North\")":                "174000",
 		"AVERAGEIFS(D2:D13,A2:A13,\">2\",C2:C13,\"Jeff\")":            "285500",
+		"AVERAGEIFS({1,2;3,4},{1,1;0,1},1,{1,0;1,1},1)":               "2.5",
 		"SUMIFS(D2:D13,A2:A13,1,B2:B13,\"North\")":                    "348000",
 		"SUMIFS(D2:D13,A2:A13,\">2\",C2:C13,\"Jeff\")":                "571000",
 		"SUMIFS(D2:D13,A2:A13,1,D2:D13,125000)":                       "125000",
 		"SUMIFS(D2:D13,A2:A13,1,D2:D13,\">100000\",C2:C13,\"Chris\")": "125000",
 		"SUMIFS(D2:D13,A2:A13,1,D2:D13,\"<40000\",C2:C13,\"Chris\")":  "0",
 		"SUMIFS(D2:D13,A2:A13,1,A2:A13,2)":                            "0",
+		"SUMIFS({1,2;3,4},{1,1;0,1},1,{1,0;1,1},1)":                   "5",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
@@ -5972,46 +6013,39 @@ func TestCalcSUMIFSAndAVERAGEIFS(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	calcError := map[string][]string{
-		"AVERAGEIFS()":                                  {"#VALUE!", "AVERAGEIFS requires at least 3 arguments"},
-		"AVERAGEIFS(H1,\"\")":                           {"#VALUE!", "AVERAGEIFS requires at least 3 arguments"},
-		"AVERAGEIFS(H1,\"\",TRUE,1)":                    {"#N/A", "#N/A"},
-		"AVERAGEIFS(H1,\"\",TRUE)":                      {"#DIV/0!", "AVERAGEIF divide by zero"},
-		"AVERAGEIFS(D2:D13,A2:A13,1,A2:A13,2)":          {"#DIV/0!", "AVERAGEIF divide by zero"},
-		"AVERAGEIFS(1,A2:A13,\">0\")":                   {"#VALUE!", "#VALUE!"},
-		"AVERAGEIFS(D2:D3,A2:A13,\">2\")":               {"#VALUE!", "#VALUE!"},
-		"AVERAGEIFS(D2:D13,A2:B13,\"North\")":           {"#VALUE!", "#VALUE!"},
-		"AVERAGEIFS({1},{1,2},\">0\")":                  {"#VALUE!", "#VALUE!"},
-		"SUMIFS()":                                      {"#VALUE!", "SUMIFS requires at least 3 arguments"},
-		"SUMIFS(D2:D13,A2:A13,1,B2:B13)":                {"#N/A", "#N/A"},
-		"SUMIFS(D20:D23,A2:A13,\">2\",C2:C13,\"Jeff\")": {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS()":                                                {"#VALUE!", "AVERAGEIFS requires at least 3 arguments"},
+		"AVERAGEIFS(H1,\"\")":                                         {"#VALUE!", "AVERAGEIFS requires at least 3 arguments"},
+		"AVERAGEIFS(H1,\"\",TRUE,1)":                                  {"#N/A", "#N/A"},
+		"AVERAGEIFS(H1,\"\",TRUE)":                                    {"#DIV/0!", "AVERAGEIF divide by zero"},
+		"AVERAGEIFS(D2:D13,A2:A13,1,A2:A13,2)":                        {"#DIV/0!", "AVERAGEIF divide by zero"},
+		"AVERAGEIFS(1,A2:A13,\">0\")":                                 {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(D2:D3,A2:A13,\">2\")":                             {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(D2:D13,A2:B13,\"North\")":                         {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS({1},{1,2},\">0\")":                                {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(D2:D13,A2:A13,\">0\",1,\">0\")":                   {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(D2:D13,A2:A13,\">0\",A2:A3,\">0\")":               {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(D2:D13,A2:B13,\"North\",A2:A13,\">0\")":           {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS({1,2},{1,2},\">0\",{1},\">0\")":                   {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS({1;2},{1;2},\">0\",{1},\">0\")":                   {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(D2:D13,A2:A13,\">0\",A2:A13,\">0\",A2:A3,\">0\")": {"#VALUE!", "#VALUE!"},
+		"SUMIFS()":                       {"#VALUE!", "SUMIFS requires at least 3 arguments"},
+		"SUMIFS(D2:D13,A2:A13,1,B2:B13)": {"#N/A", "#N/A"},
+		"SUMIFS(D20:D23,A2:A13,\">2\",C2:C13,\"Jeff\")":           {"#VALUE!", "#VALUE!"},
+		"SUMIFS(1,A2:A13,\">0\")":                                 {"#VALUE!", "#VALUE!"},
+		"SUMIFS(D2:D13,A2:B13,\"North\")":                         {"#VALUE!", "#VALUE!"},
+		"SUMIFS({1},{1,2},\">0\")":                                {"#VALUE!", "#VALUE!"},
+		"SUMIFS(D2:D13,A2:A13,\">0\",1,\">0\")":                   {"#VALUE!", "#VALUE!"},
+		"SUMIFS(D2:D13,A2:A13,\">0\",A2:A3,\">0\")":               {"#VALUE!", "#VALUE!"},
+		"SUMIFS(D2:D13,A2:B13,\"North\",A2:A13,\">0\")":           {"#VALUE!", "#VALUE!"},
+		"SUMIFS({1,2},{1,2},\">0\",{1},\">0\")":                   {"#VALUE!", "#VALUE!"},
+		"SUMIFS({1;2},{1;2},\">0\",{1},\">0\")":                   {"#VALUE!", "#VALUE!"},
+		"SUMIFS(D2:D13,A2:A13,\">0\",A2:A13,\">0\",A2:A3,\">0\")": {"#VALUE!", "#VALUE!"},
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
 		result, err := f.CalcCellValue("Sheet1", "E1")
 		assert.Equal(t, expected[0], result, formula)
 		assert.EqualError(t, err, expected[1], formula)
-	}
-}
-
-func TestCalcIFSRangeBounds(t *testing.T) {
-	f := prepareCalcData([][]interface{}{{1, 2}, {3, 4}})
-	defer func() { assert.NoError(t, f.Close()) }()
-	for _, name := range []string{"SUMIFS", "AVERAGEIFS", "MAXIFS", "MINIFS", "COUNTIFS"} {
-		for _, cellRange := range []string{"1", "A1:B1", "A1:A2", "{1}", "{1,2;3}"} {
-			args := []string{`A1:B2,">0",` + cellRange + `,">0"`}
-			if name != "COUNTIFS" {
-				args = []string{cellRange + `,A1:B2,">0"`, "A1:B2," + args[0]}
-			}
-			for _, arg := range args {
-				formula := name + "(" + arg + ")"
-				t.Run(formula, func(t *testing.T) {
-					assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
-					result, err := f.CalcCellValue("Sheet1", "C1")
-					assert.Equal(t, "#VALUE!", result)
-					assert.EqualError(t, err, "#VALUE!")
-				})
-			}
-		}
 	}
 }
 

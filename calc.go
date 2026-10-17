@@ -6203,9 +6203,9 @@ func (fn *formulaFuncs) SUMIFS(argsList *list.List) formulaArg {
 	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
 		args = append(args, arg.Value.(formulaArg))
 	}
-	cellRefs, err := formulaIfsMatch(args)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	cellRefs, arg := formulaIfsMatch(args)
+	if arg.Type == ArgError {
+		return arg
 	}
 	for _, ref := range cellRefs {
 		if ref.Row >= len(sumRange) || ref.Col >= len(sumRange[ref.Row]) {
@@ -6568,9 +6568,9 @@ func (fn *formulaFuncs) AVERAGEIFS(argsList *list.List) formulaArg {
 	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
 		args = append(args, arg.Value.(formulaArg))
 	}
-	cellRefs, err := formulaIfsMatch(args)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	cellRefs, arg := formulaIfsMatch(args)
+	if arg.Type == ArgError {
+		return arg
 	}
 	count := 0.0
 	for _, ref := range cellRefs {
@@ -8244,7 +8244,7 @@ func (fn *formulaFuncs) COUNTIF(argsList *list.List) formulaArg {
 }
 
 // formulaIfsMatch function returns cells reference array which match criteria.
-func formulaIfsMatch(args []formulaArg) (cellRefs []cellRef, err error) {
+func formulaIfsMatch(args []formulaArg) (cellRefs []cellRef, arg formulaArg) {
 	for i := 0; i < len(args)-1; i += 2 {
 		var match []cellRef
 		matrix, criteria := args[i].Matrix, formulaCriteriaParser(args[i+1])
@@ -8260,7 +8260,8 @@ func formulaIfsMatch(args []formulaArg) (cellRefs []cellRef, err error) {
 			match = []cellRef{}
 			for _, ref := range cellRefs {
 				if ref.Row >= len(matrix) || ref.Col >= len(matrix[ref.Row]) {
-					return nil, errors.New(formulaErrorVALUE)
+					arg = newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+					return nil, arg
 				}
 				value := matrix[ref.Row][ref.Col]
 				if ok, _ := formulaCriteriaEval(value, criteria); ok {
@@ -8288,9 +8289,9 @@ func (fn *formulaFuncs) COUNTIFS(argsList *list.List) formulaArg {
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		args = append(args, arg.Value.(formulaArg))
 	}
-	cellRefs, err := formulaIfsMatch(args)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	cellRefs, arg := formulaIfsMatch(args)
+	if arg.Type == ArgError {
+		return arg
 	}
 	return newNumberFormulaArg(float64(len(cellRefs)))
 }
@@ -10161,9 +10162,9 @@ func (fn *formulaFuncs) NORMINV(argsList *list.List) formulaArg {
 	if stdDev.Number < 0 {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
-	inv, err := norminv(prob.Number)
-	if err != nil {
-		return newErrorFormulaArg(err.Error(), err.Error())
+	inv, arg := norminv(prob.Number)
+	if arg.Type == ArgError {
+		return arg
 	}
 	return newNumberFormulaArg(inv*stdDev.Number + mean.Number)
 }
@@ -10235,7 +10236,7 @@ func (fn *formulaFuncs) NORMdotSdotINV(argsList *list.List) formulaArg {
 
 // norminv returns the inverse of the normal cumulative distribution for the
 // specified value.
-func norminv(p float64) (float64, error) {
+func norminv(p float64) (float64, formulaArg) {
 	a := map[int]float64{
 		1: -3.969683028665376e+01, 2: 2.209460984245205e+02, 3: -2.759285104469687e+02,
 		4: 1.383577518672690e+02, 5: -3.066479806614716e+01, 6: 2.506628277459239e+00,
@@ -10254,11 +10255,12 @@ func norminv(p float64) (float64, error) {
 	}
 	pLow := 0.02425   // Use lower region approx. below this
 	pHigh := 1 - pLow // Use upper region approx. above this
+	arg := newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	if 0 < p && p < pLow {
 		// Rational approximation for lower region.
 		q := math.Sqrt(-2 * math.Log(p))
 		return (((((c[1]*q+c[2])*q+c[3])*q+c[4])*q+c[5])*q + c[6]) /
-			((((d[1]*q+d[2])*q+d[3])*q+d[4])*q + 1), nil
+			((((d[1]*q+d[2])*q+d[3])*q+d[4])*q + 1), arg
 	} else if pLow <= p && p <= pHigh {
 		// Rational approximation for central region.
 		q := p - 0.5
@@ -10268,14 +10270,14 @@ func norminv(p float64) (float64, error) {
 		f3 := ((math.Nextafter(f2, f2)+b[3])*r + b[4]) * r
 		f4 := (math.Nextafter(f3, f3) + b[5]) * r
 		return (math.Nextafter(f1, f1) + a[6]) * q /
-			(math.Nextafter(f4, f4) + 1), nil
+			(math.Nextafter(f4, f4) + 1), arg
 	} else if pHigh < p && p < 1 {
 		// Rational approximation for upper region.
 		q := math.Sqrt(-2 * math.Log(1-p))
 		return -(((((c[1]*q+c[2])*q+c[3])*q+c[4])*q+c[5])*q + c[6]) /
-			((((d[1]*q+d[2])*q+d[3])*q+d[4])*q + 1), nil
+			((((d[1]*q+d[2])*q+d[3])*q+d[4])*q + 1), arg
 	}
-	return 0, errors.New(formulaErrorNUM)
+	return 0, arg
 }
 
 // kth is an implementation of the formula functions LARGE and SMALL.
@@ -10357,9 +10359,9 @@ func (fn *formulaFuncs) MAXIFS(argsList *list.List) formulaArg {
 	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
 		args = append(args, arg.Value.(formulaArg))
 	}
-	cellRefs, err := formulaIfsMatch(args)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	cellRefs, arg := formulaIfsMatch(args)
+	if arg.Type == ArgError {
+		return arg
 	}
 	for _, ref := range cellRefs {
 		if ref.Row >= len(maxRange) || ref.Col >= len(maxRange[ref.Row]) {
@@ -10507,9 +10509,9 @@ func (fn *formulaFuncs) MINIFS(argsList *list.List) formulaArg {
 	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
 		args = append(args, arg.Value.(formulaArg))
 	}
-	cellRefs, err := formulaIfsMatch(args)
-	if err != nil {
-		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	cellRefs, arg := formulaIfsMatch(args)
+	if arg.Type == ArgError {
+		return arg
 	}
 	for _, ref := range cellRefs {
 		if ref.Row >= len(minRange) || ref.Col >= len(minRange[ref.Row]) {
