@@ -6203,7 +6203,11 @@ func (fn *formulaFuncs) SUMIFS(argsList *list.List) formulaArg {
 	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
 		args = append(args, arg.Value.(formulaArg))
 	}
-	for _, ref := range formulaIfsMatch(args) {
+	cellRefs, err := formulaIfsMatch(args)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	}
+	for _, ref := range cellRefs {
 		if ref.Row >= len(sumRange) || ref.Col >= len(sumRange[ref.Row]) {
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
@@ -6564,8 +6568,12 @@ func (fn *formulaFuncs) AVERAGEIFS(argsList *list.List) formulaArg {
 	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
 		args = append(args, arg.Value.(formulaArg))
 	}
+	cellRefs, err := formulaIfsMatch(args)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	}
 	count := 0.0
-	for _, ref := range formulaIfsMatch(args) {
+	for _, ref := range cellRefs {
 		if ref.Row >= len(sumRange) || ref.Col >= len(sumRange[ref.Row]) {
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
@@ -8236,7 +8244,7 @@ func (fn *formulaFuncs) COUNTIF(argsList *list.List) formulaArg {
 }
 
 // formulaIfsMatch function returns cells reference array which match criteria.
-func formulaIfsMatch(args []formulaArg) (cellRefs []cellRef) {
+func formulaIfsMatch(args []formulaArg) (cellRefs []cellRef, err error) {
 	for i := 0; i < len(args)-1; i += 2 {
 		var match []cellRef
 		matrix, criteria := args[i].Matrix, formulaCriteriaParser(args[i+1])
@@ -8251,6 +8259,9 @@ func formulaIfsMatch(args []formulaArg) (cellRefs []cellRef) {
 		} else {
 			match = []cellRef{}
 			for _, ref := range cellRefs {
+				if ref.Row >= len(matrix) || ref.Col >= len(matrix[ref.Row]) {
+					return nil, errors.New(formulaErrorVALUE)
+				}
 				value := matrix[ref.Row][ref.Col]
 				if ok, _ := formulaCriteriaEval(value, criteria); ok {
 					match = append(match, ref)
@@ -8277,7 +8288,11 @@ func (fn *formulaFuncs) COUNTIFS(argsList *list.List) formulaArg {
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		args = append(args, arg.Value.(formulaArg))
 	}
-	return newNumberFormulaArg(float64(len(formulaIfsMatch(args))))
+	cellRefs, err := formulaIfsMatch(args)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	}
+	return newNumberFormulaArg(float64(len(cellRefs)))
 }
 
 // CRITBINOM function returns the inverse of the Cumulative Binomial
@@ -10342,7 +10357,14 @@ func (fn *formulaFuncs) MAXIFS(argsList *list.List) formulaArg {
 	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
 		args = append(args, arg.Value.(formulaArg))
 	}
-	for _, ref := range formulaIfsMatch(args) {
+	cellRefs, err := formulaIfsMatch(args)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	}
+	for _, ref := range cellRefs {
+		if ref.Row >= len(maxRange) || ref.Col >= len(maxRange[ref.Row]) {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
 		if num := maxRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber && maxVal < num.Number {
 			maxVal = num.Number
 		}
@@ -10485,7 +10507,14 @@ func (fn *formulaFuncs) MINIFS(argsList *list.List) formulaArg {
 	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
 		args = append(args, arg.Value.(formulaArg))
 	}
-	for _, ref := range formulaIfsMatch(args) {
+	cellRefs, err := formulaIfsMatch(args)
+	if err != nil {
+		return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+	}
+	for _, ref := range cellRefs {
+		if ref.Row >= len(minRange) || ref.Col >= len(minRange[ref.Row]) {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
 		if num := minRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber && minVal > num.Number {
 			minVal = num.Number
 		}

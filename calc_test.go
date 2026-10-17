@@ -5993,6 +5993,28 @@ func TestCalcSUMIFSAndAVERAGEIFS(t *testing.T) {
 	}
 }
 
+func TestCalcIFSRangeBounds(t *testing.T) {
+	f := prepareCalcData([][]interface{}{{1, 2}, {3, 4}})
+	defer func() { assert.NoError(t, f.Close()) }()
+	for _, name := range []string{"SUMIFS", "AVERAGEIFS", "MAXIFS", "MINIFS", "COUNTIFS"} {
+		for _, cellRange := range []string{"1", "A1:B1", "A1:A2", "{1}", "{1,2;3}"} {
+			args := []string{`A1:B2,">0",` + cellRange + `,">0"`}
+			if name != "COUNTIFS" {
+				args = []string{cellRange + `,A1:B2,">0"`, "A1:B2," + args[0]}
+			}
+			for _, arg := range args {
+				formula := name + "(" + arg + ")"
+				t.Run(formula, func(t *testing.T) {
+					assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+					result, err := f.CalcCellValue("Sheet1", "C1")
+					assert.Equal(t, "#VALUE!", result)
+					assert.EqualError(t, err, "#VALUE!")
+				})
+			}
+		}
+	}
+}
+
 func TestCalcSUMIFExactMatch(t *testing.T) {
 	cellData := [][]interface{}{
 		{"Category", "Amount"},
