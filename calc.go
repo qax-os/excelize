@@ -10162,11 +10162,11 @@ func (fn *formulaFuncs) NORMINV(argsList *list.List) formulaArg {
 	if stdDev.Number < 0 {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
-	inv, arg := norminv(prob.Number)
-	if arg.Type == ArgError {
-		return arg
+	inv := norminv(prob.Number)
+	if inv.Type == ArgError {
+		return inv
 	}
-	return newNumberFormulaArg(inv*stdDev.Number + mean.Number)
+	return newNumberFormulaArg(inv.Number*stdDev.Number + mean.Number)
 }
 
 // NORMdotSdotDIST function calculates the Standard Normal Cumulative
@@ -10236,7 +10236,7 @@ func (fn *formulaFuncs) NORMdotSdotINV(argsList *list.List) formulaArg {
 
 // norminv returns the inverse of the normal cumulative distribution for the
 // specified value.
-func norminv(p float64) (float64, formulaArg) {
+func norminv(p float64) formulaArg {
 	a := map[int]float64{
 		1: -3.969683028665376e+01, 2: 2.209460984245205e+02, 3: -2.759285104469687e+02,
 		4: 1.383577518672690e+02, 5: -3.066479806614716e+01, 6: 2.506628277459239e+00,
@@ -10259,8 +10259,8 @@ func norminv(p float64) (float64, formulaArg) {
 	if 0 < p && p < pLow {
 		// Rational approximation for lower region.
 		q := math.Sqrt(-2 * math.Log(p))
-		return (((((c[1]*q+c[2])*q+c[3])*q+c[4])*q+c[5])*q + c[6]) /
-			((((d[1]*q+d[2])*q+d[3])*q+d[4])*q + 1), arg
+		return newNumberFormulaArg((((((c[1]*q+c[2])*q+c[3])*q+c[4])*q+c[5])*q + c[6]) /
+			((((d[1]*q+d[2])*q+d[3])*q+d[4])*q + 1))
 	} else if pLow <= p && p <= pHigh {
 		// Rational approximation for central region.
 		q := p - 0.5
@@ -10269,15 +10269,15 @@ func norminv(p float64) (float64, formulaArg) {
 		f2 := (b[1]*r + b[2]) * r
 		f3 := ((math.Nextafter(f2, f2)+b[3])*r + b[4]) * r
 		f4 := (math.Nextafter(f3, f3) + b[5]) * r
-		return (math.Nextafter(f1, f1) + a[6]) * q /
-			(math.Nextafter(f4, f4) + 1), arg
+		return newNumberFormulaArg((math.Nextafter(f1, f1) + a[6]) * q /
+			(math.Nextafter(f4, f4) + 1))
 	} else if pHigh < p && p < 1 {
 		// Rational approximation for upper region.
 		q := math.Sqrt(-2 * math.Log(1-p))
-		return -(((((c[1]*q+c[2])*q+c[3])*q+c[4])*q+c[5])*q + c[6]) /
-			((((d[1]*q+d[2])*q+d[3])*q+d[4])*q + 1), arg
+		return newNumberFormulaArg(-(((((c[1]*q+c[2])*q+c[3])*q+c[4])*q+c[5])*q + c[6]) /
+			((((d[1]*q+d[2])*q+d[3])*q+d[4])*q + 1))
 	}
-	return 0, arg
+	return arg
 }
 
 // kth is an implementation of the formula functions LARGE and SMALL.
