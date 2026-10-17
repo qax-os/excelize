@@ -6566,6 +6566,9 @@ func (fn *formulaFuncs) AVERAGEIFS(argsList *list.List) formulaArg {
 	}
 	count := 0.0
 	for _, ref := range formulaIfsMatch(args) {
+		if ref.Row >= len(sumRange) || ref.Col >= len(sumRange[ref.Row]) {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
 		if num := sumRange[ref.Row][ref.Col].ToNumber(); num.Type == ArgNumber {
 			sum += num.Number
 			count++
