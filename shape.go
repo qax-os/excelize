@@ -371,19 +371,51 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 	if err != nil {
 		return err
 	}
-	var shapeColor, lineColor string
-	if len(opts.Fill.Color) == 1 {
-		shapeColor = strings.ReplaceAll(strings.ToUpper(opts.Fill.Color[0]), "#", "")
+	shapeColor := singleHexColor(opts.Fill.Color)
+	lineColor := singleHexColor(opts.Line.Fill.Color)
+	shape := newDrawingShape(opts, cNvPrID, shapeColor, lineColor)
+	applyShapeLineAndFill(&shape, opts, shapeColor)
+	if shape.TxBody.P, err = f.buildShapeParagraphs(opts); err != nil {
+		return err
 	}
-	if len(opts.Line.Fill.Color) == 1 {
-		lineColor = strings.ReplaceAll(strings.ToUpper(opts.Line.Fill.Color[0]), "#", "")
+	cellAnchor.Sp = &shape
+	cellAnchor.ClientData = &xdrClientData{
+		FLocksWithSheet:  *opts.Format.Locked,
+		FPrintsWithSheet: *opts.Format.PrintObject,
 	}
-	shape := xdrSp{
+	appendDrawingAnchor(content, cellAnchor, opts.Format.Positioning)
+	f.Drawings.Store(drawingXML, content)
+	return nil
+}
+
+// trimHexColor removes the "#" prefix from the color and converts it to upper
+// case.
+func trimHexColor(color string) string {
+	return strings.ReplaceAll(strings.ToUpper(color), "#", "")
+}
+
+// singleHexColor returns the normalized color when exactly one color is
+// specified, otherwise returns an empty string.
+func singleHexColor(colors []string) string {
+	if len(colors) != 1 {
+		return ""
+	}
+	return trimHexColor(colors[0])
+}
+
+// newDrawingShape creates the base shape element with geometry, style and text
+// body properties.
+func newDrawingShape(opts *Shape, cNvPrID int, shapeColor, lineColor string) xdrSp {
+	name := "Shape " + strconv.Itoa(cNvPrID)
+	if len(opts.Format.Name) > 0 {
+		name = opts.Format.Name
+	}
+	return xdrSp{
 		Macro: opts.Macro,
 		NvSpPr: &xdrNvSpPr{
 			CNvPr: &xlsxCNvPr{
 				ID:    cNvPrID,
-				Name:  "Shape " + strconv.Itoa(cNvPrID),
+				Name:  name,
 				Descr: opts.Format.AltText,
 			},
 			CNvSpPr: &xdrCNvSpPr{
@@ -422,9 +454,11 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 			},
 		},
 	}
-	if len(opts.Format.Name) > 0 {
-		shape.NvSpPr.CNvPr.Name = opts.Format.Name
-	}
+}
+
+// applyShapeLineAndFill sets the outline and the solid fill transparency of the
+// shape by given shape options.
+func applyShapeLineAndFill(shape *xdrSp, opts *Shape, shapeColor string) {
 	shape.SpPr.Ln = opts.Line.drawChartLn()
 	if shape.SpPr.Ln == nil && opts.Line.Width != defaultLineWidth {
 		shape.SpPr.Ln = &aLn{W: ptToEMUs(opts.Line.Width)}
@@ -436,9 +470,14 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 			Alpha: &attrValInt{Val: &val},
 		}}
 	}
+}
+
+// buildShapeParagraphs creates the text paragraphs of the shape, a default
+// blank paragraph is used when no paragraph is specified.
+func (f *File) buildShapeParagraphs(opts *Shape) ([]*aP, error) {
 	defaultFont, err := f.GetDefaultFont()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(opts.Paragraph) < 1 {
 		opts.Paragraph = []RichTextRun{
@@ -455,60 +494,68 @@ func (f *File) addDrawingShape(sheet, drawingXML, cell string, opts *Shape) erro
 			},
 		}
 	}
+	paragraphs := make([]*aP, 0, len(opts.Paragraph))
 	for _, p := range opts.Paragraph {
-		u := "none"
-		font := &Font{}
-		if p.Font != nil {
-			font = p.Font
-		}
-		if idx := inStrSlice(supportedDrawingUnderlineTypes, font.Underline, true); idx != -1 {
-			u = supportedDrawingUnderlineTypes[idx]
-		}
-		text := p.Text
-		if text == "" {
-			text = " "
-		}
-		paragraph := &aP{
-			R: &aR{
-				RPr: aRPr{
-					I:       font.Italic,
-					B:       font.Bold,
-					Lang:    "en-US",
-					AltLang: "en-US",
-					U:       u,
-					Sz:      font.Size * 100,
-					Latin:   &xlsxCTTextFont{Typeface: font.Family},
-					Ea:      &xlsxCTTextFont{Typeface: font.Family},
-					Cs:      &xlsxCTTextFont{Typeface: font.Family},
-				},
-				T: text,
-			},
-			EndParaRPr: &aEndParaRPr{
-				Lang: "en-US",
-			},
-		}
-		srgbClr := strings.ReplaceAll(strings.ToUpper(font.Color), "#", "")
-		if len(srgbClr) == 6 {
-			paragraph.R.RPr.SolidFill = &aSolidFill{
-				SrgbClr: &aSrgbClr{
-					Val: stringPtr(srgbClr),
-				},
-			}
-		}
-		shape.TxBody.P = append(shape.TxBody.P, paragraph)
+		paragraphs = append(paragraphs, newShapeParagraph(p))
 	}
-	cellAnchor.Sp = &shape
-	cellAnchor.ClientData = &xdrClientData{
-		FLocksWithSheet:  *opts.Format.Locked,
-		FPrintsWithSheet: *opts.Format.PrintObject,
+	return paragraphs, nil
+}
+
+// shapeUnderline returns the supported underline type, "none" by default.
+func shapeUnderline(underline string) string {
+	if idx := inStrSlice(supportedDrawingUnderlineTypes, underline, true); idx != -1 {
+		return supportedDrawingUnderlineTypes[idx]
 	}
-	if opts.Format.Positioning == "oneCell" {
+	return "none"
+}
+
+// newShapeParagraph creates a text paragraph by given rich text run.
+func newShapeParagraph(p RichTextRun) *aP {
+	font := &Font{}
+	if p.Font != nil {
+		font = p.Font
+	}
+	text := p.Text
+	if text == "" {
+		text = " "
+	}
+	paragraph := &aP{
+		R: &aR{
+			RPr: aRPr{
+				I:       font.Italic,
+				B:       font.Bold,
+				Lang:    "en-US",
+				AltLang: "en-US",
+				U:       shapeUnderline(font.Underline),
+				Sz:      font.Size * 100,
+				Latin:   &xlsxCTTextFont{Typeface: font.Family},
+				Ea:      &xlsxCTTextFont{Typeface: font.Family},
+				Cs:      &xlsxCTTextFont{Typeface: font.Family},
+			},
+			T: text,
+		},
+		EndParaRPr: &aEndParaRPr{
+			Lang: "en-US",
+		},
+	}
+	if srgbClr := trimHexColor(font.Color); len(srgbClr) == 6 {
+		paragraph.R.RPr.SolidFill = &aSolidFill{
+			SrgbClr: &aSrgbClr{
+				Val: stringPtr(srgbClr),
+			},
+		}
+	}
+	return paragraph
+}
+
+// appendDrawingAnchor appends the cell anchor to the drawing content by given
+// positioning type.
+func appendDrawingAnchor(content *xlsxWsDr, cellAnchor *xdrCellAnchor, positioning string) {
+	if positioning == "oneCell" {
 		content.OneCellAnchor = append(content.OneCellAnchor, cellAnchor)
-	} else {
-		content.TwoCellAnchor = append(content.TwoCellAnchor, cellAnchor)
+		return
 	}
-	f.Drawings.Store(drawingXML, content)
-	return err
+	content.TwoCellAnchor = append(content.TwoCellAnchor, cellAnchor)
 }
 
 // setShapeRef provides a function to set color with hex model by given actual
@@ -527,7 +574,7 @@ func setShapeRef(color string, i int) *aRef {
 	return &aRef{
 		Idx: i,
 		SrgbClr: &attrValString{
-			Val: stringPtr(strings.ReplaceAll(strings.ToUpper(color), "#", "")),
+			Val: stringPtr(trimHexColor(color)),
 		},
 	}
 }
