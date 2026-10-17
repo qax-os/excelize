@@ -1133,10 +1133,8 @@ func TestCalcCellValue(t *testing.T) {
 		"COUNTA(COUNTA(1),MUNIT(1))":            "2",
 		"COUNTA(D1:D2)":                         "2",
 		// COUNTBLANK
-		"COUNTBLANK(MUNIT(1))": "0",
-		"COUNTBLANK(1)":        "0",
-		"COUNTBLANK(B1:C1)":    "1",
-		"COUNTBLANK(C1)":       "0",
+		"COUNTBLANK(B1:C1)": "1",
+		"COUNTBLANK(C1)":    "0",
 		// COUNTIF
 		"COUNTIF(D1:D9,\"Jan\")":     "4",
 		"COUNTIF(D1:D9,\"<>Jan\")":   "5",
@@ -1339,7 +1337,7 @@ func TestCalcCellValue(t *testing.T) {
 		"MAXA(INT(1))":     "1",
 		"MAXA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "36693",
 		// MAXIFS
-		"MAXIFS(F2:F4,A2:A4,\">0\")": "36693",
+		"_xlfn.MAXIFS(F2:F4,A2:A4,\">0\")": "36693",
 		// MDETERM
 		"MDETERM(A1:B2)": "-3",
 		// MEDIAN
@@ -1364,7 +1362,7 @@ func TestCalcCellValue(t *testing.T) {
 		"MINA(INT(1))":      "1",
 		"MINA(A1:B4,MUNIT(1),INT(0),1,E1:F2,\"\")": "0",
 		// MINIFS
-		"MINIFS(F2:F4,A2:A4,\">0\")": "22100",
+		"_xlfn.MINIFS(F2:F4,A2:A4,\">0\")": "22100",
 		// PEARSON
 		"PEARSON(A1:A4,B1:B4)": "1",
 		// PERCENTILE.EXC
@@ -3384,8 +3382,12 @@ func TestCalcCellValue(t *testing.T) {
 		// COUNTIF
 		"COUNTIF()": {"#VALUE!", "COUNTIF requires 2 arguments"},
 		// COUNTIFS
-		"COUNTIFS()":              {"#VALUE!", "COUNTIFS requires at least 2 arguments"},
-		"COUNTIFS(A1:A9,2,D1:D9)": {"#N/A", "#N/A"},
+		"COUNTIFS()":                                  {"#VALUE!", "COUNTIFS requires at least 2 arguments"},
+		"COUNTIFS(A1:A9,2,D1:D9)":                     {"#N/A", "#N/A"},
+		"COUNTIFS(A1:A9,\">0\",1,\">0\")":             {"#VALUE!", "#VALUE!"},
+		"COUNTIFS(A1:A9,2,B1:B1,\">0\")":              {"#VALUE!", "#VALUE!"},
+		"COUNTIFS(A1:B2,\">0\",A1:A2,\">0\")":         {"#VALUE!", "#VALUE!"},
+		"COUNTIFS(A1:A9,2,B1:B9,\">0\",B1:B1,\">0\")": {"#VALUE!", "#VALUE!"},
 		// CRITBINOM
 		"CRITBINOM()":             {"#VALUE!", "CRITBINOM requires 3 numeric arguments"},
 		"CRITBINOM(\"\",0.5,20%)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
@@ -3680,8 +3682,8 @@ func TestCalcCellValue(t *testing.T) {
 		"MAXA()":     {"#VALUE!", "MAXA requires at least 1 argument"},
 		"MAXA(NA())": {"#N/A", "#N/A"},
 		// MAXIFS
-		"MAXIFS()":                         {"#VALUE!", "MAXIFS requires at least 3 arguments"},
-		"MAXIFS(F2:F4,A2:A4,\">0\",D2:D9)": {"#N/A", "#N/A"},
+		"_xlfn.MAXIFS()":                         {"#VALUE!", "MAXIFS requires at least 3 arguments"},
+		"_xlfn.MAXIFS(F2:F4,A2:A4,\">0\",D2:D9)": {"#N/A", "#N/A"},
 		// MEDIAN
 		"MEDIAN()":      {"#VALUE!", "MEDIAN requires at least 1 argument"},
 		"MEDIAN(\"\")":  {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
@@ -3693,8 +3695,8 @@ func TestCalcCellValue(t *testing.T) {
 		"MINA()":     {"#VALUE!", "MINA requires at least 1 argument"},
 		"MINA(NA())": {"#N/A", "#N/A"},
 		// MINIFS
-		"MINIFS()":                         {"#VALUE!", "MINIFS requires at least 3 arguments"},
-		"MINIFS(F2:F4,A2:A4,\"<0\",D2:D9)": {"#N/A", "#N/A"},
+		"_xlfn.MINIFS()":                         {"#VALUE!", "MINIFS requires at least 3 arguments"},
+		"_xlfn.MINIFS(F2:F4,A2:A4,\"<0\",D2:D9)": {"#N/A", "#N/A"},
 		// PEARSON
 		"PEARSON()":            {"#VALUE!", "PEARSON requires 2 arguments"},
 		"PEARSON(A1:A2,B1:B1)": {"#N/A", "#N/A"},
@@ -4396,7 +4398,7 @@ func TestCalcCellValue(t *testing.T) {
 		"INDIRECT(\"R C1\",FALSE)":       {"#REF!", "#REF!"},
 		"INDIRECT(\"R1C \",FALSE)":       {"#REF!", "#REF!"},
 		"INDIRECT(\"R1C1:R2C \",FALSE)":  {"#REF!", "#REF!"},
-		"INDIRECT(\"KeinBlatt!A1\")":     {"#REF!", "#REF!"},
+		"INDIRECT(\"SheetN!A1\")":        {"#REF!", "#REF!"},
 		"INDIRECT(\"E2\",FALSE)":         {"#REF!", "#REF!"},
 		"INDIRECT(\"\")":                 {"#REF!", "#REF!"},
 		"INDIRECT(\"'A1\")":              {"#REF!", "#REF!"},
@@ -5049,7 +5051,7 @@ func TestCalcWithDefinedName(t *testing.T) {
 				Name: names[idx], RefersTo: "'Sheet 1'!" + cell,
 			}))
 		}
-		assert.NoError(t, f.SetCellFormula("Sheet 1", "B1", "=val1-val2-val3-val4"))
+		assert.NoError(t, f.SetCellFormula("Sheet 1", "B1", "val1-val2-val3-val4"))
 		result, err := f.CalcCellValue("Sheet 1", "B1")
 		assert.NoError(t, err)
 		assert.Equal(t, "45", result)
@@ -5276,7 +5278,7 @@ func TestCalcTRANSPOSE(t *testing.T) {
 		{"b", "e"},
 		{"c", "f"},
 	}
-	formula := "=TRANSPOSE(A1:A3)"
+	formula := "TRANSPOSE(A1:A3)"
 	f := prepareCalcData(cellData)
 	formulaType, ref := STCellFormulaTypeArray, "D1:F2"
 	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", formula,
@@ -5899,16 +5901,39 @@ func TestCalcMAXMINIFS(t *testing.T) {
 		assert.NoError(t, f.SetSheetRow("Sheet1", cell, &row))
 	}
 	formulaList := map[string]string{
-		"MAX(B1:B2)":                 "0",
-		"MAXIFS(B1:B2,A1:A2,\">0\")": "0",
-		"MIN(B3:B4)":                 "0",
-		"MINIFS(B3:B4,A3:A4,\"<0\")": "0",
+		"MAX(B1:B2)":                       "0",
+		"_xlfn.MAXIFS(B1:B2,A1:A2,\">0\")": "0",
+		"_xlfn.MAXIFS(A1:A4,A1:A4,\"<0\")": "0",
+		"MIN(B3:B4)":                       "0",
+		"_xlfn.MINIFS(B3:B4,A3:A4,\"<0\")": "0",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.NoError(t, err, formula)
 		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string][]string{
+		"_xlfn.MAXIFS(1,A1:A4,\">0\")":                               {"#VALUE!", "#VALUE!"},
+		"_xlfn.MAXIFS(A1:A2,A1:A4,\">0\")":                           {"#VALUE!", "#VALUE!"},
+		"_xlfn.MAXIFS(A1:A2,A1:B2,\"<0\")":                           {"#VALUE!", "#VALUE!"},
+		"_xlfn.MAXIFS(A1:A4,A1:A4,\">0\",1,\">0\")":                  {"#VALUE!", "#VALUE!"},
+		"_xlfn.MAXIFS(A1:A4,A1:A4,\">0\",A1:A2,\">0\")":              {"#VALUE!", "#VALUE!"},
+		"_xlfn.MAXIFS(A1:B2,A1:B2,\"<0\",A1:A2,\">0\")":              {"#VALUE!", "#VALUE!"},
+		"_xlfn.MAXIFS(A1:A4,A1:A4,\">0\",A1:A4,\">0\",A1:A2,\">0\")": {"#VALUE!", "#VALUE!"},
+		"_xlfn.MINIFS(1,A1:A4,\">0\")":                               {"#VALUE!", "#VALUE!"},
+		"_xlfn.MINIFS(A1:A2,A1:A4,\">0\")":                           {"#VALUE!", "#VALUE!"},
+		"_xlfn.MINIFS(A1:A2,A1:B2,\"<0\")":                           {"#VALUE!", "#VALUE!"},
+		"_xlfn.MINIFS(A1:A4,A1:A4,\">0\",1,\">0\")":                  {"#VALUE!", "#VALUE!"},
+		"_xlfn.MINIFS(A1:A4,A1:A4,\">0\",A1:A2,\">0\")":              {"#VALUE!", "#VALUE!"},
+		"_xlfn.MINIFS(A1:B2,A1:B2,\"<0\",A1:A2,\">0\")":              {"#VALUE!", "#VALUE!"},
+		"_xlfn.MINIFS(A1:A4,A1:A4,\">0\",A1:A4,\">0\",A1:A2,\">0\")": {"#VALUE!", "#VALUE!"},
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.Equal(t, expected[0], result, formula)
+		assert.EqualError(t, err, expected[1], formula)
 	}
 }
 
@@ -5972,18 +5997,75 @@ func TestCalcSUMIFSAndAVERAGEIFS(t *testing.T) {
 		assert.Equal(t, expected, result, formula)
 	}
 	calcError := map[string][]string{
-		"AVERAGEIFS()":                                  {"#VALUE!", "AVERAGEIFS requires at least 3 arguments"},
-		"AVERAGEIFS(H1,\"\")":                           {"#VALUE!", "AVERAGEIFS requires at least 3 arguments"},
-		"AVERAGEIFS(H1,\"\",TRUE,1)":                    {"#N/A", "#N/A"},
-		"AVERAGEIFS(H1,\"\",TRUE)":                      {"#DIV/0!", "AVERAGEIF divide by zero"},
-		"AVERAGEIFS(D2:D13,A2:A13,1,A2:A13,2)":          {"#DIV/0!", "AVERAGEIF divide by zero"},
-		"SUMIFS()":                                      {"#VALUE!", "SUMIFS requires at least 3 arguments"},
-		"SUMIFS(D2:D13,A2:A13,1,B2:B13)":                {"#N/A", "#N/A"},
-		"SUMIFS(D20:D23,A2:A13,\">2\",C2:C13,\"Jeff\")": {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS()":                                                {"#VALUE!", "AVERAGEIFS requires at least 3 arguments"},
+		"AVERAGEIFS(H1,\"\")":                                         {"#VALUE!", "AVERAGEIFS requires at least 3 arguments"},
+		"AVERAGEIFS(H1,\"\",TRUE,1)":                                  {"#N/A", "#N/A"},
+		"AVERAGEIFS(H1,\"\",TRUE)":                                    {"#DIV/0!", "AVERAGEIF divide by zero"},
+		"AVERAGEIFS(D2:D13,A2:A13,1,A2:A13,2)":                        {"#DIV/0!", "AVERAGEIF divide by zero"},
+		"AVERAGEIFS(1,A2:A13,\">0\")":                                 {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(D2:D3,A2:A13,\">2\")":                             {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(D2:D13,A2:B13,\"North\")":                         {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(D2:D13,A2:A13,\">0\",1,\">0\")":                   {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(D2:D13,A2:A13,\">0\",A2:A3,\">0\")":               {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(D2:D13,A2:B13,\"North\",A2:A13,\">0\")":           {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(D2:D13,A2:A13,\">0\",A2:A13,\">0\",A2:A3,\">0\")": {"#VALUE!", "#VALUE!"},
+		"SUMIFS()":                       {"#VALUE!", "SUMIFS requires at least 3 arguments"},
+		"SUMIFS(D2:D13,A2:A13,1,B2:B13)": {"#N/A", "#N/A"},
+		"SUMIFS(D20:D23,A2:A13,\">2\",C2:C13,\"Jeff\")":           {"#VALUE!", "#VALUE!"},
+		"SUMIFS(1,A2:A13,\">0\")":                                 {"#VALUE!", "#VALUE!"},
+		"SUMIFS(D2:D13,A2:B13,\"North\")":                         {"#VALUE!", "#VALUE!"},
+		"SUMIFS(D2:D13,A2:A13,\">0\",1,\">0\")":                   {"#VALUE!", "#VALUE!"},
+		"SUMIFS(D2:D13,A2:A13,\">0\",A2:A3,\">0\")":               {"#VALUE!", "#VALUE!"},
+		"SUMIFS(D2:D13,A2:B13,\"North\",A2:A13,\">0\")":           {"#VALUE!", "#VALUE!"},
+		"SUMIFS(D2:D13,A2:A13,\">0\",A2:A13,\">0\",A2:A3,\">0\")": {"#VALUE!", "#VALUE!"},
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
 		result, err := f.CalcCellValue("Sheet1", "E1")
+		assert.Equal(t, expected[0], result, formula)
+		assert.EqualError(t, err, expected[1], formula)
+	}
+}
+
+func TestCalcIFS(t *testing.T) {
+	cellData := [][]interface{}{
+		{1, 2, 1, 1, 1, 0},
+		{3, 4, 0, 1, 1, 1},
+	}
+	f := prepareCalcData(cellData)
+	formulaList := map[string]string{
+		"AVERAGEIFS(A1:B2,C1:D2,1,E1:F2,1)":   "2.5",
+		"COUNTIFS(C1:D2,1,E1:F2,1)":           "2",
+		"_xlfn.MAXIFS(A1:B2,C1:D2,1,E1:F2,1)": "4",
+		"_xlfn.MINIFS(A1:B2,C1:D2,1,E1:F2,1)": "1",
+		"SUMIFS(A1:B2,C1:D2,1,E1:F2,1)":       "5",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "G1", formula))
+		result, err := f.CalcCellValue("Sheet1", "G1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	calcError := map[string][]string{
+		"AVERAGEIFS(A1:A1,A1:B1,\">0\")":                {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(A1:B1,A1:B1,\">0\",A1:A1,\">0\")":   {"#VALUE!", "#VALUE!"},
+		"AVERAGEIFS(A1:A2,A1:A2,\">0\",A1:A1,\">0\")":   {"#VALUE!", "#VALUE!"},
+		"COUNTIFS(A1:B1,\">0\",A1:A1,\">0\")":           {"#VALUE!", "#VALUE!"},
+		"COUNTIFS(A1:A2,\">0\",A1:A1,\">0\")":           {"#VALUE!", "#VALUE!"},
+		"COUNTIFS(A1:B2,\">0\",A1:B1,\">0\")":           {"#VALUE!", "#VALUE!"},
+		"_xlfn.MAXIFS(A1:A1,A1:B1,\">0\")":              {"#VALUE!", "#VALUE!"},
+		"_xlfn.MAXIFS(A1:B1,A1:B1,\">0\",A1:A1,\">0\")": {"#VALUE!", "#VALUE!"},
+		"_xlfn.MAXIFS(A1:A2,A1:A2,\">0\",A1:A1,\">0\")": {"#VALUE!", "#VALUE!"},
+		"_xlfn.MINIFS(A1:A1,A1:B1,\">0\")":              {"#VALUE!", "#VALUE!"},
+		"_xlfn.MINIFS(A1:B1,A1:B1,\">0\",A1:A1,\">0\")": {"#VALUE!", "#VALUE!"},
+		"_xlfn.MINIFS(A1:A2,A1:A2,\">0\",A1:A1,\">0\")": {"#VALUE!", "#VALUE!"},
+		"SUMIFS(A1:A1,A1:B1,\">0\")":                    {"#VALUE!", "#VALUE!"},
+		"SUMIFS(A1:B1,A1:B1,\">0\",A1:A1,\">0\")":       {"#VALUE!", "#VALUE!"},
+		"SUMIFS(A1:A2,A1:A2,\">0\",A1:A1,\">0\")":       {"#VALUE!", "#VALUE!"},
+	}
+	for formula, expected := range calcError {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "G1", formula))
+		result, err := f.CalcCellValue("Sheet1", "G1")
 		assert.Equal(t, expected[0], result, formula)
 		assert.EqualError(t, err, expected[1], formula)
 	}
@@ -6858,26 +6940,26 @@ func TestFormulaRawCellValueOption(t *testing.T) {
 		raw      bool
 		expected string
 	}{
-		{"=VALUE(\"1.0E-07\")", false, "0.00"},
-		{"=VALUE(\"1.0E-07\")", true, "0.0000001"},
-		{"=\"text\"", false, "$text"},
-		{"=\"text\"", true, "text"},
-		{"=\"10e3\"", false, "$10e3"},
-		{"=\"10e3\"", true, "10e3"},
-		{"=\"10\" & \"e3\"", false, "$10e3"},
-		{"=\"10\" & \"e3\"", true, "10e3"},
-		{"=10e3", false, "10000.00"},
-		{"=10e3", true, "10000"},
-		{"=\"1111111111111111\"", false, "$1111111111111111"},
-		{"=\"1111111111111111\"", true, "1111111111111111"},
-		{"=1111111111111111", false, "1111111111111110.00"},
-		{"=1111111111111111", true, "1.11111111111111E+15"},
-		{"=1444.00000000003", false, "1444.00"},
-		{"=1444.00000000003", true, "1444.00000000003"},
-		{"=1444.000000000003", false, "1444.00"},
-		{"=1444.000000000003", true, "1444"},
-		{"=ROUND(1444.00000000000003,2)", false, "1444.00"},
-		{"=ROUND(1444.00000000000003,2)", true, "1444"},
+		{"VALUE(\"1.0E-07\")", false, "0.00"},
+		{"VALUE(\"1.0E-07\")", true, "0.0000001"},
+		{"\"text\"", false, "$text"},
+		{"\"text\"", true, "text"},
+		{"\"10e3\"", false, "$10e3"},
+		{"\"10e3\"", true, "10e3"},
+		{"\"10\" & \"e3\"", false, "$10e3"},
+		{"\"10\" & \"e3\"", true, "10e3"},
+		{"10e3", false, "10000.00"},
+		{"10e3", true, "10000"},
+		{"\"1111111111111111\"", false, "$1111111111111111"},
+		{"\"1111111111111111\"", true, "1111111111111111"},
+		{"1111111111111111", false, "1111111111111110.00"},
+		{"1111111111111111", true, "1.11111111111111E+15"},
+		{"1444.00000000003", false, "1444.00"},
+		{"1444.00000000003", true, "1444.00000000003"},
+		{"1444.000000000003", false, "1444.00"},
+		{"1444.000000000003", true, "1444"},
+		{"ROUND(1444.00000000000003,2)", false, "1444.00"},
+		{"ROUND(1444.00000000000003,2)", true, "1444"},
 	}
 	exp := "0.00;0.00;;$@"
 	styleID, err := f.NewStyle(&Style{CustomNumFmt: &exp})
@@ -7171,15 +7253,15 @@ func TestCalcSORTBY(t *testing.T) {
 	}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
-		"TEXTJOIN(\",\", TRUE, SORTBY(A2:A8, C2:C8))":                         "David,Alice,Alice,Alice,Charlie,Bob,Bob",
-		"TEXTJOIN(\",\", TRUE, SORTBY(A2:A8, C2:C8, -1))":                     "Bob,Bob,Charlie,Alice,Alice,Alice,David",
-		"TEXTJOIN(\",\", TRUE, SORTBY(A2:A8, B2:B8, 1, C2:C8, -1))":           "Charlie,Alice,Alice,Alice,Bob,Bob,David",
-		"TEXTJOIN(\",\", TRUE, SORTBY(A2:A8, D2:D8, 1, B2:B8, 1, C2:C8, -1))": "Charlie,Alice,Bob,Alice,Bob,David,Alice",
-		"TEXTJOIN(\";\", TRUE, SORTBY(A2:C4, C2:C4))":                         "Alice;North;1200;Alice;North;1500;Bob;South;2000",
-		"TEXTJOIN(\",\", TRUE, SORTBY(C2:C8, A2:B8))":                         "1500,1200,1700,2000,2200,1800,1000",
-		"TEXTJOIN(\",\", TRUE, SORTBY(A2:A10, C2:C10))":                       "David,Alice,Alice,Alice,Charlie,Bob,Bob,Test",
-		"TEXTJOIN(\",\", TRUE, SORTBY(D2:D8, D2:D8))":                         "1,1,1,2,2,2,3",
-		"TEXTJOIN(\",\", TRUE, SORTBY(B2:B8, B2:B8))":                         "East,North,North,North,South,South,West",
+		"TEXTJOIN(\",\",TRUE,SORTBY(A2:A8,C2:C8))":                    "David,Alice,Alice,Alice,Charlie,Bob,Bob",
+		"TEXTJOIN(\",\",TRUE,SORTBY(A2:A8,C2:C8,-1))":                 "Bob,Bob,Charlie,Alice,Alice,Alice,David",
+		"TEXTJOIN(\",\",TRUE,SORTBY(A2:A8,B2:B8,1,C2:C8,-1))":         "Charlie,Alice,Alice,Alice,Bob,Bob,David",
+		"TEXTJOIN(\",\",TRUE,SORTBY(A2:A8,D2:D8,1,B2:B8,1,C2:C8,-1))": "Charlie,Alice,Bob,Alice,Bob,David,Alice",
+		"TEXTJOIN(\";\",TRUE,SORTBY(A2:C4,C2:C4))":                    "Alice;North;1200;Alice;North;1500;Bob;South;2000",
+		"TEXTJOIN(\",\",TRUE,SORTBY(C2:C8,A2:B8))":                    "1500,1200,1700,2000,2200,1800,1000",
+		"TEXTJOIN(\",\",TRUE,SORTBY(A2:A10,C2:C10))":                  "David,Alice,Alice,Alice,Charlie,Bob,Bob,Test",
+		"TEXTJOIN(\",\",TRUE,SORTBY(D2:D8,D2:D8))":                    "1,1,1,2,2,2,3",
+		"TEXTJOIN(\",\",TRUE,SORTBY(B2:B8,B2:B8))":                    "East,North,North,North,South,South,West",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "E1", formula))
@@ -7189,12 +7271,12 @@ func TestCalcSORTBY(t *testing.T) {
 	}
 	calcError := map[string][]string{
 		"SORTBY(A2:A7)": {"#VALUE!", "SORTBY requires at least 2 arguments"},
-		"SORTBY(A2:A7, C2:C7, 1, D2:D7, 1, B2:B7, 1, E2:E7, 1)": {"#VALUE!", "SORTBY takes at most 7 arguments, received 9"},
-		"SORTBY(A2:A7, C2:C7, 1, D2:D7)":                        {"#VALUE!", "SORTBY requires 2, 3, 5, or 7 arguments, received 4"},
-		"SORTBY(A2:A7, C2:C7, 1, D2:D7, 1, B2:B7)":              {"#VALUE!", "SORTBY requires 2, 3, 5, or 7 arguments, received 6"},
-		"SORTBY(A2:A7, C2:C5)":                                  {"#VALUE!", "by_array dimensions (4 rows) do not match array dimensions (6 rows)"},
-		"SORTBY(A2:A7, C2:C7, 2)":                               {"#VALUE!", "sort_order must be 1 or -1, received 2"},
-		"SORTBY(A2:A7, C2:C7, 0)":                               {"#VALUE!", "sort_order must be 1 or -1, received 0"},
+		"SORTBY(A2:A7,C2:C7,1,D2:D7,1,B2:B7,1,E2:E7,1)": {"#VALUE!", "SORTBY takes at most 7 arguments, received 9"},
+		"SORTBY(A2:A7,C2:C7,1,D2:D7)":                   {"#VALUE!", "SORTBY requires 2, 3, 5, or 7 arguments, received 4"},
+		"SORTBY(A2:A7,C2:C7,1,D2:D7,1,B2:B7)":           {"#VALUE!", "SORTBY requires 2, 3, 5, or 7 arguments, received 6"},
+		"SORTBY(A2:A7,C2:C5)":                           {"#VALUE!", "by_array dimensions (4 rows) do not match array dimensions (6 rows)"},
+		"SORTBY(A2:A7,C2:C7,2)":                         {"#VALUE!", "sort_order must be 1 or -1, received 2"},
+		"SORTBY(A2:A7,C2:C7,0)":                         {"#VALUE!", "sort_order must be 1 or -1, received 0"},
 	}
 	for formula, expected := range calcError {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "F1", formula))
@@ -7238,7 +7320,7 @@ func TestCalcSORTBY(t *testing.T) {
 		{"Name", "Score"},
 		{"Alice", 100},
 	})
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=SORTBY(A2:A2,{})"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "SORTBY(A2:A2,{})"))
 	result, err = f.CalcCellValue("Sheet1", "C1")
 	assert.Error(t, err)
 	assert.Equal(t, formulaErrorVALUE, result)
@@ -7247,7 +7329,7 @@ func TestCalcSORTBY(t *testing.T) {
 		{"Name", "Score"},
 		{"Alice", 100},
 	})
-	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "=SORTBY({},B2:B2)"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "SORTBY({},B2:B2)"))
 	result, err = f.CalcCellValue("Sheet1", "C1")
 	assert.Error(t, err)
 	assert.Equal(t, formulaErrorVALUE, result)
@@ -7257,11 +7339,11 @@ func TestCalcSORTBY(t *testing.T) {
 		{4, 5, 6},
 		{7, 8, 9},
 	})
-	assert.NoError(t, f.SetCellFormula("Sheet1", "D2", "=SORTBY(NA(),B1:B2)"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D2", "SORTBY(NA(),B1:B2)"))
 	result, err = f.CalcCellValue("Sheet1", "D2")
 	assert.Equal(t, formulaErrorNA, result)
 	assert.Equal(t, formulaErrorNA, err.Error())
-	assert.NoError(t, f.SetCellFormula("Sheet1", "D4", "=SORTBY(A1:A2,NA())"))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D4", "SORTBY(A1:A2,NA())"))
 	_, err = f.CalcCellValue("Sheet1", "D4")
 	assert.Equal(t, formulaErrorNA, result)
 	assert.Equal(t, formulaErrorNA, err.Error())
