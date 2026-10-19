@@ -843,7 +843,7 @@ func (f *File) getDecodeCellAnchorShapeSize(sheet string, deCellAnchor *decodeCe
 func (f *File) getShapeSizeAndScale(w, h, cx, cy int) (uint, uint, float64, float64) {
 	var (
 		width, height  uint
-		scaleX, scaleY float64 = defaultDrawingScale, defaultDrawingScale
+		scaleX, scaleY = defaultDrawingScale, defaultDrawingScale
 	)
 	if cx > 0 && cy > 0 {
 		width = uint(cx / EMU)

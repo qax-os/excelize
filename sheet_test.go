@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -922,20 +923,215 @@ func TestTrimRow(t *testing.T) {
 
 func TestAddIgnoredErrors(t *testing.T) {
 	f := NewFile()
-	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsEvalError))
-	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsEvalError))
-	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsTwoDigitTextYear))
-	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsNumberStoredAsText))
-	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsFormula))
-	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsFormulaRange))
-	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsUnlockedFormula))
-	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsEmptyCellReference))
-	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsListDataValidation))
-	assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", IgnoredErrorsCalculatedColumn))
+	for _, ignoredErrorsType := range []IgnoredErrorsType{
+		IgnoredErrorsEvalError,
+		IgnoredErrorsEvalError,
+		IgnoredErrorsTwoDigitTextYear,
+		IgnoredErrorsNumberStoredAsText,
+		IgnoredErrorsFormula,
+		IgnoredErrorsFormulaRange,
+		IgnoredErrorsUnlockedFormula,
+		IgnoredErrorsEmptyCellReference,
+		IgnoredErrorsListDataValidation,
+		IgnoredErrorsCalculatedColumn,
+	} {
+		assert.NoError(t, f.AddIgnoredErrors("Sheet1", "A1", ignoredErrorsType))
+	}
 
 	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.AddIgnoredErrors("SheetN", "A1", IgnoredErrorsEvalError))
 	assert.Equal(t, ErrParameterInvalid, f.AddIgnoredErrors("Sheet1", "", IgnoredErrorsEvalError))
 
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddIgnoredErrors.xlsx")))
 	assert.NoError(t, f.Close())
+}
+
+func TestEmbeddedObjects(t *testing.T) {
+	f := NewFile()
+	img := filepath.Join("test", "images", "excel.png")
+	content, err := os.ReadFile(img)
+	assert.NoError(t, err)
+	obj1 := EmbeddedObject{
+		Cell:          "A1",
+		Name:          path.Base(img),
+		File:          content,
+		Icon:          content,
+		IconExtension: path.Ext(img),
+	}
+	assert.NoError(t, f.AddEmbeddedObjects("Sheet1", &obj1))
+
+	img = filepath.Join("test", "images", "excel.jpg")
+	content, err = os.ReadFile(img)
+	assert.NoError(t, err)
+	obj2 := EmbeddedObject{
+		Cell:          "B1",
+		Name:          path.Base(img),
+		File:          content,
+		Icon:          content,
+		IconExtension: ".jpeg",
+		Format:        &GraphicOptions{PrintObject: boolPtr(true)},
+	}
+	assert.NoError(t, f.AddEmbeddedObjects("Sheet1", &obj2))
+
+	// Test add embedded object on not exists worksheet
+	assert.EqualError(t, f.AddEmbeddedObjects("SheetN", &EmbeddedObject{
+		Cell:          "A1",
+		Name:          path.Base(img),
+		File:          content,
+		Icon:          content,
+		IconExtension: path.Ext(img),
+	}), "sheet SheetN does not exist")
+	// Test add embedded object without options
+	assert.Equal(t, ErrParameterRequired, f.AddEmbeddedObjects("Sheet1", nil))
+	// Test add embedded object with invalid options
+	assert.Equal(t, ErrImgExt, f.AddEmbeddedObjects("Sheet1", &EmbeddedObject{}))
+
+	// Test get embedded objects
+	objects, err := f.GetEmbeddedObjects("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, objects, 2)
+	assert.Equal(t, obj1.Name, objects[0].Name)
+	assert.Equal(t, obj1.File, objects[0].File)
+	assert.Equal(t, obj1.Cell, objects[0].Cell)
+	assert.Equal(t, obj1.Icon, objects[0].Icon)
+	assert.Equal(t, obj1.IconExtension, objects[0].IconExtension)
+	assert.Equal(t, obj2.Name, objects[1].Name)
+	assert.Equal(t, obj2.File, objects[1].File)
+	assert.Equal(t, obj2.Cell, objects[1].Cell)
+	assert.Equal(t, obj2.Icon, objects[1].Icon)
+	assert.Equal(t, obj2.IconExtension, objects[1].IconExtension)
+
+	// Test get embedded objects on not exists worksheet
+	_, err = f.GetEmbeddedObjects("SheetN")
+	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test get embedded objects on worksheet without embedded objects
+	_, err = f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	objects, err = f.GetEmbeddedObjects("Sheet2")
+	assert.NoError(t, err)
+	assert.Zero(t, objects)
+
+	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestAddEmbeddedObjects.xlsx")))
+	assert.NoError(t, f.Close())
+
+	f, err = OpenFile(filepath.Join("test", "TestAddEmbeddedObjects.xlsx"))
+	assert.NoError(t, err)
+	img = filepath.Join("test", "images", "excel.gif")
+	content, err = os.ReadFile(img)
+	assert.NoError(t, err)
+	assert.NoError(t, f.AddEmbeddedObjects("Sheet1", &EmbeddedObject{
+		Cell:          "C1",
+		Name:          path.Base(img),
+		File:          content,
+		Icon:          content,
+		IconExtension: path.Ext(img),
+	}))
+	assert.NoError(t, f.Save())
+	assert.NoError(t, f.Close())
+
+	f, err = OpenFile(filepath.Join("test", "TestAddEmbeddedObjects.xlsx"))
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddEmbeddedObjects("Sheet1", &EmbeddedObject{
+		Cell:          "A1",
+		Name:          path.Base(img),
+		File:          content,
+		Icon:          content,
+		IconExtension: path.Ext(img),
+	}), "XML syntax error on line 1: invalid UTF-8")
+
+	f.ContentTypes = nil
+	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
+	assert.EqualError(t, f.AddEmbeddedObjects("Sheet1", &EmbeddedObject{
+		Cell:          "A1",
+		Name:          path.Base(img),
+		File:          content,
+		Icon:          content,
+		IconExtension: path.Ext(img),
+	}), "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+
+	drawingVML := "xl/drawings/vmlDrawing1.vml"
+	f, err = OpenFile(filepath.Join("test", "TestAddEmbeddedObjects.xlsx"))
+	assert.NoError(t, err)
+	f.VMLDrawing[drawingVML] = &vmlDrawing{Shape: []xlsxShape{{}}}
+	assert.EqualError(t, f.AddEmbeddedObjects("Sheet1", &EmbeddedObject{
+		Cell:          "A1",
+		Name:          path.Base(img),
+		File:          content,
+		Icon:          content,
+		IconExtension: path.Ext(img),
+	}), "strconv.Atoi: parsing \"\": invalid syntax")
+	f, err = OpenFile(filepath.Join("test", "TestAddEmbeddedObjects.xlsx"))
+	assert.NoError(t, err)
+	f.DecodeVMLDrawing[drawingVML] = &decodeVmlDrawing{Shape: []decodeShape{{}}}
+	assert.EqualError(t, f.AddEmbeddedObjects("Sheet1", &EmbeddedObject{
+		Cell:          "A1",
+		Name:          path.Base(img),
+		File:          content,
+		Icon:          content,
+		IconExtension: path.Ext(img),
+	}), "strconv.Atoi: parsing \"\": invalid syntax")
+	assert.NoError(t, f.Close())
+
+	// Test get embedded objects with unsupported charset VML drawing relationships
+	f, err = OpenFile(filepath.Join("test", "TestAddEmbeddedObjects.xlsx"))
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/_rels/vmlDrawing1.vml.rels", MacintoshCyrillicCharset)
+	_, err = f.GetEmbeddedObjects("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+
+	// Test get embedded objects with unsupported charset VML drawing
+	f, err = OpenFile(filepath.Join("test", "TestAddEmbeddedObjects.xlsx"))
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
+	_, err = f.GetEmbeddedObjects("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+
+	// Test get embedded objects with invalid OLE object
+	f, err = OpenFile(filepath.Join("test", "TestAddEmbeddedObjects.xlsx"))
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/embeddings/oleObject1.bin", []byte{})
+	_, err = f.GetEmbeddedObjects("Sheet1")
+	assert.EqualError(t, err, "mscfb: EOF; 0")
+
+	// Test get embedded objects without OLE object
+	f.Pkg.Delete("xl/embeddings/oleObject1.bin")
+	objects, err = f.GetEmbeddedObjects("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, objects, 2)
+	assert.NoError(t, f.Close())
+
+	// Test delete embedded objects
+	f, err = OpenFile(filepath.Join("test", "TestAddEmbeddedObjects.xlsx"))
+	assert.NoError(t, err)
+	for _, cell := range []string{"C1", "B1", "A1", "A1"} {
+		assert.NoError(t, f.DeleteEmbeddedObjects("Sheet1", cell))
+	}
+	assert.Equal(t, ErrSheetNotExist{"SheetN"}, f.DeleteEmbeddedObjects("SheetN", "A1"))
+	assert.NoError(t, f.Close())
+
+	// Test delete embedded objects with unsupported charset VML drawing
+	f, err = OpenFile(filepath.Join("test", "TestAddEmbeddedObjects.xlsx"))
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.DeleteEmbeddedObjects("Sheet1", "A1"), "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+
+	// Test delete embedded objects with unsupported charset VML drawing relationships
+	f, err = OpenFile(filepath.Join("test", "TestAddEmbeddedObjects.xlsx"))
+	assert.NoError(t, err)
+	f.Pkg.Store("xl/drawings/_rels/vmlDrawing1.vml.rels", MacintoshCyrillicCharset)
+	assert.EqualError(t, f.DeleteEmbeddedObjects("Sheet1", "A1"), "XML syntax error on line 1: invalid UTF-8")
+	assert.NoError(t, f.Close())
+}
+
+func TestGetVMLShapeByID(t *testing.T) {
+	f := NewFile()
+	// Test get VML shape by invalid shape ID
+	f.VMLDrawing["xl/drawings/vmlDrawing1.vml"] = &vmlDrawing{Shape: []xlsxShape{{ID: "_x0000_s1025"}}}
+	shape, err := f.getVMLShapeByID("xl/drawings/vmlDrawing1.vml", 1026)
+	assert.NoError(t, err)
+	assert.Empty(t, shape)
 }

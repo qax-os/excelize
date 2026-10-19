@@ -56,7 +56,7 @@ type xlsxWorksheet struct {
 	LegacyDrawingHF        *xlsxLegacyDrawingHF         `xml:"legacyDrawingHF"`
 	DrawingHF              *xlsxDrawingHF               `xml:"drawingHF"`
 	Picture                *xlsxPicture                 `xml:"picture"`
-	OleObjects             *xlsxInnerXML                `xml:"oleObjects"`
+	OleObjects             *xlsxOLEObjects              `xml:"oleObjects"`
 	Controls               *xlsxInnerXML                `xml:"controls"`
 	WebPublishItems        *xlsxInnerXML                `xml:"webPublishItems"`
 	AlternateContent       *xlsxAlternateContent        `xml:"mc:AlternateContent"`
@@ -713,6 +713,24 @@ type xlsxPicture struct {
 	RID     string   `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
 }
 
+// xlsxOLEObject specifies information for an individual embedded object.
+type xlsxOLEObject struct {
+	XMLName   xml.Name      `xml:"oleObject"`
+	ObjectPr  *xlsxInnerXML `xml:"objectPr"`
+	ProgID    string        `xml:"progId,attr,omitempty"`
+	DvAspect  string        `xml:"dvAspect,attr,omitempty"`
+	Link      string        `xml:"link,attr,omitempty"`
+	OLEUpdate string        `xml:"oleUpdate,attr,omitempty"`
+	AutoLoad  bool          `xml:"autoLoad,attr,omitempty"`
+	ShapeID   int           `xml:"shapeId,attr"`
+	RID       string        `xml:"http://schemas.openxmlformats.org/officeDocument/2006/relationships id,attr,omitempty"`
+}
+
+// xlsxOLEObjects specifies embedded objects collection in this worksheet.
+type xlsxOLEObjects struct {
+	OLEObject []xlsxOLEObject `xml:"oleObject"`
+}
+
 // xlsxIgnoredError specifies a single ignored error for a range of cells.
 type xlsxIgnoredError struct {
 	XMLName            xml.Name `xml:"ignoredError"`
@@ -1297,4 +1315,14 @@ type SheetPropsOptions struct {
 	ThickTop *bool
 	// ThickBottom specifies if rows have a thick bottom border by default.
 	ThickBottom *bool
+}
+
+// EmbeddedObject directly maps the properties of an embedded object.
+type EmbeddedObject struct {
+	Cell          string
+	Name          string
+	File          []byte
+	Icon          []byte
+	IconExtension string
+	Format        *GraphicOptions
 }
