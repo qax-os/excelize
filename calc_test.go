@@ -5329,6 +5329,75 @@ func TestCalcVLOOKUP(t *testing.T) {
 	assert.Equal(t, ArgError, err.Type)
 }
 
+func TestCalcBlankCellComparisons(t *testing.T) {
+	f := NewFile()
+	defer func() {
+		assert.NoError(t, f.Close())
+	}()
+	assert.NoError(t, f.SetCellValue("Sheet1", "B1", "0"))
+	assert.NoError(t, f.SetCellValue("Sheet1", "B2", false))
+	assert.NoError(t, f.SetCellFormula("Sheet1", "B3", `""`))
+	formulaList := map[string]string{
+		`A1=""`:                     "TRUE",
+		`""=A1`:                     "TRUE",
+		`A1<>""`:                    "FALSE",
+		`""<>A1`:                    "FALSE",
+		`A1<""`:                     "FALSE",
+		`""<A1`:                     "FALSE",
+		`A1<=""`:                    "TRUE",
+		`""<=A1`:                    "TRUE",
+		`A1>""`:                     "FALSE",
+		`"">A1`:                     "FALSE",
+		`A1>=""`:                    "TRUE",
+		`"">=A1`:                    "TRUE",
+		`A1="0"`:                    "FALSE",
+		`"0"=A1`:                    "FALSE",
+		`A1<>"0"`:                   "TRUE",
+		`"0"<>A1`:                   "TRUE",
+		`A1<"0"`:                    "TRUE",
+		`"0">A1`:                    "TRUE",
+		`A1=0`:                      "TRUE",
+		`0=A1`:                      "TRUE",
+		`A1<>0`:                     "FALSE",
+		`0<>A1`:                     "FALSE",
+		`A1<1`:                      "TRUE",
+		`-1<A1`:                     "TRUE",
+		`A1=FALSE`:                  "TRUE",
+		`FALSE=A1`:                  "TRUE",
+		`A1<>FALSE`:                 "FALSE",
+		`FALSE<>A1`:                 "FALSE",
+		`A1=TRUE`:                   "FALSE",
+		`TRUE=A1`:                   "FALSE",
+		`A1<=FALSE`:                 "TRUE",
+		`FALSE>=A1`:                 "TRUE",
+		`A1=FALSE()`:                "TRUE",
+		`FALSE()=A1`:                "TRUE",
+		`A1=A2`:                     "TRUE",
+		`A1<>A2`:                    "FALSE",
+		`A1=B1`:                     "FALSE",
+		`B1=A1`:                     "FALSE",
+		`A1=B2`:                     "TRUE",
+		`B2=A1`:                     "TRUE",
+		`A1=B3`:                     "TRUE",
+		`B3=A1`:                     "TRUE",
+		`IF(A1="","blank","value")`: "blank",
+		`IF(A1="0","zero","blank")`: "blank",
+		`ISLOGICAL(A1="")`:          "TRUE",
+		`IFERROR(A1=(1/0),"error")`: "error",
+		`IFERROR((1/0)=A1,"error")`: "error",
+		`A1+"1"`:                    "1",
+		`"1"+A1`:                    "1",
+		`A1&"x"`:                    "x",
+		`"x"&A1`:                    "x",
+	}
+	for formula, expected := range formulaList {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", formula))
+		result, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
+
 func TestCalcBoolean(t *testing.T) {
 	cellData := [][]interface{}{{0.5, "TRUE", -0.5, "FALSE", true}}
 	f := prepareCalcData(cellData)

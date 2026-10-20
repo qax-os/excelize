@@ -1458,11 +1458,19 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		rOpd := opdStack.Pop().(formulaArg)
 		lOpd := opdStack.Pop().(formulaArg)
 		if opt.TValue != "&" {
+			emptyOpd := newNumberFormulaArg(0)
+			if opt.TSubType == efp.TokenSubTypeLogical {
+				if rOpd.Type == ArgString || lOpd.Type == ArgString {
+					emptyOpd = newStringFormulaArg("")
+				} else if rOpd.Boolean || lOpd.Boolean {
+					emptyOpd = newBoolFormulaArg(false)
+				}
+			}
 			if rOpd.Type == ArgEmpty {
-				rOpd = newNumberFormulaArg(0)
+				rOpd = emptyOpd
 			}
 			if lOpd.Type == ArgEmpty {
-				lOpd = newNumberFormulaArg(0)
+				lOpd = emptyOpd
 			}
 		}
 		if rOpd.Type == ArgError {
