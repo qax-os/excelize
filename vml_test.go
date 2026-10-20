@@ -175,10 +175,12 @@ func TestCountComments(t *testing.T) {
 func TestAddDrawingVML(t *testing.T) {
 	// Test addDrawingVML with illegal cell reference
 	f := NewFile()
-	assert.Equal(t, f.addDrawingVML(0, "", &vmlOptions{FormControl: FormControl{Cell: "*"}}), newCellNameToCoordinatesError("*", newInvalidCellNameError("*")))
+	_, err := f.addDrawingVML(0, "", &vmlOptions{FormControl: FormControl{Cell: "*"}})
+	assert.Equal(t, err, newCellNameToCoordinatesError("*", newInvalidCellNameError("*")))
 
 	f.Pkg.Store("xl/drawings/vmlDrawing1.vml", MacintoshCyrillicCharset)
-	assert.EqualError(t, f.addDrawingVML(0, "xl/drawings/vmlDrawing1.vml", &vmlOptions{sheet: "Sheet1", FormControl: FormControl{Cell: "A1"}}), "XML syntax error on line 1: invalid UTF-8")
+	_, err = f.addDrawingVML(0, "xl/drawings/vmlDrawing1.vml", &vmlOptions{sheet: "Sheet1", FormControl: FormControl{Cell: "A1"}})
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
 func TestFormControl(t *testing.T) {
@@ -430,9 +432,9 @@ func TestFormControl(t *testing.T) {
 	assert.NoError(t, f.Close())
 }
 
-func TestExtractFormControl(t *testing.T) {
-	// Test extract form control with unsupported charset
-	_, err := extractFormControl(string(MacintoshCyrillicCharset))
+func TestExtractVMLOptions(t *testing.T) {
+	// Test extract VML options with unsupported charset
+	_, err := extractVMLOptions(string(MacintoshCyrillicCharset))
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 

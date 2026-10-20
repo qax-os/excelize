@@ -16,6 +16,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -25,7 +26,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/richardlehane/mscfb"
 	"github.com/tiendc/go-deepcopy"
+	"golang.org/x/text/encoding/charmap"
 )
 
 // IgnoredErrorsType is the type of ignored errors.
@@ -2240,5 +2243,273 @@ func (f *File) AddIgnoredErrors(sheet, rangeRef string, ignoredErrorsType Ignore
 		}
 	}
 	ws.IgnoredErrors.IgnoredError = append(ws.IgnoredErrors.IgnoredError, ie)
+	return err
+}
+
+// GetEmbeddedObjects provides a method to get all embedded objects in a
+// worksheet by given worksheet name.
+func (f *File) GetEmbeddedObjects(sheet string) ([]EmbeddedObject, error) {
+	var objects []EmbeddedObject
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return objects, err
+	}
+	if ws.LegacyDrawing == nil || ws.OleObjects == nil || len(ws.OleObjects.OLEObject) == 0 {
+		return objects, err
+	}
+	drawingVMLTarget := f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
+	drawingVML := "xl/drawings/" + path.Base(drawingVMLTarget)
+	for _, obj := range ws.OleObjects.OLEObject {
+		target := f.getSheetRelationshipsTargetByID(sheet, obj.RID)
+		content, ok := f.Pkg.Load("xl/embeddings/" + path.Base(target))
+		if !ok {
+			continue
+		}
+		object, err := getOLEObject(content.([]byte))
+		if err != nil {
+			return objects, err
+		}
+		vmlOptions, err := f.getVMLShapeByID(drawingVML, obj.ShapeID)
+		if err != nil {
+			return objects, err
+		}
+		object.Cell = vmlOptions.FormControl.Cell
+		rels, err := f.relsReader("xl/drawings/_rels/" + path.Base(drawingVMLTarget) + ".rels")
+		if err != nil {
+			return objects, err
+		}
+		for _, rel := range rels.Relationships {
+			if rel.ID == vmlOptions.relTargetID {
+				if icon, ok := f.Pkg.Load("xl/media/" + path.Base(rel.Target)); ok {
+					object.Icon = icon.([]byte)
+					object.IconExtension = path.Ext(rel.Target)
+					break
+				}
+			}
+		}
+		objects = append(objects, object)
+	}
+	return objects, err
+}
+
+// getVMLShapeByID provides a function to get VML shape by given drawing VML
+// path and shape ID.
+func (f *File) getVMLShapeByID(drawingVML string, shapeID int) (vmlOptions, error) {
+	var (
+		err        error
+		vmlOptions vmlOptions
+		vml        = f.VMLDrawing[drawingVML]
+	)
+	if vml == nil {
+		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
+		d, err := f.decodeVMLDrawingReader(drawingVML)
+		if err != nil {
+			return vmlOptions, err
+		}
+		for _, sp := range d.Shape {
+			if sp.ID != fmt.Sprintf("_x0000_s%d", shapeID) {
+				continue
+			}
+			return extractVMLOptions(sp.Val)
+		}
+	}
+	for _, sp := range vml.Shape {
+		if sp.ID != fmt.Sprintf("_x0000_s%d", shapeID) {
+			continue
+		}
+		return extractVMLOptions(sp.Val)
+	}
+	return vmlOptions, err
+}
+
+// countOLEObjects provides a function to get OLE object binary files count
+// storage in the folder xl/embeddings.
+func (f *File) countOLEObjects() int {
+	objects := map[string]struct{}{}
+	f.Pkg.Range(func(k, v interface{}) bool {
+		if strings.Contains(k.(string), "xl/embeddings/oleObject") && path.Ext(k.(string)) == ".bin" {
+			objects[k.(string)] = struct{}{}
+		}
+		return true
+	})
+	return len(objects)
+}
+
+// getOLEObject provides a function to get embedded object from OLE object
+// binary file content.
+func getOLEObject(content []byte) (EmbeddedObject, error) {
+	var object EmbeddedObject
+	doc, err := mscfb.New(bytes.NewReader(content))
+	if err != nil {
+		return object, err
+	}
+	for entry, err := doc.Next(); err == nil; entry, err = doc.Next() {
+		if strings.HasSuffix(entry.Name, "Ole10Native") {
+			buf := make([]byte, entry.Size)
+			if _, _ = doc.Read(buf); len(buf) >= 10 {
+				offset := 4 + 2
+				labelStart := offset
+				for offset < len(buf) && buf[offset] != 0 {
+					offset++
+				}
+				if offset < len(buf) {
+					decoder := charmap.ISO8859_1.NewDecoder()
+					if filename, err := decoder.Bytes(buf[labelStart:offset]); err == nil {
+						object.Name = string(filename)
+					}
+					offset++
+					for offset < len(buf) && buf[offset] != 0 {
+						offset++
+					}
+					offset++
+					offset += (2 + 2 + 4)
+					for offset < len(buf) && buf[offset] != 0 {
+						offset++
+					}
+					offset++
+					if offset+4 <= len(buf) {
+						fileSize := int(buf[offset]) |
+							int(buf[offset+1])<<8 |
+							int(buf[offset+2])<<16 |
+							int(buf[offset+3])<<24
+						offset += 4
+						if offset+fileSize <= len(buf) {
+							object.File = buf[offset : offset+fileSize]
+						}
+					}
+				}
+			}
+		}
+	}
+	return object, err
+}
+
+// addOLEObject embedded an file as an OLE object and returns the index of
+// the embedded object binary file.
+func (f *File) addOLEObject(opts *EmbeddedObject) int {
+	compoundFile := &cfb{
+		paths: []string{"Root Entry/"},
+		sectors: []sector{{name: "Root Entry", typeID: 5, clsID: []byte{
+			0x0C, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46,
+		}}},
+	}
+	var tmp, stream cfb
+	tmp.writeUint16(2)
+	encoder := charmap.ISO8859_1.NewEncoder()
+	label, _ := encoder.Bytes([]byte(opts.Name))
+	tmp.writeBytes(label)
+	tmp.writeBytes([]byte{0x00})
+	fileType, _ := encoder.Bytes([]byte(http.DetectContentType(opts.File)))
+	tmp.writeBytes(fileType)
+	tmp.writeBytes([]byte{0x00})
+	tmp.writeUint16(0)
+	tmp.writeUint16(3)
+	tmp.writeUint32(len(opts.Name) + 1)
+	tmp.writeBytes(label)
+	tmp.writeBytes([]byte{0x00})
+	tmp.writeUint32(len(opts.File))
+	tmp.writeBytes(opts.File)
+	tmp.writeUint16(0)
+	stream.writeUint32(len(tmp.stream))
+	stream.writeBytes(tmp.stream)
+	compoundFile.put("\x01Ole10Native", stream.stream)
+	cnt := f.countOLEObjects() + 1
+	f.Pkg.Store(fmt.Sprintf("xl/embeddings/oleObject%d.bin", cnt), compoundFile.write())
+	return cnt
+}
+
+// AddEmbeddedObjects provides a function to add an embedded object to a
+// worksheet by given worksheet name, cell reference and embedded object
+// options. The embedded object is displayed as an icon in the worksheet. The
+// icon image must be provided by the user. Supported image types: BMP, EMF,
+// EMZ, GIF, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
+func (f *File) AddEmbeddedObjects(sheet string, opts *EmbeddedObject) error {
+	if opts == nil {
+		return ErrParameterRequired
+	}
+	imageType, ok := supportedImageTypes[strings.ToLower(path.Ext(opts.IconExtension))]
+	if !ok {
+		return ErrImgExt
+	}
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	objectID := f.addOLEObject(opts)
+	sheetRelationshipsOLEObject := fmt.Sprintf("../embeddings/oleObject%d.bin", objectID)
+	sheetXMLPath, _ := f.getSheetXMLPath(sheet)
+	sheetRels := "xl/worksheets/_rels/" + strings.TrimPrefix(sheetXMLPath, "xl/worksheets/") + ".rels"
+	rID := f.addRels(sheetRels, SourceRelationshipOLEObject, sheetRelationshipsOLEObject, "")
+	if ws.OleObjects == nil {
+		ws.OleObjects = &xlsxOLEObjects{}
+	}
+	if err = f.addContentTypePart(objectID, "oleObject"); err != nil {
+		return err
+	}
+	vmlOpts := vmlOptions{
+		vmlType: vmlTypeEmbeddedObjects, sheet: sheet, FormControl: FormControl{
+			Cell: opts.Cell, Width: uint(defaultColWidthPixels),
+		},
+		relTarget: f.addMedia(opts.Icon, imageType),
+	}
+	_ = f.setContentTypePartImageExtensions()
+	if opts.Format != nil {
+		vmlOpts.Format = *opts.Format
+	}
+	shapeID, err := f.addVMLObject(vmlOpts)
+	if err != nil {
+		return err
+	}
+	ws.OleObjects.OLEObject = append(ws.OleObjects.OLEObject, xlsxOLEObject{
+		ProgID:  "Packager Shell Object",
+		ShapeID: shapeID,
+		RID:     "rId" + strconv.Itoa(rID),
+	})
+	return err
+}
+
+// DeleteEmbeddedObjects provides a function to delete all embedded objects in a
+// cell by given worksheet name and cell reference.
+func (f *File) DeleteEmbeddedObjects(sheet, cell string) error {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
+		return err
+	}
+	if ws.LegacyDrawing == nil || ws.OleObjects == nil || len(ws.OleObjects.OLEObject) == 0 {
+		return err
+	}
+	drawingVMLTarget := f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
+	drawingVML := "xl/drawings/" + path.Base(drawingVMLTarget)
+	vmlOptions, err := f.deleteVMLDrawing(drawingVML, cell, vmlTypeEmbeddedObjects)
+	if err != nil {
+		return err
+	}
+	rels, err := f.relsReader("xl/drawings/_rels/" + filepath.Base(drawingVMLTarget) + ".rels")
+	fmt.Println(drawingVML, "xl/drawings/_rels/"+filepath.Base(drawingVMLTarget)+".rels")
+	if err != nil {
+		return err
+	}
+	for i := 0; i < len(rels.Relationships); i++ {
+		if rels.Relationships[i].ID == vmlOptions.relTargetID {
+			f.Pkg.Delete("xl/media/" + filepath.Base(rels.Relationships[i].Target))
+			rels.Relationships = append(rels.Relationships[:i], rels.Relationships[i+1:]...)
+			i--
+		}
+	}
+	for i := 0; i < len(ws.OleObjects.OLEObject); i++ {
+		if vmlOptions.shapeID != fmt.Sprintf("_x0000_s%d", ws.OleObjects.OLEObject[i].ShapeID) {
+			continue
+		}
+		rID := ws.OleObjects.OLEObject[i].RID
+		target := f.getSheetRelationshipsTargetByID(sheet, rID)
+		f.Pkg.Delete("xl/embeddings/" + filepath.Base(target))
+		f.deleteSheetRelationships(sheet, rID)
+		ws.OleObjects.OLEObject = append(ws.OleObjects.OLEObject[:i], ws.OleObjects.OLEObject[i+1:]...)
+		i--
+	}
+	if len(ws.OleObjects.OLEObject) == 0 {
+		ws.OleObjects = nil
+	}
 	return err
 }

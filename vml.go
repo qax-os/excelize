@@ -16,6 +16,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -44,6 +45,16 @@ const (
 	HeaderFooterImagePositionLeft HeaderFooterImagePositionType = iota
 	HeaderFooterImagePositionCenter
 	HeaderFooterImagePositionRight
+)
+
+// vmlType is the type of supported VML elements.
+type vmlType byte
+
+// This section defines the currently supported VML elements enumeration.
+const (
+	vmlTypeComment vmlType = iota
+	vmlTypeFormControl
+	vmlTypeEmbeddedObjects
 )
 
 // GetComments retrieves all comments in a worksheet by given worksheet name.
@@ -122,7 +133,7 @@ func (f *File) getSheetComments(sheetFile string) string {
 //	    Width:  180,
 //	})
 func (f *File) AddComment(sheet string, opts Comment) error {
-	return f.addVMLObject(vmlOptions{
+	_, err := f.addVMLObject(vmlOptions{
 		sheet: sheet, Comment: opts,
 		FormControl: FormControl{
 			Cell:      opts.Cell,
@@ -133,6 +144,7 @@ func (f *File) AddComment(sheet string, opts Comment) error {
 			Height:    opts.Height,
 		},
 	})
+	return err
 }
 
 // DeleteComment provides the method to delete comment in a worksheet by given
@@ -184,15 +196,32 @@ func (f *File) DeleteComment(sheet, cell string) error {
 		f.Comments[commentsXML] = cmts
 	}
 	sheetRelationshipsDrawingVML := f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
-	return f.deleteFormControl(sheetRelationshipsDrawingVML, cell, true)
+	_, err = f.deleteVMLDrawing(sheetRelationshipsDrawingVML, cell, vmlTypeComment)
+	return err
 }
 
-// deleteFormControl provides the method to delete shape from
+// isVMLObjectType check if an object type belongs to specific VML type by given
+// VML type enumeration and object type.
+func isVMLObjectType(vmlType vmlType, objectType string) bool {
+	switch vmlType {
+	case vmlTypeComment:
+		return objectType == "Note"
+	case vmlTypeEmbeddedObjects:
+		return objectType == "Pict"
+	default:
+		return inStrSlice([]string{"Button", "Checkbox", "GBox", "Label", "Radio", "Scroll", "Spin"}, objectType, true) != -1
+	}
+}
+
+// deleteVMLDrawing provides the method to delete shape from
 // xl/drawings/vmlDrawing%d.xml by giving path, cell and shape type.
-func (f *File) deleteFormControl(sheetRelationshipsDrawingVML, cell string, isComment bool) error {
+func (f *File) deleteVMLDrawing(sheetRelationshipsDrawingVML, cell string, vmlType vmlType) (vmlOptions, error) {
+	vmlOptions := vmlOptions{
+		vmlType: vmlType,
+	}
 	col, row, err := CellNameToCoordinates(cell)
 	if err != nil {
-		return err
+		return vmlOptions, err
 	}
 	vmlID, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(sheetRelationshipsDrawingVML, "../drawings/vmlDrawing"), ".vml"))
 	drawingVML := strings.ReplaceAll(sheetRelationshipsDrawingVML, "..", "xl")
@@ -214,7 +243,7 @@ func (f *File) deleteFormControl(sheetRelationshipsDrawingVML, cell string, isCo
 		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
 		d, err := f.decodeVMLDrawingReader(drawingVML)
 		if err != nil {
-			return err
+			return vmlOptions, err
 		}
 		if d != nil {
 			vml.ShapeType.ID = d.ShapeType.ID
@@ -238,28 +267,24 @@ func (f *File) deleteFormControl(sheetRelationshipsDrawingVML, cell string, isCo
 			}
 		}
 	}
-	cond := func(objectType string) bool {
-		if isComment {
-			return objectType == "Note"
-		}
-		return objectType != "Note"
-	}
 	for i, sp := range vml.Shape {
 		var shapeVal decodeShapeVal
 		if err = xml.Unmarshal(fmt.Appendf(nil, "<shape>%s</shape>", sp.Val), &shapeVal); err == nil &&
-			cond(shapeVal.ClientData.ObjectType) && shapeVal.ClientData.Anchor != "" {
+			isVMLObjectType(vmlType, shapeVal.ClientData.ObjectType) && shapeVal.ClientData.Anchor != "" {
 			leftCol, topRow, err := extractAnchorCell(shapeVal.ClientData.Anchor)
 			if err != nil {
-				return err
+				return vmlOptions, err
 			}
 			if leftCol == col-1 && topRow == row-1 {
+				vmlOptions.shapeID = sp.ID
+				vmlOptions.relTargetID = shapeVal.ImageData.RelID
 				vml.Shape = append(vml.Shape[:i], vml.Shape[i+1:]...)
 				break
 			}
 		}
 	}
 	f.VMLDrawing[drawingVML] = vml
-	return err
+	return vmlOptions, nil
 }
 
 // addComment provides a function to create chart as xl/comments%d.xml by
@@ -469,9 +494,10 @@ func (f *File) commentsWriter() {
 //	    Horizontally: true,
 //	})
 func (f *File) AddFormControl(sheet string, opts FormControl) error {
-	return f.addVMLObject(vmlOptions{
-		formCtrl: true, sheet: sheet, FormControl: opts,
+	_, err := f.addVMLObject(vmlOptions{
+		vmlType: vmlTypeFormControl, sheet: sheet, FormControl: opts,
 	})
+	return err
 }
 
 // DeleteFormControl provides the method to delete form control in a worksheet
@@ -488,7 +514,8 @@ func (f *File) DeleteFormControl(sheet, cell string) error {
 		return err
 	}
 	sheetRelationshipsDrawingVML := f.getSheetRelationshipsTargetByID(sheet, ws.LegacyDrawing.RID)
-	return f.deleteFormControl(sheetRelationshipsDrawingVML, cell, false)
+	_, err = f.deleteVMLDrawing(sheetRelationshipsDrawingVML, cell, vmlTypeFormControl)
+	return err
 }
 
 // countVMLDrawing provides a function to get VML drawing files count storage
@@ -538,16 +565,16 @@ func (f *File) vmlDrawingWriter() {
 
 // addVMLObject provides a function to create VML drawing parts and
 // relationships for comments and form controls.
-func (f *File) addVMLObject(opts vmlOptions) error {
+func (f *File) addVMLObject(opts vmlOptions) (int, error) {
 	// Read sheet data
 	ws, err := f.workSheetReader(opts.sheet)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	vmlID := f.countComments() + 1
-	if opts.formCtrl {
+	if opts.vmlType == vmlTypeFormControl {
 		if opts.Type > FormControlScrollBar {
-			return ErrParameterInvalid
+			return 0, ErrParameterInvalid
 		}
 		vmlID = f.countVMLDrawing() + 1
 	}
@@ -567,20 +594,21 @@ func (f *File) addVMLObject(opts vmlOptions) error {
 		f.addSheetNameSpace(opts.sheet, SourceRelationship)
 		f.addSheetLegacyDrawing(opts.sheet, rID)
 	}
-	if err = f.addDrawingVML(sheetID, drawingVML, prepareFormCtrlOptions(&opts)); err != nil {
-		return err
+	shapeID, err := f.addDrawingVML(sheetID, drawingVML, prepareFormCtrlOptions(&opts))
+	if err != nil {
+		return shapeID, err
 	}
-	if !opts.formCtrl {
+	if opts.vmlType == vmlTypeComment {
 		commentsXML := "xl/comments" + strconv.Itoa(vmlID) + ".xml"
 		if err = f.addComment(commentsXML, opts); err != nil {
-			return err
+			return shapeID, err
 		}
 		if sheetXMLPath, ok := f.getSheetXMLPath(opts.sheet); ok && f.getSheetComments(filepath.Base(sheetXMLPath)) == "" {
 			sheetRelationshipsComments := "../comments" + strconv.Itoa(vmlID) + ".xml"
 			f.addRels(sheetRels, SourceRelationshipComments, sheetRelationshipsComments, "")
 		}
 	}
-	return f.addContentTypePart(vmlID, "comments")
+	return shapeID, f.addContentTypePart(vmlID, "comments")
 }
 
 // prepareFormCtrlOptions provides a function to parse the format settings of
@@ -825,6 +853,13 @@ func (f *File) addFormCtrlShape(preset formCtrlPreset, col, row int, anchor stri
 			FirstButton: preset.firstButton,
 		},
 	}
+	if preset.objectType == "Pict" {
+		sp.Path = nil
+		sp.ImageData = &vImageData{RelID: opts.relTargetID}
+		sp.ClientData.Row = nil
+		sp.ClientData.Column = nil
+		sp.ClientData.AutoPict = stringPtr("")
+	}
 	if opts.Format.PrintObject != nil && !*opts.Format.PrintObject {
 		sp.ClientData.PrintObject = "False"
 	}
@@ -840,7 +875,7 @@ func (f *File) addFormCtrlShape(preset formCtrlPreset, col, row int, anchor stri
 		sp.ClientData.MoveWithCells = stringPtr("")
 		sp.ClientData.SizeWithCells = stringPtr("")
 	}
-	if !opts.formCtrl {
+	if opts.vmlType == vmlTypeComment {
 		return &sp, nil
 	}
 	sp.TextBox.Div.Font = formCtrlText(opts)
@@ -859,16 +894,23 @@ func (f *File) addFormCtrlShape(preset formCtrlPreset, col, row int, anchor stri
 // anchor value is a comma-separated list of data written out as: LeftColumn,
 // LeftOffset, TopRow, TopOffset, RightColumn, RightOffset, BottomRow,
 // BottomOffset.
-func (f *File) addDrawingVML(sheetID int, drawingVML string, opts *vmlOptions) error {
+func (f *File) addDrawingVML(sheetID int, drawingVML string, opts *vmlOptions) (int, error) {
+	shapeID := sheetID * 1024
 	col, row, err := CellNameToCoordinates(opts.FormControl.Cell)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	leftOffset, vmlID, vml, preset := 23, 202, f.VMLDrawing[drawingVML], formCtrlPresets[opts.Type]
 	style := "position:absolute;73.5pt;width:108pt;height:59.25pt;z-index:1;visibility:hidden"
-	if opts.formCtrl {
+	if opts.vmlType == vmlTypeFormControl {
 		leftOffset, vmlID = 0, 201
 		style = "position:absolute;73.5pt;width:108pt;height:59.25pt;z-index:1;mso-wrap-style:tight"
+	}
+	if opts.vmlType == vmlTypeEmbeddedObjects {
+		leftOffset, vmlID = 0, 201
+		style = "position:absolute;margin-left:0;margin-top:0;width:37.5pt;height:42pt;z-index:1"
+		preset = formCtrlPreset{fill: &vFill{Color2: "window [65]"}, objectType: "Pict"}
+		opts.relTargetID = "rId" + strconv.Itoa(f.addRels("xl/drawings/_rels/"+path.Base(drawingVML)+".rels", SourceRelationshipImage, "../media/"+path.Base(opts.relTarget), ""))
 	}
 	colStart, rowStart, colEnd, rowEnd, _, _, x2, y2 := f.positionObjectPixels(opts.sheet, col, row, int(opts.FormControl.Width), int(opts.FormControl.Height), &opts.Format)
 	anchor := fmt.Sprintf("%d, %d, %d, 0, %d, %d, %d, %d", colStart, leftOffset, rowStart, colEnd, x2, rowEnd, y2)
@@ -893,9 +935,16 @@ func (f *File) addDrawingVML(sheetID int, drawingVML string, opts *vmlOptions) e
 		// Load exist VML shapes from xl/drawings/vmlDrawing%d.vml
 		d, err := f.decodeVMLDrawingReader(drawingVML)
 		if err != nil {
-			return err
+			return shapeID, err
 		}
 		if d != nil {
+			for _, shape := range d.Shape {
+				ID, err := strconv.Atoi(strings.TrimPrefix(shape.ID, "_x0000_s"))
+				if err != nil {
+					return shapeID, err
+				}
+				shapeID = max(shapeID, ID)
+			}
 			vml.ShapeType.ID = d.ShapeType.ID
 			vml.ShapeType.CoordSize = d.ShapeType.CoordSize
 			vml.ShapeType.Spt = d.ShapeType.Spt
@@ -917,13 +966,21 @@ func (f *File) addDrawingVML(sheetID int, drawingVML string, opts *vmlOptions) e
 			}
 		}
 	}
+	for _, shape := range vml.Shape {
+		ID, err := strconv.Atoi(strings.TrimPrefix(shape.ID, "_x0000_s"))
+		if err != nil {
+			return shapeID, err
+		}
+		shapeID = max(shapeID, ID)
+	}
+	shapeID++
 	sp, err := f.addFormCtrlShape(preset, col, row, anchor, opts)
 	if err != nil {
-		return err
+		return shapeID, err
 	}
 	s, _ := xml.Marshal(sp)
 	shape := xlsxShape{
-		ID:          "_x0000_s1025",
+		ID:          fmt.Sprintf("_x0000_s%d", shapeID),
 		Type:        fmt.Sprintf("#_x0000_t%d", vmlID),
 		Style:       style,
 		Button:      preset.strokeButton,
@@ -935,7 +992,7 @@ func (f *File) addDrawingVML(sheetID int, drawingVML string, opts *vmlOptions) e
 	}
 	vml.Shape = append(vml.Shape, shape)
 	f.VMLDrawing[drawingVML] = vml
-	return err
+	return shapeID, err
 }
 
 // GetFormControls retrieves all form controls in a worksheet by a given
@@ -964,14 +1021,14 @@ func (f *File) GetFormControls(sheet string) ([]FormControl, error) {
 			if sp.Type != "#_x0000_t201" {
 				continue
 			}
-			formControl, err := extractFormControl(sp.Val)
+			vmlOptions, err := extractVMLOptions(sp.Val)
 			if err != nil {
 				return formControls, err
 			}
-			if formControl.Type == FormControlNote || formControl.Cell == "" {
+			if vmlOptions.Type == FormControlNote || vmlOptions.FormControl.Cell == "" {
 				continue
 			}
-			formControls = append(formControls, formControl)
+			formControls = append(formControls, vmlOptions.FormControl)
 		}
 		return formControls, err
 	}
@@ -979,31 +1036,31 @@ func (f *File) GetFormControls(sheet string) ([]FormControl, error) {
 		if sp.Type != "#_x0000_t201" {
 			continue
 		}
-		formControl, err := extractFormControl(sp.Val)
+		vmlOptions, err := extractVMLOptions(sp.Val)
 		if err != nil {
 			return formControls, err
 		}
-		if formControl.Type == FormControlNote || formControl.Cell == "" {
+		if vmlOptions.Type == FormControlNote || vmlOptions.FormControl.Cell == "" {
 			continue
 		}
-		formControls = append(formControls, formControl)
+		formControls = append(formControls, vmlOptions.FormControl)
 	}
 	return formControls, err
 }
 
-// extractFormControl provides a function to extract form controls for a
-// worksheets by given client data.
-func extractFormControl(clientData string) (FormControl, error) {
+// extractVMLOptions extract VML options from shape client XML.
+func extractVMLOptions(clientData string) (vmlOptions, error) {
 	var (
 		err         error
 		formControl FormControl
 		shapeVal    decodeShapeVal
+		vmlOptions  vmlOptions
 	)
 	if err = xml.Unmarshal(fmt.Appendf(nil, "<shape>%s</shape>", clientData), &shapeVal); err != nil {
-		return formControl, err
+		return vmlOptions, err
 	}
 	for formCtrlType, preset := range formCtrlPresets {
-		if shapeVal.ClientData.ObjectType == preset.objectType && shapeVal.ClientData.Anchor != "" {
+		if shapeVal.ClientData.ObjectType == "Pict" || shapeVal.ClientData.ObjectType == preset.objectType && shapeVal.ClientData.Anchor != "" {
 			formControl.Paragraph = extractVMLFont(shapeVal.TextBox.Div.Font)
 			if len(formControl.Paragraph) > 0 && formControl.Paragraph[0].Font == nil {
 				formControl.Text = formControl.Paragraph[0].Text
@@ -1012,10 +1069,10 @@ func extractFormControl(clientData string) (FormControl, error) {
 			formControl.Type = formCtrlType
 			col, row, err := extractAnchorCell(shapeVal.ClientData.Anchor)
 			if err != nil {
-				return formControl, err
+				return vmlOptions, err
 			}
 			if formControl.Cell, err = CoordinatesToCellName(col+1, row+1); err != nil {
-				return formControl, err
+				return vmlOptions, err
 			}
 			formControl.Macro = shapeVal.ClientData.FmlaMacro
 			formControl.Checked = shapeVal.ClientData.Checked != 0
@@ -1026,9 +1083,11 @@ func extractFormControl(clientData string) (FormControl, error) {
 			formControl.IncChange = shapeVal.ClientData.Inc
 			formControl.PageChange = shapeVal.ClientData.Page
 			formControl.Horizontally = shapeVal.ClientData.Horiz != nil
+			vmlOptions.relTargetID = shapeVal.ImageData.RelID
+			vmlOptions.FormControl = formControl
 		}
 	}
-	return formControl, err
+	return vmlOptions, err
 }
 
 // extractAnchorCell extract left-top cell coordinates from given VML anchor

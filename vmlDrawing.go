@@ -165,6 +165,7 @@ type xClientData struct {
 	Locked        string  `xml:"x:Locked,omitempty"`
 	PrintObject   string  `xml:"x:PrintObject,omitempty"`
 	AutoFill      string  `xml:"x:AutoFill,omitempty"`
+	AutoPict      *string `xml:"x:AutoPict"`
 	FmlaMacro     string  `xml:"x:FmlaMacro,omitempty"`
 	TextHAlign    string  `xml:"x:TextHAlign,omitempty"`
 	TextVAlign    string  `xml:"x:TextVAlign,omitempty"`
@@ -221,6 +222,7 @@ type decodeShape struct {
 // shape in the file xl/drawings/vmlDrawing%d.vml.
 type decodeShapeVal struct {
 	TextBox    decodeVMLTextBox    `xml:"textbox"`
+	ImageData  decodeVMLImageData  `xml:"imagedata"`
 	ClientData decodeVMLClientData `xml:"ClientData"`
 }
 
@@ -263,6 +265,13 @@ type decodeVMLDiv struct {
 // the file xl/drawings/vmlDrawing%d.vml.
 type decodeVMLTextBox struct {
 	Div decodeVMLDiv `xml:"div"`
+}
+
+// decodeVMLImageData defines the structure used to parse the v:imagedata
+// element in the VML.
+type decodeVMLImageData struct {
+	RelID string `xml:"relid,attr"`
+	Title string `xml:"title,attr,omitempty"`
 }
 
 // decodeVMLClientData defines the structure used to parse the x:ClientData
@@ -313,8 +322,11 @@ type formCtrlPreset struct {
 
 // vmlOptions defines the structure used to internal comments and form controls.
 type vmlOptions struct {
-	formCtrl bool
-	sheet    string
+	vmlType     vmlType
+	shapeID     string
+	sheet       string
+	relTarget   string
+	relTargetID string
 	Comment
 	FormControl
 }
