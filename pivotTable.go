@@ -47,6 +47,7 @@ type PivotTableOptions struct {
 	Columns             []PivotTableField
 	Data                []PivotTableField
 	Filter              []PivotTableField
+	DataColumnFirst     bool
 	RowGrandTotals      bool
 	ColGrandTotals      bool
 	ShowDrill           bool
@@ -999,14 +1000,24 @@ func (f *File) addPivotColFields(pt *xlsxPivotTableDefinition, opts *PivotTableO
 	if err != nil {
 		return err
 	}
+
+	// in order to create pivot in case there is many Columns and Data.
+	// The field with x attribute value -2 is the "Values" (Data) field on
+	// the column axis. DataColumnFirst controls whether it is placed before
+	// (true) or after (false, the default) user-defined column fields.
+	if len(opts.Data) > 1 && opts.DataColumnFirst {
+		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
+			X: -2,
+		})
+	}
+
 	for _, fieldIdx := range colFieldsIndex {
 		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
 			X: fieldIdx,
 		})
 	}
 
-	// in order to create pivot in case there is many Columns and Data
-	if len(opts.Data) > 1 {
+	if len(opts.Data) > 1 && !opts.DataColumnFirst {
 		pt.ColFields.Field = append(pt.ColFields.Field, &xlsxField{
 			X: -2,
 		})
@@ -1455,6 +1466,16 @@ func (f *File) extractPivotTableFields(pt *xlsxPivotTableDefinition, pc *xlsxPiv
 				f.extractPivotTableShowValuesAs(pc, field, &dataField)
 			}
 			opts.Data = append(opts.Data, dataField)
+		}
+	}
+
+	// Detect whether the "Values" (Data) column (x="-2") is positioned
+	// before user-defined column fields on the column axis. The -2 field
+	// only appears when there are multiple data fields; in that case,
+	// its position relative to the other colFields determines display order.
+	if len(opts.Data) > 1 && pt.ColFields != nil && len(pt.ColFields.Field) > 1 {
+		if pt.ColFields.Field[0].X == -2 {
+			opts.DataColumnFirst = true
 		}
 	}
 }
