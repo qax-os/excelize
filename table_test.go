@@ -31,6 +31,8 @@ func TestAddTable(t *testing.T) {
 	tables, err := f.GetTables("Sheet2")
 	assert.Len(t, tables, 3)
 	assert.NoError(t, err)
+	assert.Equal(t, boolPtr(true), tables[0].ShowHeaderRow)
+	assert.Equal(t, boolPtr(false), tables[1].ShowHeaderRow)
 
 	// Test add table with already exist table name
 	assert.Equal(t, f.AddTable("Sheet2", &Table{Name: "Table1"}), ErrExistsTableName)
