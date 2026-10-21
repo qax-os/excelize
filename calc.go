@@ -1130,6 +1130,11 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 				}
 				if !opfdStack.Empty() {
 					argsStack.Peek().(*list.List).PushBack(opfdStack.Pop().(formulaArg))
+				} else if i > 0 && (tokens[i-1].TType == efp.TokenTypeArgument ||
+					(tokens[i-1].TType == efp.TokenTypeFunction && tokens[i-1].TSubType == efp.TokenSubTypeStart)) {
+					// Previous token was also an argument separator or the function
+					// opening paren, so this slot was intentionally left empty.
+					argsStack.Peek().(*list.List).PushBack(newEmptyFormulaArg())
 				}
 				continue
 			}
@@ -1538,7 +1543,10 @@ func isOperatorPrefixToken(token efp.Token) bool {
 
 // isOperand determine if the token is parse operand.
 func isOperand(token efp.Token) bool {
-	return token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber || token.TSubType == efp.TokenSubTypeText || token.TSubType == efp.TokenSubTypeLogical)
+	return token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber ||
+		token.TSubType == efp.TokenSubTypeText ||
+		token.TSubType == efp.TokenSubTypeLogical ||
+		token.TSubType == efp.TokenSubTypeError)
 }
 
 // tokenToFormulaArg create a formula argument by given token.
@@ -1549,6 +1557,8 @@ func tokenToFormulaArg(token efp.Token) formulaArg {
 	case efp.TokenSubTypeNumber:
 		num, _ := strconv.ParseFloat(token.TValue, 64)
 		return newNumberFormulaArg(num)
+	case efp.TokenSubTypeError:
+		return newErrorFormulaArg(token.TValue, token.TValue)
 	default:
 		return newStringFormulaArg(token.TValue)
 	}
@@ -15164,9 +15174,12 @@ func (fn *formulaFuncs) ADDRESS(argsList *list.List) formulaArg {
 	}
 	absNum := newNumberFormulaArg(1)
 	if argsList.Len() >= 3 {
-		absNum = argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
-		if absNum.Type != ArgNumber {
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		absNumArg := argsList.Front().Next().Next().Value.(formulaArg)
+		if absNumArg.Type != ArgEmpty {
+			absNum = absNumArg.ToNumber()
+			if absNum.Type != ArgNumber {
+				return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			}
 		}
 	}
 	if absNum.Number < 1 || absNum.Number > 4 {
@@ -15174,9 +15187,12 @@ func (fn *formulaFuncs) ADDRESS(argsList *list.List) formulaArg {
 	}
 	a1 := newBoolFormulaArg(true)
 	if argsList.Len() >= 4 {
-		a1 = argsList.Front().Next().Next().Next().Value.(formulaArg).ToBool()
-		if a1.Type != ArgNumber {
-			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		a1Arg := argsList.Front().Next().Next().Next().Value.(formulaArg)
+		if a1Arg.Type != ArgEmpty {
+			a1 = a1Arg.ToBool()
+			if a1.Type != ArgNumber {
+				return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			}
 		}
 	}
 	var sheetText string
