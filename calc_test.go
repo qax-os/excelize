@@ -1503,6 +1503,9 @@ func TestCalcCellValue(t *testing.T) {
 		"ERROR.TYPE(XOR(\"text\"))": "3",
 		"ERROR.TYPE(HEX2BIN(2,1))":  "6",
 		"ERROR.TYPE(NA())":          "7",
+		// ERROR.TYPE with error literal
+		"ERROR.TYPE(#NAME?)": "5",
+		"ERROR.TYPE(#N/A)":   "7",
 		// ISBLANK
 		"ISBLANK(A1)": "FALSE",
 		"ISBLANK(A5)": "TRUE",
@@ -1593,6 +1596,9 @@ func TestCalcCellValue(t *testing.T) {
 		"TYPE(TRUE)":     "4",
 		"TYPE(NA())":     "16",
 		"TYPE(MUNIT(2))": "64",
+		// TYPE with error literal
+		"TYPE(#VALUE!)": "16",
+		"TYPE(#N/A)":    "16",
 		// T
 		"T(\"text\")": "text",
 		"T(N(10))":    "",

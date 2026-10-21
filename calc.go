@@ -1543,7 +1543,10 @@ func isOperatorPrefixToken(token efp.Token) bool {
 
 // isOperand determine if the token is parse operand.
 func isOperand(token efp.Token) bool {
-	return token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber || token.TSubType == efp.TokenSubTypeText || token.TSubType == efp.TokenSubTypeLogical)
+	return token.TType == efp.TokenTypeOperand && (token.TSubType == efp.TokenSubTypeNumber ||
+		token.TSubType == efp.TokenSubTypeText ||
+		token.TSubType == efp.TokenSubTypeLogical ||
+		token.TSubType == efp.TokenSubTypeError)
 }
 
 // tokenToFormulaArg create a formula argument by given token.
@@ -1554,6 +1557,8 @@ func tokenToFormulaArg(token efp.Token) formulaArg {
 	case efp.TokenSubTypeNumber:
 		num, _ := strconv.ParseFloat(token.TValue, 64)
 		return newNumberFormulaArg(num)
+	case efp.TokenSubTypeError:
+		return newErrorFormulaArg(token.TValue, token.TValue)
 	default:
 		return newStringFormulaArg(token.TValue)
 	}
