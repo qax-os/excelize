@@ -14,9 +14,16 @@ package excelize
 import (
 	"encoding/xml"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+// chartRefFormulaRegex matches the cell reference formula element in the chart
+// part XML, for example, <f>Sheet1!$A$1:$A$3</f>. The formula content never
+// contains the '<' character since it is XML-escaped when it appears in a
+// worksheet name.
+var chartRefFormulaRegex = regexp.MustCompile(`<f>([^<]*)</f>`)
 
 // ChartType is the type of supported chart types.
 type ChartType byte
@@ -1402,6 +1409,40 @@ func (f *File) countCharts() int {
 		return true
 	})
 	return count
+}
+
+// adjustCharts provides a function to update the worksheet name in the cell
+// reference formulas of the charts after a worksheet has been renamed by the
+// SetSheetName function, so that the charts keep referencing the renamed
+// worksheet instead of losing their series data.
+func (f *File) adjustCharts(source, target string) {
+	f.Pkg.Range(func(k, v interface{}) bool {
+		path := k.(string)
+		if !strings.Contains(path, "xl/charts/chart") {
+			return true
+		}
+		if adjusted, changed := adjustChartRefSheetName(v.([]byte), source, target); changed {
+			f.Pkg.Store(path, adjusted)
+		}
+		return true
+	})
+}
+
+// adjustChartRefSheetName replaces the source worksheet name with the target
+// worksheet name in every cell reference formula of the given chart part XML
+// content, and reports whether any replacement was made.
+func adjustChartRefSheetName(content []byte, source, target string) ([]byte, bool) {
+	var changed bool
+	adjusted := chartRefFormulaRegex.ReplaceAllFunc(content, func(match []byte) []byte {
+		formula := formulaUnescaper.Replace(string(chartRefFormulaRegex.FindSubmatch(match)[1]))
+		ref := adjustRangeSheetName(formula, source, target)
+		if ref == formula {
+			return match
+		}
+		changed = true
+		return []byte("<f>" + formulaEscaper.Replace(ref) + "</f>")
+	})
+	return adjusted, changed
 }
 
 // ptToEMUs provides a function to convert pt to EMUs, 1 pt = 12700 EMUs. The

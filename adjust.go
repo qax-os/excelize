@@ -317,6 +317,16 @@ func escapeSheetName(name string) string {
 	return name
 }
 
+// unescapeSheetName returns the worksheet name with the enclosing single
+// quotation marks removed and the doubled single quotation marks restored, as
+// the inverse of the escapeSheetName function.
+func unescapeSheetName(name string) string {
+	if len(name) > 1 && strings.HasPrefix(name, "'") && strings.HasSuffix(name, "'") {
+		return strings.ReplaceAll(name[1:len(name)-1], "''", "'")
+	}
+	return name
+}
+
 // adjustFormulaColumnName adjust column name in the formula reference.
 func adjustFormulaColumnName(name, operand string, abs, keepRelative bool, dir adjustDirection, num, offset int) (string, string, bool, error) {
 	if name == "" || (!abs && keepRelative) {
@@ -487,17 +497,15 @@ func transformParenthesesToken(token efp.Token) string {
 // adjustRangeSheetName returns replaced range reference by given source and
 // target sheet name.
 func adjustRangeSheetName(rng, source, target string) string {
-	source = escapeSheetName(source)
 	cellRefs := strings.Split(rng, ",")
 	for i, cellRef := range cellRefs {
 		rangeRefs := strings.Split(cellRef, ":")
 		for j, rangeRef := range rangeRefs {
 			parts := strings.Split(rangeRef, "!")
 			for k, part := range parts {
-				if strings.TrimPrefix(strings.TrimSuffix(part, "'"), "'") == source {
-					part = escapeSheetName(target)
+				if unescapeSheetName(part) == source {
+					parts[k] = escapeSheetName(target)
 				}
-				parts[k] = part
 			}
 			rangeRefs[j] = strings.Join(parts, "!")
 		}
