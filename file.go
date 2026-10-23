@@ -193,11 +193,7 @@ func (f *File) writeToZip(zw ZipWriter) error {
 			f.zip64Entries = append(f.zip64Entries, path)
 		}
 	}
-	var (
-		n                int
-		err              error
-		files, tempFiles []string
-	)
+	var files, tempFiles []string
 	f.Pkg.Range(func(path, content interface{}) bool {
 		if _, ok := f.streams[path.(string)]; ok {
 			return true
@@ -207,12 +203,16 @@ func (f *File) writeToZip(zw ZipWriter) error {
 	})
 	sort.Sort(sort.Reverse(sort.StringSlice(files)))
 	for _, path := range files {
-		var fi io.Writer
-		if fi, err = zw.Create(path); err != nil {
-			break
+		fi, err := zw.Create(path)
+		if err != nil {
+			return err
 		}
 		content, _ := f.Pkg.Load(path)
-		if n, err = fi.Write(content.([]byte)); int64(n) > math.MaxUint32 {
+		n, err := fi.Write(content.([]byte))
+		if err != nil {
+			return err
+		}
+		if int64(n) > math.MaxUint32 {
 			f.zip64Entries = append(f.zip64Entries, path)
 		}
 	}
@@ -225,15 +225,19 @@ func (f *File) writeToZip(zw ZipWriter) error {
 	})
 	sort.Sort(sort.Reverse(sort.StringSlice(tempFiles)))
 	for _, path := range tempFiles {
-		var fi io.Writer
-		if fi, err = zw.Create(path); err != nil {
-			break
+		fi, err := zw.Create(path)
+		if err != nil {
+			return err
 		}
-		if n, err = fi.Write(f.readBytes(path)); int64(n) > math.MaxUint32 {
+		n, err := fi.Write(f.readBytes(path))
+		if err != nil {
+			return err
+		}
+		if int64(n) > math.MaxUint32 {
 			f.zip64Entries = append(f.zip64Entries, path)
 		}
 	}
-	return err
+	return nil
 }
 
 // writeZip64LFH function sets the ZIP version to 0x2D (45) in the Local File
