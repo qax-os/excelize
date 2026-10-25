@@ -12916,16 +12916,17 @@ func (fn *formulaFuncs) EDATE(argsList *list.List) formulaArg {
 		return month
 	}
 	y, d := dateTime.Year(), dateTime.Day()
-	m := int(dateTime.Month()) + int(month.Number)
-	if month.Number < 0 {
+	m := int(dateTime.Month()) + int(month.Number) - 1
+	if m < 0 {
 		y -= int(math.Ceil(-1 * float64(m) / 12))
 	}
-	if month.Number > 11 {
+	if m > 11 {
 		y += int(math.Floor(float64(m) / 12))
 	}
 	if m = m % 12; m < 0 {
 		m += 12
 	}
+	m++
 	if d > 28 {
 		if days := getDaysInMonth(y, m); d > days {
 			d = days
