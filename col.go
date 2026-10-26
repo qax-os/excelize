@@ -18,7 +18,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/tiendc/go-deepcopy"
 	"golang.org/x/text/width"
 )
 
@@ -547,8 +546,7 @@ func (ws *xlsxWorksheet) setColWidth(minVal, maxVal int, width float64) {
 func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol) []xlsxCol {
 	var fc []xlsxCol
 	for i := max(MinColumns, col.Min); i <= min(MaxColumns, col.Max); i++ {
-		var c xlsxCol
-		_ = deepcopy.Copy(&c, col)
+		c := col.clone()
 		c.Min, c.Max = i, i
 		fc = append(fc, c)
 	}
@@ -566,8 +564,7 @@ func flatCols(col xlsxCol, cols []xlsxCol, replacer func(fc, c xlsxCol) xlsxCol)
 				fc[idx] = replacer(fc[idx], column)
 				continue
 			}
-			var c xlsxCol
-			_ = deepcopy.Copy(&c, column)
+			c := column.clone()
 			c.Min, c.Max = i, i
 			fc = append(fc, c)
 		}
