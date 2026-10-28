@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/richardlehane/mscfb"
+	"github.com/tiendc/go-deepcopy"
 	"golang.org/x/text/encoding/charmap"
 )
 
@@ -140,7 +141,8 @@ func (f *File) mergeExpandedCols(ws *xlsxWorksheet) {
 				Width:        ws.Cols.Col[i-1].Width,
 			}, ws.Cols.Col[i]); i++ {
 		}
-		column := ws.Cols.Col[left].clone()
+		var column xlsxCol
+		_ = deepcopy.Copy(&column, ws.Cols.Col[left])
 		if left < i-1 {
 			column.Max = ws.Cols.Col[i-1].Min
 		}
@@ -766,7 +768,8 @@ func (f *File) copySheet(from, to int) error {
 		return err
 	}
 	f.clearCalcCache()
-	worksheet := cloner.cloneWorksheet(sheet)
+	worksheet := &xlsxWorksheet{}
+	err = deepcopy.Copy(worksheet, sheet)
 	toSheetID := strconv.Itoa(f.getSheetID(f.GetSheetName(to)))
 	sheetXMLPath := "xl/worksheets/sheet" + toSheetID + ".xml"
 	if len(worksheet.SheetViews.SheetView) > 0 {
@@ -784,7 +787,7 @@ func (f *File) copySheet(from, to int) error {
 	fromSheetXMLPath, _ := f.getSheetXMLPath(fromSheet)
 	fromSheetAttr, _ := f.xmlAttr.Load(fromSheetXMLPath)
 	f.xmlAttr.Store(sheetXMLPath, fromSheetAttr)
-	return nil
+	return err
 }
 
 // getSheetState returns sheet visible enumeration by given hidden status.

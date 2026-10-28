@@ -19,6 +19,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/tiendc/go-deepcopy"
 )
 
 // duplicateHelperFunc defines functions to duplicate helper.
@@ -740,9 +742,9 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 	var ok bool
 	var rowCopy xlsxRow
 
-	for _, r := range ws.SheetData.Row {
+	for i, r := range ws.SheetData.Row {
 		if r.R == row {
-			rowCopy = r.clone()
+			err = deepcopy.Copy(&rowCopy, ws.SheetData.Row[i])
 			ok = true
 			break
 		}
@@ -763,6 +765,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 			break
 		}
 	}
+	rowCopy.C = append(make([]xlsxC, 0, len(rowCopy.C)), rowCopy.C...)
 	rowCopy.adjustSingleRowDimensions(row2 - row)
 	_ = f.adjustSingleRowFormulas(sheet, sheet, &rowCopy, row, row2-row, true)
 
@@ -817,7 +820,8 @@ func (f *File) duplicateConditionalFormat(ws *xlsxWorksheet, sheet string, row, 
 				}
 			}
 			if len(SQRef) > 0 {
-				cfCopy := cf.clone()
+				var cfCopy xlsxConditionalFormatting
+				_ = deepcopy.Copy(&cfCopy, *cf)
 				cfCopy.SQRef = strings.Join(SQRef, " ")
 				cfs = append(cfs, &cfCopy)
 			}
@@ -847,7 +851,8 @@ func (f *File) duplicateDataValidations(ws *xlsxWorksheet, sheet string, row, ro
 				}
 			}
 			if len(SQRef) > 0 {
-				dvCopy := dv.clone()
+				var dvCopy xlsxDataValidation
+				_ = deepcopy.Copy(&dvCopy, *dv)
 				dvCopy.Sqref = strings.Join(SQRef, " ")
 				dvs = append(dvs, &dvCopy)
 			}
