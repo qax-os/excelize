@@ -133,9 +133,10 @@ func (f *File) UnmergeCell(sheet, topLeftCell, bottomRightCell string) error {
 }
 
 // GetMergeCells provides a function to get all merged cells from a specific
-// worksheet. If the `withoutValues` parameter is set to true, it will not
-// return the cell values of merged cells, only the range reference will be
-// returned. For example get all merged cells on Sheet1:
+// worksheet. This function is concurrency safe. If the `withoutValues`
+// parameter is set to true, it will not return the cell values of merged
+// cells, only the range reference will be returned. For example get all
+// merged cells on Sheet1:
 //
 //	mergeCells, err := f.GetMergeCells("Sheet1")
 //
@@ -151,22 +152,31 @@ func (f *File) GetMergeCells(sheet string, withoutValues ...bool) ([]MergeCell, 
 	if len(withoutValues) > 0 {
 		withoutVal = withoutValues[0]
 	}
+	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
+		f.mu.Unlock()
 		return mergeCells, err
 	}
-	if ws.MergeCells != nil {
-		if err = ws.mergeOverlapCells(); err != nil {
-			return mergeCells, err
-		}
-		mergeCells = make([]MergeCell, 0, len(ws.MergeCells.Cells))
-		for i := range ws.MergeCells.Cells {
-			ref, val := ws.MergeCells.Cells[i].Ref, ""
-			if !withoutVal {
-				cell := strings.Split(ref, ":")[0]
-				val, _ = f.GetCellValue(sheet, cell)
-			}
-			mergeCells = append(mergeCells, []string{ref, val})
+	f.mu.Unlock()
+	ws.mu.Lock()
+	if ws.MergeCells == nil {
+		ws.mu.Unlock()
+		return mergeCells, err
+	}
+	if err = ws.mergeOverlapCells(); err != nil {
+		ws.mu.Unlock()
+		return mergeCells, err
+	}
+	mergeCells = make([]MergeCell, 0, len(ws.MergeCells.Cells))
+	for _, mergeCell := range ws.MergeCells.Cells {
+		mergeCells = append(mergeCells, []string{mergeCell.Ref, ""})
+	}
+	ws.mu.Unlock()
+	// GetCellValue takes ws.mu itself, so read the values after unlocking
+	if !withoutVal {
+		for i := range mergeCells {
+			mergeCells[i][1], _ = f.GetCellValue(sheet, mergeCells[i].GetStartAxis())
 		}
 	}
 	return mergeCells, err
