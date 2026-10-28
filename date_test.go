@@ -114,3 +114,69 @@ func TestExcelDateToTime(t *testing.T) {
 	_, err := ExcelDateToTime(-1, false)
 	assert.EqualError(t, err, newInvalidExcelDateError(-1).Error())
 }
+
+func TestExcelDateToTime1900Boundaries(t *testing.T) {
+	for _, test := range []dateTest{
+		{0, time.Date(1899, time.December, 30, 0, 0, 0, 0, time.UTC)},
+		{0.5, time.Date(1899, time.December, 30, 12, 0, 0, 0, time.UTC)},
+		{1, time.Date(1900, time.January, 1, 0, 0, 0, 0, time.UTC)},
+		{1.25, time.Date(1900, time.January, 1, 6, 0, 0, 0, time.UTC)},
+		{31, time.Date(1900, time.January, 31, 0, 0, 0, 0, time.UTC)},
+		{32, time.Date(1900, time.February, 1, 0, 0, 0, 0, time.UTC)},
+		{59, time.Date(1900, time.February, 28, 0, 0, 0, 0, time.UTC)},
+		{59.75, time.Date(1900, time.February, 28, 18, 0, 0, 0, time.UTC)},
+		{60, time.Date(1900, time.February, 28, 0, 0, 0, 0, time.UTC)},
+		{60.5, time.Date(1900, time.February, 28, 12, 0, 0, 0, time.UTC)},
+		{61, time.Date(1900, time.March, 1, 0, 0, 0, 0, time.UTC)},
+		{61.5, time.Date(1900, time.March, 1, 12, 0, 0, 0, time.UTC)},
+		{62, time.Date(1900, time.March, 2, 0, 0, 0, 0, time.UTC)},
+	} {
+		t.Run(fmt.Sprintf("%g", test.ExcelValue), func(t *testing.T) {
+			got, err := ExcelDateToTime(test.ExcelValue, false)
+			assert.NoError(t, err)
+			assert.Equal(t, test.GoValue, got)
+		})
+	}
+}
+
+func TestExcelDateToTimeEarlyDatesRoundTrip(t *testing.T) {
+	for _, date1904 := range []bool{false, true} {
+		first, last, year := 1, 59, 1900
+		if date1904 {
+			first, last, year = 0, 62, 1904
+		}
+		for day := first; day <= last; day++ {
+			for hour := 0; hour < 24; hour += 6 {
+				t.Run(fmt.Sprintf("1904=%t/day=%d/hour=%d", date1904, day, hour), func(t *testing.T) {
+					calendarDay := day
+					if date1904 {
+						calendarDay++
+					}
+					want := time.Date(year, time.January, calendarDay, hour, 0, 0, 0, time.UTC)
+					serial := float64(day) + float64(hour)/24
+					encoded, err := timeToExcelTime(want, date1904)
+					assert.NoError(t, err)
+					assert.Equal(t, serial, encoded)
+					got, err := ExcelDateToTime(serial, date1904)
+					assert.NoError(t, err)
+					assert.Equal(t, want, got)
+				})
+			}
+		}
+	}
+}
+
+func TestExcelDateToTimePreservesFormulaWeekday(t *testing.T) {
+	f := NewFile()
+	defer func() { assert.NoError(t, f.Close()) }()
+	for _, test := range []struct {
+		serial int
+		want   string
+	}{{1, "1"}, {31, "3"}, {59, "3"}, {60, "4"}, {61, "5"}} {
+		formula := fmt.Sprintf("WEEKDAY(%d)", test.serial)
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A1", formula))
+		got, err := f.CalcCellValue("Sheet1", "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, got, formula)
+	}
+}
