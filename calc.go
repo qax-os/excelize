@@ -303,6 +303,7 @@ type formulaArg struct {
 	Boolean              bool
 	Error                string
 	Type                 ArgType
+	omitted              bool
 	cellRefs, cellRanges *list.List
 }
 
@@ -1020,6 +1021,19 @@ func newEmptyFormulaArg() formulaArg {
 	return formulaArg{Type: ArgEmpty}
 }
 
+// newOmittedFormulaArg create an empty formula argument for an argument which
+// has been omitted in the arguments list of a formula function.
+func newOmittedFormulaArg() formulaArg {
+	return formulaArg{Type: ArgEmpty, omitted: true}
+}
+
+// isOmittedArg determine if the given token in front of an argument separator
+// token means that the argument between the two has been omitted, as the third
+// argument in the formula ADDRESS(5,124,,TRUE).
+func isOmittedArg(previous efp.Token) bool {
+	return previous.TType == efp.TokenTypeArgument || isFunctionStartToken(previous)
+}
+
 // evalInfixExp evaluate syntax analysis by given infix expression after
 // lexical analysis. Evaluate an infix expression containing formulas by
 // stacks:
@@ -1130,6 +1144,8 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 				}
 				if !opfdStack.Empty() {
 					argsStack.Peek().(*list.List).PushBack(opfdStack.Pop().(formulaArg))
+				} else if i > 0 && isOmittedArg(tokens[i-1]) {
+					argsStack.Peek().(*list.List).PushBack(newOmittedFormulaArg())
 				}
 				continue
 			}
@@ -15141,6 +15157,21 @@ func (fn *formulaFuncs) IF(argsList *list.List) formulaArg {
 
 // Lookup and Reference Functions
 
+// addressArg returns the argument at the given position in the arguments list
+// of the ADDRESS formula function, and reports if that argument has been
+// supplied instead of omitted.
+func addressArg(argsList *list.List, pos int) (formulaArg, bool) {
+	if argsList.Len() < pos {
+		return formulaArg{}, false
+	}
+	arg := argsList.Front()
+	for i := 1; i < pos; i++ {
+		arg = arg.Next()
+	}
+	value := arg.Value.(formulaArg)
+	return value, !value.omitted
+}
+
 // ADDRESS function takes a row and a column number and returns a cell
 // reference as a text string. The syntax of the function is:
 //
@@ -15164,9 +15195,8 @@ func (fn *formulaFuncs) ADDRESS(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	absNum := newNumberFormulaArg(1)
-	if argsList.Len() >= 3 {
-		absNum = argsList.Front().Next().Next().Value.(formulaArg).ToNumber()
-		if absNum.Type != ArgNumber {
+	if arg, ok := addressArg(argsList, 3); ok {
+		if absNum = arg.ToNumber(); absNum.Type != ArgNumber {
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
 	}
@@ -15174,15 +15204,14 @@ func (fn *formulaFuncs) ADDRESS(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	a1 := newBoolFormulaArg(true)
-	if argsList.Len() >= 4 {
-		a1 = argsList.Front().Next().Next().Next().Value.(formulaArg).ToBool()
-		if a1.Type != ArgNumber {
+	if arg, ok := addressArg(argsList, 4); ok {
+		if a1 = arg.ToBool(); a1.Type != ArgNumber {
 			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
 	}
 	var sheetText string
-	if argsList.Len() == 5 {
-		sheetText = fmt.Sprintf("%s!", argsList.Back().Value.(formulaArg).Value())
+	if arg, ok := addressArg(argsList, 5); ok {
+		sheetText = fmt.Sprintf("%s!", arg.Value())
 	}
 	formatter := addressFmtMaps[fmt.Sprintf("%d_%s", int(absNum.Number), a1.Value())]
 	addr, err := formatter(int(colNum.Number), int(rowNum.Number))
