@@ -1503,6 +1503,9 @@ func TestCalcCellValue(t *testing.T) {
 		"ERROR.TYPE(XOR(\"text\"))": "3",
 		"ERROR.TYPE(HEX2BIN(2,1))":  "6",
 		"ERROR.TYPE(NA())":          "7",
+		// ERROR.TYPE with error literal
+		"ERROR.TYPE(#NAME?)": "5",
+		"ERROR.TYPE(#N/A)":   "7",
 		// ISBLANK
 		"ISBLANK(A1)": "FALSE",
 		"ISBLANK(A5)": "TRUE",
@@ -1593,6 +1596,9 @@ func TestCalcCellValue(t *testing.T) {
 		"TYPE(TRUE)":     "4",
 		"TYPE(NA())":     "16",
 		"TYPE(MUNIT(2))": "64",
+		// TYPE with error literal
+		"TYPE(#VALUE!)": "16",
+		"TYPE(#N/A)":    "16",
 		// T
 		"T(\"text\")": "text",
 		"T(N(10))":    "",
@@ -2170,6 +2176,8 @@ func TestCalcCellValue(t *testing.T) {
 		"IF(VALUE(B3)=1,0,1)":                     "1",
 		"IF(1=2,1)":                               "FALSE",
 		"IF(1=2,1,IF(1=2,1))*2":                   "0",
+		// IF with omitted branches
+		"IF(1=2,,1)": "1",
 		// Excel Lookup and Reference Functions
 		// ADDRESS
 		"ADDRESS(1,1,1,TRUE)":            "$A$1",
@@ -2191,6 +2199,12 @@ func TestCalcCellValue(t *testing.T) {
 		"ADDRESS(1,1,4,TRUE,\"\")":       "!A1",
 		"ADDRESS(1,2,4,TRUE,\"\")":       "!B1",
 		"ADDRESS(1,1,4,TRUE,\"Sheet1\")": "Sheet1!A1",
+		// ADDRESS with omitted optional arguments
+		"ADDRESS(5,124,,,\"I1\")":      "I1!$DT$5",
+		"ADDRESS(5,124,,FALSE,\"I1\")": "I1!R5C124",
+		"ADDRESS(1,1,4,,\"Sheet1\")":   "Sheet1!A1",
+		// CHOOSE with omitted values
+		"CHOOSE(2,,\"a\")": "a",
 		// CHOOSE
 		"CHOOSE(4,\"red\",\"blue\",\"green\",\"brown\")": "brown",
 		"CHOOSE(1,\"red\",\"blue\",\"green\",\"brown\")": "red",
