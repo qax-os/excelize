@@ -474,6 +474,68 @@ func TestGetSheetMap(t *testing.T) {
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
+func TestGetSheetXMLPath(t *testing.T) {
+	f := &File{sheetMap: map[string]string{
+		"Sheet1": "xl/worksheets/sheet1.xml",
+		"Sheet2": "xl/worksheets/sheet2.xml",
+		"Kelvin": "xl/worksheets/sheet3.xml",
+		"Σheet":  "xl/worksheets/sheet4.xml",
+	}}
+	for _, testCase := range []struct {
+		name, sheet, expectedPath string
+		exists                    bool
+	}{
+		{"exact_name", "Sheet1", "xl/worksheets/sheet1.xml", true},
+		{"another_sheet", "Sheet2", "xl/worksheets/sheet2.xml", true},
+		{"lowercase_name", "sheet1", "xl/worksheets/sheet1.xml", true},
+		{"uppercase_name", "SHEET2", "xl/worksheets/sheet2.xml", true},
+		{"mixed_case_name", "sHeEt1", "xl/worksheets/sheet1.xml", true},
+		{"exact_unicode_name", "Kelvin", "xl/worksheets/sheet3.xml", true},
+		{"kelvin_sign_case_fold", "Kelvin", "xl/worksheets/sheet3.xml", true},
+		{"greek_final_sigma_case_fold", "ςHEET", "xl/worksheets/sheet4.xml", true},
+		{"missing_name", "Sheet3", "", false},
+		{"empty_name", "", "", false},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			sheetPath, ok := f.getSheetXMLPath(testCase.sheet)
+			assert.Equal(t, testCase.expectedPath, sheetPath)
+			assert.Equal(t, testCase.exists, ok)
+		})
+	}
+	for _, sheetMap := range []map[string]string{nil, {}} {
+		f.sheetMap = sheetMap
+		sheetPath, ok := f.getSheetXMLPath("Sheet1")
+		assert.Empty(t, sheetPath)
+		assert.False(t, ok)
+	}
+}
+
+func TestGetSheetXMLPathRenameAndDelete(t *testing.T) {
+	f := NewFile()
+	_, err := f.NewSheet("Sheet2")
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellStr("sheet2", "A1", "value"))
+	assert.NoError(t, f.SetSheetName("Sheet2", "Renamed"))
+	sheetPath, ok := f.getSheetXMLPath("Sheet2")
+	assert.Empty(t, sheetPath)
+	assert.False(t, ok)
+	for _, name := range []string{"Renamed", "renamed", "RENAMED"} {
+		sheetPath, ok = f.getSheetXMLPath(name)
+		assert.Equal(t, "xl/worksheets/sheet2.xml", sheetPath)
+		assert.True(t, ok)
+		value, err := f.GetCellValue(name, "A1")
+		assert.NoError(t, err)
+		assert.Equal(t, "value", value)
+	}
+	assert.NoError(t, f.DeleteSheet("RENAMED"))
+	for _, name := range []string{"Sheet2", "Renamed", "renamed"} {
+		sheetPath, ok = f.getSheetXMLPath(name)
+		assert.Empty(t, sheetPath)
+		assert.False(t, ok)
+	}
+	assert.NoError(t, f.Close())
+}
+
 func TestSetActiveSheet(t *testing.T) {
 	f := NewFile()
 	f.WorkBook.BookViews = nil
@@ -713,6 +775,38 @@ func TestRemoveContentTypesPart(t *testing.T) {
 	f.ContentTypes = nil
 	f.Pkg.Store(defaultXMLPathContentTypes, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.removeContentTypesPart(ContentTypeSpreadSheetMLWorksheet, "/xl/worksheets/sheet1.xml"), "XML syntax error on line 1: invalid UTF-8")
+}
+
+func BenchmarkGetSheetXMLPath(b *testing.B) {
+	for _, sheets := range []int{1, 10, 100, 1000} {
+		b.Run(strconv.Itoa(sheets), func(b *testing.B) {
+			f := &File{sheetMap: make(map[string]string, sheets)}
+			for i := 1; i <= sheets; i++ {
+				f.sheetMap["Sheet"+strconv.Itoa(i)] = "xl/worksheets/sheet" + strconv.Itoa(i) + ".xml"
+			}
+			for _, testCase := range []struct {
+				name, sheet, expectedPath string
+				exists                    bool
+			}{
+				{"exact_name", "Sheet" + strconv.Itoa(sheets), "xl/worksheets/sheet" + strconv.Itoa(sheets) + ".xml", true},
+				{"case_insensitive_name", "sheet" + strconv.Itoa(sheets), "xl/worksheets/sheet" + strconv.Itoa(sheets) + ".xml", true},
+				{"missing_name", "Missing", "", false},
+			} {
+				b.Run(testCase.name, func(b *testing.B) {
+					var sheetPath string
+					var ok bool
+					b.ReportAllocs()
+					b.ResetTimer()
+					for i := 0; i < b.N; i++ {
+						sheetPath, ok = f.getSheetXMLPath(testCase.sheet)
+					}
+					b.StopTimer()
+					assert.Equal(b, testCase.expectedPath, sheetPath)
+					assert.Equal(b, testCase.exists, ok)
+				})
+			}
+		})
+	}
 }
 
 func BenchmarkNewSheet(b *testing.B) {
