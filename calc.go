@@ -334,6 +334,8 @@ func (fa formulaArg) ToNumber() formulaArg {
 	var n float64
 	var err error
 	switch fa.Type {
+	case ArgError:
+		return fa
 	case ArgString:
 		n, err = strconv.ParseFloat(fa.String, 64)
 		if err != nil {
@@ -354,6 +356,8 @@ func (fa formulaArg) ToBool() formulaArg {
 	var b bool
 	var err error
 	switch fa.Type {
+	case ArgError:
+		return fa
 	case ArgString:
 		b, err = strconv.ParseBool(fa.String)
 		if err != nil {
@@ -11657,6 +11661,9 @@ func (fn *formulaFuncs) WEIBULL(argsList *list.List) formulaArg {
 			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 		}
 		cumulative := argsList.Back().Value.(formulaArg).ToBool()
+		if cumulative.Type == ArgError {
+			return cumulative
+		}
 		if cumulative.Boolean && cumulative.Number == 1 {
 			return newNumberFormulaArg(1 - math.Exp(0-math.Pow(x.Number/beta.Number, alpha.Number)))
 		}
