@@ -168,7 +168,11 @@ func ExcelDateToTime(excelDate float64, use1904Format bool) (time.Time, error) {
 	if excelDate < 0 {
 		return time.Time{}, newInvalidExcelDateError(excelDate)
 	}
-	return timeFromExcelTime(excelDate, use1904Format), nil
+	date := timeFromExcelTime(excelDate, use1904Format)
+	if !use1904Format && excelDate >= 1 && excelDate < 60 {
+		date = date.AddDate(0, 0, 1)
+	}
+	return date, nil
 }
 
 // isLeapYear determine if leap year for a given year.
