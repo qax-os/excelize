@@ -1109,6 +1109,52 @@ func TestSetRowHeight(t *testing.T) {
 	assert.Equal(t, ErrParameterInvalid, f.SetRowHeight("Sheet1", 2, -2))
 }
 
+func TestSetRowHeightCustomHeight(t *testing.T) {
+	customHeight := func(enable bool) RowHeightOpts {
+		return RowHeightOpts{CustomHeight: &enable}
+	}
+	for _, c := range []struct {
+		name   string
+		opts   []RowHeightOpts
+		expect string
+	}{
+		{name: "default", expect: `<row r="1" ht="30" customHeight="true">`},
+		{name: "unset option", opts: []RowHeightOpts{{}}, expect: `<row r="1" ht="30" customHeight="true">`},
+		{name: "enabled", opts: []RowHeightOpts{customHeight(true)}, expect: `<row r="1" ht="30" customHeight="true">`},
+		{name: "disabled", opts: []RowHeightOpts{customHeight(false)}, expect: `<row r="1" ht="30">`},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			f := NewFile()
+			assert.NoError(t, f.SetRowHeight("Sheet1", 1, 30, c.opts...))
+			ht, err := f.GetRowHeight("Sheet1", 1)
+			assert.NoError(t, err)
+			assert.Equal(t, 30.0, ht)
+			assert.Contains(t, savedSheetXML(t, f), c.expect)
+		})
+	}
+
+	// Test the option replaces the custom height flag of an existing row
+	f := NewFile()
+	assert.NoError(t, f.SetRowHeight("Sheet1", 1, 30))
+	assert.NoError(t, f.SetRowHeight("Sheet1", 1, 40, customHeight(false)))
+	assert.Contains(t, savedSheetXML(t, f), `<row r="1" ht="40">`)
+}
+
+// savedSheetXML returns the first worksheet XML as written to the workbook.
+func savedSheetXML(t *testing.T, f *File) string {
+	t.Helper()
+	buf, err := f.WriteToBuffer()
+	assert.NoError(t, err)
+	saved, err := OpenReader(bytes.NewReader(buf.Bytes()))
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, saved.Close())
+	}()
+	content, ok := saved.Pkg.Load("xl/worksheets/sheet1.xml")
+	assert.True(t, ok)
+	return string(content.([]byte))
+}
+
 func TestNumberFormats(t *testing.T) {
 	f, err := OpenFile(filepath.Join("test", "Book1.xlsx"))
 	if !assert.NoError(t, err) {

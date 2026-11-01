@@ -428,13 +428,28 @@ func (f *File) xmlDecoder(name string) (bool, *xml.Decoder, *os.File, error) {
 	return true, f.xmlNewDecoder(tempFile), tempFile, err
 }
 
+// RowHeightOpts can be passed to SetRowHeight to control how the row height is
+// stored.
+type RowHeightOpts struct {
+	// CustomHeight specifies whether the height is marked as set by the user.
+	// Excel keeps a marked height and may recalculate an unmarked one when the
+	// file is opened. The default value is true.
+	CustomHeight *bool
+}
+
 // SetRowHeight provides a function to set the height of a single row. If the
 // value of height is 0, will hide the specified row, if the value of height is
 // -1, will unset the custom row height. For example, set the height of the
 // first row in Sheet1:
 //
 //	err := f.SetRowHeight("Sheet1", 1, 50)
-func (f *File) SetRowHeight(sheet string, row int, height float64) error {
+//
+// Set the height of the first row in Sheet1 and let Excel recalculate it when
+// the file is opened:
+//
+//	customHeight := false
+//	err := f.SetRowHeight("Sheet1", 1, 50, excelize.RowHeightOpts{CustomHeight: &customHeight})
+func (f *File) SetRowHeight(sheet string, row int, height float64, opts ...RowHeightOpts) error {
 	if row < 1 {
 		return newInvalidRowNumberError(row)
 	}
@@ -457,8 +472,14 @@ func (f *File) SetRowHeight(sheet string, row int, height float64) error {
 		ws.SheetData.Row[rowIdx].CustomHeight = false
 		return err
 	}
+	customHeight := true
+	for _, opt := range opts {
+		if opt.CustomHeight != nil {
+			customHeight = *opt.CustomHeight
+		}
+	}
 	ws.SheetData.Row[rowIdx].Ht = float64Ptr(height)
-	ws.SheetData.Row[rowIdx].CustomHeight = true
+	ws.SheetData.Row[rowIdx].CustomHeight = customHeight
 	return err
 }
 
