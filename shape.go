@@ -631,7 +631,8 @@ func (f *File) extractShapeFromAnchor(sheet string, anchor *xdrCellAnchor) *Shap
 		err   error
 		shape *Shape
 	)
-	if anchor.From == nil || anchor.Sp == nil {
+	if anchor.From == nil || anchor.Sp == nil || anchor.Sp.SpPr == nil ||
+		anchor.Sp.NvSpPr == nil || anchor.Sp.NvSpPr.CNvPr == nil {
 		return shape
 	}
 	if cell, err = CoordinatesToCellName(anchor.From.Col+1, anchor.From.Row+1); err != nil {
@@ -664,7 +665,9 @@ func (f *File) extractShapeFromAnchor(sheet string, anchor *xdrCellAnchor) *Shap
 		shape.Format.Locked = boolPtr(anchor.ClientData.FLocksWithSheet)
 	}
 	anchor.Sp.extractShapeFill(shape)
-	shape.Paragraph = anchor.Sp.TxBody.extractRichTextRun()
+	if anchor.Sp.TxBody != nil {
+		shape.Paragraph = anchor.Sp.TxBody.extractRichTextRun()
+	}
 	return shape
 }
 
@@ -677,7 +680,8 @@ func (f *File) extractShapeFromDecodeAnchor(sheet, graphicFrame string) *Shape {
 		deCellAnchor = new(decodeCellAnchor)
 	)
 	_ = f.xmlNewDecoder(strings.NewReader("<decodeCellAnchor>" + graphicFrame + "</decodeCellAnchor>")).Decode(&deCellAnchor)
-	if deCellAnchor.From == nil || deCellAnchor.Sp == nil {
+	if deCellAnchor.From == nil || deCellAnchor.Sp == nil || deCellAnchor.Sp.SpPr == nil ||
+		deCellAnchor.Sp.NvSpPr == nil || deCellAnchor.Sp.NvSpPr.CNvPr == nil {
 		return shape
 	}
 	if cell, err = CoordinatesToCellName(deCellAnchor.From.Col+1, deCellAnchor.From.Row+1); err != nil {
@@ -710,7 +714,9 @@ func (f *File) extractShapeFromDecodeAnchor(sheet, graphicFrame string) *Shape {
 		shape.Format.Locked = boolPtr(deCellAnchor.ClientData.FLocksWithSheet)
 	}
 	deCellAnchor.Sp.extractShapeFill(shape)
-	shape.Paragraph = deCellAnchor.Sp.TxBody.extractRichTextRun()
+	if deCellAnchor.Sp.TxBody != nil {
+		shape.Paragraph = deCellAnchor.Sp.TxBody.extractRichTextRun()
+	}
 	return shape
 }
 
