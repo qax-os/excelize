@@ -1422,6 +1422,42 @@ func calcDiv(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	return nil
 }
 
+// resolveEmptyOperand returns the value a blank operand takes next to the
+// given operand of a comparison operator.
+func resolveEmptyOperand(opd formulaArg) formulaArg {
+	if opd.Type == ArgString {
+		return newStringFormulaArg("")
+	}
+	if opd.Type == ArgNumber && opd.Boolean {
+		return newBoolFormulaArg(false)
+	}
+	return newNumberFormulaArg(0)
+}
+
+// resolveEmptyOperands resolves the blank operands of an infix operator. A
+// comparison matches a blank operand to the data type of its counterpart,
+// every other operator reads it as the number zero.
+func resolveEmptyOperands(rOpd, lOpd formulaArg, operator string) (formulaArg, formulaArg) {
+	var comparison bool
+	switch operator {
+	case "=", "<>", "<", "<=", ">", ">=":
+		comparison = rOpd.Type != lOpd.Type
+	}
+	if comparison && rOpd.Type == ArgEmpty {
+		return resolveEmptyOperand(lOpd), lOpd
+	}
+	if comparison && lOpd.Type == ArgEmpty {
+		return rOpd, resolveEmptyOperand(rOpd)
+	}
+	if rOpd.Type == ArgEmpty {
+		rOpd = newNumberFormulaArg(0)
+	}
+	if lOpd.Type == ArgEmpty {
+		lOpd = newNumberFormulaArg(0)
+	}
+	return rOpd, lOpd
+}
+
 // calculate evaluate basic arithmetic operations.
 func calculate(opdStack *Stack, opt efp.Token) error {
 	if opt.TValue == "-" && opt.TType == efp.TokenTypeOperatorPrefix {
@@ -1458,12 +1494,7 @@ func calculate(opdStack *Stack, opt efp.Token) error {
 		rOpd := opdStack.Pop().(formulaArg)
 		lOpd := opdStack.Pop().(formulaArg)
 		if opt.TValue != "&" {
-			if rOpd.Type == ArgEmpty {
-				rOpd = newNumberFormulaArg(0)
-			}
-			if lOpd.Type == ArgEmpty {
-				lOpd = newNumberFormulaArg(0)
-			}
+			rOpd, lOpd = resolveEmptyOperands(rOpd, lOpd, opt.TValue)
 		}
 		if rOpd.Type == ArgError {
 			return errors.New(rOpd.String)
