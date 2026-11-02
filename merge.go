@@ -155,18 +155,26 @@ func (f *File) GetMergeCells(sheet string, withoutValues ...bool) ([]MergeCell, 
 	if err != nil {
 		return mergeCells, err
 	}
-	if ws.MergeCells != nil {
-		if err = ws.mergeOverlapCells(); err != nil {
-			return mergeCells, err
-		}
-		mergeCells = make([]MergeCell, 0, len(ws.MergeCells.Cells))
-		for i := range ws.MergeCells.Cells {
-			ref, val := ws.MergeCells.Cells[i].Ref, ""
-			if !withoutVal {
-				cell := strings.Split(ref, ":")[0]
-				val, _ = f.GetCellValue(sheet, cell)
-			}
-			mergeCells = append(mergeCells, []string{ref, val})
+	ws.mu.Lock()
+	if ws.MergeCells == nil {
+		ws.mu.Unlock()
+		return mergeCells, err
+	}
+	if err = ws.mergeOverlapCells(); err != nil {
+		ws.mu.Unlock()
+		return mergeCells, err
+	}
+	mergeCells = make([]MergeCell, 0, len(ws.MergeCells.Cells))
+	for i := range ws.MergeCells.Cells {
+		mergeCells = append(mergeCells, []string{ws.MergeCells.Cells[i].Ref, ""})
+	}
+	ws.mu.Unlock()
+	// GetCellValue takes the worksheet lock itself, so the values are read
+	// after releasing it.
+	if !withoutVal {
+		for i := range mergeCells {
+			cell := strings.Split(mergeCells[i][0], ":")[0]
+			mergeCells[i][1], _ = f.GetCellValue(sheet, cell)
 		}
 	}
 	return mergeCells, err
