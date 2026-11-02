@@ -2273,6 +2273,9 @@ func (f *File) GetEmbeddedObjects(sheet string) ([]EmbeddedObject, error) {
 		if err != nil {
 			return objects, err
 		}
+		if vmlOptions.FormControl.Cell == "" {
+			continue
+		}
 		object.Cell = vmlOptions.FormControl.Cell
 		rels, err := f.relsReader("xl/drawings/_rels/" + path.Base(drawingVMLTarget) + ".rels")
 		if err != nil {
@@ -2306,12 +2309,16 @@ func (f *File) getVMLShapeByID(drawingVML string, shapeID int) (vmlOptions, erro
 		if err != nil {
 			return vmlOptions, err
 		}
+		if d == nil {
+			return vmlOptions, nil
+		}
 		for _, sp := range d.Shape {
 			if sp.ID != fmt.Sprintf("_x0000_s%d", shapeID) {
 				continue
 			}
 			return extractVMLOptions(sp.Val)
 		}
+		return vmlOptions, nil
 	}
 	for _, sp := range vml.Shape {
 		if sp.ID != fmt.Sprintf("_x0000_s%d", shapeID) {

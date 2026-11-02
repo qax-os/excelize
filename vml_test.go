@@ -157,6 +157,18 @@ func TestDecodeVMLDrawingReader(t *testing.T) {
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 }
 
+func TestGetFormControlsWithoutVML(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.AddFormControl("Sheet1", FormControl{Cell: "A1", Type: FormControlButton}))
+	path := "xl/drawings/vmlDrawing1.vml"
+	f.Pkg.Delete(path)
+	delete(f.VMLDrawing, path)
+	delete(f.DecodeVMLDrawing, path)
+	controls, err := f.GetFormControls("Sheet1")
+	assert.NoError(t, err)
+	assert.Empty(t, controls)
+}
+
 func TestCommentsReader(t *testing.T) {
 	f := NewFile()
 	// Test read comments with unsupported charset
