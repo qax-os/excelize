@@ -3,6 +3,7 @@ package excelize
 import (
 	"encoding/xml"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -244,4 +245,28 @@ func TestMergeCellsParser(t *testing.T) {
 	cell, err := ws.mergeCellsParser("A1")
 	assert.NoError(t, err)
 	assert.Equal(t, "A1", cell)
+}
+
+func TestGetMergeCellsConcurrency(t *testing.T) {
+	f := NewFile()
+	for row := 2; row <= 40; row += 2 {
+		assert.NoError(t, f.MergeCell("Sheet1", fmt.Sprintf("A%d", row), fmt.Sprintf("B%d", row)))
+	}
+	img, err := os.ReadFile(filepath.Join("test", "images", "excel.png"))
+	assert.NoError(t, err)
+	wg := new(sync.WaitGroup)
+	for row := 1; row <= 20; row++ {
+		wg.Add(1)
+		go func(row int) {
+			defer wg.Done()
+			// Adding a picture with auto fit reads the merged cells of the worksheet
+			assert.NoError(t, f.AddPictureFromBytes("Sheet1", fmt.Sprintf("D%d", row), &Picture{
+				Extension: ".png", File: img, Format: &GraphicOptions{AutoFit: true},
+			}))
+			mergeCells, err := f.GetMergeCells("Sheet1")
+			assert.NoError(t, err)
+			assert.Len(t, mergeCells, 20)
+		}(row)
+	}
+	wg.Wait()
 }
