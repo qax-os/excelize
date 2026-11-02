@@ -1802,6 +1802,11 @@ func TestCalcCellValue(t *testing.T) {
 		"TIMEVALUE(\"01/01/2011 02:23\")": "0.0993055555555555",
 		// WEEKDAY
 		"WEEKDAY(0)":                 "7",
+		"WEEKDAY(1)":                 "1",
+		"WEEKDAY(31)":                "3",
+		"WEEKDAY(59)":                "3",
+		"WEEKDAY(60)":                "4",
+		"WEEKDAY(61)":                "5",
 		"WEEKDAY(47119)":             "2",
 		"WEEKDAY(\"12/25/2012\")":    "3",
 		"WEEKDAY(\"12/25/2012\",1)":  "3",
