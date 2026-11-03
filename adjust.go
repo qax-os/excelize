@@ -166,7 +166,7 @@ func (f *File) adjustColDimensions(sheet string, ws *xlsxWorksheet, col, offset 
 						worksheet.SheetData.Row[rowIdx].C[colIdx].R, _ = CoordinatesToCellName(newCol, cellRow)
 					}
 				}
-				if err := f.adjustFormula(sheet, sheetN, &worksheet.SheetData.Row[rowIdx].C[colIdx], columns, col, offset, false); err != nil {
+				if err := f.adjustFormula(sheet, sheetN, &worksheet.SheetData.Row[rowIdx].C[colIdx], columns, col, offset); err != nil {
 					return err
 				}
 			}
@@ -192,7 +192,7 @@ func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset 
 		numOfRows := len(worksheet.SheetData.Row)
 		for i := 0; i < numOfRows; i++ {
 			r := &worksheet.SheetData.Row[i]
-			if err = f.adjustSingleRowFormulas(sheet, sheetN, r, row, offset, false); err != nil {
+			if err = f.adjustSingleRowFormulas(sheet, sheetN, r, row, offset); err != nil {
 				return err
 			}
 		}
@@ -211,7 +211,7 @@ func (f *File) adjustRowDimensions(sheet string, ws *xlsxWorksheet, row, offset 
 		if newRow := r.R + offset; r.R >= row && newRow > 0 {
 			r.adjustSingleRowDimensions(offset)
 		}
-		if err := f.adjustSingleRowFormulas(sheet, sheet, r, row, offset, false); err != nil {
+		if err := f.adjustSingleRowFormulas(sheet, sheet, r, row, offset); err != nil {
 			return err
 		}
 	}
@@ -228,9 +228,9 @@ func (r *xlsxRow) adjustSingleRowDimensions(offset int) {
 }
 
 // adjustSingleRowFormulas provides a function to adjust single row formulas.
-func (f *File) adjustSingleRowFormulas(sheet, sheetN string, r *xlsxRow, num, offset int, si bool) error {
+func (f *File) adjustSingleRowFormulas(sheet, sheetN string, r *xlsxRow, num, offset int) error {
 	for i := 0; i < len(r.C); i++ {
-		if err := f.adjustFormula(sheet, sheetN, &r.C[i], rows, num, offset, si); err != nil {
+		if err := f.adjustFormula(sheet, sheetN, &r.C[i], rows, num, offset); err != nil {
 			return err
 		}
 	}
@@ -280,7 +280,7 @@ func (f *File) adjustCellRef(cellRef string, dir adjustDirection, num, offset in
 
 // adjustFormula provides a function to adjust formula reference and shared
 // formula reference.
-func (f *File) adjustFormula(sheet, sheetN string, cell *xlsxC, dir adjustDirection, num, offset int, si bool) error {
+func (f *File) adjustFormula(sheet, sheetN string, cell *xlsxC, dir adjustDirection, num, offset int) error {
 	var err error
 	if cell.f != "" {
 		if cell.f, err = f.adjustFormulaRef(sheet, sheetN, cell.f, false, dir, num, offset); err != nil {
@@ -293,9 +293,6 @@ func (f *File) adjustFormula(sheet, sheetN string, cell *xlsxC, dir adjustDirect
 	if cell.F.Ref != "" && sheet == sheetN {
 		if cell.F.Ref, err = f.adjustCellRef(cell.F.Ref, dir, num, offset); err != nil {
 			return err
-		}
-		if si && cell.F.Si != nil {
-			cell.F.Si = intPtr(*cell.F.Si + 1)
 		}
 	}
 	if cell.F.Content != "" {
@@ -651,8 +648,7 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 	if ws.TableParts == nil || len(ws.TableParts.TableParts) == 0 {
 		return nil
 	}
-	for idx := 0; idx < len(ws.TableParts.TableParts); idx++ {
-		tbl := ws.TableParts.TableParts[idx]
+	for _, tbl := range append([]*xlsxTablePart{}, ws.TableParts.TableParts...) {
 		target := f.getSheetRelationshipsTargetByID(sheet, tbl.RID)
 		tableXML := strings.TrimPrefix(strings.ReplaceAll(target, "..", "xl"), "/")
 		content, ok := f.Pkg.Load(tableXML)
@@ -664,34 +660,82 @@ func (f *File) adjustTable(ws *xlsxWorksheet, sheet string, dir adjustDirection,
 			Decode(&t); err != nil && err != io.EOF {
 			return err
 		}
-		coordinates, err := rangeRefToCoordinates(t.Ref)
+		keep, err := f.adjustTableRange(&t, sheet, dir, num, offset)
 		if err != nil {
 			return err
 		}
-		// Remove the table when deleting the header row of the table
-		if dir == rows && num == coordinates[0] && offset == -1 {
-			ws.TableParts.TableParts = append(ws.TableParts.TableParts[:idx], ws.TableParts.TableParts[idx+1:]...)
-			ws.TableParts.Count = len(ws.TableParts.TableParts)
-			idx--
+		if !keep {
+			f.deleteTablePart(ws, sheet, tbl.RID, tableXML)
 			continue
 		}
-		coordinates = f.adjustAutoFilterHelper(dir, coordinates, num, offset)
-		x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
-		if y2-y1 < 1 || x2-x1 < 0 {
-			ws.TableParts.TableParts = append(ws.TableParts.TableParts[:idx], ws.TableParts.TableParts[idx+1:]...)
-			ws.TableParts.Count = len(ws.TableParts.TableParts)
-			idx--
-			continue
-		}
-		t.Ref, _ = coordinatesToRangeRef([]int{x1, y1, x2, y2})
-		if t.AutoFilter != nil {
-			t.AutoFilter.Ref = t.Ref
-		}
-		_ = f.setTableColumns(sheet, true, x1, y1, x2, &t)
-		// Currently doesn't support query table
-		t.TableType, t.TotalsRowCount, t.ConnectionID = "", 0, 0
 		table, _ := xml.Marshal(t)
 		f.saveFileList(tableXML, table)
+	}
+	return nil
+}
+
+func (f *File) adjustTableRange(t *xlsxTable, sheet string, dir adjustDirection, num, offset int) (bool, error) {
+	coordinates, err := rangeRefToCoordinates(t.Ref)
+	if err != nil {
+		return false, err
+	}
+	headerRows := t.headerRowCount()
+	if dir == rows && offset == -1 {
+		// Remove the table when deleting the header row of the table
+		if headerRows > 0 && num == coordinates[1] {
+			return false, nil
+		}
+		if num == coordinates[3] {
+			t.TotalsRowCount = 0
+		}
+	}
+	coordinates = f.adjustAutoFilterHelper(dir, coordinates, num, offset)
+	x1, y1, x2, y2 := coordinates[0], coordinates[1], coordinates[2], coordinates[3]
+	dataRows := y2 - y1 + 1 - headerRows
+	if dataRows < 1 || x2 < x1 {
+		return false, nil
+	}
+	if dataRows-t.TotalsRowCount < 1 {
+		t.TotalsRowCount = 0
+	}
+	t.Ref, _ = coordinatesToRangeRef([]int{x1, y1, x2, y2})
+	if t.AutoFilter != nil {
+		t.AutoFilter.Ref, _ = coordinatesToRangeRef([]int{x1, y1, x2, y2 - t.TotalsRowCount})
+	}
+	_ = f.setTableColumns(sheet, headerRows > 0, x1, y1, x2, t)
+	// Currently doesn't support query table
+	t.TableType, t.ConnectionID = "", 0
+	f.adjustTableSortState(t, dir, num, offset)
+	return true, f.adjustTableColumnFormulas(t, sheet, dir, num, offset)
+}
+
+func (f *File) adjustTableSortState(t *xlsxTable, dir adjustDirection, num, offset int) {
+	if t.SortState == nil {
+		return
+	}
+	var conditions []*xlsxSortCondition
+	for _, condition := range t.SortState.SortCondition {
+		if condition.Ref, _ = f.adjustCellRef(condition.Ref, dir, num, offset); condition.Ref != "" {
+			conditions = append(conditions, condition)
+		}
+	}
+	t.SortState.SortCondition = conditions
+	if t.SortState.Ref, _ = f.adjustCellRef(t.SortState.Ref, dir, num, offset); t.SortState.Ref == "" || len(conditions) == 0 {
+		t.SortState = nil
+	}
+}
+
+func (f *File) adjustTableColumnFormulas(t *xlsxTable, sheet string, dir adjustDirection, num, offset int) error {
+	for _, column := range t.TableColumns.TableColumn {
+		for _, formula := range []*xlsxTableFormula{column.CalculatedColumnFormula, column.TotalsRowFormula} {
+			if formula == nil {
+				continue
+			}
+			var err error
+			if formula.Content, err = f.adjustFormulaRef(sheet, sheet, formula.Content, false, dir, num, offset); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -731,20 +775,15 @@ func (f *File) adjustAutoFilter(ws *xlsxWorksheet, sheet string, dir adjustDirec
 // compare and calculate cell reference by the giving adjusting direction,
 // operation reference and offset.
 func (f *File) adjustAutoFilterHelper(dir adjustDirection, coordinates []int, num, offset int) []int {
+	start, end := 0, 2
 	if dir == rows {
-		if coordinates[1] >= num {
-			coordinates[1] += offset
-		}
-		if coordinates[3] >= num {
-			coordinates[3] += offset
-		}
-		return coordinates
+		start, end = 1, 3
 	}
-	if coordinates[0] >= num {
-		coordinates[0] += offset
+	if coordinates[start] > num || (coordinates[start] == num && offset > 0) {
+		coordinates[start] += offset
 	}
-	if coordinates[2] >= num {
-		coordinates[2] += offset
+	if coordinates[end] >= num {
+		coordinates[end] += offset
 	}
 	return coordinates
 }
