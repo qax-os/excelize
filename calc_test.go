@@ -819,7 +819,7 @@ func TestCalcCellValue(t *testing.T) {
 		// SEC
 		"_xlfn.SEC(-3.14159265358979)": "-1",
 		"_xlfn.SEC(0)":                 "1",
-		"_xlfn.SEC(_xlfn.SEC(0))":      "0.54030230586814",
+		"_xlfn.SEC(_xlfn.SEC(0))":      "1.85081571768093",
 		// SECH
 		"_xlfn.SECH(-3.14159265358979)": "0.0862667383340547",
 		"_xlfn.SECH(0)":                 "1",
@@ -6979,6 +6979,25 @@ func TestFormulaRawCellValueOption(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, test.expected, val)
 	}
+}
+
+func TestCalcCellValueSecIsTheReciprocalOfCos(t *testing.T) {
+	f := prepareCalcData([][]interface{}{{0.5}, {1}, {2}, {-3}})
+	for cell, expected := range map[string]string{
+		"B1": "1.13949392732455",
+		"B2": "1.85081571768093",
+		"B3": "-2.40299796172238",
+		"B4": "-1.01010866590799",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", cell, "SEC(A"+cell[1:]+")"))
+		val, err := f.CalcCellValue("Sheet1", cell)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, val, cell)
+	}
+	f.SetCellFormula("Sheet1", "B5", "SEC(0)")
+	val, err := f.CalcCellValue("Sheet1", "B5")
+	assert.NoError(t, err)
+	assert.Equal(t, "1", val)
 }
 
 func TestPrepareTrendGrowth(t *testing.T) {

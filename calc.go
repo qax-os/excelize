@@ -5717,7 +5717,7 @@ func (fn *formulaFuncs) SEC(argsList *list.List) formulaArg {
 	if number.Type == ArgError {
 		return number
 	}
-	return newNumberFormulaArg(math.Cos(number.Number))
+	return newNumberFormulaArg(1 / math.Cos(number.Number))
 }
 
 // SECH function calculates the hyperbolic secant (sech) of a supplied angle.
