@@ -7532,3 +7532,26 @@ func TestCalcINDIRECTSheetRef(t *testing.T) {
 		assert.Equal(t, "#REF!", result, formula)
 	}
 }
+
+func TestCalcNPVRange(t *testing.T) {
+	f := NewFile()
+	for cell, value := range map[string]interface{}{
+		"A1": -1000, "B1": 300, "C1": 400, "D1": 500,
+		"A2": 100, "A3": "text", "A5": 200,
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
+	}
+	for formula, expected := range map[string]string{
+		"NPV(0.1,A1:D1)":       "-19.1243767502221",
+		"NPV(0.1,A1:B1,C1:D1)": "-19.1243767502221",
+		"NPV(0.1,A1,B1,C1,D1)": "-19.1243767502221",
+		"NPV(0.1,{100,200})":   "256.198347107438",
+		// Text and blank cells do not take up a period.
+		"NPV(0.1,A2:A5)": "256.198347107438",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "H1", "="+formula))
+		result, err := f.CalcCellValue("Sheet1", "H1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
