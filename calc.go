@@ -1257,10 +1257,25 @@ func calcPow(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	return nil
 }
 
+// numberTextMismatch reports whether one of the operands is a number and the
+// other one is text, which are never equal. A logical value is excluded, it
+// reaches the comparison as a number holding the logical flag.
+func numberTextMismatch(rOpd, lOpd formulaArg) bool {
+	if rOpd.Boolean || lOpd.Boolean {
+		return false
+	}
+	return rOpd.Type == ArgNumber && lOpd.Type == ArgString ||
+		rOpd.Type == ArgString && lOpd.Type == ArgNumber
+}
+
 // calcEq evaluate equal arithmetic operations.
 func calcEq(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	if rOpd.Type == ArgString && lOpd.Type == ArgString {
 		opdStack.Push(newBoolFormulaArg(strings.EqualFold(lOpd.Value(), rOpd.Value())))
+		return nil
+	}
+	if numberTextMismatch(rOpd, lOpd) {
+		opdStack.Push(newBoolFormulaArg(false))
 		return nil
 	}
 	opdStack.Push(newBoolFormulaArg(rOpd.Value() == lOpd.Value()))
@@ -1271,6 +1286,10 @@ func calcEq(rOpd, lOpd formulaArg, opdStack *Stack) error {
 func calcNEq(rOpd, lOpd formulaArg, opdStack *Stack) error {
 	if rOpd.Type == ArgString && lOpd.Type == ArgString {
 		opdStack.Push(newBoolFormulaArg(!strings.EqualFold(lOpd.Value(), rOpd.Value())))
+		return nil
+	}
+	if numberTextMismatch(rOpd, lOpd) {
+		opdStack.Push(newBoolFormulaArg(true))
 		return nil
 	}
 	opdStack.Push(newBoolFormulaArg(rOpd.Value() != lOpd.Value()))
