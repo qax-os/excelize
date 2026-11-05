@@ -2107,6 +2107,16 @@ func TestCalcCellValue(t *testing.T) {
 		"TEXTJOIN(\",\",FALSE,A1:C2)":   "1,4,,2,5,",
 		"TEXTJOIN(\",\",TRUE,A1:C2)":    "1,4,2,5",
 		"TEXTJOIN(\",\",TRUE,MUNIT(2))": "1,0,0,1",
+		// TEXTSPLIT
+		`TEXTSPLIT("a,b",",")`:                                         "a",
+		`_xlfn.TEXTSPLIT("a,b",",")`:                                   "a",
+		`TEXTJOIN("|",FALSE,TEXTSPLIT("a,b;c,d",",",";"))`:             "a|b|c|d",
+		`TEXTJOIN("|",FALSE,TEXTSPLIT("a;b","",";"))`:                  "a|b",
+		`TEXTJOIN("|",FALSE,TEXTSPLIT("a,, ,b,",",","",TRUE))`:         "a| |b",
+		`TEXTJOIN("|",FALSE,TEXTSPLIT("OneXTwo", "x","",FALSE,1))`:     "One|Two",
+		`TEXTJOIN("|",FALSE,TEXTSPLIT("a,b.c",{",","."}))`:             "a|b|c",
+		`TEXTJOIN("|",FALSE,TEXTSPLIT("a,b;c",",",";",FALSE,0,"*"))`:   "a|b|c|*",
+		`TEXTJOIN("|",FALSE,TEXTSPLIT("a,b;c",",",";",FALSE,0,FALSE))`: "a|b|c|FALSE",
 		// TRIM
 		"TRIM(\" trim text \")":   "trim text",
 		"TRIM(0)":                 "0",
@@ -4274,6 +4284,13 @@ func TestCalcCellValue(t *testing.T) {
 		"TEXTJOIN(\"\",TRUE," + strings.Repeat("0,", 250) + ",0)": {"#VALUE!", "TEXTJOIN accepts at most 252 arguments"},
 		"TEXTJOIN(\",\",FALSE,REPT(\"*\",32768))":                 {"#VALUE!", "TEXTJOIN function exceeds 32767 characters"},
 		"TEXTJOIN(\"\",FALSE,REPT(\"\U0001F600\",16384))":         {"#VALUE!", "TEXTJOIN function exceeds 32767 characters"},
+		// TEXTSPLIT
+		`TEXTSPLIT()`:                          {"#VALUE!", "TEXTSPLIT requires 2 to 6 arguments"},
+		`TEXTSPLIT("a")`:                       {"#VALUE!", "TEXTSPLIT requires 2 to 6 arguments"},
+		`TEXTSPLIT("a",",",";",FALSE,0,"*",1)`: {"#VALUE!", "TEXTSPLIT requires 2 to 6 arguments"},
+		`TEXTSPLIT("a","","")`:                 {"#VALUE!", "#VALUE!"},
+		`TEXTSPLIT("a",",","",FALSE,2)`:        {"#VALUE!", "#VALUE!"},
+		`TEXTSPLIT(NA(),",")`:                  {"#N/A", "#N/A"},
 		// TRIM
 		"TRIM()":    {"#VALUE!", "TRIM requires 1 argument"},
 		"TRIM(1,2)": {"#VALUE!", "TRIM requires 1 argument"},
@@ -7530,5 +7547,74 @@ func TestCalcINDIRECTSheetRef(t *testing.T) {
 		result, err := f.CalcCellValue("Sheet1", "C1")
 		assert.EqualError(t, err, "#REF!", formula)
 		assert.Equal(t, "#REF!", result, formula)
+	}
+}
+
+func TestCalcTEXTSPLIT(t *testing.T) {
+	str, num := newStringFormulaArg, newNumberFormulaArg
+	matrix := func(rows ...[]formulaArg) formulaArg { return newMatrixFormulaArg(rows) }
+	empty, na := newEmptyFormulaArg(), newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+	for _, test := range []struct {
+		name string
+		args []formulaArg
+		want formulaArg
+	}{
+		{"columns", []formulaArg{str("a,b"), str(",")}, matrix([]formulaArg{str("a"), str("b")})},
+		{"rows", []formulaArg{str("a;b"), empty, str(";")}, matrix([]formulaArg{str("a")}, []formulaArg{str("b")})},
+		{"default padding", []formulaArg{str("a,b;c"), str(","), str(";")}, matrix([]formulaArg{str("a"), str("b")}, []formulaArg{str("c"), na})},
+		{"number padding", []formulaArg{str("a,b;c"), str(","), str(";"), empty, empty, num(0)}, matrix([]formulaArg{str("a"), str("b")}, []formulaArg{str("c"), num(0)})},
+		{"boolean padding", []formulaArg{str("a,b;c"), str(","), str(";"), empty, empty, newBoolFormulaArg(false)}, matrix([]formulaArg{str("a"), str("b")}, []formulaArg{str("c"), newBoolFormulaArg(false)})},
+		{"error padding", []formulaArg{str("a,b;c"), str(","), str(";"), empty, empty, na}, matrix([]formulaArg{str("a"), str("b")}, []formulaArg{str("c"), na})},
+		{"unused error padding", []formulaArg{str("a,b"), str(","), empty, empty, empty, na}, matrix([]formulaArg{str("a"), str("b")})},
+		{"empty fields", []formulaArg{str(",a,,b,"), str(",")}, matrix([]formulaArg{str(""), str("a"), str(""), str("b"), str("")})},
+		{"ignore empty fields", []formulaArg{str("a,, ,b,"), str(","), empty, newBoolFormulaArg(true)}, matrix([]formulaArg{str("a"), str(" "), str("b")})},
+		{"ignore empty rows", []formulaArg{str("a;;b;"), empty, str(";"), num(2)}, matrix([]formulaArg{str("a")}, []formulaArg{str("b")})},
+		{"case sensitive", []formulaArg{str("OneXTwo"), str("x")}, matrix([]formulaArg{str("OneXTwo")})},
+		{"case insensitive", []formulaArg{str("OneXTwo"), str("x"), empty, empty, num(1)}, matrix([]formulaArg{str("One"), str("Two")})},
+		{"unicode", []formulaArg{str("甲、乙、丙"), str("、")}, matrix([]formulaArg{str("甲"), str("乙"), str("丙")})},
+		{"literal delimiters", []formulaArg{str("a.b|c"), matrix([]formulaArg{str("."), str("|")})}, matrix([]formulaArg{str("a"), str("b"), str("c")})},
+		{"row delimiters", []formulaArg{str("a;b/c"), empty, matrix([]formulaArg{str(";"), str("/")})}, matrix([]formulaArg{str("a")}, []formulaArg{str("b")}, []formulaArg{str("c")})},
+		{"numeric text", []formulaArg{num(123), str("2")}, matrix([]formulaArg{str("1"), str("3")})},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			args := list.New()
+			for _, arg := range test.args {
+				args.PushBack(arg)
+			}
+			assert.Equal(t, test.want, (&formulaFuncs{}).TEXTSPLIT(args))
+		})
+	}
+	for _, test := range []struct {
+		args []formulaArg
+		code string
+	}{
+		{nil, formulaErrorVALUE},
+		{[]formulaArg{str("a"), str("")}, formulaErrorVALUE},
+		{[]formulaArg{str("a"), str(","), empty, str("invalid")}, formulaErrorVALUE},
+		{[]formulaArg{str("a"), str(","), empty, empty, str("invalid")}, formulaErrorVALUE},
+		{[]formulaArg{str("a"), str(","), empty, empty, num(-1)}, formulaErrorVALUE},
+		{[]formulaArg{str(",,"), str(","), empty, newBoolFormulaArg(true)}, formulaErrorCALC},
+		{[]formulaArg{str("a"), matrix()}, formulaErrorVALUE},
+		{[]formulaArg{str("a"), matrix([]formulaArg{str("")})}, formulaErrorVALUE},
+		{[]formulaArg{str("a"), matrix([]formulaArg{na})}, formulaErrorNA},
+		{[]formulaArg{str("a"), str("\xff")}, formulaErrorVALUE},
+	} {
+		args := list.New()
+		for _, arg := range test.args {
+			args.PushBack(arg)
+		}
+		result := (&formulaFuncs{}).TEXTSPLIT(args)
+		assert.Equal(t, ArgError, result.Type)
+		assert.Equal(t, test.code, result.String)
+	}
+	for i := 0; i < 5; i++ {
+		args := list.New()
+		for j, arg := range []formulaArg{str("a"), str(","), empty, empty, empty} {
+			if i == j {
+				arg = na
+			}
+			args.PushBack(arg)
+		}
+		assert.Equal(t, na, (&formulaFuncs{}).TEXTSPLIT(args))
 	}
 }
