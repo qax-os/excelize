@@ -832,6 +832,7 @@ func (fn *formulaFuncs) implicitIntersect(arg formulaArg) formulaArg {
 //	TEXTAFTER
 //	TEXTBEFORE
 //	TEXTJOIN
+//	TEXTSPLIT
 //	TIME
 //	TIMEVALUE
 //	TINV
@@ -14849,6 +14850,98 @@ func (fn *formulaFuncs) TEXTJOIN(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("TEXTJOIN function exceeds %d characters", TotalCellChars))
 	}
 	return newStringFormulaArg(result)
+}
+
+// TEXTSPLIT splits text into an array using column and row delimiters. The
+// syntax of the function is:
+//
+//	TEXTSPLIT(text,col_delimiter,[row_delimiter],[ignore_empty],[match_mode],[pad_with])
+func (fn *formulaFuncs) TEXTSPLIT(argsList *list.List) formulaArg {
+	if argsList.Len() < 2 || argsList.Len() > 6 {
+		return newErrorFormulaArg(formulaErrorVALUE, "TEXTSPLIT requires 2 to 6 arguments")
+	}
+	args := [6]formulaArg{newEmptyFormulaArg(), newEmptyFormulaArg(), newEmptyFormulaArg(), newBoolFormulaArg(false), newNumberFormulaArg(0), newErrorFormulaArg(formulaErrorNA, formulaErrorNA)}
+	for arg, i := argsList.Front(), 0; arg != nil; arg, i = arg.Next(), i+1 {
+		args[i] = arg.Value.(formulaArg)
+		if i < 5 && args[i].Type == ArgError {
+			return args[i]
+		}
+	}
+	ignoreEmpty := args[3].ToBool()
+	if ignoreEmpty.Type == ArgError {
+		return ignoreEmpty
+	}
+	if args[3].Type == ArgNumber {
+		ignoreEmpty = newBoolFormulaArg(args[3].Number != 0)
+	}
+	matchMode := args[4].ToNumber()
+	if matchMode.Type == ArgError {
+		return matchMode
+	}
+	if matchMode.Number != 0 && matchMode.Number != 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	var delimiters [2]*regexp.Regexp
+	for i, arg := range args[1:3] {
+		if arg.Type == ArgEmpty || arg.Type == ArgUnknown || (arg.Type == ArgString && arg.String == "") {
+			continue
+		}
+		var patterns []string
+		for _, delimiter := range arg.ToList() {
+			if delimiter.Type == ArgError {
+				return delimiter
+			}
+			if delimiter.Value() == "" {
+				return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+			}
+			patterns = append(patterns, regexp.QuoteMeta(delimiter.Value()))
+		}
+		if len(patterns) == 0 {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+		}
+		pattern := strings.Join(patterns, "|")
+		if matchMode.Number == 1 {
+			pattern = "(?i)" + pattern
+		}
+		var err error
+		if delimiters[i], err = regexp.Compile(pattern); err != nil {
+			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
+		}
+	}
+	if delimiters[0] == nil && delimiters[1] == nil {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	rows := []string{args[0].Value()}
+	if delimiters[1] != nil {
+		rows = delimiters[1].Split(rows[0], -1)
+	}
+	var result [][]formulaArg
+	cols := 0
+	for _, row := range rows {
+		fields := []string{row}
+		if delimiters[0] != nil {
+			fields = delimiters[0].Split(row, -1)
+		}
+		var values []formulaArg
+		for _, field := range fields {
+			if field != "" || ignoreEmpty.Number == 0 {
+				values = append(values, newStringFormulaArg(field))
+			}
+		}
+		if len(values) != 0 {
+			result = append(result, values)
+			cols = max(cols, len(values))
+		}
+	}
+	if len(result) == 0 {
+		return newErrorFormulaArg(formulaErrorCALC, formulaErrorCALC)
+	}
+	for i := range result {
+		for len(result[i]) < cols {
+			result[i] = append(result[i], args[5])
+		}
+	}
+	return newMatrixFormulaArg(result)
 }
 
 // textJoin is an implementation of the formula function TEXTJOIN.
