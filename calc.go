@@ -1834,6 +1834,11 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 				ctx.iterations[ref]++
 				ctx.mu.Unlock()
 				arg, _ = f.calcCellValue(ctx, sheet, cell)
+				if arg.Type == ArgMatrix {
+					if values := arg.ToList(); len(values) > 0 {
+						arg = values[0]
+					}
+				}
 				ctx.iterationsCache[ref] = arg
 				f.formulaArgCache.Store(ref, arg)
 				return arg, nil

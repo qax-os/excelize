@@ -7055,6 +7055,20 @@ func TestCalcCellResolver(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
 	_, err := f.CalcCellValue("Sheet1", "F1")
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test calculates formula that reference a cell with a nested range reference
+	t.Run("with_nested_range_references", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1))
+		assert.NoError(t, f.SetCellValue("Sheet1", "B1", 1))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "A1:B1"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B2", "A1:B1"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "XLOOKUP(A2:B2,A2:B2,A2:B2)"))
+		_, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err)
+		cached, ok := f.formulaArgCache.Load("Sheet1!A2")
+		assert.True(t, ok)
+		assert.NotEqual(t, ArgMatrix, cached.(formulaArg).Type, "nested range reference cached as matrix")
+	})
 }
 
 func TestEvalInfixExp(t *testing.T) {
