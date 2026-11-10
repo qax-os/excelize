@@ -1873,6 +1873,9 @@ func (f *File) readDefaultFont() (*xlsxFont, error) {
 	if err != nil {
 		return nil, err
 	}
+	if s.Fonts == nil || len(s.Fonts.Font) == 0 {
+		return nil, ErrWorkbookFileFormat
+	}
 	return s.Fonts.Font[0], err
 }
 
