@@ -9381,7 +9381,18 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 	if minVal := fn.MIN(argsList); minVal.Number < 0 {
 		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
-	number, val, cnt := 0.0, 0.0, 0.0
+	val, cnt := 0.0, 0.0
+	// add adds a value to the sum of the reciprocals and reports whether the
+	// value can be used: the harmonic mean is undefined for a value that is
+	// not greater than zero.
+	add := func(number float64) bool {
+		if number <= 0 {
+			return false
+		}
+		val += 1 / number
+		cnt++
+		return true
+	}
 	for token := argsList.Front(); token != nil; token = token.Next() {
 		arg := token.Value.(formulaArg)
 		switch arg.Type {
@@ -9390,15 +9401,28 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 			if num.Type != ArgNumber {
 				continue
 			}
-			number = num.Number
+			if !add(num.Number) {
+				return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+			}
 		case ArgNumber:
-			number = arg.Number
+			if !add(arg.Number) {
+				return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+			}
+		case ArgMatrix:
+			for _, row := range arg.Matrix {
+				for _, cell := range row {
+					if cell.Type != ArgNumber {
+						continue
+					}
+					if !add(cell.Number) {
+						return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+					}
+				}
+			}
 		}
-		if number <= 0 {
-			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
-		}
-		val += 1 / number
-		cnt++
+	}
+	if cnt == 0 {
+		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
 	}
 	return newNumberFormulaArg(1 / (val / cnt))
 }
