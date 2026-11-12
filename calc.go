@@ -4168,6 +4168,9 @@ func (fn *formulaFuncs) BASE(argsList *list.List) formulaArg {
 		if minLength, err = strconv.Atoi(argsList.Back().Value.(formulaArg).Value()); err != nil {
 			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 		}
+		if minLength < 0 || minLength > MaxFieldLength {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
 	}
 	result := strconv.FormatInt(int64(number.Number), int(radix.Number))
 	if len(result) < minLength {
@@ -5577,6 +5580,12 @@ func (fn *formulaFuncs) ROMAN(argsList *list.List) formulaArg {
 	number := argsList.Front().Value.(formulaArg).ToNumber()
 	if number.Type == ArgError {
 		return number
+	}
+	if number.Number == 0 {
+		return newEmptyFormulaArg()
+	}
+	if number.Number < 0 || number.Number > 3999 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
 	if argsList.Len() > 1 {
 		f := argsList.Back().Value.(formulaArg).ToNumber()
@@ -14040,7 +14049,7 @@ func (fn *formulaFuncs) code(name string, argsList *list.List) formulaArg {
 //
 //	CONCAT(text1,[text2],...)
 func (fn *formulaFuncs) CONCAT(argsList *list.List) formulaArg {
-	return fn.concat(argsList)
+	return fn.concat("CONCAT", argsList)
 }
 
 // CONCATENATE function joins together a series of supplied text strings into
@@ -14048,19 +14057,26 @@ func (fn *formulaFuncs) CONCAT(argsList *list.List) formulaArg {
 //
 //	CONCATENATE(text1,[text2],...)
 func (fn *formulaFuncs) CONCATENATE(argsList *list.List) formulaArg {
-	return fn.concat(argsList)
+	return fn.concat("CONCATENATE", argsList)
 }
 
 // concat is an implementation of the formula functions CONCAT and
 // CONCATENATE.
-func (fn *formulaFuncs) concat(argsList *list.List) formulaArg {
+func (fn *formulaFuncs) concat(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
+	}
 	var buf bytes.Buffer
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		for _, cell := range arg.Value.(formulaArg).ToList() {
 			if cell.Type == ArgError {
 				return cell
 			}
-			buf.WriteString(cell.Value())
+			val := cell.Value()
+			if countUTF16String(val)+countUTF16String(buf.String()) > TotalCellChars {
+				return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s function exceeds %d characters", name, TotalCellChars))
+			}
+			buf.WriteString(val)
 		}
 	}
 	return newStringFormulaArg(buf.String())
@@ -14139,6 +14155,9 @@ func (fn *formulaFuncs) FIXED(argsList *list.List) formulaArg {
 		decimalsArg := argsList.Front().Next().Value.(formulaArg).ToNumber()
 		if decimalsArg.Type != ArgNumber {
 			return decimalsArg
+		}
+		if decimalsArg.Number > 127 {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
 		decimals = int(decimalsArg.Number)
 	}
@@ -14485,7 +14504,11 @@ func (fn *formulaFuncs) replace(name string, argsList *list.List) formulaArg {
 	if startIdx < 1 || endIdx < 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
-	result := sourceText[:startIdx-1] + targetText + sourceText[endIdx-1:]
+	pre, post := sourceText[:startIdx-1], sourceText[endIdx-1:]
+	if countUTF16String(pre)+countUTF16String(targetText)+countUTF16String(post) > TotalCellChars {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s function exceeds %d characters", name, TotalCellChars))
+	}
+	result := pre + targetText + post
 	return newStringFormulaArg(result)
 }
 
@@ -14497,23 +14520,32 @@ func (fn *formulaFuncs) REPT(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "REPT requires 2 arguments")
 	}
-	text := argsList.Front().Value.(formulaArg)
-	if text.Type != ArgString {
+	textArg := argsList.Front().Value.(formulaArg)
+	if textArg.Type != ArgString {
 		return newErrorFormulaArg(formulaErrorVALUE, "REPT requires first argument to be a string")
 	}
-	times := argsList.Back().Value.(formulaArg).ToNumber()
-	if times.Type != ArgNumber {
+	text := textArg.Value()
+	timesArg := argsList.Back().Value.(formulaArg).ToNumber()
+	if timesArg.Type != ArgNumber {
 		return newErrorFormulaArg(formulaErrorVALUE, "REPT requires second argument to be a number")
 	}
-	if times.Number < 0 {
+	times := timesArg.Number
+	if times < 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "REPT requires second argument to be >= 0")
 	}
-	if times.Number == 0 {
+	if times == 0 {
 		return newStringFormulaArg("")
 	}
+	count := math.Trunc(times)
+	if count == 0 || text == "" {
+		return newStringFormulaArg("")
+	}
+	if count > float64(TotalCellChars/countUTF16String(text)) {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("REPT function exceeds %d characters", TotalCellChars))
+	}
 	buf := bytes.Buffer{}
-	for i := 0; i < int(times.Number); i++ {
-		buf.WriteString(text.Value())
+	for i := 0; i < int(count); i++ {
+		buf.WriteString(text)
 	}
 	return newStringFormulaArg(buf.String())
 }
@@ -14559,10 +14591,20 @@ func (fn *formulaFuncs) SUBSTITUTE(argsList *list.List) formulaArg {
 	if argsList.Len() != 3 && argsList.Len() != 4 {
 		return newErrorFormulaArg(formulaErrorVALUE, "SUBSTITUTE requires 3 or 4 arguments")
 	}
-	text, sourceText := argsList.Front().Value.(formulaArg), argsList.Front().Next().Value.(formulaArg)
+	textArg, sourceText := argsList.Front().Value.(formulaArg), argsList.Front().Next().Value.(formulaArg)
 	targetText, instanceNum := argsList.Front().Next().Next().Value.(formulaArg), 0
+	text, oldText, newText := textArg.Value(), sourceText.Value(), targetText.Value()
 	if argsList.Len() == 3 {
-		return newStringFormulaArg(strings.ReplaceAll(text.Value(), sourceText.Value(), targetText.Value()))
+		if oldText == "" {
+			return newStringFormulaArg(text)
+		}
+		matches := strings.Count(text, oldText)
+		unchangedLen := countUTF16String(text) - matches*countUTF16String(oldText)
+		newTextLen := countUTF16String(newText)
+		if unchangedLen > TotalCellChars || (newTextLen > 0 && matches > TotalCellChars/newTextLen) {
+			return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("SUBSTITUTE function exceeds %d characters", TotalCellChars))
+		}
+		return newStringFormulaArg(strings.ReplaceAll(text, oldText, newText))
 	}
 	instanceNumArg := argsList.Back().Value.(formulaArg).ToNumber()
 	if instanceNumArg.Type != ArgNumber {
@@ -14572,10 +14614,13 @@ func (fn *formulaFuncs) SUBSTITUTE(argsList *list.List) formulaArg {
 	if instanceNum < 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "instance_num should be > 0")
 	}
-	str, sourceTextLen, count, chars, pos := text.Value(), len(sourceText.Value()), instanceNum, 0, -1
+	if oldText == "" {
+		return newStringFormulaArg(text)
+	}
+	str, sourceTextLen, count, chars, pos := text, len(oldText), instanceNum, 0, -1
 	for {
 		count--
-		index := strings.Index(str, sourceText.Value())
+		index := strings.Index(str, oldText)
 		if index == -1 {
 			pos = -1
 			break
@@ -14590,10 +14635,13 @@ func (fn *formulaFuncs) SUBSTITUTE(argsList *list.List) formulaArg {
 		}
 	}
 	if pos == -1 {
-		return newStringFormulaArg(text.Value())
+		return newStringFormulaArg(text)
 	}
-	pre, post := text.Value()[:pos], text.Value()[pos+sourceTextLen:]
-	return newStringFormulaArg(pre + targetText.Value() + post)
+	pre, post := text[:pos], text[pos+sourceTextLen:]
+	if countUTF16String(pre)+countUTF16String(newText)+countUTF16String(post) > TotalCellChars {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("SUBSTITUTE function exceeds %d characters", TotalCellChars))
+	}
+	return newStringFormulaArg(pre + newText + post)
 }
 
 // TEXT function converts a supplied numeric value into text, in a
@@ -16321,7 +16369,11 @@ func (fn *formulaFuncs) ENCODEURL(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "ENCODEURL requires 1 argument")
 	}
 	token := argsList.Front().Value.(formulaArg).Value()
-	return newStringFormulaArg(strings.ReplaceAll(url.QueryEscape(token), "+", "%20"))
+	result := strings.ReplaceAll(url.QueryEscape(token), "+", "%20")
+	if countUTF16String(result) > TotalCellChars {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("ENCODEURL function exceeds %d characters", TotalCellChars))
+	}
+	return newStringFormulaArg(result)
 }
 
 // Financial Functions
