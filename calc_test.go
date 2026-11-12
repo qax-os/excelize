@@ -2848,10 +2848,11 @@ func TestCalcCellValue(t *testing.T) {
 		"OCT2HEX(1,-1)":           {"#NUM!", "#NUM!"},
 		// Math and Trigonometric Functions
 		// ABS
-		"ABS()":      {"#VALUE!", "ABS requires 1 numeric argument"},
-		"ABS(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
-		"ABS(~)":     {"#NAME?", "invalid reference"},
-		"ABS(~+1)":   {"", "#NAME?"},
+		"ABS()":            {"#VALUE!", "ABS requires 1 numeric argument"},
+		"ABS(\"X\")":       {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"ABS(~)":           {"#NAME?", "invalid reference"},
+		"ABS(~+1)":         {"", "#NAME?"},
+		"ABS(SUM(1,NA()))": {"#N/A", "#N/A"},
 		// ACOS
 		"ACOS()":        {"#VALUE!", "ACOS requires 1 numeric argument"},
 		"ACOS(\"X\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
@@ -3093,9 +3094,11 @@ func TestCalcCellValue(t *testing.T) {
 		"ROMAN(-1)":     {"#VALUE!", "#VALUE!"},
 		"ROMAN(4000)":   {"#VALUE!", "#VALUE!"},
 		// ROUND
-		"ROUND()":        {"#VALUE!", "ROUND requires 2 numeric arguments"},
-		"ROUND(\"X\",1)": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
-		"ROUND(1,\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"ROUND()":                    {"#VALUE!", "ROUND requires 2 numeric arguments"},
+		"ROUND(\"X\",1)":             {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"ROUND(1,\"X\")":             {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"ROUND(1.234,NA())":          {"#N/A", "#N/A"},
+		"ROUND(SUM(1,NA())*11.98,2)": {"#N/A", "#N/A"},
 		// ROUNDDOWN
 		"ROUNDDOWN()":        {"#VALUE!", "ROUNDDOWN requires 2 numeric arguments"},
 		"ROUNDDOWN(\"X\",1)": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
@@ -3217,9 +3220,10 @@ func TestCalcCellValue(t *testing.T) {
 		"TANH()":      {"#VALUE!", "TANH requires 1 numeric argument"},
 		"TANH(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		// TRUNC
-		"TRUNC()":        {"#VALUE!", "TRUNC requires at least 1 argument"},
-		"TRUNC(\"X\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
-		"TRUNC(1,\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"TRUNC()":            {"#VALUE!", "TRUNC requires at least 1 argument"},
+		"TRUNC(\"X\")":       {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"TRUNC(1,\"X\")":     {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"TRUNC(MIN(1,NA()))": {"#N/A", "#N/A"},
 		// Statistical Functions
 		// AVEDEV
 		"AVEDEV()":       {"#VALUE!", "AVEDEV requires at least 1 argument"},
@@ -3906,6 +3910,7 @@ func TestCalcCellValue(t *testing.T) {
 		"WEIBULL(\"\",1,1,FALSE)": {"#VALUE!", "#VALUE!"},
 		"WEIBULL(1,0,1,FALSE)":    {"#N/A", "#N/A"},
 		"WEIBULL(1,1,-1,FALSE)":   {"#N/A", "#N/A"},
+		"WEIBULL(1,1,1,NA())":     {"#N/A", "#N/A"},
 		// WEIBULL.DIST
 		"WEIBULL.DIST()":               {"#VALUE!", "WEIBULL.DIST requires 4 arguments"},
 		"WEIBULL.DIST(\"\",1,1,FALSE)": {"#VALUE!", "#VALUE!"},
@@ -4338,6 +4343,7 @@ func TestCalcCellValue(t *testing.T) {
 		"ADDRESS(1,\"\",1,TRUE)":           {"#VALUE!", "#VALUE!"},
 		"ADDRESS(1,1,\"\",TRUE)":           {"#VALUE!", "#VALUE!"},
 		"ADDRESS(1,1,1,\"\")":              {"#VALUE!", "#VALUE!"},
+		"ADDRESS(1,1,1,NA())":              {"#VALUE!", "#VALUE!"},
 		"ADDRESS(1,1,0,TRUE)":              {"#NUM!", "#NUM!"},
 		"ADDRESS(1,16385,2,TRUE)":          {"#VALUE!", "#VALUE!"},
 		"ADDRESS(1,16385,3,TRUE)":          {"#VALUE!", "#VALUE!"},
