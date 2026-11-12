@@ -2419,12 +2419,12 @@ func (f *File) addOLEObject(opts *EmbeddedObject) int {
 	return cnt
 }
 
-// AddEmbeddedObjects provides a function to add an embedded object to a
+// AddEmbeddedObject provides a function to add an embedded object to a
 // worksheet by given worksheet name, cell reference and embedded object
 // options. The embedded object is displayed as an icon in the worksheet. The
 // icon image must be provided by the user. Supported image types: BMP, EMF,
 // EMZ, GIF, JPEG, JPG, PNG, SVG, TIF, TIFF, WMF, and WMZ.
-func (f *File) AddEmbeddedObjects(sheet string, opts *EmbeddedObject) error {
+func (f *File) AddEmbeddedObject(sheet string, opts *EmbeddedObject) error {
 	if opts == nil {
 		return ErrParameterRequired
 	}
