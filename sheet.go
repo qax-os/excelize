@@ -2345,6 +2345,9 @@ func getOLEObject(content []byte) (EmbeddedObject, error) {
 	}
 	for entry, err := doc.Next(); err == nil; entry, err = doc.Next() {
 		if strings.HasSuffix(entry.Name, "Ole10Native") {
+			if entry.Size < 0 || entry.Size > int64(len(content)) {
+				return object, ErrWorkbookFileFormat
+			}
 			buf := make([]byte, entry.Size)
 			if _, _ = doc.Read(buf); len(buf) >= 10 {
 				offset := 4 + 2

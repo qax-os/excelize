@@ -1,6 +1,8 @@
 package excelize
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -1125,6 +1127,42 @@ func TestEmbeddedObjects(t *testing.T) {
 	f.Pkg.Store("xl/drawings/_rels/vmlDrawing1.vml.rels", MacintoshCyrillicCharset)
 	assert.EqualError(t, f.DeleteEmbeddedObjects("Sheet1", "A1"), "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
+}
+
+func TestGetEmbeddedObjectsStreamSize(t *testing.T) {
+	f := NewFile()
+	img := filepath.Join("test", "images", "excel.png")
+	content, err := os.ReadFile(img)
+	assert.NoError(t, err)
+	assert.NoError(t, f.AddEmbeddedObjects("Sheet1", &EmbeddedObject{
+		Cell:          "A1",
+		Name:          path.Base(img),
+		File:          content,
+		Icon:          content,
+		IconExtension: path.Ext(img),
+	}))
+	raw, ok := f.Pkg.Load("xl/embeddings/oleObject1.bin")
+	assert.True(t, ok)
+	oleObject := raw.([]byte)
+	// Build the UTF-16LE name of the "\x01Ole10Native" directory entry so the
+	// stream size field that follows it can be overstated.
+	entryName := []byte{0x01, 0x00}
+	for _, r := range "Ole10Native" {
+		entryName = append(entryName, byte(r), 0x00)
+	}
+	offset := bytes.Index(oleObject, entryName)
+	assert.NotEqual(t, -1, offset)
+	tampered := make([]byte, len(oleObject))
+	copy(tampered, oleObject)
+	// Set the major version to 4 so the full 64-bit stream size is read, then
+	// declare a stream larger than the whole compound file.
+	tampered[26] = 0x04
+	binary.LittleEndian.PutUint64(tampered[offset+120:offset+128], 1<<62)
+	f.Pkg.Store("xl/embeddings/oleObject1.bin", tampered)
+	assert.NotPanics(t, func() {
+		_, err = f.GetEmbeddedObjects("Sheet1")
+	})
+	assert.Equal(t, ErrWorkbookFileFormat, err)
 }
 
 func TestGetVMLShapeByID(t *testing.T) {
