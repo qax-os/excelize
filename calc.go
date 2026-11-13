@@ -391,6 +391,14 @@ type formulaFuncs struct {
 	sheet, cell string
 }
 
+// rangeErrorPolicy controls error values inside aggregate range arguments.
+type rangeErrorPolicy bool
+
+const (
+	ignoreRangeErrors    rangeErrorPolicy = false
+	propagateRangeErrors rangeErrorPolicy = true
+)
+
 // implicitIntersect applies Excel's implicit intersection to a matrix argument.
 // For a non-array formula, when a whole-column or whole-row reference is passed
 // to a scalar function, Excel resolves it to the single cell in the same row
@@ -4033,16 +4041,20 @@ func (fn *formulaFuncs) AGGREGATE(argsList *list.List) formulaArg {
 	if fnNum = argsList.Front().Value.(formulaArg).ToNumber(); fnNum.Type != ArgNumber {
 		return fnNum
 	}
+	// Preserve range handling until the calculation options are applied.
+	max := func(args *list.List) formulaArg { return fn.maxValue(false, args, ignoreRangeErrors) }
+	min := func(args *list.List) formulaArg { return fn.minValue(false, args, ignoreRangeErrors) }
+	sum := func(args *list.List) formulaArg { return fn.sum(args, ignoreRangeErrors) }
 	subFn, ok := map[int]func(argsList *list.List) formulaArg{
 		1:  fn.AVERAGE,
 		2:  fn.COUNT,
 		3:  fn.COUNTA,
-		4:  fn.MAX,
-		5:  fn.MIN,
+		4:  max,
+		5:  min,
 		6:  fn.PRODUCT,
 		7:  fn.STDEVdotS,
 		8:  fn.STDEVdotP,
-		9:  fn.SUM,
+		9:  sum,
 		10: fn.VARdotS,
 		11: fn.VARdotP,
 		12: fn.MEDIAN,
@@ -6163,16 +6175,20 @@ func (fn *formulaFuncs) SUBTOTAL(argsList *list.List) formulaArg {
 	if fnNum = argsList.Front().Value.(formulaArg).ToNumber(); fnNum.Type != ArgNumber {
 		return fnNum
 	}
+	// Preserve range handling until hidden and filtered rows can be excluded.
+	max := func(args *list.List) formulaArg { return fn.maxValue(false, args, ignoreRangeErrors) }
+	min := func(args *list.List) formulaArg { return fn.minValue(false, args, ignoreRangeErrors) }
+	sum := func(args *list.List) formulaArg { return fn.sum(args, ignoreRangeErrors) }
 	subFn, ok := map[int]func(argsList *list.List) formulaArg{
 		1: fn.AVERAGE, 101: fn.AVERAGE,
 		2: fn.COUNT, 102: fn.COUNT,
 		3: fn.COUNTA, 103: fn.COUNTA,
-		4: fn.MAX, 104: fn.MAX,
-		5: fn.MIN, 105: fn.MIN,
+		4: max, 104: max,
+		5: min, 105: min,
 		6: fn.PRODUCT, 106: fn.PRODUCT,
 		7: fn.STDEV, 107: fn.STDEV,
 		8: fn.STDEVP, 108: fn.STDEVP,
-		9: fn.SUM, 109: fn.SUM,
+		9: sum, 109: sum,
 		10: fn.VAR, 110: fn.VAR,
 		11: fn.VARP, 111: fn.VARP,
 	}[int(fnNum.Number)]
@@ -6191,7 +6207,13 @@ func (fn *formulaFuncs) SUBTOTAL(argsList *list.List) formulaArg {
 //
 //	SUM(number1,[number2],...)
 func (fn *formulaFuncs) SUM(argsList *list.List) formulaArg {
+	return fn.sum(argsList, propagateRangeErrors)
+}
+
+// sum adds the arguments using the specified range-error policy.
+func (fn *formulaFuncs) sum(argsList *list.List, errorPolicy rangeErrorPolicy) formulaArg {
 	var sum float64
+	var sumErr formulaArg
 	var sumArg func(formulaArg, bool)
 	sumArg = func(arg formulaArg, isRef bool) {
 		isRef = isRef || (arg.cellRefs != nil && arg.cellRefs.Len() > 0) ||
@@ -6212,6 +6234,13 @@ func (fn *formulaFuncs) SUM(argsList *list.List) formulaArg {
 		case ArgList, ArgMatrix:
 			for _, cell := range arg.ToList() {
 				sumArg(cell, true)
+				if sumErr.Type == ArgError {
+					return
+				}
+			}
+		case ArgError:
+			if errorPolicy == propagateRangeErrors {
+				sumErr = arg
 			}
 		}
 	}
@@ -6221,6 +6250,9 @@ func (fn *formulaFuncs) SUM(argsList *list.List) formulaArg {
 			return arg
 		}
 		sumArg(arg, false)
+		if sumErr.Type == ArgError {
+			return sumErr
+		}
 	}
 	return newNumberFormulaArg(sum)
 }
@@ -8218,7 +8250,7 @@ func (fn *formulaFuncs) CORREL(argsList *list.List) formulaArg {
 		}
 		l3.PushBack(newNumberFormulaArg((lhs.Number - mean1.Number) * (rhs.Number - mean2.Number)))
 	}
-	return newNumberFormulaArg(fn.SUM(l3).Number / float64(n-skip-1) / stdev1.Number / stdev2.Number)
+	return newNumberFormulaArg(fn.sum(l3, ignoreRangeErrors).Number / float64(n-skip-1) / stdev1.Number / stdev2.Number)
 }
 
 // COUNT function returns the count of numeric values in a supplied set of
@@ -8749,7 +8781,7 @@ func (fn *formulaFuncs) GEOMEAN(argsList *list.List) formulaArg {
 		return product
 	}
 	count := fn.COUNT(argsList)
-	minVal := fn.MIN(argsList)
+	minVal := fn.minValue(false, argsList, ignoreRangeErrors)
 	if product.Number > 0 && minVal.Number > 0 {
 		return newNumberFormulaArg(math.Pow(product.Number, 1/count.Number))
 	}
@@ -9455,7 +9487,7 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 	if argsList.Len() < 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "HARMEAN requires at least 1 argument")
 	}
-	if minVal := fn.MIN(argsList); minVal.Number < 0 {
+	if minVal := fn.minValue(false, argsList, ignoreRangeErrors); minVal.Number < 0 {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return harmean(argsList)
@@ -10427,10 +10459,7 @@ func (fn *formulaFuncs) LARGE(argsList *list.List) formulaArg {
 //
 //	MAX(number1,[number2],...)
 func (fn *formulaFuncs) MAX(argsList *list.List) formulaArg {
-	if argsList.Len() == 0 {
-		return newErrorFormulaArg(formulaErrorVALUE, "MAX requires at least 1 argument")
-	}
-	return fn.maxValue(false, argsList)
+	return fn.maxValue(false, argsList, propagateRangeErrors)
 }
 
 // MAXA function returns the largest value from a supplied set of numeric
@@ -10440,10 +10469,7 @@ func (fn *formulaFuncs) MAX(argsList *list.List) formulaArg {
 //
 //	MAXA(number1,[number2],...)
 func (fn *formulaFuncs) MAXA(argsList *list.List) formulaArg {
-	if argsList.Len() == 0 {
-		return newErrorFormulaArg(formulaErrorVALUE, "MAXA requires at least 1 argument")
-	}
-	return fn.maxValue(true, argsList)
+	return fn.maxValue(true, argsList, propagateRangeErrors)
 }
 
 // MAXIFS function returns the maximum value from a subset of values that are
@@ -10481,20 +10507,30 @@ func (fn *formulaFuncs) MAXIFS(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(maxVal)
 }
 
-// calcListMatrixMax is part of the implementation max.
-func calcListMatrixMax(maxa bool, maxVal float64, arg formulaArg) float64 {
+// calcListMatrixMax returns the maximum value or an error from an array argument.
+func calcListMatrixMax(maxa bool, maxVal float64, arg formulaArg, errorPolicy rangeErrorPolicy) formulaArg {
 	for _, cell := range arg.ToList() {
+		if errorPolicy == propagateRangeErrors && cell.Type == ArgError {
+			return cell
+		}
 		if cell.Type == ArgNumber && cell.Number > maxVal {
 			if maxa && cell.Boolean || !cell.Boolean {
 				maxVal = cell.Number
 			}
 		}
 	}
-	return maxVal
+	return newNumberFormulaArg(maxVal)
 }
 
 // maxValue is an implementation of the formula functions MAX and MAXA.
-func (fn *formulaFuncs) maxValue(maxa bool, argsList *list.List) formulaArg {
+func (fn *formulaFuncs) maxValue(maxa bool, argsList *list.List, errorPolicy rangeErrorPolicy) formulaArg {
+	if argsList.Len() == 0 {
+		name := "MAX"
+		if maxa {
+			name += "A"
+		}
+		return newErrorFormulaArg(formulaErrorVALUE, name+" requires at least 1 argument")
+	}
 	maxVal := -math.MaxFloat64
 	for token := argsList.Front(); token != nil; token = token.Next() {
 		arg := token.Value.(formulaArg)
@@ -10518,7 +10554,11 @@ func (fn *formulaFuncs) maxValue(maxa bool, argsList *list.List) formulaArg {
 				maxVal = arg.Number
 			}
 		case ArgList, ArgMatrix:
-			maxVal = calcListMatrixMax(maxa, maxVal, arg)
+			value := calcListMatrixMax(maxa, maxVal, arg, errorPolicy)
+			if value.Type == ArgError {
+				return value
+			}
+			maxVal = value.Number
 		case ArgError:
 			return arg
 		}
@@ -10577,10 +10617,7 @@ func (fn *formulaFuncs) MEDIAN(argsList *list.List) formulaArg {
 //
 //	MIN(number1,[number2],...)
 func (fn *formulaFuncs) MIN(argsList *list.List) formulaArg {
-	if argsList.Len() == 0 {
-		return newErrorFormulaArg(formulaErrorVALUE, "MIN requires at least 1 argument")
-	}
-	return fn.minValue(false, argsList)
+	return fn.minValue(false, argsList, propagateRangeErrors)
 }
 
 // MINA function returns the smallest value from a supplied set of numeric
@@ -10590,10 +10627,7 @@ func (fn *formulaFuncs) MIN(argsList *list.List) formulaArg {
 //
 //	MINA(number1,[number2],...)
 func (fn *formulaFuncs) MINA(argsList *list.List) formulaArg {
-	if argsList.Len() == 0 {
-		return newErrorFormulaArg(formulaErrorVALUE, "MINA requires at least 1 argument")
-	}
-	return fn.minValue(true, argsList)
+	return fn.minValue(true, argsList, propagateRangeErrors)
 }
 
 // MINIFS function returns the minimum value from a subset of values that are
@@ -10631,20 +10665,30 @@ func (fn *formulaFuncs) MINIFS(argsList *list.List) formulaArg {
 	return newNumberFormulaArg(minVal)
 }
 
-// calcListMatrixMin is part of the implementation min.
-func calcListMatrixMin(mina bool, minVal float64, arg formulaArg) float64 {
+// calcListMatrixMin returns the minimum value or an error from an array argument.
+func calcListMatrixMin(mina bool, minVal float64, arg formulaArg, errorPolicy rangeErrorPolicy) formulaArg {
 	for _, cell := range arg.ToList() {
+		if errorPolicy == propagateRangeErrors && cell.Type == ArgError {
+			return cell
+		}
 		if cell.Type == ArgNumber && cell.Number < minVal {
 			if mina && cell.Boolean || !cell.Boolean {
 				minVal = cell.Number
 			}
 		}
 	}
-	return minVal
+	return newNumberFormulaArg(minVal)
 }
 
 // minValue is an implementation of the formula functions MIN and MINA.
-func (fn *formulaFuncs) minValue(mina bool, argsList *list.List) formulaArg {
+func (fn *formulaFuncs) minValue(mina bool, argsList *list.List, errorPolicy rangeErrorPolicy) formulaArg {
+	if argsList.Len() == 0 {
+		name := "MIN"
+		if mina {
+			name += "A"
+		}
+		return newErrorFormulaArg(formulaErrorVALUE, name+" requires at least 1 argument")
+	}
 	minVal := math.MaxFloat64
 	for token := argsList.Front(); token != nil; token = token.Next() {
 		arg := token.Value.(formulaArg)
@@ -10668,7 +10712,11 @@ func (fn *formulaFuncs) minValue(mina bool, argsList *list.List) formulaArg {
 				minVal = arg.Number
 			}
 		case ArgList, ArgMatrix:
-			minVal = calcListMatrixMin(mina, minVal, arg)
+			value := calcListMatrixMin(mina, minVal, arg, errorPolicy)
+			if value.Type == ArgError {
+				return value
+			}
+			minVal = value.Number
 		case ArgError:
 			return arg
 		}
@@ -19481,9 +19529,9 @@ func (fn *formulaFuncs) database(name string, argsList *list.List) formulaArg {
 	}
 	switch name {
 	case "DMAX":
-		return fn.MAX(args)
+		return fn.maxValue(false, args, ignoreRangeErrors)
 	case "DMIN":
-		return fn.MIN(args)
+		return fn.minValue(false, args, ignoreRangeErrors)
 	case "DPRODUCT":
 		return fn.PRODUCT(args)
 	case "DSTDEV":
@@ -19491,7 +19539,7 @@ func (fn *formulaFuncs) database(name string, argsList *list.List) formulaArg {
 	case "DSTDEVP":
 		return fn.STDEVP(args)
 	case "DSUM":
-		return fn.SUM(args)
+		return fn.sum(args, ignoreRangeErrors)
 	case "DVAR":
 		return fn.VAR(args)
 	case "DVARP":
