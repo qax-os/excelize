@@ -189,6 +189,64 @@ func TestAutoFilter(t *testing.T) {
 	assert.NoError(t, f.AutoFilter("Sheet1", "A1:B1", nil))
 }
 
+func TestAutoFilterSheetProps(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		opts *SheetPropsOptions
+	}{
+		{name: "NoSheetProps"},
+		{name: "ExistingSheetProps", opts: &SheetPropsOptions{
+			CodeName:                          stringPtr("SheetCode"),
+			EnableFormatConditionsCalculation: boolPtr(false),
+			Published:                         boolPtr(false),
+			AutoPageBreaks:                    boolPtr(true),
+			FitToPage:                         boolPtr(true),
+			TabColorRGB:                       stringPtr("FFFF00"),
+			OutlineSummaryBelow:               boolPtr(false),
+			OutlineSummaryRight:               boolPtr(false),
+		}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			f := NewFile()
+			defer func() { assert.NoError(t, f.Close()) }()
+			assert.NoError(t, f.SetSheetProps("Sheet1", test.opts))
+			ws, err := f.workSheetReader("Sheet1")
+			if !assert.NoError(t, err) {
+				return
+			}
+			expected := xlsxSheetPr{FilterMode: true}
+			if ws.SheetPr != nil {
+				expected = *ws.SheetPr
+				expected.FilterMode = true
+			}
+			for _, opts := range [][]AutoFilterOptions{nil, {{Column: "A", Expression: "x == 1"}}} {
+				assert.NoError(t, f.AutoFilter("Sheet1", "A1:B3", opts))
+				assert.Equal(t, &expected, ws.SheetPr)
+				props, err := f.GetSheetProps("Sheet1")
+				assert.NoError(t, err)
+				buf, err := f.WriteToBuffer()
+				if !assert.NoError(t, err) {
+					return
+				}
+				reopened, err := OpenReader(buf)
+				if !assert.NoError(t, err) {
+					return
+				}
+				got, err := reopened.GetSheetProps("Sheet1")
+				assert.NoError(t, err)
+				assert.Equal(t, props, got)
+				reopenedSheet, err := reopened.workSheetReader("Sheet1")
+				if assert.NoError(t, err) && assert.NotNil(t, reopenedSheet.SheetPr) && assert.NotNil(t, reopenedSheet.AutoFilter) {
+					assert.True(t, reopenedSheet.SheetPr.FilterMode)
+					assert.Equal(t, "$A$1:$B$3", reopenedSheet.AutoFilter.Ref)
+					assert.Len(t, reopenedSheet.AutoFilter.FilterColumn, len(opts))
+				}
+				assert.NoError(t, reopened.Close())
+			}
+		})
+	}
+}
+
 func TestAutoFilterError(t *testing.T) {
 	savePath := filepath.Join("test", "TestAutoFilterError%d.xlsx")
 	f, err := prepareTestBook1()
