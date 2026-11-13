@@ -180,6 +180,25 @@ func TestGetMergeCells(t *testing.T) {
 	_, err = f.GetMergeCells("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
 	assert.NoError(t, f.Close())
+
+	// Test get merged cells concurrently with merging cells
+	f = NewFile()
+	assert.NoError(t, f.MergeCell("Sheet1", "A1", "B2"))
+	wg := new(sync.WaitGroup)
+	for i := 1; i <= 10; i++ {
+		wg.Add(1)
+		go func(val int) {
+			defer wg.Done()
+			assert.NoError(t, f.MergeCell("Sheet1", fmt.Sprintf("D%d", val), fmt.Sprintf("E%d", val)))
+			_, err := f.GetMergeCells("Sheet1")
+			assert.NoError(t, err)
+		}(i)
+	}
+	wg.Wait()
+	mergeCells, err = f.GetMergeCells("Sheet1")
+	assert.NoError(t, err)
+	assert.Len(t, mergeCells, 11)
+	assert.NoError(t, f.Close())
 }
 
 func TestUnmergeCell(t *testing.T) {
