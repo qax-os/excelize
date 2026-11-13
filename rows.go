@@ -749,6 +749,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 			break
 		}
 	}
+	ws.unshareFormulas(&rowCopy)
 
 	if err := f.adjustHelper(sheet, rows, row2, 1); err != nil {
 		return err
@@ -767,7 +768,7 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 	}
 	rowCopy.C = append(make([]xlsxC, 0, len(rowCopy.C)), rowCopy.C...)
 	rowCopy.adjustSingleRowDimensions(row2 - row)
-	_ = f.adjustSingleRowFormulas(sheet, sheet, &rowCopy, row, row2-row, true)
+	_ = f.adjustSingleRowFormulas(sheet, sheet, &rowCopy, row, row2-row)
 
 	if idx2 != -1 {
 		ws.SheetData.Row[idx2] = rowCopy
@@ -780,6 +781,23 @@ func (f *File) DuplicateRowTo(sheet string, row, row2 int) error {
 		}
 	}
 	return err
+}
+
+func (ws *xlsxWorksheet) unshareFormulas(r *xlsxRow) {
+	for i := range r.C {
+		c := &r.C[i]
+		if c.F == nil || c.F.T != STCellFormulaTypeShared || c.F.Si == nil {
+			continue
+		}
+		formula, err := c.F.Content, error(nil)
+		if c.F.Ref == "" {
+			formula, err = getSharedFormula(ws, *c.F.Si, c.R)
+		}
+		if err != nil || formula == "" {
+			continue
+		}
+		c.F.T, c.F.Ref, c.F.Si, c.F.Content = "", "", nil, formula
+	}
 }
 
 // duplicateSQRefHelper provides a function to adjust conditional formatting and
