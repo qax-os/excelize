@@ -22,6 +22,114 @@ func prepareCalcData(cellData [][]interface{}) *File {
 	return f
 }
 
+func TestCalcCellValueAggregateErrors(t *testing.T) {
+	for _, errorValue := range []struct {
+		name, formula, want string
+	}{
+		{"NA", "NA()", "#N/A"},
+		{"DIV0", "1/0", "#DIV/0!"},
+	} {
+		for _, test := range []struct {
+			name, ref, errorCell string
+			cells                map[string]int
+		}{
+			{"column-first", "A1:A3", "A1", map[string]int{"A1": 1, "A2": 2, "A3": 3}},
+			{"column-middle", "A1:A3", "A2", map[string]int{"A1": 1, "A2": 2, "A3": 3}},
+			{"column-last", "A1:A3", "A3", map[string]int{"A1": 1, "A2": 2, "A3": 3}},
+			{"row", "A1:C1", "B1", map[string]int{"A1": 1, "B1": 2, "C1": 3}},
+		} {
+			t.Run(errorValue.name+"/"+test.name, func(t *testing.T) {
+				f := NewFile()
+				defer func() { assert.NoError(t, f.Close()) }()
+				for cell, value := range test.cells {
+					assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
+				}
+				assert.NoError(t, f.SetCellFormula("Sheet1", test.errorCell, errorValue.formula))
+				var formulas []string
+				for _, name := range []string{"SUM", "MIN", "MINA", "MAX", "MAXA"} {
+					formulas = append(formulas, name+"("+test.ref+")", name+"("+test.errorCell+")")
+				}
+				for _, formula := range formulas {
+					t.Run(formula, func(t *testing.T) {
+						assert.NoError(t, f.SetCellFormula("Sheet1", "H1", formula))
+						result, err := f.CalcCellValue("Sheet1", "H1")
+						assert.Equal(t, errorValue.want, result)
+						assert.EqualError(t, err, errorValue.want)
+					})
+				}
+				for _, formula := range []string{"COUNT(" + test.ref + ")", "SUBTOTAL(2," + test.ref + ")", "SUBTOTAL(102," + test.ref + ")"} {
+					assert.NoError(t, f.SetCellFormula("Sheet1", "H1", formula))
+					result, err := f.CalcCellValue("Sheet1", "H1")
+					assert.NoError(t, err, formula)
+					assert.Equal(t, "2", result, formula)
+				}
+			})
+		}
+	}
+}
+
+func TestCalcCellValueAggregateIgnoreErrors(t *testing.T) {
+	for _, formula := range []string{"NA()", "1/0"} {
+		t.Run(formula, func(t *testing.T) {
+			f := NewFile()
+			defer func() { assert.NoError(t, f.Close()) }()
+			assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1))
+			assert.NoError(t, f.SetCellFormula("Sheet1", "A2", formula))
+			assert.NoError(t, f.SetCellValue("Sheet1", "A3", 3))
+			for _, option := range []string{"2", "3", "6", "7"} {
+				for function, want := range map[string]string{"4": "3", "5": "1", "9": "4"} {
+					formula := "AGGREGATE(" + function + "," + option + ",A1:A3)"
+					assert.NoError(t, f.SetCellFormula("Sheet1", "H1", formula))
+					result, err := f.CalcCellValue("Sheet1", "H1")
+					assert.NoError(t, err, formula)
+					assert.Equal(t, want, result, formula)
+				}
+			}
+		})
+	}
+}
+
+func TestCalcCellValueSubtotalHiddenError(t *testing.T) {
+	for _, formula := range []string{"NA()", "1/0"} {
+		t.Run(formula, func(t *testing.T) {
+			f := NewFile()
+			defer func() { assert.NoError(t, f.Close()) }()
+			assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1))
+			assert.NoError(t, f.SetCellFormula("Sheet1", "A2", formula))
+			assert.NoError(t, f.SetCellValue("Sheet1", "A3", 3))
+			assert.NoError(t, f.SetRowVisible("Sheet1", 2, false))
+			for subtotal, want := range map[string]string{
+				"SUBTOTAL(104,A1:A3)": "3", "SUBTOTAL(105,A1:A3)": "1", "SUBTOTAL(109,A1:A3)": "4",
+			} {
+				assert.NoError(t, f.SetCellFormula("Sheet1", "H1", subtotal))
+				result, err := f.CalcCellValue("Sheet1", "H1")
+				assert.NoError(t, err, subtotal)
+				assert.Equal(t, want, result, subtotal)
+			}
+		})
+	}
+}
+
+func TestCalcCellValueAggregateErrorControls(t *testing.T) {
+	f := NewFile()
+	defer func() { assert.NoError(t, f.Close()) }()
+	assert.NoError(t, f.SetSheetRow("Sheet1", "A1", &[]interface{}{1, "text", "#N/A", false, true, 3}))
+	for formula, want := range map[string]string{
+		"SUM(A1:G1)": "4", "MIN(A1:G1)": "1", "MAX(A1:G1)": "3",
+		"MINA(A1:G1)": "0", "MAXA(A1:G1)": "3", "COUNT(A1:G1)": "2",
+		"SUM(A3:C3)": "0", "MIN(A3:C3)": "0", "MAX(A3:C3)": "0",
+		"MINA(A3:C3)": "0", "MAXA(A3:C3)": "0", "COUNT(A3:C3)": "0",
+		"SUM(1,TRUE,3)": "5", "SUM(1,\"2\",3)": "6",
+	} {
+		t.Run(formula, func(t *testing.T) {
+			assert.NoError(t, f.SetCellFormula("Sheet1", "H1", formula))
+			result, err := f.CalcCellValue("Sheet1", "H1")
+			assert.NoError(t, err)
+			assert.Equal(t, want, result)
+		})
+	}
+}
+
 func TestCalcCellValue(t *testing.T) {
 	cellData := [][]interface{}{
 		{1, 4, nil, "Month", "Team", "Sales"},
