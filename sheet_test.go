@@ -1135,3 +1135,17 @@ func TestGetVMLShapeByID(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, shape)
 }
+
+func TestGetEmbeddedObjectsWithoutVML(t *testing.T) {
+	f := NewFile()
+	assert.NoError(t, f.AddEmbeddedObjects("Sheet1", &EmbeddedObject{
+		Cell: "A1", Name: "x.txt", File: []byte("x"), Icon: []byte("x"), IconExtension: ".png",
+	}))
+	path := "xl/drawings/vmlDrawing1.vml"
+	f.Pkg.Delete(path)
+	delete(f.VMLDrawing, path)
+	delete(f.DecodeVMLDrawing, path)
+	objects, err := f.GetEmbeddedObjects("Sheet1")
+	assert.NoError(t, err)
+	assert.Empty(t, objects)
+}
