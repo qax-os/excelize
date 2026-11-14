@@ -2057,6 +2057,11 @@ func callFuncByName(receiver interface{}, name string, params []reflect.Value) (
 	return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("not support %s function", name))
 }
 
+// matchesBlank returns whether the criteria is "", which selects blank cells.
+func (fc *formulaCriteria) matchesBlank() bool {
+	return fc.Type == criteriaEq && fc.Condition.Type == ArgString && fc.Condition.String == ""
+}
+
 // formulaCriteriaParser parse formula criteria.
 func formulaCriteriaParser(exp formulaArg) *formulaCriteria {
 	prepareValue := func(cond string) (expected float64, err error) {
@@ -2073,6 +2078,10 @@ func formulaCriteriaParser(exp formulaArg) *formulaCriteria {
 	}
 	fc, val := &formulaCriteria{}, exp.Value()
 	if val == "" {
+		// The criteria "" matches blank cells. A blank criteria cell does not.
+		if exp.Type == ArgString {
+			fc.Type, fc.Condition = criteriaEq, exp
+		}
 		return fc
 	}
 	for i, re := range formulaFormats {
@@ -2125,6 +2134,9 @@ func formulaCriteriaEval(val formulaArg, criteria *formulaCriteria) (result bool
 			}
 		}
 	case criteriaRegexp:
+		if val.Type == ArgEmpty {
+			return false, err
+		}
 		pattern := criteria.Condition.Value()
 		if !strings.HasPrefix(pattern, "^") {
 			pattern = "^" + pattern
@@ -6241,7 +6253,7 @@ func (fn *formulaFuncs) SUMIF(argsList *list.List) formulaArg {
 	for rowIdx, row := range rangeMtx {
 		for colIdx, cell := range row {
 			arg = cell
-			if arg.Type == ArgEmpty {
+			if arg.Type == ArgEmpty && !criteria.matchesBlank() {
 				continue
 			}
 			if ok, _ := formulaCriteriaEval(arg, criteria); ok {
@@ -6596,7 +6608,7 @@ func (fn *formulaFuncs) AVERAGEIF(argsList *list.List) formulaArg {
 	for rowIdx, row := range rangeMtx {
 		for colIdx, col := range row {
 			fromVal := col.Value()
-			if fromVal == "" {
+			if fromVal == "" && !criteria.matchesBlank() {
 				continue
 			}
 			if col.Type == ArgString && criteria.Condition.Type != ArgString {

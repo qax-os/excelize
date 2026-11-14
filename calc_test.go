@@ -7577,3 +7577,30 @@ func TestCalcINDIRECTSheetRef(t *testing.T) {
 		assert.Equal(t, "#REF!", result, formula)
 	}
 }
+
+func TestCalcBlankCellCriteria(t *testing.T) {
+	f := NewFile()
+	// A2 and A4 are blank, H2 is a blank cell used as the criteria.
+	for cell, value := range map[string]interface{}{
+		"A1": "x", "A3": "y", "A5": "z",
+		"B1": 1, "B2": 2, "B3": 4, "B4": 8, "B5": 16,
+	} {
+		assert.NoError(t, f.SetCellValue("Sheet1", cell, value))
+	}
+	for formula, expected := range map[string]string{
+		`COUNTIF(A1:A5,"")`:             "2",
+		`COUNTIF(A1:A5,"*")`:            "3",
+		`COUNTIF(A1:A5,"<>")`:           "3",
+		`COUNTIF(A1:A5,H2)`:             "0",
+		`SUMIF(A1:A5,"",B1:B5)`:         "10",
+		`SUMIF(A1:A5,"x",B1:B5)`:        "1",
+		`SUMIFS(B1:B5,A1:A5,"")`:        "10",
+		`COUNTIFS(A1:A5,"",B1:B5,">2")`: "1",
+		`AVERAGEIF(A1:A5,"",B1:B5)`:     "5",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "H1", "="+formula))
+		result, err := f.CalcCellValue("Sheet1", "H1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+}
