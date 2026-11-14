@@ -94,6 +94,12 @@ type ZipWriter interface {
 // should be less than or equal to UnzipSizeLimit, the default value is
 // 16MB.
 //
+// WorksheetCellsLimit specifies the maximum number of cells per worksheet when
+// reading the worksheet, the number of cells in each row is counted as the
+// column number of the last cell in that row, including the empty cells filled
+// between the declared cells. Opening a worksheet that exceeds this limit
+// returns an error. The default value is 0, which means no limit.
+//
 // TmpDir specifies the temporary directory for creating temporary files, if the
 // value is empty, the system default temporary directory will be used.
 //
@@ -112,16 +118,17 @@ type ZipWriter interface {
 // CultureInfo specifies the country code for applying built-in language number
 // format code these effect by the system's local language settings.
 type Options struct {
-	MaxCalcIterations uint
-	Password          string
-	RawCellValue      bool
-	UnzipSizeLimit    int64
-	UnzipXMLSizeLimit int64
-	TmpDir            string
-	ShortDatePattern  string
-	LongDatePattern   string
-	LongTimePattern   string
-	CultureInfo       CultureName
+	MaxCalcIterations   uint
+	Password            string
+	RawCellValue        bool
+	UnzipSizeLimit      int64
+	UnzipXMLSizeLimit   int64
+	WorksheetCellsLimit int64
+	TmpDir              string
+	ShortDatePattern    string
+	LongDatePattern     string
+	LongTimePattern     string
+	CultureInfo         CultureName
 }
 
 // OpenFile take the name of a spreadsheet file and returns a populated
@@ -329,7 +336,7 @@ func (f *File) workSheetReader(sheet string) (ws *xlsxWorksheet, err error) {
 		if err = ws.checkSheet(); err != nil {
 			return
 		}
-		if err = ws.checkRow(); err != nil {
+		if err = ws.checkRow(f.options.WorksheetCellsLimit); err != nil {
 			return
 		}
 		f.checked.Store(name, true)

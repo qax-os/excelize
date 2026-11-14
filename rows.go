@@ -917,9 +917,15 @@ func (f *File) duplicateMergeCells(ws *xlsxWorksheet, sheet string, row, row2 in
 //	    <c r="G15" s="1" />
 //	</row>
 //
+// The limit specifies the maximum number of cells in the worksheet after
+// filling, the number of cells in each row is counted as the column number of
+// the last cell in that row. An error will be returned if the limit is
+// exceeded. A value less than or equal to 0 means no limit.
+//
 // Notice: this method could be very slow for large spreadsheets (more than
 // 3000 rows one sheet).
-func (ws *xlsxWorksheet) checkRow() error {
+func (ws *xlsxWorksheet) checkRow(limit int64) error {
+	var total int64
 	for rowIdx := range ws.SheetData.Row {
 		rowData := &ws.SheetData.Row[rowIdx]
 
@@ -948,6 +954,9 @@ func (ws *xlsxWorksheet) checkRow() error {
 			if cols > lastCol {
 				lastCol = cols
 			}
+		}
+		if total += int64(lastCol); limit > 0 && total > limit {
+			return newWorksheetCellsLimitError(limit)
 		}
 
 		if colLen < lastCol {

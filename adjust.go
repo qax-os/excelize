@@ -87,7 +87,7 @@ func (f *File) adjustHelper(sheet string, dir adjustDirection, num, offset int) 
 	}
 	f.adjustHyperlinks(ws, sheet, dir, num, offset)
 	_ = ws.checkSheet()
-	_ = ws.checkRow()
+	_ = ws.checkRow(0)
 	for _, fn := range adjustHelperFunc {
 		if err := fn(f, ws, sheet, dir, num, offset, sheetID); err != nil {
 			return err
