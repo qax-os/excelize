@@ -17836,12 +17836,14 @@ func (fn *formulaFuncs) NPV(argsList *list.List) formulaArg {
 	}
 	val, i := 0.0, 1
 	for arg := argsList.Front().Next(); arg != nil; arg = arg.Next() {
-		num := arg.Value.(formulaArg).ToNumber()
-		if num.Type != ArgNumber {
-			continue
+		for _, value := range arg.Value.(formulaArg).ToList() {
+			num := value.ToNumber()
+			if value.Type == ArgEmpty || num.Type != ArgNumber {
+				continue
+			}
+			val += num.Number / math.Pow(1+rate.Number, float64(i))
+			i++
 		}
-		val += num.Number / math.Pow(1+rate.Number, float64(i))
-		i++
 	}
 	return newNumberFormulaArg(val)
 }
