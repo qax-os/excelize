@@ -821,9 +821,13 @@ func TestCalcCellValue(t *testing.T) {
 		"SEARCHB(\" ?+\",\"\u4F60\u597D 1+2\")":              "5",
 		"SEARCHB(\"\\?eports\",\"prefix C:\\reports done\")": "10",
 		// SEC
+		"_xlfn.SEC(_xlfn.SEC(0))":      "1.85081571768093",
 		"_xlfn.SEC(-3.14159265358979)": "-1",
+		"_xlfn.SEC(0.5)":               "1.13949392732455",
 		"_xlfn.SEC(0)":                 "1",
-		"_xlfn.SEC(_xlfn.SEC(0))":      "0.54030230586814",
+		"_xlfn.SEC(1)":                 "1.85081571768093",
+		"_xlfn.SEC(2)":                 "-2.40299796172238",
+		"_xlfn.SEC(3)":                 "-1.01010866590799",
 		// SECH
 		"_xlfn.SECH(-3.14159265358979)": "0.0862667383340547",
 		"_xlfn.SECH(0)":                 "1",
