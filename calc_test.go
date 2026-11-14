@@ -1229,6 +1229,8 @@ func TestCalcCellValue(t *testing.T) {
 		// HARMEAN
 		"HARMEAN(2.5,3,0.5,1,3)":               "1.22950819672131",
 		"HARMEAN(\"2.5\",3,0.5,1,INT(3),\"\")": "1.22950819672131",
+		"HARMEAN(A1:A3)":                       "1.63636363636364",
+		"HARMEAN(A1:A2)":                       "1.33333333333333",
 		// HYPGEOM.DIST
 		"HYPGEOM.DIST(0,3,3,9,TRUE)":   "0.238095238095238",
 		"HYPGEOM.DIST(1,3,3,9,TRUE)":   "0.773809523809524",
@@ -3513,9 +3515,10 @@ func TestCalcCellValue(t *testing.T) {
 		"GEOMEAN(D1:D2)": {"#NUM!", "#NUM!"},
 		"GEOMEAN(\"\")":  {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		// HARMEAN
-		"HARMEAN()":   {"#VALUE!", "HARMEAN requires at least 1 argument"},
-		"HARMEAN(-1)": {"#N/A", "#N/A"},
-		"HARMEAN(0)":  {"#N/A", "#N/A"},
+		"HARMEAN()":      {"#VALUE!", "HARMEAN requires at least 1 argument"},
+		"HARMEAN(-1)":    {"#N/A", "#N/A"},
+		"HARMEAN(0)":     {"#N/A", "#N/A"},
+		"HARMEAN(A1:A4)": {"#N/A", "#N/A"},
 		// HYPGEOM.DIST
 		"HYPGEOM.DIST()":                  {"#VALUE!", "HYPGEOM.DIST requires 5 arguments"},
 		"HYPGEOM.DIST(\"\",4,4,12,FALSE)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
