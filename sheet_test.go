@@ -441,6 +441,37 @@ func TestRemovePageBreak(t *testing.T) {
 	// Test remove page break with invalid sheet name
 	assert.EqualError(t, f.RemovePageBreak("Sheet:1", "A3"), ErrSheetNameInvalid.Error())
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestRemovePageBreak.xlsx")))
+
+	// Test remove row page break when the worksheet has no column page breaks
+	f = NewFile()
+	ws, err := f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	ws.RowBreaks = &xlsxRowBreaks{xlsxBreaks: xlsxBreaks{Brk: []*xlsxBrk{{ID: 14, Max: 16383, Man: true}}, Count: 1, ManualBreakCount: 1}}
+	ws.ColBreaks = nil
+	assert.NoError(t, f.RemovePageBreak("Sheet1", "A15"))
+	assert.Empty(t, ws.RowBreaks.Brk)
+	assert.Equal(t, 0, ws.RowBreaks.Count)
+	assert.Nil(t, ws.ColBreaks)
+
+	// Test remove column page break when the worksheet has no row page breaks
+	f = NewFile()
+	ws, err = f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	ws.RowBreaks = nil
+	ws.ColBreaks = &xlsxColBreaks{xlsxBreaks: xlsxBreaks{Brk: []*xlsxBrk{{ID: 3, Max: 1048575, Man: true}}, Count: 1, ManualBreakCount: 1}}
+	assert.NoError(t, f.RemovePageBreak("Sheet1", "D1"))
+	assert.Empty(t, ws.ColBreaks.Brk)
+	assert.Equal(t, 0, ws.ColBreaks.Count)
+	assert.Nil(t, ws.RowBreaks)
+
+	// Test remove page break when the worksheet has no page breaks
+	f = NewFile()
+	ws, err = f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	ws.RowBreaks, ws.ColBreaks = nil, nil
+	assert.NoError(t, f.RemovePageBreak("Sheet1", "B2"))
+	assert.Nil(t, ws.RowBreaks)
+	assert.Nil(t, ws.ColBreaks)
 }
 
 func TestGetSheetName(t *testing.T) {

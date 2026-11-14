@@ -2041,11 +2041,13 @@ func (f *File) RemovePageBreak(sheet, cell string) error {
 		}
 		return brks
 	}
-	if ws.RowBreaks == nil || ws.ColBreaks == nil {
-		return err
+	var rowBrks, colBrks int
+	if ws.RowBreaks != nil {
+		rowBrks = len(ws.RowBreaks.Brk)
 	}
-	rowBrks := len(ws.RowBreaks.Brk)
-	colBrks := len(ws.ColBreaks.Brk)
+	if ws.ColBreaks != nil {
+		colBrks = len(ws.ColBreaks.Brk)
+	}
 	if rowBrks > 0 && rowBrks == colBrks {
 		ws.RowBreaks.Brk = removeBrk(row, ws.RowBreaks.Brk)
 		ws.ColBreaks.Brk = removeBrk(col, ws.ColBreaks.Brk)
