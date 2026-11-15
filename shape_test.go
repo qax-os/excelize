@@ -138,8 +138,20 @@ func TestAddShape(t *testing.T) {
 	// Test get shapes on not exists worksheet
 	_, err = f.GetShapes("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test get shapes from anchor with incomplete shape properties
 	assert.Nil(t, f.extractShapeFromAnchor("Sheet1", &xdrCellAnchor{Sp: &xdrSp{}, From: &xlsxFrom{Col: -1, Row: 0}}))
 	assert.Nil(t, f.extractShapeFromDecodeAnchor("Sheet1", "<from><col>-1</col><row>0</row></from><sp/>"))
+	// Test get shapes from anchor with invalid cell coordinates
+	assert.Nil(t, f.extractShapeFromAnchor("Sheet1", &xdrCellAnchor{
+		From: &xlsxFrom{Col: -1, Row: 0}, Sp: &xdrSp{NvSpPr: &xdrNvSpPr{CNvPr: &xlsxCNvPr{}}, SpPr: &xlsxSpPr{}},
+	}))
+	assert.Nil(t, f.extractShapeFromDecodeAnchor("Sheet1", "<from><col>-1</col><row>0</row></from><sp><nvSpPr><cNvPr/></nvSpPr><spPr/></sp>"))
+	assert.Nil(t, f.extractShapeFromAnchor("Sheet1", &xdrCellAnchor{From: &xlsxFrom{}, Sp: &xdrSp{}}))
+	assert.Nil(t, f.extractShapeFromDecodeAnchor("Sheet1", "<from><col>0</col><row>0</row></from><sp/>"))
+	assert.NotNil(t, f.extractShapeFromAnchor("Sheet1", &xdrCellAnchor{
+		From: &xlsxFrom{}, Sp: &xdrSp{NvSpPr: &xdrNvSpPr{CNvPr: &xlsxCNvPr{}}, SpPr: &xlsxSpPr{}},
+	}))
+	assert.NotNil(t, f.extractShapeFromDecodeAnchor("Sheet1", "<from><col>0</col><row>0</row></from><sp><nvSpPr><cNvPr/></nvSpPr><spPr/></sp>"))
 }
 
 func TestAddDrawingShape(t *testing.T) {
