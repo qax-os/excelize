@@ -159,3 +159,14 @@ func (f *File) patchZip64LFH(input io.ReaderAt, output io.WriterAt) error {
 		offset += int64(n) - int64(len(signature)-1)
 	}
 }
+
+// copyWorkbookPart closes a disk-backed part even if the ZIP entry rejects a
+// write, while preserving a read or write failure over a subsequent close error.
+func copyWorkbookPart(output io.Writer, input io.ReadCloser) (int64, error) {
+	written, err := io.Copy(output, input)
+	closeErr := input.Close()
+	if err != nil {
+		return written, err
+	}
+	return written, closeErr
+}

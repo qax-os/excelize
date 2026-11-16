@@ -260,13 +260,9 @@ func (f *File) writeToZipPrepared(zw ZipWriter) error {
 			// Match readBytes: unavailable temporary parts are empty entries.
 			continue
 		}
-		written, copyErr := io.Copy(fi, file)
-		closeErr := file.Close()
+		written, copyErr := copyWorkbookPart(fi, file)
 		if copyErr != nil {
 			return copyErr
-		}
-		if closeErr != nil {
-			return closeErr
 		}
 		if written > math.MaxUint32 {
 			f.zip64Entries = append(f.zip64Entries, path)
