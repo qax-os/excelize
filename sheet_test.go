@@ -563,6 +563,34 @@ func TestWorksheetWriter(t *testing.T) {
 		assert.Equal(t, fmt.Sprintf(xml.Header+`<worksheet xmlns="%s" xmlns:r="%s"><dimension ref="A1048576"></dimension><sheetData><row r="1"><c r="A1"><v>1</v></c></row><row r="1048576" spans="1:1"></row></sheetData></worksheet>`, NameSpaceSpreadSheet.Value, SourceRelationship.Value), string(f.readXML("xl/worksheets/sheet1.xml")))
 		assert.NoError(t, f.Close())
 	})
+
+	t.Run("for_write_new_worksheet_after_save", func(t *testing.T) {
+		f := NewFile()
+		idx1, err := f.NewSheet("Sheet2")
+		assert.NoError(t, err)
+		assert.NoError(t, f.SetCellValue("Sheet2", "A1", "a"))
+		assert.NoError(t, f.SetCellValue("Sheet2", "C1", "c"))
+		assert.NoError(t, f.SetCellValue("Sheet2", "A3", 1))
+		assert.NoError(t, f.SetCellValue("Sheet2", "B3", 2))
+		idx2, err := f.NewSheet("Sheet3")
+		assert.NoError(t, err)
+		assert.NoError(t, f.CopySheet(idx1, idx2))
+		_, err = f.WriteToBuffer()
+		assert.NoError(t, err)
+
+		for _, sheet := range []string{"Sheet2", "Sheet3"} {
+			assert.NoError(t, f.SetCellValue(sheet, "A2", "second"))
+			assert.NoError(t, f.SetCellValue(sheet, "B3", 200))
+			assert.NoError(t, f.SetCellValue(sheet, "B1", "b"))
+			rows, err := f.GetRows(sheet)
+			assert.NoError(t, err)
+			assert.Equal(t, [][]string{{"a", "b", "c"}, {"second"}, {"1", "200"}}, rows)
+			assert.NoError(t, f.SetCellFormula(sheet, "E1", "=SUM(A3:B3)"))
+			result, err := f.CalcCellValue(sheet, "E1")
+			assert.NoError(t, err)
+			assert.Equal(t, "201", result)
+		}
+	})
 }
 
 func TestGetWorkbookPath(t *testing.T) {
