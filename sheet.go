@@ -182,7 +182,6 @@ func (f *File) workSheetWriter() {
 			// reusing buffer
 			_ = encoder.Encode(sheet)
 			f.saveFileList(p.(string), replaceRelationshipsBytes(f.replaceNameSpaceBytes(p.(string), buffer.Bytes())))
-			// The rows and cells were trimmed above, so read the worksheet back on next use.
 			f.Sheet.Delete(p.(string))
 			f.checked.Delete(p.(string))
 			buffer.Reset()
