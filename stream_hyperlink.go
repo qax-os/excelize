@@ -73,10 +73,8 @@ func (sw *StreamWriter) SetCellHyperLink(cell, link, linkType string, opts ...Hy
 	if err != nil {
 		return err
 	}
-	axis, err := CoordinatesToCellName(column, row)
-	if err != nil {
-		return err
-	}
+	// CellNameToCoordinates already validated both coordinates.
+	axis, _ := CoordinatesToCellName(column, row)
 	if linkType != "External" && linkType != "Location" {
 		return newInvalidLinkTypeError(linkType)
 	}
@@ -104,7 +102,7 @@ func (sw *StreamWriter) SetCellHyperLink(cell, link, linkType string, opts ...Hy
 		return ErrTotalSheetHyperlinks
 	}
 	if links.links == nil {
-		if err := sw.openHyperlinkFiles(); err != nil {
+		if err := sw.openHyperlinkFiles(os.CreateTemp); err != nil {
 			return err
 		}
 	}
@@ -175,7 +173,7 @@ func (sw *StreamWriter) hyperlinkRelsPath() string {
 
 // openHyperlinkFiles reserves a relationship namespace independent of numeric
 // IDs used by tables, drawings, and other ordinary worksheet relationships.
-func (sw *StreamWriter) openHyperlinkFiles() error {
+func (sw *StreamWriter) openHyperlinkFiles(createTemp func(string, string) (*os.File, error)) error {
 	links := sw.hyperlinks
 	rels, err := sw.file.relsReader(sw.hyperlinkRelsPath())
 	if err != nil {
@@ -197,11 +195,11 @@ func (sw *StreamWriter) openHyperlinkFiles() error {
 			links.prefix += "_"
 		}
 	}
-	links.links, err = os.CreateTemp(sw.file.options.TmpDir, "excelize-hyperlinks-*")
+	links.links, err = createTemp(sw.file.options.TmpDir, "excelize-hyperlinks-*")
 	if err != nil {
 		return err
 	}
-	links.rels, err = os.CreateTemp(sw.file.options.TmpDir, "excelize-hyperlink-rels-*")
+	links.rels, err = createTemp(sw.file.options.TmpDir, "excelize-hyperlink-rels-*")
 	if err != nil {
 		_ = links.links.Close()
 		_ = os.Remove(links.links.Name())
@@ -236,13 +234,11 @@ func (sw *StreamWriter) flushHyperlinks() error {
 	_, _ = sw.rawData.WriteString(`<hyperlinks xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`)
 	if sw.worksheet.Hyperlinks != nil {
 		for _, link := range sw.worksheet.Hyperlinks.Hyperlink {
-			data, err := xml.Marshal(struct {
+			// A hyperlink contains only string fields; marshaling cannot fail.
+			data, _ := xml.Marshal(struct {
 				XMLName xml.Name `xml:"hyperlink"`
 				xlsxHyperlink
 			}{xlsxHyperlink: link})
-			if err != nil {
-				return err
-			}
 			_, _ = sw.rawData.Write(replaceRelationshipsBytes(data))
 			if err := sw.rawData.Sync(); err != nil {
 				return err
@@ -264,10 +260,8 @@ type streamHyperlinkWriter struct{ stream *StreamWriter }
 
 // Write periodically spills copied metadata just like SetRow spills cell XML.
 func (w streamHyperlinkWriter) Write(data []byte) (int, error) {
-	n, err := w.stream.rawData.Write(data)
-	if err != nil {
-		return n, err
-	}
+	// bufferedWriter.Write writes into bytes.Buffer and cannot fail.
+	n, _ := w.stream.rawData.Write(data)
 	if w.stream.rawData.tmp != nil {
 		return n, w.stream.rawData.Flush()
 	}
