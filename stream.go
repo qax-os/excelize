@@ -35,6 +35,8 @@ type StreamWriter struct {
 	mergeCellsCount int
 	mergeCells      strings.Builder
 	tableParts      string
+	hyperlinks      *streamHyperlinks
+	flushed         bool
 }
 
 // NewStreamWriter returns stream writer struct by given worksheet name used for
@@ -769,7 +771,11 @@ func (sw *StreamWriter) Flush() error {
 		_, _ = mergeCells.WriteString(`</mergeCells>`)
 	}
 	_, _ = sw.rawData.WriteString(mergeCells.String())
-	bulkAppendFields(&sw.rawData, sw.worksheet, 18, 39)
+	bulkAppendFields(&sw.rawData, sw.worksheet, 18, 20)
+	if err := sw.flushHyperlinks(); err != nil {
+		return err
+	}
+	bulkAppendFields(&sw.rawData, sw.worksheet, 22, 39)
 	_, _ = sw.rawData.WriteString(sw.tableParts)
 	bulkAppendFields(&sw.rawData, sw.worksheet, 41, 41)
 	_, _ = sw.rawData.WriteString(`</worksheet>`)
@@ -782,6 +788,7 @@ func (sw *StreamWriter) Flush() error {
 	sw.file.checked.Delete(sheetPath)
 	sw.file.Pkg.Delete(sheetPath)
 
+	sw.flushed = true
 	return nil
 }
 
