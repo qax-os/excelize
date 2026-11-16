@@ -179,6 +179,66 @@ func TestWriteTo(t *testing.T) {
 		_, err := f.WriteTo(bufio.NewWriter(&bytes.Buffer{}))
 		assert.EqualError(t, err, "copy error")
 	}
+	// Test writeToZip returns a package part write error that is not the last part
+	{
+		f := NewFile()
+		f.SetZipWriter(func(w io.Writer) ZipWriter {
+			return &errZipWriter{
+				createFunc: func(name string) (io.Writer, error) {
+					if name == defaultXMLPathWorkbook {
+						return &errWriter{err: errors.New("write part error")}, nil
+					}
+					return &bytes.Buffer{}, nil
+				},
+			}
+		})
+		_, err := f.WriteTo(bufio.NewWriter(&bytes.Buffer{}))
+		assert.EqualError(t, err, "write part error")
+	}
+	// Test writeToZip returns a package part create error when temporary files follow
+	{
+		f := NewFile()
+		tmp, err := os.CreateTemp("", "excelize-test-*")
+		assert.NoError(t, err)
+		assert.NoError(t, tmp.Close())
+		defer os.Remove(tmp.Name())
+		f.tempFiles.Store("xl/worksheets/sheet2.xml", tmp.Name())
+		f.SetZipWriter(func(w io.Writer) ZipWriter {
+			return &errZipWriter{
+				createFunc: func(name string) (io.Writer, error) {
+					if name == defaultXMLPathWorkbook {
+						return nil, errors.New("create part error")
+					}
+					return &bytes.Buffer{}, nil
+				},
+			}
+		})
+		_, err = f.WriteTo(bufio.NewWriter(&bytes.Buffer{}))
+		assert.EqualError(t, err, "create part error")
+	}
+	// Test writeToZip returns a temporary file write error that is not the last file
+	{
+		f := NewFile()
+		for _, name := range []string{"xl/worksheets/sheet2.xml", "xl/worksheets/sheet3.xml"} {
+			tmp, err := os.CreateTemp("", "excelize-test-*")
+			assert.NoError(t, err)
+			assert.NoError(t, tmp.Close())
+			defer os.Remove(tmp.Name())
+			f.tempFiles.Store(name, tmp.Name())
+		}
+		f.SetZipWriter(func(w io.Writer) ZipWriter {
+			return &errZipWriter{
+				createFunc: func(name string) (io.Writer, error) {
+					if name == "xl/worksheets/sheet3.xml" {
+						return &errWriter{err: errors.New("write temporary file error")}, nil
+					}
+					return &bytes.Buffer{}, nil
+				},
+			}
+		})
+		_, err := f.WriteTo(bufio.NewWriter(&bytes.Buffer{}))
+		assert.EqualError(t, err, "write temporary file error")
+	}
 }
 
 func TestClose(t *testing.T) {
