@@ -113,7 +113,10 @@ func (f *File) Write(w io.Writer, opts ...Options) error {
 	return err
 }
 
-// WriteTo implements io.WriterTo to write the file.
+// WriteTo implements io.WriterTo to write the file. Non-encrypted workbooks
+// are streamed directly to w. If an entry can require ZIP64, the archive is
+// spooled to a temporary file to preserve Excel-compatible local file headers.
+// Password-protected output retains the in-memory encryption path.
 func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 	for i := range opts {
 		f.options = &opts[i]
@@ -127,11 +130,22 @@ func (f *File) WriteTo(w io.Writer, opts ...Options) (int64, error) {
 			return 0, err
 		}
 	}
-	buf, err := f.WriteToBuffer()
+	if f.options != nil && f.options.Password != "" {
+		buf, err := f.WriteToBuffer()
+		if err != nil {
+			return 0, err
+		}
+		return buf.WriteTo(w)
+	}
+	f.prepareWriteToZip()
+	spool, err := f.zip64SpoolNeeded()
 	if err != nil {
 		return 0, err
 	}
-	return buf.WriteTo(w)
+	if spool {
+		return f.writeToSpooled(w)
+	}
+	return f.writeToDirect(w)
 }
 
 // WriteToBuffer provides a function to get bytes.Buffer from the saved file,
@@ -161,6 +175,12 @@ func (f *File) WriteToBuffer() (*bytes.Buffer, error) {
 
 // writeToZip provides a function to write to ZipWriter.
 func (f *File) writeToZip(zw ZipWriter) error {
+	f.prepareWriteToZip()
+	return f.writeToZipPrepared(zw)
+}
+
+// prepareWriteToZip serializes workbook metadata before checking part sizes.
+func (f *File) prepareWriteToZip() {
 	f.calcChainWriter()
 	f.commentsWriter()
 	f.contentTypesWriter()
@@ -174,6 +194,12 @@ func (f *File) writeToZip(zw ZipWriter) error {
 	f.sharedStringsWriter()
 	f.styleSheetWriter()
 	f.themeWriter()
+}
+
+// writeToZipPrepared packages already serialized parts without materializing
+// disk-backed parts in memory.
+func (f *File) writeToZipPrepared(zw ZipWriter) error {
+	f.zip64Entries = nil
 
 	for path, stream := range f.streams {
 		fi, err := zw.Create(path)
@@ -229,7 +255,20 @@ func (f *File) writeToZip(zw ZipWriter) error {
 		if fi, err = zw.Create(path); err != nil {
 			break
 		}
-		if n, err = fi.Write(f.readBytes(path)); int64(n) > math.MaxUint32 {
+		file, openErr := f.readTemp(path)
+		if openErr != nil {
+			// Match readBytes: unavailable temporary parts are empty entries.
+			continue
+		}
+		written, copyErr := io.Copy(fi, file)
+		closeErr := file.Close()
+		if copyErr != nil {
+			return copyErr
+		}
+		if closeErr != nil {
+			return closeErr
+		}
+		if written > math.MaxUint32 {
 			f.zip64Entries = append(f.zip64Entries, path)
 		}
 	}
