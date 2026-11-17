@@ -86,8 +86,6 @@ const (
 
 	maxFinancialIterations = 128
 	financialPrecision     = 1.0e-08
-	// maxMUNITDimension bounds the n×n matrix built by MUNIT
-	maxMUNITDimension = 255
 	// Date and time format regular expressions
 	monthRe    = `((jan|january)|(feb|february)|(mar|march)|(apr|april)|(may)|(jun|june)|(jul|july)|(aug|august)|(sep|september)|(oct|october)|(nov|november)|(dec|december))`
 	df1        = `(([0-9])+)/(([0-9])+)/(([0-9])+)`
@@ -5337,8 +5335,8 @@ func (fn *formulaFuncs) MUNIT(argsList *list.List) (result formulaArg) {
 	if dimension.Type == ArgError || dimension.Number < 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, dimension.Error)
 	}
-	if math.Trunc(dimension.Number) > maxMUNITDimension {
-		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("MUNIT dimension exceeds %d", maxMUNITDimension))
+	if math.Trunc(dimension.Number) > MaxColumns {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("MUNIT function dimension exceeds %d", MaxColumns))
 	}
 	n := int(dimension.Number)
 	matrix := make([][]formulaArg, 0, n)
