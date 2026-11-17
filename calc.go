@@ -9379,12 +9379,15 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "HARMEAN requires at least 1 argument")
 	}
 	if minVal := fn.MIN(argsList); minVal.Number < 0 {
-		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	val, cnt := 0.0, 0.0
-	// add adds a value to the sum of the reciprocals and reports whether the
-	// value can be used: the harmonic mean is undefined for a value that is
-	// not greater than zero.
+	return harmean(argsList)
+}
+
+// harmean calculates the harmonic mean of the values in the provided argument
+// list.
+func harmean(argsList *list.List) formulaArg {
+	var val, cnt float64
 	add := func(number float64) bool {
 		if number <= 0 {
 			return false
@@ -9402,11 +9405,11 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 				continue
 			}
 			if !add(num.Number) {
-				return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+				return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 			}
 		case ArgNumber:
 			if !add(arg.Number) {
-				return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+				return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 			}
 		case ArgMatrix:
 			for _, row := range arg.Matrix {
@@ -9415,14 +9418,14 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 						continue
 					}
 					if !add(cell.Number) {
-						return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+						return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 					}
 				}
 			}
 		}
 	}
 	if cnt == 0 {
-		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg(1 / (val / cnt))
 }
