@@ -9452,9 +9452,23 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "HARMEAN requires at least 1 argument")
 	}
 	if minVal := fn.MIN(argsList); minVal.Number < 0 {
-		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	number, val, cnt := 0.0, 0.0, 0.0
+	return harmean(argsList)
+}
+
+// harmean calculates the harmonic mean of the values in the provided argument
+// list.
+func harmean(argsList *list.List) formulaArg {
+	var val, cnt float64
+	add := func(number float64) bool {
+		if number <= 0 {
+			return false
+		}
+		val += 1 / number
+		cnt++
+		return true
+	}
 	for token := argsList.Front(); token != nil; token = token.Next() {
 		arg := token.Value.(formulaArg)
 		switch arg.Type {
@@ -9463,15 +9477,28 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 			if num.Type != ArgNumber {
 				continue
 			}
-			number = num.Number
+			if !add(num.Number) {
+				return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+			}
 		case ArgNumber:
-			number = arg.Number
+			if !add(arg.Number) {
+				return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+			}
+		case ArgMatrix:
+			for _, row := range arg.Matrix {
+				for _, cell := range row {
+					if cell.Type != ArgNumber {
+						continue
+					}
+					if !add(cell.Number) {
+						return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+					}
+				}
+			}
 		}
-		if number <= 0 {
-			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
-		}
-		val += 1 / number
-		cnt++
+	}
+	if cnt == 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg(1 / (val / cnt))
 }
