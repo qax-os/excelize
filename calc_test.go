@@ -721,7 +721,9 @@ func TestCalcCellValue(t *testing.T) {
 		"MULTINOMIAL(\"\",3,1,2,5)":   "27720",
 		"MULTINOMIAL(MULTINOMIAL(1))": "1",
 		// _xlfn.MUNIT
-		"_xlfn.MUNIT(4)": "1",
+		"_xlfn.MUNIT(4)":     "1",
+		"_xlfn.MUNIT(255)":   "1",
+		"_xlfn.MUNIT(255.5)": "1",
 		// ODD
 		"ODD(22)":     "23",
 		"ODD(1.22)":   "3",
@@ -3062,6 +3064,7 @@ func TestCalcCellValue(t *testing.T) {
 		"_xlfn.MUNIT()":      {"#VALUE!", "MUNIT requires 1 numeric argument"},
 		"_xlfn.MUNIT(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		"_xlfn.MUNIT(-1)":    {"#VALUE!", ""},
+		"_xlfn.MUNIT(16385)": {"#VALUE!", "MUNIT function dimension exceeds 16384"},
 		// ODD
 		"ODD()":      {"#VALUE!", "ODD requires 1 numeric argument"},
 		"ODD(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},

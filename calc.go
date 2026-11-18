@@ -5335,10 +5335,14 @@ func (fn *formulaFuncs) MUNIT(argsList *list.List) (result formulaArg) {
 	if dimension.Type == ArgError || dimension.Number < 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, dimension.Error)
 	}
-	matrix := make([][]formulaArg, 0, int(dimension.Number))
-	for i := 0; i < int(dimension.Number); i++ {
-		row := make([]formulaArg, int(dimension.Number))
-		for j := 0; j < int(dimension.Number); j++ {
+	if math.Trunc(dimension.Number) > MaxColumns {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("MUNIT function dimension exceeds %d", MaxColumns))
+	}
+	n := int(dimension.Number)
+	matrix := make([][]formulaArg, 0, n)
+	for i := 0; i < n; i++ {
+		row := make([]formulaArg, n)
+		for j := 0; j < n; j++ {
 			if i == j {
 				row[j] = newNumberFormulaArg(1.0)
 			} else {
