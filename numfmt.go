@@ -5272,7 +5272,7 @@ func format(value, numFmt string, date1904 bool, cellType CellType, opts *Option
 		}
 		if nf.isNumeric {
 			switch section.Type {
-			case nfp.TokenSectionPositive:
+			case nfp.TokenSectionPositive, nfp.TokenSectionZero:
 				return nf.alignmentHandler(nf.positiveHandler())
 			default:
 				return nf.alignmentHandler(nf.negativeHandler())
@@ -5610,6 +5610,12 @@ func (nf *numberFormat) numberHandler() string {
 	}
 	if result = fmt.Sprintf(fmtCode, math.Abs(num)); nf.useCommaSep {
 		result = printCommaSep(result)
+	}
+	// A zero integer part is an insignificant digit, only the "0" placeholder
+	// displays it.
+	if nf.intPadding == 0 && !nf.useFraction && !nf.useScientificNotation &&
+		strings.HasPrefix(result, "0") && (len(result) == 1 || result[1] < '0' || result[1] > '9') {
+		result = result[1:]
 	}
 	return nf.printNumberLiteral(result)
 }
@@ -7909,6 +7915,13 @@ func (nf *numberFormat) getValueSectionType(value string) (float64, string) {
 		return 0, nfp.TokenSectionText
 	}
 	number, _ := strconv.ParseFloat(value, 64)
+	if number == 0 {
+		for _, sec := range nf.section {
+			if sec.Type == nfp.TokenSectionZero {
+				return number, nfp.TokenSectionZero
+			}
+		}
+	}
 	if number >= 0 {
 		return number, nfp.TokenSectionPositive
 	}
