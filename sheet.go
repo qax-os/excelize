@@ -2011,59 +2011,58 @@ func (ws *xlsxWorksheet) insertPageBreak(cell string) error {
 	return err
 }
 
+// removeBrk remove all page breaks with the given ID from the breaks list,
+// and return the remaining breaks and the number of removed manual breaks.
+func removeBrk(ID int, brks []*xlsxBrk) ([]*xlsxBrk, int) {
+	var manual int
+	remain := make([]*xlsxBrk, 0, len(brks))
+	for _, brk := range brks {
+		if brk != nil && brk.ID == ID {
+			if brk.Man {
+				manual++
+			}
+			continue
+		}
+		remain = append(remain, brk)
+	}
+	return remain, manual
+}
+
 // RemovePageBreak remove a page break by given worksheet name and cell
 // reference.
 func (f *File) RemovePageBreak(sheet, cell string) error {
-	var (
-		ws       *xlsxWorksheet
-		row, col int
-		err      error
-	)
-	if ws, err = f.workSheetReader(sheet); err != nil {
+	ws, err := f.workSheetReader(sheet)
+	if err != nil {
 		return err
 	}
-	if col, row, err = CellNameToCoordinates(cell); err != nil {
+	col, row, err := CellNameToCoordinates(cell)
+	if err != nil {
 		return err
 	}
 	col--
 	row--
-	if col == row && col == 0 {
-		return err
-	}
-	removeBrk := func(ID int, brks []*xlsxBrk) []*xlsxBrk {
-		for i, brk := range brks {
-			if brk.ID == ID {
-				brks = append(brks[:i], brks[i+1:]...)
-			}
+	var manual int
+	if row != 0 && ws.RowBreaks != nil {
+		ws.RowBreaks.Brk, manual = removeBrk(row, ws.RowBreaks.Brk)
+		ws.RowBreaks.ManualBreakCount -= manual
+		if ws.RowBreaks.ManualBreakCount < 0 {
+			ws.RowBreaks.ManualBreakCount = 0
 		}
-		return brks
+		if ws.RowBreaks.Count = len(ws.RowBreaks.Brk); ws.RowBreaks.Count == 0 {
+			ws.RowBreaks = nil
+		}
 	}
-	if ws.RowBreaks == nil || ws.ColBreaks == nil {
-		return err
+	if col != 0 && ws.ColBreaks != nil {
+		ws.ColBreaks.Brk, manual = removeBrk(col, ws.ColBreaks.Brk)
+		ws.ColBreaks.ManualBreakCount -= manual
+		if ws.ColBreaks.ManualBreakCount < 0 {
+			ws.ColBreaks.ManualBreakCount = 0
+		}
+		if ws.ColBreaks.Count = len(ws.ColBreaks.Brk); ws.ColBreaks.Count == 0 {
+			ws.ColBreaks = nil
+		}
 	}
-	rowBrks := len(ws.RowBreaks.Brk)
-	colBrks := len(ws.ColBreaks.Brk)
-	if rowBrks > 0 && rowBrks == colBrks {
-		ws.RowBreaks.Brk = removeBrk(row, ws.RowBreaks.Brk)
-		ws.ColBreaks.Brk = removeBrk(col, ws.ColBreaks.Brk)
-		ws.RowBreaks.Count = len(ws.RowBreaks.Brk)
-		ws.ColBreaks.Count = len(ws.ColBreaks.Brk)
-		ws.RowBreaks.ManualBreakCount--
-		ws.ColBreaks.ManualBreakCount--
-		return err
-	}
-	if rowBrks > 0 && rowBrks > colBrks {
-		ws.RowBreaks.Brk = removeBrk(row, ws.RowBreaks.Brk)
-		ws.RowBreaks.Count = len(ws.RowBreaks.Brk)
-		ws.RowBreaks.ManualBreakCount--
-		return err
-	}
-	if colBrks > 0 && colBrks > rowBrks {
-		ws.ColBreaks.Brk = removeBrk(col, ws.ColBreaks.Brk)
-		ws.ColBreaks.Count = len(ws.ColBreaks.Brk)
-		ws.ColBreaks.ManualBreakCount--
-	}
-	return err
+	return nil
 }
 
 // relsReader provides a function to get the pointer to the structure

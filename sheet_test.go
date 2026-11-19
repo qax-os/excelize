@@ -436,6 +436,36 @@ func TestRemovePageBreak(t *testing.T) {
 	assert.NoError(t, f.InsertPageBreak("Sheet2", "C2"))
 	assert.NoError(t, f.RemovePageBreak("Sheet2", "B2"))
 
+	// Test remove page break with the manual break count less than 0
+	_, err = f.NewSheet("Sheet3")
+	assert.NoError(t, err)
+	assert.NoError(t, f.InsertPageBreak("Sheet3", "C3"))
+	assert.NoError(t, f.InsertPageBreak("Sheet3", "D4"))
+	ws, err := f.workSheetReader("Sheet3")
+	assert.NoError(t, err)
+	ws.RowBreaks.ManualBreakCount = 0
+	ws.ColBreaks.ManualBreakCount = 0
+	assert.NoError(t, f.RemovePageBreak("Sheet3", "C3"))
+	assert.Equal(t, 1, ws.RowBreaks.Count)
+	assert.Equal(t, 1, ws.ColBreaks.Count)
+	assert.Equal(t, 0, ws.RowBreaks.ManualBreakCount)
+	assert.Equal(t, 0, ws.ColBreaks.ManualBreakCount)
+
+	// Test remove page break when the worksheet has only row or column page breaks
+	f = NewFile()
+	ws, err = f.workSheetReader("Sheet1")
+	assert.NoError(t, err)
+	ws.RowBreaks = &xlsxRowBreaks{xlsxBreaks: xlsxBreaks{Brk: []*xlsxBrk{{ID: 14, Max: 16383, Man: true}}, Count: 1, ManualBreakCount: 1}}
+	ws.ColBreaks = nil
+	assert.NoError(t, f.RemovePageBreak("Sheet1", "A15"))
+	assert.Nil(t, ws.RowBreaks)
+	assert.Nil(t, ws.ColBreaks)
+
+	ws.ColBreaks = &xlsxColBreaks{xlsxBreaks: xlsxBreaks{Brk: []*xlsxBrk{{ID: 3, Max: 1048575, Man: true}}, Count: 1, ManualBreakCount: 1}}
+	assert.NoError(t, f.RemovePageBreak("Sheet1", "D1"))
+	assert.Nil(t, ws.RowBreaks)
+	assert.Nil(t, ws.ColBreaks)
+
 	assert.EqualError(t, f.RemovePageBreak("Sheet1", "A"), newCellNameToCoordinatesError("A", newInvalidCellNameError("A")).Error())
 	assert.EqualError(t, f.RemovePageBreak("SheetN", "C3"), "sheet SheetN does not exist")
 	// Test remove page break with invalid sheet name
