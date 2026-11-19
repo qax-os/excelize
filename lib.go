@@ -365,6 +365,11 @@ func coordinatesToRangeRef(coordinates []int, abs ...bool) (string, error) {
 // getDefinedNameRefTo convert defined name to reference range.
 func (f *File) getDefinedNameRefTo(definedNameName, currentSheet string) (refTo string) {
 	var workbookRefTo, worksheetRefTo string
+	// the external workbook index 0 refers to the current workbook, and the
+	// name qualified by a workbook is in the workbook scope
+	if name, ok := strings.CutPrefix(definedNameName, "[0]!"); ok {
+		definedNameName, currentSheet = name, ""
+	}
 	for _, definedName := range f.GetDefinedName() {
 		if definedName.Name == definedNameName {
 			// worksheet scope takes precedence over scope workbook when both definedNames exist
