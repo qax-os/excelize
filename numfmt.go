@@ -5611,13 +5611,17 @@ func (nf *numberFormat) numberHandler() string {
 	if result = fmt.Sprintf(fmtCode, math.Abs(num)); nf.useCommaSep {
 		result = printCommaSep(result)
 	}
-	// A zero integer part is an insignificant digit, only the "0" placeholder
-	// displays it.
-	if nf.intPadding == 0 && !nf.useFraction && !nf.useScientificNotation &&
-		strings.HasPrefix(result, "0") && (len(result) == 1 || result[1] < '0' || result[1] > '9') {
-		result = result[1:]
+	return nf.printNumberLiteral(nf.trimZeroIntPart(result))
+}
+
+// trimZeroIntPart removes the leading zero integer part from the pre-formatted
+// number text. A zero integer part is an insignificant digit, only the "0"
+// placeholder displays it.
+func (nf *numberFormat) trimZeroIntPart(text string) string {
+	if nf.intPadding == 0 && !nf.useFraction && !nf.useScientificNotation && strings.HasPrefix(text, "0") {
+		return text[1:]
 	}
-	return nf.printNumberLiteral(result)
+	return text
 }
 
 // dateTimeHandler handling data and time number format expression for a
