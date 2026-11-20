@@ -509,6 +509,10 @@ func (f *File) getSheetMap() (map[string]string, error) {
 // getSheetXMLPath provides a function to get XML file path by given sheet
 // name.
 func (f *File) getSheetXMLPath(sheet string) (string, bool) {
+	if path, ok := f.sheetMap[sheet]; ok {
+		return path, true
+	}
+
 	var (
 		name string
 		ok   bool
