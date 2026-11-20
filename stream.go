@@ -329,6 +329,7 @@ type RowOpts struct {
 	Hidden       bool
 	StyleID      int
 	OutlineLevel int
+	CustomHeight *bool
 }
 
 // marshalAttrs prepare attributes of the row.
@@ -356,7 +357,10 @@ func (r *RowOpts) marshalAttrs() (strings.Builder, error) {
 	if r.Height > 0 {
 		attrs.WriteString(` ht="`)
 		attrs.WriteString(strconv.FormatFloat(r.Height, 'f', -1, 64))
-		attrs.WriteString(`" customHeight="1"`)
+		attrs.WriteString(`"`)
+		if r.CustomHeight == nil || *r.CustomHeight {
+			attrs.WriteString(` customHeight="1"`)
+		}
 	}
 	if r.OutlineLevel > 0 {
 		attrs.WriteString(` outlineLevel="`)
