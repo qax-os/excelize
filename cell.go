@@ -97,9 +97,9 @@ func (f *File) GetCellType(sheet, cell string) (CellType, error) {
 }
 
 // SetCellValue provides a function to set the value of a cell. This function
-// is concurrency safe. The specified coordinates should not be in the first
-// row of the table, a complex number can be set with string text. The
-// following shows the supported data types:
+// is concurrency safe. Cell values can be set in any valid worksheet cell,
+// including cells in the first row (for example, A1). Complex numbers can
+// be provided as strings. The following data types are supported:
 //
 //	int
 //	int8
