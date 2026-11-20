@@ -5630,6 +5630,9 @@ func (nf *numberFormat) dateTimeHandler() string {
 	nf.t, nf.hours, nf.seconds = timeFromExcelTime(nf.number, nf.date1904), false, false
 	if !nf.useMillisecond {
 		nf.t = nf.t.Add(time.Duration(math.Round(float64(nf.t.Nanosecond())/1e9)) * time.Second)
+	} else if days := math.Floor(nf.number); days > 61 {
+		// The timeFromExcelTime function rounds these dates to whole seconds.
+		nf.t = timeFromExcelTime(days, nf.date1904).Add(time.Duration(nanosInADay * (nf.number - days)).Round(time.Millisecond))
 	}
 	for i, token := range nf.section[nf.sectionIdx].Items {
 		if token.TType == nfp.TokenTypeCurrencyLanguage {
