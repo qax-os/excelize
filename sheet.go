@@ -367,10 +367,11 @@ func (f *File) getActiveSheetID() int {
 }
 
 // SetSheetName provides a function to set the worksheet name by given source and
-// target worksheet names. Maximum 31 characters are allowed in sheet title and
-// this function only changes the name of the sheet and will not update the
-// sheet name in the formula or reference associated with the cell. So there
-// may be problem formula error or reference missing.
+// target worksheet names. Maximum 31 characters are allowed in sheet title. This
+// function updates the worksheet name in the defined names and in the cell
+// reference formulas of the charts, but it will not update the sheet name in the
+// formula or reference associated with the cell. So there may be problem formula
+// error or reference missing.
 func (f *File) SetSheetName(source, target string) error {
 	var err error
 	if err = checkSheetName(target); err != nil {
@@ -388,6 +389,7 @@ func (f *File) SetSheetName(source, target string) error {
 			delete(f.sheetMap, source)
 		}
 	}
+	f.adjustCharts(source, target)
 	if wb.DefinedNames == nil {
 		return err
 	}
