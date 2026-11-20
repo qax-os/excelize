@@ -4356,6 +4356,21 @@ func TestNumFmt(t *testing.T) {
 			assert.Equal(t, item[2], result, item)
 		}
 	}
+	// Test format number with the 1904 date system
+	for _, item := range [][]string{
+		{"0", "yyyy-mm-dd", "1904-01-01"},
+		{"0.5", "yyyy-mm-dd hh:mm", "1904-01-01 12:00"},
+		{"1", "yyyy-mm-dd", "1904-01-02"},
+		{"1", "mmmm d", "January 2"},
+		{"32", "yyyy-mm-dd", "1904-02-02"},
+		{"32", "mmm d", "Feb 2"},
+		{"59", "yyyy-mm-dd", "1904-02-29"},
+		{"60", "yyyy-mm-dd", "1904-03-01"},
+		{"60", "mmm d", "Mar 1"},
+	} {
+		result := format(item[0], item[1], true, CellTypeNumber, nil)
+		assert.Equal(t, item[2], result, item)
+	}
 	nf := numberFormat{}
 	changeNumFmtCode, err := nf.currencyLanguageHandler(nfp.Token{Parts: []nfp.Part{{}}})
 	assert.Equal(t, ErrUnsupportedNumberFormat, err)

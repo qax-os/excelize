@@ -7513,10 +7513,10 @@ func localMonthsNameZulu(t time.Time, abbr int) string {
 // localMonthsName return months name by supported language ID.
 func (nf *numberFormat) localMonthsName(abbr int) string {
 	t := nf.t
-	if nf.number < 1 {
+	if !nf.date1904 && nf.number < 1 {
 		t = timeFromExcelTime(nf.number+2, nf.date1904)
 	}
-	if 1 <= nf.number && nf.number < 60 {
+	if !nf.date1904 && 1 <= nf.number && nf.number < 60 {
 		t = timeFromExcelTime(nf.number+1, nf.date1904)
 	}
 	if languageInfo, ok := getSupportedLanguageInfo(nf.localCode); ok {
@@ -7547,10 +7547,10 @@ func (nf *numberFormat) dateTimesHandler(i int, token nfp.Token) {
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "M") {
 		m := int(nf.t.Month())
-		if nf.number < 2 {
+		if !nf.date1904 && nf.number < 2 {
 			m = 1
 		}
-		if 60 <= nf.number && nf.number < 61 {
+		if !nf.date1904 && 60 <= nf.number && nf.number < 61 {
 			m = 2
 		}
 		l := len(token.TValue)
@@ -7672,7 +7672,7 @@ func (nf *numberFormat) republicOfChinaYearHandler(token nfp.Token, langInfo lan
 func (nf *numberFormat) yearsHandler(token nfp.Token) {
 	langInfo, _ := getSupportedLanguageInfo(nf.localCode)
 	year := nf.t.Year()
-	if nf.number < 2 {
+	if !nf.date1904 && nf.number < 2 {
 		year = 1900
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "Y") {
@@ -7725,13 +7725,13 @@ func (nf *numberFormat) daysHandler(token nfp.Token) {
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "D") {
 		d := nf.t.Day()
-		if nf.number < 1 {
+		if !nf.date1904 && nf.number < 1 {
 			d = 0
 		}
-		if 1 <= nf.number && nf.number < 60 {
+		if !nf.date1904 && 1 <= nf.number && nf.number < 60 {
 			d = timeFromExcelTime(nf.number+1, nf.date1904).Day()
 		}
-		if 60 <= nf.number && nf.number < 61 {
+		if !nf.date1904 && 60 <= nf.number && nf.number < 61 {
 			d = 29
 		}
 		switch l {
