@@ -134,9 +134,9 @@ func (f *File) UnmergeCell(sheet, topLeftCell, bottomRightCell string) error {
 
 // GetMergeCells provides a function to get all merged cells from a specific
 // worksheet. This function is concurrency safe. If the `withoutValues`
-// parameter is set to true, it will not return the cell values of merged
-// cells, only the range reference will be returned. For example get all
-// merged cells on Sheet1:
+// parameter is set to true, it will not return the cell values of merged cells,
+// only the range reference will be returned. For example get all merged cells
+// on Sheet1:
 //
 //	mergeCells, err := f.GetMergeCells("Sheet1")
 //
@@ -148,35 +148,43 @@ func (f *File) GetMergeCells(sheet string, withoutValues ...bool) ([]MergeCell, 
 	var (
 		mergeCells []MergeCell
 		withoutVal bool
+		sst        *xlsxSST
 	)
 	if len(withoutValues) > 0 {
 		withoutVal = withoutValues[0]
 	}
-	f.mu.Lock()
 	ws, err := f.workSheetReader(sheet)
 	if err != nil {
-		f.mu.Unlock()
 		return mergeCells, err
 	}
-	f.mu.Unlock()
+	if !withoutVal {
+		if sst, err = f.sharedStringsReader(); err != nil {
+			return mergeCells, err
+		}
+	}
 	ws.mu.Lock()
+	defer ws.mu.Unlock()
 	if ws.MergeCells == nil {
-		ws.mu.Unlock()
 		return mergeCells, err
 	}
 	if err = ws.mergeOverlapCells(); err != nil {
-		ws.mu.Unlock()
 		return mergeCells, err
 	}
 	mergeCells = make([]MergeCell, 0, len(ws.MergeCells.Cells))
-	for _, mergeCell := range ws.MergeCells.Cells {
+	startAxes := make(map[string]int, len(ws.MergeCells.Cells))
+	for i, mergeCell := range ws.MergeCells.Cells {
 		mergeCells = append(mergeCells, []string{mergeCell.Ref, ""})
+		startAxes[mergeCells[i].GetStartAxis()] = i
 	}
-	ws.mu.Unlock()
-	// GetCellValue takes ws.mu itself, so read the values after unlocking
-	if !withoutVal {
-		for i := range mergeCells {
-			mergeCells[i][1], _ = f.GetCellValue(sheet, mergeCells[i].GetStartAxis())
+	if withoutVal {
+		return mergeCells, err
+	}
+	for i := range ws.SheetData.Row {
+		for j := range ws.SheetData.Row[i].C {
+			c := &ws.SheetData.Row[i].C[j]
+			if idx, ok := startAxes[c.R]; ok {
+				mergeCells[idx][1], _ = c.getValueFrom(f, sst, false)
+			}
 		}
 	}
 	return mergeCells, err
