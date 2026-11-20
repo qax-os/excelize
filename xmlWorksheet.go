@@ -326,11 +326,22 @@ type xlsxRow struct {
 // xlsxSortState directly maps the sortState element. This collection
 // preserves the AutoFilter sort state.
 type xlsxSortState struct {
-	ColumnSort    bool   `xml:"columnSort,attr,omitempty"`
-	CaseSensitive bool   `xml:"caseSensitive,attr,omitempty"`
-	SortMethod    string `xml:"sortMethod,attr,omitempty"`
-	Ref           string `xml:"ref,attr"`
-	Content       string `xml:",innerxml"`
+	ColumnSort    bool                 `xml:"columnSort,attr,omitempty"`
+	CaseSensitive bool                 `xml:"caseSensitive,attr,omitempty"`
+	SortMethod    string               `xml:"sortMethod,attr,omitempty"`
+	Ref           string               `xml:"ref,attr"`
+	SortCondition []*xlsxSortCondition `xml:"sortCondition"`
+	ExtLst        *xlsxExtLst          `xml:"extLst"`
+}
+
+type xlsxSortCondition struct {
+	Descending bool   `xml:"descending,attr,omitempty"`
+	SortBy     string `xml:"sortBy,attr,omitempty"`
+	Ref        string `xml:"ref,attr"`
+	CustomList string `xml:"customList,attr,omitempty"`
+	DxfID      *int   `xml:"dxfId,attr"`
+	IconSet    string `xml:"iconSet,attr,omitempty"`
+	IconID     *int   `xml:"iconId,attr"`
 }
 
 // xlsxCustomSheetViews directly maps the customSheetViews element. This is a

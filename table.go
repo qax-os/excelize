@@ -149,11 +149,12 @@ func (f *File) GetTables(sheet string) ([]Table, error) {
 				return tables, err
 			}
 			table := Table{
-				rID:      tbl.RID,
-				tID:      t.ID,
-				tableXML: tableXML,
-				Range:    t.Ref,
-				Name:     t.Name,
+				rID:           tbl.RID,
+				tID:           t.ID,
+				tableXML:      tableXML,
+				Range:         t.Ref,
+				Name:          t.Name,
+				ShowHeaderRow: boolPtr(t.headerRowCount() > 0),
 			}
 			if t.TableStyleInfo != nil {
 				table.StyleName = t.TableStyleInfo.Name
@@ -184,18 +185,7 @@ func (f *File) DeleteTable(name string) error {
 				continue
 			}
 			ws, _ := f.workSheetReader(sheet)
-			for i, tbl := range ws.TableParts.TableParts {
-				if tbl.RID == table.rID {
-					ws.TableParts.TableParts = append(ws.TableParts.TableParts[:i], ws.TableParts.TableParts[i+1:]...)
-					f.Pkg.Delete(table.tableXML)
-					_ = f.removeContentTypesPart(ContentTypeSpreadSheetMLTable, "/"+table.tableXML)
-					f.deleteSheetRelationships(sheet, tbl.RID)
-					break
-				}
-			}
-			if ws.TableParts.Count = len(ws.TableParts.TableParts); ws.TableParts.Count == 0 {
-				ws.TableParts = nil
-			}
+			f.deleteTablePart(ws, sheet, table.rID, table.tableXML)
 			return err
 		}
 	}
@@ -214,6 +204,28 @@ func (f *File) getTables() (map[string][]Table, error) {
 		tables[sheetName] = append(tables[sheetName], tbls...)
 	}
 	return tables, nil
+}
+
+func (f *File) deleteTablePart(ws *xlsxWorksheet, sheet, rID, tableXML string) {
+	for i, tbl := range ws.TableParts.TableParts {
+		if tbl.RID == rID {
+			ws.TableParts.TableParts = append(ws.TableParts.TableParts[:i], ws.TableParts.TableParts[i+1:]...)
+			f.Pkg.Delete(tableXML)
+			_ = f.removeContentTypesPart(ContentTypeSpreadSheetMLTable, "/"+tableXML)
+			f.deleteSheetRelationships(sheet, rID)
+			break
+		}
+	}
+	if ws.TableParts.Count = len(ws.TableParts.TableParts); ws.TableParts.Count == 0 {
+		ws.TableParts = nil
+	}
+}
+
+func (t *xlsxTable) headerRowCount() int {
+	if t.HeaderRowCount != nil {
+		return *t.HeaderRowCount
+	}
+	return 1
 }
 
 // countTables provides a function to get table files count storage in the
@@ -306,7 +318,7 @@ func (f *File) setTableColumns(sheet string, showHeaderRow bool, x1, y1, x2 int,
 		}
 		header = append(header, name)
 		if column := getTableColumn(name); column != nil {
-			column.ID, column.DataDxfID, column.QueryTableFieldID = idx, 0, 0
+			column.ID, column.QueryTableFieldID = idx, 0
 			tableColumns = append(tableColumns, column)
 			continue
 		}
