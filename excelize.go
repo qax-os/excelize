@@ -86,7 +86,8 @@ type ZipWriter interface {
 //
 // UnzipSizeLimit specifies to unzip size limit in bytes on open the
 // spreadsheet, this value should be greater than or equal to
-// UnzipXMLSizeLimit, the default size limit is 16GB.
+// UnzipXMLSizeLimit, the default size limit is 16GB. OpenReader also applies
+// this limit to the input stream before buffering it in memory.
 //
 // UnzipXMLSizeLimit specifies the memory limit on unzipping worksheet and
 // shared string table in bytes, worksheet XML will be extracted to system
@@ -186,11 +187,29 @@ func (f *File) checkOpenReaderOptions() error {
 // OpenReader read data stream from io.Reader and return a populated
 // spreadsheet file.
 func OpenReader(r io.Reader, opts ...Options) (*File, error) {
-	b, err := io.ReadAll(r)
+	f := newFile()
+	f.options = f.getOptions(opts...)
+	if err := f.checkOpenReaderOptions(); err != nil {
+		return nil, err
+	}
+	if err := f.checkFileSize(0, 0); err != nil {
+		return nil, err
+	}
+	reader := &io.LimitedReader{R: r, N: f.options.UnzipSizeLimit}
+	b, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
 	}
-	return openReaderAt(bytes.NewReader(b), int64(len(b)), opts...)
+	if reader.N == 0 {
+		var extra [1]byte
+		if _, err = io.ReadFull(r, extra[:]); err == nil {
+			return nil, newUnzipSizeLimitError(f.options.UnzipSizeLimit)
+		}
+		if err != io.EOF {
+			return nil, err
+		}
+	}
+	return openReaderAt(bytes.NewReader(b), int64(len(b)), *f.options)
 }
 
 // openReaderAt read data stream from io.ReaderAt and return a populated

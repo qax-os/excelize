@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/iotest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -247,6 +248,50 @@ func TestSaveAsWrongPath(t *testing.T) {
 func TestCharsetTranscoder(t *testing.T) {
 	f := NewFile()
 	f.CharsetTranscoder(charset.NewReaderLabel)
+}
+
+func TestOpenReaderInputLimit(t *testing.T) {
+	for _, size := range []int{31, 32, 33, 4096} {
+		t.Run(strconv.Itoa(size), func(t *testing.T) {
+			r := bytes.NewReader(make([]byte, size))
+			_, err := OpenReader(r, Options{UnzipSizeLimit: 32})
+			if size > 32 {
+				assert.EqualError(t, err, newUnzipSizeLimitError(32).Error())
+				assert.Equal(t, size-33, r.Len())
+			} else {
+				assert.EqualError(t, err, zip.ErrFormat.Error())
+				assert.Zero(t, r.Len())
+			}
+		})
+	}
+	for _, opts := range []Options{
+		{UnzipSizeLimit: 1, UnzipXMLSizeLimit: 2},
+		{UnzipSizeLimit: -1},
+	} {
+		r := bytes.NewReader(make([]byte, 4096))
+		_, err := OpenReader(r, opts)
+		assert.Error(t, err)
+		assert.Equal(t, 4096, r.Len())
+	}
+	_, err := OpenReader(strings.NewReader(""), Options{UnzipSizeLimit: math.MaxInt64})
+	assert.EqualError(t, err, zip.ErrFormat.Error())
+	for _, size := range []int{31, 32} {
+		r := io.MultiReader(bytes.NewReader(make([]byte, size)), iotest.ErrReader(io.ErrUnexpectedEOF))
+		_, err = OpenReader(r, Options{UnzipSizeLimit: 32})
+		assert.ErrorIs(t, err, io.ErrUnexpectedEOF)
+	}
+	for _, name := range []string{"Book1.xlsx", "encryptSHA1.xlsx", "encryptAES.xlsx"} {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join("test", name))
+			if !assert.NoError(t, err) {
+				return
+			}
+			f, err := OpenReader(bytes.NewReader(data), Options{Password: "password"})
+			if assert.NoError(t, err) {
+				assert.NoError(t, f.Close())
+			}
+		})
+	}
 }
 
 func TestOpenReader(t *testing.T) {
