@@ -483,6 +483,7 @@ func TestCalcCellValue(t *testing.T) {
 		"BASE(12,2,8)":        "00001100",
 		"BASE(100000,16)":     "186A0",
 		"BASE(BASE(12,2),16)": "44C",
+		"BASE(1,2,255)":       strings.Repeat("0", 254) + "1",
 		// CEILING
 		"CEILING(22.25,0.1)":              "22.3",
 		"CEILING(22.25,0.5)":              "22.5",
@@ -720,7 +721,9 @@ func TestCalcCellValue(t *testing.T) {
 		"MULTINOMIAL(\"\",3,1,2,5)":   "27720",
 		"MULTINOMIAL(MULTINOMIAL(1))": "1",
 		// _xlfn.MUNIT
-		"_xlfn.MUNIT(4)": "1",
+		"_xlfn.MUNIT(4)":     "1",
+		"_xlfn.MUNIT(255)":   "1",
+		"_xlfn.MUNIT(255.5)": "1",
 		// ODD
 		"ODD(22)":     "23",
 		"ODD(1.22)":   "3",
@@ -753,6 +756,8 @@ func TestCalcCellValue(t *testing.T) {
 		"RADIANS(360)":          "6.28318530717959",
 		"RADIANS(RADIANS(360))": "0.109662271123215",
 		// ROMAN
+		"ROMAN(0)":           "",
+		"ROMAN(3.9)":         "III",
 		"ROMAN(499,0)":       "CDXCIX",
 		"ROMAN(1999,0)":      "MCMXCIX",
 		"ROMAN(1999,1)":      "MLMVLIV",
@@ -762,6 +767,7 @@ func TestCalcCellValue(t *testing.T) {
 		"ROMAN(1999,-1)":     "MCMXCIX",
 		"ROMAN(1999,5)":      "MIM",
 		"ROMAN(1999,ODD(1))": "MLMVLIV",
+		"ROMAN(3999)":        "MMMCMXCIX",
 		// ROUND
 		"ROUND(100.319,1)":       "100.3",
 		"ROUND(5.28,1)":          "5.3",
@@ -817,9 +823,13 @@ func TestCalcCellValue(t *testing.T) {
 		"SEARCHB(\" ?+\",\"\u4F60\u597D 1+2\")":              "5",
 		"SEARCHB(\"\\?eports\",\"prefix C:\\reports done\")": "10",
 		// SEC
+		"_xlfn.SEC(_xlfn.SEC(0))":      "1.85081571768093",
 		"_xlfn.SEC(-3.14159265358979)": "-1",
+		"_xlfn.SEC(0.5)":               "1.13949392732455",
 		"_xlfn.SEC(0)":                 "1",
-		"_xlfn.SEC(_xlfn.SEC(0))":      "0.54030230586814",
+		"_xlfn.SEC(1)":                 "1.85081571768093",
+		"_xlfn.SEC(2)":                 "-2.40299796172238",
+		"_xlfn.SEC(3)":                 "-1.01010866590799",
 		// SECH
 		"_xlfn.SECH(-3.14159265358979)": "0.0862667383340547",
 		"_xlfn.SECH(0)":                 "1",
@@ -1221,6 +1231,9 @@ func TestCalcCellValue(t *testing.T) {
 		// HARMEAN
 		"HARMEAN(2.5,3,0.5,1,3)":               "1.22950819672131",
 		"HARMEAN(\"2.5\",3,0.5,1,INT(3),\"\")": "1.22950819672131",
+		"HARMEAN(A1:A3)":                       "1.63636363636364",
+		"HARMEAN(A1:A2)":                       "1.33333333333333",
+		"HARMEAN(B1:B3)":                       "4.44444444444444",
 		// HYPGEOM.DIST
 		"HYPGEOM.DIST(0,3,3,9,TRUE)":   "0.238095238095238",
 		"HYPGEOM.DIST(1,3,3,9,TRUE)":   "0.773809523809524",
@@ -2011,9 +2024,12 @@ func TestCalcCellValue(t *testing.T) {
 		"REPLACEB(\"text\",5,0,\" and char\")":         "text and char",
 		"REPLACEB(\"text\",1,20,\"char and \")":        "char and ",
 		// REPT
-		"REPT(\"*\",0)":  "",
-		"REPT(\"*\",1)":  "*",
-		"REPT(\"**\",2)": "****",
+		"REPT(\"*\",0)":              "",
+		"REPT(\"*\",1)":              "*",
+		"REPT(\"*\",3.9)":            "***",
+		"REPT(\"*\",32767)":          strings.Repeat("*", TotalCellChars),
+		"REPT(\"\",32768)":           "",
+		"REPT(\"\U0001F600\",16383)": strings.Repeat("\U0001F600", 16383),
 		// RIGHT
 		"RIGHT(\"Original Text\")":    "t",
 		"RIGHT(\"Original Text\",4)":  "Text",
@@ -2063,6 +2079,9 @@ func TestCalcCellValue(t *testing.T) {
 		"SUBSTITUTE(\"abab\",\"x\",\"X\",2)":                    "abab",
 		"SUBSTITUTE(\"John is 5 years old\",\"John\",\"Jack\")": "Jack is 5 years old",
 		"SUBSTITUTE(\"John is 5 years old\",\"5\",\"6\")":       "John is 6 years old",
+		"SUBSTITUTE(\"ab\",\"\",\"c\")":                         "ab",
+		"SUBSTITUTE(\"ab\",\"\",\"c\",1)":                       "ab",
+		"SUBSTITUTE(REPT(\"x\",32767),\"x\",\"x\")":             strings.Repeat("x", TotalCellChars),
 		// TEXT
 		"TEXT(\"07/07/2015\",\"mm/dd/yyyy\")":        "07/07/2015",
 		"TEXT(42192,\"mm/dd/yyyy\")":                 "07/07/2015",
@@ -2306,6 +2325,7 @@ func TestCalcCellValue(t *testing.T) {
 		// Web Functions
 		// ENCODEURL
 		"ENCODEURL(\"https://xuri.me/excelize/en/?q=Save As\")": "https%3A%2F%2Fxuri.me%2Fexcelize%2Fen%2F%3Fq%3DSave%20As",
+		"ENCODEURL(REPT(\" \",10922))":                          strings.Repeat("%20", 10922),
 		// Financial Functions
 		// ACCRINT
 		"ACCRINT(\"01/01/2012\",\"04/01/2012\",\"12/31/2013\",8%,10000,4,0,TRUE)":  "1600",
@@ -2884,12 +2904,15 @@ func TestCalcCellValue(t *testing.T) {
 		"ATAN2(\"X\",0)": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		"ATAN2(0,\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		// BASE
-		"BASE()":          {"#VALUE!", "BASE requires at least 2 arguments"},
-		"BASE(1,2,3,4)":   {"#VALUE!", "BASE allows at most 3 arguments"},
-		"BASE(1,1)":       {"#VALUE!", "radix must be an integer >= 2 and <= 36"},
-		"BASE(\"X\",2)":   {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
-		"BASE(1,\"X\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
-		"BASE(1,2,\"X\")": {"#VALUE!", "strconv.Atoi: parsing \"X\": invalid syntax"},
+		"BASE()":                 {"#VALUE!", "BASE requires at least 2 arguments"},
+		"BASE(1,2,3,4)":          {"#VALUE!", "BASE allows at most 3 arguments"},
+		"BASE(1,1)":              {"#VALUE!", "radix must be an integer >= 2 and <= 36"},
+		"BASE(\"X\",2)":          {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"BASE(1,\"X\")":          {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"BASE(1,2,\"X\")":        {"#VALUE!", "strconv.Atoi: parsing \"X\": invalid syntax"},
+		"BASE(1,2,256)":          {"#NUM!", "#NUM!"},
+		"BASE(1,2,\"16000000\")": {"#NUM!", "#NUM!"},
+		"BASE(1,2,-1)":           {"#NUM!", "#NUM!"},
 		// CEILING
 		"CEILING()":        {"#VALUE!", "CEILING requires at least 1 argument"},
 		"CEILING(1,2,3)":   {"#VALUE!", "CEILING allows at most 2 arguments"},
@@ -3041,6 +3064,7 @@ func TestCalcCellValue(t *testing.T) {
 		"_xlfn.MUNIT()":      {"#VALUE!", "MUNIT requires 1 numeric argument"},
 		"_xlfn.MUNIT(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		"_xlfn.MUNIT(-1)":    {"#VALUE!", ""},
+		"_xlfn.MUNIT(16385)": {"#VALUE!", "MUNIT function dimension exceeds 16384"},
 		// ODD
 		"ODD()":      {"#VALUE!", "ODD requires 1 numeric argument"},
 		"ODD(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
@@ -3076,6 +3100,8 @@ func TestCalcCellValue(t *testing.T) {
 		"ROMAN(1,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		"ROMAN(\"\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		"ROMAN(\"\",1)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"ROMAN(-1)":     {"#VALUE!", "#VALUE!"},
+		"ROMAN(4000)":   {"#VALUE!", "#VALUE!"},
 		// ROUND
 		"ROUND()":        {"#VALUE!", "ROUND requires 2 numeric arguments"},
 		"ROUND(\"X\",1)": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
@@ -3493,9 +3519,12 @@ func TestCalcCellValue(t *testing.T) {
 		"GEOMEAN(D1:D2)": {"#NUM!", "#NUM!"},
 		"GEOMEAN(\"\")":  {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		// HARMEAN
-		"HARMEAN()":   {"#VALUE!", "HARMEAN requires at least 1 argument"},
-		"HARMEAN(-1)": {"#N/A", "#N/A"},
-		"HARMEAN(0)":  {"#N/A", "#N/A"},
+		"HARMEAN()":      {"#VALUE!", "HARMEAN requires at least 1 argument"},
+		"HARMEAN(-1)":    {"#NUM!", "#NUM!"},
+		"HARMEAN(0)":     {"#NUM!", "#NUM!"},
+		"HARMEAN(A1:A4)": {"#NUM!", "#NUM!"},
+		"HARMEAN(\"0\")": {"#NUM!", "#NUM!"},
+		"HARMEAN(\"\")":  {"#NUM!", "#NUM!"},
 		// HYPGEOM.DIST
 		"HYPGEOM.DIST()":                  {"#VALUE!", "HYPGEOM.DIST requires 5 arguments"},
 		"HYPGEOM.DIST(\"\",4,4,12,FALSE)": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
@@ -4155,11 +4184,15 @@ func TestCalcCellValue(t *testing.T) {
 		"CODE()":    {"#VALUE!", "CODE requires 1 argument"},
 		"CODE(1,2)": {"#VALUE!", "CODE requires 1 argument"},
 		// CONCAT
-		"CONCAT(NA())":  {"#N/A", "#N/A"},
-		"CONCAT(1,1/0)": {"#DIV/0!", "#DIV/0!"},
+		"CONCAT()":                        {"#VALUE!", "CONCAT requires at least 1 argument"},
+		"CONCAT(1,1/0)":                   {"#DIV/0!", "#DIV/0!"},
+		"CONCAT(NA())":                    {"#N/A", "#N/A"},
+		"CONCAT(REPT(\"x\",32767),\"x\")": {"#VALUE!", "CONCAT function exceeds 32767 characters"},
 		// CONCATENATE
-		"CONCATENATE(NA())":  {"#N/A", "#N/A"},
-		"CONCATENATE(1,1/0)": {"#DIV/0!", "#DIV/0!"},
+		"CONCATENATE()":                        {"#VALUE!", "CONCATENATE requires at least 1 argument"},
+		"CONCATENATE(1,1/0)":                   {"#DIV/0!", "#DIV/0!"},
+		"CONCATENATE(NA())":                    {"#N/A", "#N/A"},
+		"CONCATENATE(REPT(\"x\",32767),\"x\")": {"#VALUE!", "CONCATENATE function exceeds 32767 characters"},
 		// DBCS
 		"DBCS(NA())": {"#N/A", "#N/A"},
 		"DBCS()":     {"#VALUE!", "DBCS requires 1 argument"},
@@ -4167,11 +4200,12 @@ func TestCalcCellValue(t *testing.T) {
 		"EXACT()":      {"#VALUE!", "EXACT requires 2 arguments"},
 		"EXACT(1,2,3)": {"#VALUE!", "EXACT requires 2 arguments"},
 		// FIXED
-		"FIXED()":         {"#VALUE!", "FIXED requires at least 1 argument"},
-		"FIXED(0,1,2,3)":  {"#VALUE!", "FIXED allows at most 3 arguments"},
-		"FIXED(\"\")":     {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
-		"FIXED(0,\"\")":   {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
-		"FIXED(0,0,\"\")": {"#VALUE!", "strconv.ParseBool: parsing \"\": invalid syntax"},
+		"FIXED()":           {"#VALUE!", "FIXED requires at least 1 argument"},
+		"FIXED(0,1,2,3)":    {"#VALUE!", "FIXED allows at most 3 arguments"},
+		"FIXED(\"\")":       {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"FIXED(0,\"\")":     {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"FIXED(0,0,\"\")":   {"#VALUE!", "strconv.ParseBool: parsing \"\": invalid syntax"},
+		"FIXED(1,128,TRUE)": {"#VALUE!", "#VALUE!"},
 		// FIND
 		"FIND()":                 {"#VALUE!", "FIND requires at least 2 arguments"},
 		"FIND(1,2,3,4)":          {"#VALUE!", "FIND allows at most 3 arguments"},
@@ -4217,20 +4251,24 @@ func TestCalcCellValue(t *testing.T) {
 		"PROPER()":    {"#VALUE!", "PROPER requires 1 argument"},
 		"PROPER(1,2)": {"#VALUE!", "PROPER requires 1 argument"},
 		// REPLACE
-		"REPLACE()":                           {"#VALUE!", "REPLACE requires 4 arguments"},
-		"REPLACE(\"text\",0,4,\"string\")":    {"#VALUE!", "#VALUE!"},
-		"REPLACE(\"text\",\"\",0,\"string\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
-		"REPLACE(\"text\",1,\"\",\"string\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"REPLACE()":                                {"#VALUE!", "REPLACE requires 4 arguments"},
+		"REPLACE(\"text\",0,4,\"string\")":         {"#VALUE!", "#VALUE!"},
+		"REPLACE(\"text\",\"\",0,\"string\")":      {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"REPLACE(\"text\",1,\"\",\"string\")":      {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"REPLACE(REPT(\"a\",32767),32768,0,\"b\")": {"#VALUE!", "REPLACE function exceeds 32767 characters"},
 		// REPLACEB
-		"REPLACEB()":                           {"#VALUE!", "REPLACEB requires 4 arguments"},
-		"REPLACEB(\"text\",0,4,\"string\")":    {"#VALUE!", "#VALUE!"},
-		"REPLACEB(\"text\",\"\",0,\"string\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
-		"REPLACEB(\"text\",1,\"\",\"string\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"REPLACEB()":                                {"#VALUE!", "REPLACEB requires 4 arguments"},
+		"REPLACEB(\"text\",0,4,\"string\")":         {"#VALUE!", "#VALUE!"},
+		"REPLACEB(\"text\",\"\",0,\"string\")":      {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"REPLACEB(\"text\",1,\"\",\"string\")":      {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"REPLACEB(REPT(\"a\",32767),32768,0,\"b\")": {"#VALUE!", "REPLACEB function exceeds 32767 characters"},
 		// REPT
-		"REPT()":            {"#VALUE!", "REPT requires 2 arguments"},
-		"REPT(INT(0),2)":    {"#VALUE!", "REPT requires first argument to be a string"},
-		"REPT(\"*\",\"*\")": {"#VALUE!", "REPT requires second argument to be a number"},
-		"REPT(\"*\",-1)":    {"#VALUE!", "REPT requires second argument to be >= 0"},
+		"REPT()":                     {"#VALUE!", "REPT requires 2 arguments"},
+		"REPT(INT(0),2)":             {"#VALUE!", "REPT requires first argument to be a string"},
+		"REPT(\"*\",\"*\")":          {"#VALUE!", "REPT requires second argument to be a number"},
+		"REPT(\"*\",-1)":             {"#VALUE!", "REPT requires second argument to be >= 0"},
+		"REPT(\"*\",32768)":          {"#VALUE!", "REPT function exceeds 32767 characters"},
+		"REPT(\"\U0001F600\",16384)": {"#VALUE!", "REPT function exceeds 32767 characters"},
 		// RIGHT
 		"RIGHT()":          {"#VALUE!", "RIGHT requires at least 1 argument"},
 		"RIGHT(\"\",2,3)":  {"#VALUE!", "RIGHT allows at most 2 arguments"},
@@ -4242,9 +4280,11 @@ func TestCalcCellValue(t *testing.T) {
 		"RIGHTB(\"\",\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		"RIGHTB(\"\",-1)":   {"#VALUE!", "#VALUE!"},
 		// SUBSTITUTE
-		"SUBSTITUTE()":                    {"#VALUE!", "SUBSTITUTE requires 3 or 4 arguments"},
-		"SUBSTITUTE(\"\",\"\",\"\",\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
-		"SUBSTITUTE(\"\",\"\",\"\",0)":    {"#VALUE!", "instance_num should be > 0"},
+		"SUBSTITUTE()":                                            {"#VALUE!", "SUBSTITUTE requires 3 or 4 arguments"},
+		"SUBSTITUTE(\"\",\"\",\"\",\"\")":                         {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
+		"SUBSTITUTE(\"\",\"\",\"\",0)":                            {"#VALUE!", "instance_num should be > 0"},
+		"SUBSTITUTE(REPT(\"a\",32767),\"a\",REPT(\"b\",32767))":   {"#VALUE!", "SUBSTITUTE function exceeds 32767 characters"},
+		"SUBSTITUTE(REPT(\"a\",32767),\"a\",REPT(\"b\",32767),1)": {"#VALUE!", "SUBSTITUTE function exceeds 32767 characters"},
 		// TEXT
 		"TEXT()":          {"#VALUE!", "TEXT requires 2 arguments"},
 		"TEXT(NA(),\"\")": {"#N/A", "#N/A"},
@@ -4272,8 +4312,7 @@ func TestCalcCellValue(t *testing.T) {
 		"TEXTJOIN(\"\",\"\",1)":    {"#VALUE!", "#VALUE!"},
 		"TEXTJOIN(\"\",TRUE,NA())": {"#N/A", "#N/A"},
 		"TEXTJOIN(\"\",TRUE," + strings.Repeat("0,", 250) + ",0)": {"#VALUE!", "TEXTJOIN accepts at most 252 arguments"},
-		"TEXTJOIN(\",\",FALSE,REPT(\"*\",32768))":                 {"#VALUE!", "TEXTJOIN function exceeds 32767 characters"},
-		"TEXTJOIN(\"\",FALSE,REPT(\"\U0001F600\",16384))":         {"#VALUE!", "TEXTJOIN function exceeds 32767 characters"},
+		"TEXTJOIN(\",\",FALSE,REPT(\"*\",32767),\"\")":            {"#VALUE!", "TEXTJOIN function exceeds 32767 characters"},
 		// TRIM
 		"TRIM()":    {"#VALUE!", "TRIM requires 1 argument"},
 		"TRIM(1,2)": {"#VALUE!", "TRIM requires 1 argument"},
@@ -4430,7 +4469,8 @@ func TestCalcCellValue(t *testing.T) {
 		"ROWS(Sheet1!Sheet1)": {"#NAME?", "invalid reference"},
 		// Web Functions
 		// ENCODEURL
-		"ENCODEURL()": {"#VALUE!", "ENCODEURL requires 1 argument"},
+		"ENCODEURL()":                  {"#VALUE!", "ENCODEURL requires 1 argument"},
+		"ENCODEURL(REPT(\" \",10923))": {"#VALUE!", "ENCODEURL function exceeds 32767 characters"},
 		// Financial Functions
 		// ACCRINT
 		"ACCRINT()": {"#VALUE!", "ACCRINT requires at least 6 arguments"},
@@ -7055,6 +7095,20 @@ func TestCalcCellResolver(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
 	_, err := f.CalcCellValue("Sheet1", "F1")
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test calculates formula that reference a cell with a nested range reference
+	t.Run("with_nested_range_references", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.SetCellValue("Sheet1", "A1", 1))
+		assert.NoError(t, f.SetCellValue("Sheet1", "B1", 1))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "A2", "A1:B1"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "B2", "A1:B1"))
+		assert.NoError(t, f.SetCellFormula("Sheet1", "C1", "XLOOKUP(A2:B2,A2:B2,A2:B2)"))
+		_, err := f.CalcCellValue("Sheet1", "C1")
+		assert.NoError(t, err)
+		cached, ok := f.formulaArgCache.Load("Sheet1!A2")
+		assert.True(t, ok)
+		assert.NotEqual(t, ArgMatrix, cached.(formulaArg).Type, "nested range reference cached as matrix")
+	})
 }
 
 func TestEvalInfixExp(t *testing.T) {

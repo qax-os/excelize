@@ -1020,9 +1020,8 @@ func newEmptyFormulaArg() formulaArg {
 	return formulaArg{Type: ArgEmpty}
 }
 
-// evalInfixExp evaluate syntax analysis by given infix expression after
-// lexical analysis. Evaluate an infix expression containing formulas by
-// stacks:
+// infixEvalState holds the stacks and the array parsing state used while
+// evaluating an infix expression:
 //
 //	opd  - Operand
 //	opt  - Operator
@@ -1030,17 +1029,23 @@ func newEmptyFormulaArg() formulaArg {
 //	opfd - Operand of the operation formula
 //	opft - Operator of the operation formula
 //	args - Arguments list of the operation formula
+type infixEvalState struct {
+	inArray, inArrayRow             bool
+	formulaArray                    [][]formulaArg
+	formulaArrayRow                 []formulaArg
+	opdStack, optStack, opfStack    *Stack
+	opfdStack, opftStack, argsStack *Stack
+}
+
+// evalInfixExp evaluate syntax analysis by given infix expression after lexical
+// analysis. Evaluate an infix expression containing formulas by stacks.
 //
 // TODO: handle subtypes: Nothing, Text, Logical, Error, Concatenation, Intersection, Union
 func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.Token) (formulaArg, error) {
-	var (
-		err                             error
-		inArray, inArrayRow             bool
-		formulaArray                    [][]formulaArg
-		formulaArrayRow                 []formulaArg
-		opdStack, optStack, opfStack    = NewStack(), NewStack(), NewStack()
-		opfdStack, opftStack, argsStack = NewStack(), NewStack(), NewStack()
-	)
+	s := &infixEvalState{
+		opdStack: NewStack(), optStack: NewStack(), opfStack: NewStack(),
+		opfdStack: NewStack(), opftStack: NewStack(), argsStack: NewStack(),
+	}
 	for i := 0; i < len(tokens); i++ {
 		token := tokens[i]
 		if token.TType == efp.TokenTypeUnknown {
@@ -1048,125 +1053,160 @@ func (f *File) evalInfixExp(ctx *calcContext, sheet, cell string, tokens []efp.T
 		}
 
 		// out of function stack
-		if opfStack.Len() == 0 {
-			if err = f.parseToken(ctx, sheet, token, opdStack, optStack); err != nil {
+		if s.opfStack.Len() == 0 {
+			if err := f.parseToken(ctx, sheet, token, s.opdStack, s.optStack); err != nil {
 				return newEmptyFormulaArg(), err
 			}
 		}
 
 		// function start
 		if isFunctionStartToken(token) {
-			if token.TValue == "ARRAY" {
-				inArray, formulaArray = true, [][]formulaArg{}
-				continue
+			switch token.TValue {
+			case "ARRAY":
+				s.inArray, s.formulaArray = true, [][]formulaArg{}
+			case "ARRAYROW":
+				s.inArrayRow, s.formulaArrayRow = true, []formulaArg{}
+			default:
+				s.opfStack.Push(token)
+				s.argsStack.Push(list.New().Init())
+				s.opftStack.Push(token) // to know which operators belong to a function use the function as a separator
 			}
-			if token.TValue == "ARRAYROW" {
-				inArrayRow, formulaArrayRow = true, []formulaArg{}
-				continue
-			}
-			opfStack.Push(token)
-			argsStack.Push(list.New().Init())
-			opftStack.Push(token) // to know which operators belong to a function use the function as a separator
 			continue
 		}
 
 		// in function stack, walk 2 token at once
-		if opfStack.Len() > 0 {
+		if s.opfStack.Len() > 0 {
 			var nextToken efp.Token
 			if i+1 < len(tokens) {
 				nextToken = tokens[i+1]
 			}
-
-			// current token is args or range, skip next token, order required: parse reference first
-			if token.TSubType == efp.TokenSubTypeRange {
-				if opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
-					refTo := f.getDefinedNameRefTo(token.TValue, sheet)
-					if refTo != "" {
-						token.TValue = refTo
-					}
-					// parse reference: must reference at here
-					result, err := f.parseReference(ctx, sheet, token.TValue)
-					if err != nil {
-						return result, err
-					}
-					opfdStack.Push(result)
-					continue
-				}
-				if nextToken.TType == efp.TokenTypeArgument || nextToken.TType == efp.TokenTypeFunction {
-					// parse reference: reference or range at here
-					refTo := f.getDefinedNameRefTo(token.TValue, sheet)
-					if refTo != "" {
-						token.TValue = refTo
-					}
-					result, err := f.parseReference(ctx, sheet, token.TValue)
-					if err != nil {
-						return result, err
-					}
-					// when current token is range, next token is argument and opfdStack not empty,
-					// should push value to opfdStack and continue
-					if nextToken.TType == efp.TokenTypeArgument && !opfdStack.Empty() {
-						opfdStack.Push(result)
-						continue
-					}
-					argsStack.Peek().(*list.List).PushBack(result)
-					continue
-				}
-			}
-
-			// check current token is opft
-			if err = f.parseToken(ctx, sheet, token, opfdStack, opftStack); err != nil {
-				return newEmptyFormulaArg(), err
-			}
-
-			// current token is arg
-			if token.TType == efp.TokenTypeArgument && !inArray {
-				for opftStack.Peek().(efp.Token) != opfStack.Peek().(efp.Token) {
-					// calculate trigger
-					topOpt := opftStack.Peek().(efp.Token)
-					if err := calculate(opfdStack, topOpt); err != nil {
-						opfdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
-					}
-					opftStack.Pop()
-				}
-				if !opfdStack.Empty() {
-					argsStack.Peek().(*list.List).PushBack(opfdStack.Pop().(formulaArg))
-				}
-				continue
-			}
-
-			if inArrayRow && isOperand(token) {
-				formulaArrayRow = append(formulaArrayRow, opfdStack.Pop().(formulaArg))
-				continue
-			}
-			if inArrayRow && isFunctionStopToken(token) {
-				formulaArray = append(formulaArray, formulaArrayRow)
-				inArrayRow = false
-				continue
-			}
-			if inArray && isFunctionStopToken(token) {
-				argsStack.Peek().(*list.List).PushBack(newMatrixFormulaArg(formulaArray))
-				inArray = false
-				continue
-			}
-			if errArg := f.evalInfixExpFunc(ctx, sheet, cell, token, nextToken, opfStack, opdStack, opftStack, opfdStack, argsStack); errArg.Type == ArgError {
-				return errArg, errors.New(errArg.Error)
+			if result, err := f.evalFuncStackToken(ctx, sheet, cell, token, nextToken, s); err != nil {
+				return result, err
 			}
 		}
 	}
-	for optStack.Len() != 0 {
-		topOpt := optStack.Peek().(efp.Token)
-		if err = calculate(opdStack, topOpt); err != nil {
+	return s.finish()
+}
+
+// evalFuncStackToken evaluates a token that is inside a function. A non-nil
+// error means the evaluation of the whole expression should be aborted.
+func (f *File) evalFuncStackToken(ctx *calcContext, sheet, cell string, token, nextToken efp.Token, s *infixEvalState) (formulaArg, error) {
+	// current token is args or range, skip next token, order required: parse reference first
+	if token.TSubType == efp.TokenSubTypeRange {
+		if handled, result, err := f.evalRangeToken(ctx, sheet, token, nextToken, s); handled {
+			return result, err
+		}
+	}
+
+	// check current token is opft
+	if err := f.parseToken(ctx, sheet, token, s.opfdStack, s.opftStack); err != nil {
+		return newEmptyFormulaArg(), err
+	}
+
+	// current token is arg
+	if token.TType == efp.TokenTypeArgument && !s.inArray {
+		for s.opftStack.Peek().(efp.Token) != s.opfStack.Peek().(efp.Token) {
+			// calculate trigger
+			topOpt := s.opftStack.Peek().(efp.Token)
+			if err := calculate(s.opfdStack, topOpt); err != nil {
+				s.opfdStack.Push(newErrorFormulaArg(err.Error(), err.Error()))
+			}
+			s.opftStack.Pop()
+		}
+		if !s.opfdStack.Empty() {
+			s.argsStack.Peek().(*list.List).PushBack(s.opfdStack.Pop().(formulaArg))
+		}
+		return newEmptyFormulaArg(), nil
+	}
+
+	// current token belongs to an array constant
+	if s.collectArrayToken(token) {
+		return newEmptyFormulaArg(), nil
+	}
+	if errArg := f.evalInfixExpFunc(ctx, sheet, cell, token, nextToken, s.opfStack, s.opdStack, s.opftStack, s.opfdStack, s.argsStack); errArg.Type == ArgError {
+		return errArg, errors.New(errArg.Error)
+	}
+	return newEmptyFormulaArg(), nil
+}
+
+// evalRangeToken resolves a reference or range token inside a function and
+// pushes the value onto the proper stack. The first returned value reports
+// whether the token has been consumed, if not, the caller continues to process
+// it as a regular token.
+func (f *File) evalRangeToken(ctx *calcContext, sheet string, token, nextToken efp.Token, s *infixEvalState) (bool, formulaArg, error) {
+	if s.opftStack.Peek().(efp.Token) != s.opfStack.Peek().(efp.Token) {
+		// parse reference: must reference at here
+		result, err := f.resolveRangeToken(ctx, sheet, token)
+		if err != nil {
+			return true, result, err
+		}
+		s.opfdStack.Push(result)
+		return true, result, nil
+	}
+	if nextToken.TType != efp.TokenTypeArgument && nextToken.TType != efp.TokenTypeFunction {
+		return false, formulaArg{}, nil
+	}
+	// parse reference: reference or range at here
+	result, err := f.resolveRangeToken(ctx, sheet, token)
+	if err != nil {
+		return true, result, err
+	}
+	// when current token is range, next token is argument and opfdStack not empty,
+	// should push value to opfdStack and continue
+	if nextToken.TType == efp.TokenTypeArgument && !s.opfdStack.Empty() {
+		s.opfdStack.Push(result)
+		return true, result, nil
+	}
+	s.argsStack.Peek().(*list.List).PushBack(result)
+	return true, result, nil
+}
+
+// resolveRangeToken replaces the defined name in the given range token by its
+// reference and parses the reference.
+func (f *File) resolveRangeToken(ctx *calcContext, sheet string, token efp.Token) (formulaArg, error) {
+	if refTo := f.getDefinedNameRefTo(token.TValue, sheet); refTo != "" {
+		token.TValue = refTo
+	}
+	return f.parseReference(ctx, sheet, token.TValue)
+}
+
+// collectArrayToken collects the token of an array constant: an operand is
+// appended to the current row, the end of a row appends the row to the array,
+// and the end of the array pushes the matrix to the argument list. It returns
+// false if the token does not belong to an array constant.
+func (s *infixEvalState) collectArrayToken(token efp.Token) bool {
+	switch {
+	case s.inArrayRow && isOperand(token):
+		s.formulaArrayRow = append(s.formulaArrayRow, s.opfdStack.Pop().(formulaArg))
+	case s.inArrayRow && isFunctionStopToken(token):
+		s.formulaArray = append(s.formulaArray, s.formulaArrayRow)
+		s.inArrayRow = false
+	case s.inArray && isFunctionStopToken(token):
+		s.argsStack.Peek().(*list.List).PushBack(newMatrixFormulaArg(s.formulaArray))
+		s.inArray = false
+	default:
+		return false
+	}
+	return true
+}
+
+// finish calculates the remaining operators outside of any function and returns
+// the final result of the expression.
+func (s *infixEvalState) finish() (formulaArg, error) {
+	for s.optStack.Len() != 0 {
+		topOpt := s.optStack.Peek().(efp.Token)
+		if err := calculate(s.opdStack, topOpt); err != nil {
 			return newErrorFormulaArg(err.Error(), err.Error()), err
 		}
-		optStack.Pop()
+		s.optStack.Pop()
 	}
-	if opdStack.Len() == 0 {
+	if s.opdStack.Len() == 0 {
 		return newEmptyFormulaArg(), ErrInvalidFormula
 	}
-	if result := opdStack.Peek().(formulaArg); result.Type == ArgError {
+	if result := s.opdStack.Peek().(formulaArg); result.Type == ArgError {
 		return result, errors.New(result.Error)
 	}
-	return opdStack.Peek().(formulaArg), err
+	return s.opdStack.Peek().(formulaArg), nil
 }
 
 // evalInfixExpFunc evaluate formula function in the infix expression.
@@ -1826,22 +1866,10 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 	if cached, ok := f.formulaArgCache.Load(ref); ok {
 		return cached.(formulaArg), err
 	}
-
 	if formula, _ := f.getCellFormula(sheet, cell, true); len(formula) != 0 {
-		ctx.mu.Lock()
-		if ctx.entry != ref {
-			if ctx.iterations[ref] <= f.options.MaxCalcIterations {
-				ctx.iterations[ref]++
-				ctx.mu.Unlock()
-				arg, _ = f.calcCellValue(ctx, sheet, cell)
-				ctx.iterationsCache[ref] = arg
-				f.formulaArgCache.Store(ref, arg)
-				return arg, nil
-			}
-			ctx.mu.Unlock()
-			return ctx.iterationsCache[ref], nil
+		if arg, ok := f.resolveFormulaCell(ctx, sheet, cell, ref); ok {
+			return arg, nil
 		}
-		ctx.mu.Unlock()
 	}
 	if value, err = f.GetCellValue(sheet, cell, Options{RawCellValue: true}); err != nil {
 		return arg, err
@@ -1875,6 +1903,34 @@ func (f *File) cellResolver(ctx *calcContext, sheet, cell string) (formulaArg, e
 	return arg, err
 }
 
+// resolveFormulaCell calculates the value of a cell which contains a formula,
+// with the iteration limit of the calculation context taken into account. The
+// second returned value reports whether the cell has been resolved, it is
+// false when the cell is the entry of the calculation, and the caller should
+// read the cell value instead.
+func (f *File) resolveFormulaCell(ctx *calcContext, sheet, cell, ref string) (formulaArg, bool) {
+	ctx.mu.Lock()
+	if ctx.entry == ref {
+		ctx.mu.Unlock()
+		return formulaArg{}, false
+	}
+	if ctx.iterations[ref] > f.options.MaxCalcIterations {
+		ctx.mu.Unlock()
+		return ctx.iterationsCache[ref], true
+	}
+	ctx.iterations[ref]++
+	ctx.mu.Unlock()
+	arg, _ := f.calcCellValue(ctx, sheet, cell)
+	if arg.Type == ArgMatrix {
+		if values := arg.ToList(); len(values) > 0 {
+			arg = values[0]
+		}
+	}
+	ctx.iterationsCache[ref] = arg
+	f.formulaArgCache.Store(ref, arg)
+	return arg, true
+}
+
 // rangeResolver extract value as string from given reference and range list.
 // This function will not ignore the empty cell. For example, A1:A2:A2:B3 will
 // be reference A1:B3.
@@ -1904,62 +1960,12 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 	// extract value from ranges
 	if cellRanges.Len() > 0 {
 		arg.Type = ArgMatrix
-
 		var ws *xlsxWorksheet
-		ws, err = f.workSheetReader(sheet)
-		if err != nil {
+		if ws, err = f.workSheetReader(sheet); err != nil {
 			return
 		}
-
-		// Detect whole column/row reference, limit to actual data range
-		if valueRange[1] == TotalRows {
-			actualMaxRow := 0
-			for _, rowData := range ws.SheetData.Row {
-				if rowData.R > actualMaxRow {
-					actualMaxRow = rowData.R
-				}
-			}
-			if actualMaxRow > 0 && actualMaxRow < TotalRows {
-				valueRange[1] = actualMaxRow
-			}
-		}
-		if valueRange[3] == MaxColumns {
-			actualMaxCol := 0
-			for _, rowData := range ws.SheetData.Row {
-				for _, cell := range rowData.C {
-					col, _, err := CellNameToCoordinates(cell.R)
-					if err == nil && col > actualMaxCol {
-						actualMaxCol = col
-					}
-				}
-			}
-			if actualMaxCol > 0 && actualMaxCol < MaxColumns {
-				valueRange[3] = actualMaxCol
-			}
-		}
-
-		for row := valueRange[0]; row <= valueRange[1]; row++ {
-			colMax := 0
-			if 0 < row && row <= len(ws.SheetData.Row) {
-				rowData := &ws.SheetData.Row[row-1]
-				colMax = min(valueRange[3], len(rowData.C))
-			}
-			var matrixRow []formulaArg
-			for col := valueRange[2]; col <= valueRange[3]; col++ {
-				value := newEmptyFormulaArg()
-				if col <= colMax {
-					var cell string
-					if cell, err = CoordinatesToCellName(col, row); err != nil {
-						return
-					}
-					if value, err = f.cellResolver(ctx, sheet, cell); err != nil {
-						return
-					}
-				}
-				matrixRow = append(matrixRow, value)
-			}
-			arg.Matrix = append(arg.Matrix, matrixRow)
-		}
+		resolveValueRange(ws, valueRange)
+		arg.Matrix, err = f.resolveRangeMatrix(ctx, ws, sheet, valueRange)
 		return
 	}
 	// extract value from references
@@ -1975,6 +1981,65 @@ func (f *File) rangeResolver(ctx *calcContext, cellRefs, cellRanges *list.List) 
 		arg.cellRefs, arg.cellRanges = cellRefs, cellRanges
 	}
 	return
+}
+
+// resolveValueRange detects whole column/row reference, and resolves the value
+// range to the actual data range of the worksheet.
+func resolveValueRange(ws *xlsxWorksheet, valueRange []int) {
+	if valueRange[1] == TotalRows {
+		actualMaxRow := 0
+		for _, rowData := range ws.SheetData.Row {
+			if rowData.R > actualMaxRow {
+				actualMaxRow = rowData.R
+			}
+		}
+		if actualMaxRow > 0 && actualMaxRow < TotalRows {
+			valueRange[1] = actualMaxRow
+		}
+	}
+	if valueRange[3] == MaxColumns {
+		actualMaxCol := 0
+		for _, rowData := range ws.SheetData.Row {
+			for _, cell := range rowData.C {
+				col, _, err := CellNameToCoordinates(cell.R)
+				if err == nil && col > actualMaxCol {
+					actualMaxCol = col
+				}
+			}
+		}
+		if actualMaxCol > 0 && actualMaxCol < MaxColumns {
+			valueRange[3] = actualMaxCol
+		}
+	}
+}
+
+// resolveRangeMatrix resolves the cell values in the given value range as a
+// matrix. Cells beyond the data of a row are treated as empty cells. If an
+// error occurs, the rows resolved so far are returned together with the error.
+func (f *File) resolveRangeMatrix(ctx *calcContext, ws *xlsxWorksheet, sheet string, valueRange []int) ([][]formulaArg, error) {
+	var matrix [][]formulaArg
+	for row := valueRange[0]; row <= valueRange[1]; row++ {
+		colMax := 0
+		if 0 < row && row <= len(ws.SheetData.Row) {
+			colMax = min(valueRange[3], len(ws.SheetData.Row[row-1].C))
+		}
+		var matrixRow []formulaArg
+		for col := valueRange[2]; col <= valueRange[3]; col++ {
+			value := newEmptyFormulaArg()
+			if col <= colMax {
+				cell, err := CoordinatesToCellName(col, row)
+				if err != nil {
+					return matrix, err
+				}
+				if value, err = f.cellResolver(ctx, sheet, cell); err != nil {
+					return matrix, err
+				}
+			}
+			matrixRow = append(matrixRow, value)
+		}
+		matrix = append(matrix, matrixRow)
+	}
+	return matrix, nil
 }
 
 // callFuncByName calls the no error or only error return function with
@@ -4168,6 +4233,9 @@ func (fn *formulaFuncs) BASE(argsList *list.List) formulaArg {
 		if minLength, err = strconv.Atoi(argsList.Back().Value.(formulaArg).Value()); err != nil {
 			return newErrorFormulaArg(formulaErrorVALUE, err.Error())
 		}
+		if minLength < 0 || minLength > MaxFieldLength {
+			return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+		}
 	}
 	result := strconv.FormatInt(int64(number.Number), int(radix.Number))
 	if len(result) < minLength {
@@ -5267,10 +5335,14 @@ func (fn *formulaFuncs) MUNIT(argsList *list.List) (result formulaArg) {
 	if dimension.Type == ArgError || dimension.Number < 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, dimension.Error)
 	}
-	matrix := make([][]formulaArg, 0, int(dimension.Number))
-	for i := 0; i < int(dimension.Number); i++ {
-		row := make([]formulaArg, int(dimension.Number))
-		for j := 0; j < int(dimension.Number); j++ {
+	if math.Trunc(dimension.Number) > MaxColumns {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("MUNIT function dimension exceeds %d", MaxColumns))
+	}
+	n := int(dimension.Number)
+	matrix := make([][]formulaArg, 0, n)
+	for i := 0; i < n; i++ {
+		row := make([]formulaArg, n)
+		for j := 0; j < n; j++ {
 			if i == j {
 				row[j] = newNumberFormulaArg(1.0)
 			} else {
@@ -5573,43 +5645,48 @@ func (fn *formulaFuncs) ROMAN(argsList *list.List) formulaArg {
 	if argsList.Len() > 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "ROMAN allows at most 2 arguments")
 	}
-	var form int
 	number := argsList.Front().Value.(formulaArg).ToNumber()
 	if number.Type == ArgError {
 		return number
 	}
-	if argsList.Len() > 1 {
-		f := argsList.Back().Value.(formulaArg).ToNumber()
-		if f.Type == ArgError {
-			return f
-		}
-		form = int(f.Number)
-		if form < 0 {
-			form = 0
-		} else if form > 4 {
-			form = 4
-		}
+	if number.Number == 0 {
+		return newEmptyFormulaArg()
 	}
-	decimalTable := romanTable[0]
-	switch form {
-	case 1:
-		decimalTable = romanTable[1]
-	case 2:
-		decimalTable = romanTable[2]
-	case 3:
-		decimalTable = romanTable[3]
-	case 4:
-		decimalTable = romanTable[4]
+	if number.Number < 0 || number.Number > 3999 {
+		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
+	}
+	form, errArg := romanForm(argsList)
+	if errArg.Type == ArgError {
+		return errArg
 	}
 	val := math.Trunc(number.Number)
 	buf := bytes.Buffer{}
-	for _, r := range decimalTable {
+	for _, r := range romanTable[form] {
 		for val >= r.n {
 			buf.WriteString(r.s)
 			val -= r.n
 		}
 	}
 	return newStringFormulaArg(buf.String())
+}
+
+// romanForm gets the optional form argument of the ROMAN function, the form
+// is restricted to the range of 0 to 4. The default form is 0.
+func romanForm(argsList *list.List) (int, formulaArg) {
+	if argsList.Len() < 2 {
+		return 0, newEmptyFormulaArg()
+	}
+	f := argsList.Back().Value.(formulaArg).ToNumber()
+	if f.Type == ArgError {
+		return 0, f
+	}
+	form := int(f.Number)
+	if form < 0 {
+		form = 0
+	} else if form > 4 {
+		form = 4
+	}
+	return form, newEmptyFormulaArg()
 }
 
 type roundMode byte
@@ -5717,7 +5794,7 @@ func (fn *formulaFuncs) SEC(argsList *list.List) formulaArg {
 	if number.Type == ArgError {
 		return number
 	}
-	return newNumberFormulaArg(math.Cos(number.Number))
+	return newNumberFormulaArg(1 / math.Cos(number.Number))
 }
 
 // SECH function calculates the hyperbolic secant (sech) of a supplied angle.
@@ -9379,9 +9456,23 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "HARMEAN requires at least 1 argument")
 	}
 	if minVal := fn.MIN(argsList); minVal.Number < 0 {
-		return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
-	number, val, cnt := 0.0, 0.0, 0.0
+	return harmean(argsList)
+}
+
+// harmean calculates the harmonic mean of the values in the provided argument
+// list.
+func harmean(argsList *list.List) formulaArg {
+	var val, cnt float64
+	add := func(number float64) bool {
+		if number <= 0 {
+			return false
+		}
+		val += 1 / number
+		cnt++
+		return true
+	}
 	for token := argsList.Front(); token != nil; token = token.Next() {
 		arg := token.Value.(formulaArg)
 		switch arg.Type {
@@ -9390,15 +9481,28 @@ func (fn *formulaFuncs) HARMEAN(argsList *list.List) formulaArg {
 			if num.Type != ArgNumber {
 				continue
 			}
-			number = num.Number
+			if !add(num.Number) {
+				return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+			}
 		case ArgNumber:
-			number = arg.Number
+			if !add(arg.Number) {
+				return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+			}
+		case ArgMatrix:
+			for _, row := range arg.Matrix {
+				for _, cell := range row {
+					if cell.Type != ArgNumber {
+						continue
+					}
+					if !add(cell.Number) {
+						return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
+					}
+				}
+			}
 		}
-		if number <= 0 {
-			return newErrorFormulaArg(formulaErrorNA, formulaErrorNA)
-		}
-		val += 1 / number
-		cnt++
+	}
+	if cnt == 0 {
+		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	return newNumberFormulaArg(1 / (val / cnt))
 }
@@ -14040,7 +14144,7 @@ func (fn *formulaFuncs) code(name string, argsList *list.List) formulaArg {
 //
 //	CONCAT(text1,[text2],...)
 func (fn *formulaFuncs) CONCAT(argsList *list.List) formulaArg {
-	return fn.concat(argsList)
+	return fn.concat("CONCAT", argsList)
 }
 
 // CONCATENATE function joins together a series of supplied text strings into
@@ -14048,19 +14152,26 @@ func (fn *formulaFuncs) CONCAT(argsList *list.List) formulaArg {
 //
 //	CONCATENATE(text1,[text2],...)
 func (fn *formulaFuncs) CONCATENATE(argsList *list.List) formulaArg {
-	return fn.concat(argsList)
+	return fn.concat("CONCATENATE", argsList)
 }
 
 // concat is an implementation of the formula functions CONCAT and
 // CONCATENATE.
-func (fn *formulaFuncs) concat(argsList *list.List) formulaArg {
+func (fn *formulaFuncs) concat(name string, argsList *list.List) formulaArg {
+	if argsList.Len() < 1 {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s requires at least 1 argument", name))
+	}
 	var buf bytes.Buffer
 	for arg := argsList.Front(); arg != nil; arg = arg.Next() {
 		for _, cell := range arg.Value.(formulaArg).ToList() {
 			if cell.Type == ArgError {
 				return cell
 			}
-			buf.WriteString(cell.Value())
+			val := cell.Value()
+			if countUTF16String(val)+countUTF16String(buf.String()) > TotalCellChars {
+				return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s function exceeds %d characters", name, TotalCellChars))
+			}
+			buf.WriteString(val)
 		}
 	}
 	return newStringFormulaArg(buf.String())
@@ -14139,6 +14250,9 @@ func (fn *formulaFuncs) FIXED(argsList *list.List) formulaArg {
 		decimalsArg := argsList.Front().Next().Value.(formulaArg).ToNumber()
 		if decimalsArg.Type != ArgNumber {
 			return decimalsArg
+		}
+		if decimalsArg.Number > 127 {
+			return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 		}
 		decimals = int(decimalsArg.Number)
 	}
@@ -14485,7 +14599,11 @@ func (fn *formulaFuncs) replace(name string, argsList *list.List) formulaArg {
 	if startIdx < 1 || endIdx < 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, formulaErrorVALUE)
 	}
-	result := sourceText[:startIdx-1] + targetText + sourceText[endIdx-1:]
+	pre, post := sourceText[:startIdx-1], sourceText[endIdx-1:]
+	if countUTF16String(pre)+countUTF16String(targetText)+countUTF16String(post) > TotalCellChars {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("%s function exceeds %d characters", name, TotalCellChars))
+	}
+	result := pre + targetText + post
 	return newStringFormulaArg(result)
 }
 
@@ -14497,23 +14615,32 @@ func (fn *formulaFuncs) REPT(argsList *list.List) formulaArg {
 	if argsList.Len() != 2 {
 		return newErrorFormulaArg(formulaErrorVALUE, "REPT requires 2 arguments")
 	}
-	text := argsList.Front().Value.(formulaArg)
-	if text.Type != ArgString {
+	textArg := argsList.Front().Value.(formulaArg)
+	if textArg.Type != ArgString {
 		return newErrorFormulaArg(formulaErrorVALUE, "REPT requires first argument to be a string")
 	}
-	times := argsList.Back().Value.(formulaArg).ToNumber()
-	if times.Type != ArgNumber {
+	text := textArg.Value()
+	timesArg := argsList.Back().Value.(formulaArg).ToNumber()
+	if timesArg.Type != ArgNumber {
 		return newErrorFormulaArg(formulaErrorVALUE, "REPT requires second argument to be a number")
 	}
-	if times.Number < 0 {
+	times := timesArg.Number
+	if times < 0 {
 		return newErrorFormulaArg(formulaErrorVALUE, "REPT requires second argument to be >= 0")
 	}
-	if times.Number == 0 {
+	if times == 0 {
 		return newStringFormulaArg("")
 	}
+	count := math.Trunc(times)
+	if count == 0 || text == "" {
+		return newStringFormulaArg("")
+	}
+	if count > float64(TotalCellChars/countUTF16String(text)) {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("REPT function exceeds %d characters", TotalCellChars))
+	}
 	buf := bytes.Buffer{}
-	for i := 0; i < int(times.Number); i++ {
-		buf.WriteString(text.Value())
+	for i := 0; i < int(count); i++ {
+		buf.WriteString(text)
 	}
 	return newStringFormulaArg(buf.String())
 }
@@ -14559,10 +14686,11 @@ func (fn *formulaFuncs) SUBSTITUTE(argsList *list.List) formulaArg {
 	if argsList.Len() != 3 && argsList.Len() != 4 {
 		return newErrorFormulaArg(formulaErrorVALUE, "SUBSTITUTE requires 3 or 4 arguments")
 	}
-	text, sourceText := argsList.Front().Value.(formulaArg), argsList.Front().Next().Value.(formulaArg)
+	textArg, sourceText := argsList.Front().Value.(formulaArg), argsList.Front().Next().Value.(formulaArg)
 	targetText, instanceNum := argsList.Front().Next().Next().Value.(formulaArg), 0
+	text, oldText, newText := textArg.Value(), sourceText.Value(), targetText.Value()
 	if argsList.Len() == 3 {
-		return newStringFormulaArg(strings.ReplaceAll(text.Value(), sourceText.Value(), targetText.Value()))
+		return substitute(text, oldText, newText)
 	}
 	instanceNumArg := argsList.Back().Value.(formulaArg).ToNumber()
 	if instanceNumArg.Type != ArgNumber {
@@ -14572,10 +14700,13 @@ func (fn *formulaFuncs) SUBSTITUTE(argsList *list.List) formulaArg {
 	if instanceNum < 1 {
 		return newErrorFormulaArg(formulaErrorVALUE, "instance_num should be > 0")
 	}
-	str, sourceTextLen, count, chars, pos := text.Value(), len(sourceText.Value()), instanceNum, 0, -1
+	if oldText == "" {
+		return newStringFormulaArg(text)
+	}
+	str, sourceTextLen, count, chars, pos := text, len(oldText), instanceNum, 0, -1
 	for {
 		count--
-		index := strings.Index(str, sourceText.Value())
+		index := strings.Index(str, oldText)
 		if index == -1 {
 			pos = -1
 			break
@@ -14590,10 +14721,28 @@ func (fn *formulaFuncs) SUBSTITUTE(argsList *list.List) formulaArg {
 		}
 	}
 	if pos == -1 {
-		return newStringFormulaArg(text.Value())
+		return newStringFormulaArg(text)
 	}
-	pre, post := text.Value()[:pos], text.Value()[pos+sourceTextLen:]
-	return newStringFormulaArg(pre + targetText.Value() + post)
+	pre, post := text[:pos], text[pos+sourceTextLen:]
+	if countUTF16String(pre)+countUTF16String(newText)+countUTF16String(post) > TotalCellChars {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("SUBSTITUTE function exceeds %d characters", TotalCellChars))
+	}
+	return newStringFormulaArg(pre + newText + post)
+}
+
+// substitute replaces all instances of the old text with the new text in
+// the given text, and checks the length of the result.
+func substitute(text, oldText, newText string) formulaArg {
+	if oldText == "" {
+		return newStringFormulaArg(text)
+	}
+	matches := strings.Count(text, oldText)
+	unchangedLen := countUTF16String(text) - matches*countUTF16String(oldText)
+	newTextLen := countUTF16String(newText)
+	if unchangedLen > TotalCellChars || (newTextLen > 0 && matches > TotalCellChars/newTextLen) {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("SUBSTITUTE function exceeds %d characters", TotalCellChars))
+	}
+	return newStringFormulaArg(strings.ReplaceAll(text, oldText, newText))
 }
 
 // TEXT function converts a supplied numeric value into text, in a
@@ -16321,7 +16470,11 @@ func (fn *formulaFuncs) ENCODEURL(argsList *list.List) formulaArg {
 		return newErrorFormulaArg(formulaErrorVALUE, "ENCODEURL requires 1 argument")
 	}
 	token := argsList.Front().Value.(formulaArg).Value()
-	return newStringFormulaArg(strings.ReplaceAll(url.QueryEscape(token), "+", "%20"))
+	result := strings.ReplaceAll(url.QueryEscape(token), "+", "%20")
+	if countUTF16String(result) > TotalCellChars {
+		return newErrorFormulaArg(formulaErrorVALUE, fmt.Sprintf("ENCODEURL function exceeds %d characters", TotalCellChars))
+	}
+	return newStringFormulaArg(result)
 }
 
 // Financial Functions

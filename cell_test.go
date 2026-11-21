@@ -114,6 +114,30 @@ func TestConcurrency(t *testing.T) {
 	assert.Len(t, dataValidations, 0)
 	assert.NoError(t, f.SaveAs(filepath.Join("test", "TestConcurrency.xlsx")))
 	assert.NoError(t, f.Close())
+
+	t.Run("for_get_merge_cells_concurrently)", func(t *testing.T) {
+		f := NewFile()
+		assert.NoError(t, f.MergeCell("Sheet1", "A1", "B2"))
+		wg := new(sync.WaitGroup)
+		for i := 1; i <= 10; i++ {
+			wg.Add(1)
+			go func(val int) {
+				defer wg.Done()
+				topLeftCell, err := JoinCellName("D", val)
+				assert.NoError(t, err)
+				bottomRightCell, err := JoinCellName("E", val)
+				assert.NoError(t, err)
+				assert.NoError(t, f.MergeCell("Sheet1", topLeftCell, bottomRightCell))
+				_, err = f.GetMergeCells("Sheet1")
+				assert.NoError(t, err)
+			}(i)
+		}
+		wg.Wait()
+		mergeCells, err := f.GetMergeCells("Sheet1")
+		assert.NoError(t, err)
+		assert.Len(t, mergeCells, 11)
+		assert.NoError(t, f.Close())
+	})
 }
 
 func TestCheckCellInRangeRef(t *testing.T) {
