@@ -95,6 +95,9 @@ func (f *File) Close() error {
 	}
 	for _, stream := range f.streams {
 		_ = stream.rawData.Close()
+		if err := stream.closeHyperlinks(); err != nil && firstErr == nil {
+			firstErr = err
+		}
 	}
 	f.streams = nil
 	f.tempFiles.Range(func(k, v interface{}) bool {
@@ -175,7 +178,11 @@ func (f *File) writeToZip(zw ZipWriter) error {
 	f.styleSheetWriter()
 	f.themeWriter()
 
+	streamRels := make(map[string]bool)
 	for path, stream := range f.streams {
+		if stream.hyperlinks != nil && stream.hyperlinks.external > 0 {
+			streamRels[stream.hyperlinkRelsPath()] = true
+		}
 		fi, err := zw.Create(path)
 		if err != nil {
 			return err
@@ -192,6 +199,9 @@ func (f *File) writeToZip(zw ZipWriter) error {
 		if written > math.MaxUint32 {
 			f.zip64Entries = append(f.zip64Entries, path)
 		}
+		if err := stream.writeHyperlinkRelationships(zw); err != nil {
+			return err
+		}
 	}
 	var (
 		n                int
@@ -199,7 +209,7 @@ func (f *File) writeToZip(zw ZipWriter) error {
 		files, tempFiles []string
 	)
 	f.Pkg.Range(func(path, content interface{}) bool {
-		if _, ok := f.streams[path.(string)]; ok {
+		if _, ok := f.streams[path.(string)]; ok || streamRels[path.(string)] {
 			return true
 		}
 		files = append(files, path.(string))
@@ -217,7 +227,7 @@ func (f *File) writeToZip(zw ZipWriter) error {
 		}
 	}
 	f.tempFiles.Range(func(path, content interface{}) bool {
-		if _, ok := f.Pkg.Load(path); ok {
+		if _, ok := f.Pkg.Load(path); ok || streamRels[path.(string)] {
 			return true
 		}
 		tempFiles = append(tempFiles, path.(string))
