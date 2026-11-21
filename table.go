@@ -525,10 +525,8 @@ func (f *File) autoFilter(sheet, ref string, columns, col int, opts []AutoFilter
 	if err != nil {
 		return err
 	}
-	if ws.SheetPr != nil {
-		ws.SheetPr.FilterMode = true
-	}
-	ws.SheetPr = &xlsxSheetPr{FilterMode: true}
+	ws.prepareSheetPr()
+	ws.SheetPr.FilterMode = true
 	filter := &xlsxAutoFilter{
 		Ref: ref,
 	}
