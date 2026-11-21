@@ -2903,6 +2903,7 @@ func TestCalcCellValue(t *testing.T) {
 		"ATAN2()":        {"#VALUE!", "ATAN2 requires 2 numeric arguments"},
 		"ATAN2(\"X\",0)": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
 		"ATAN2(0,\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"ATAN2(0,0)":     {"#DIV/0!", "#DIV/0!"},
 		// BASE
 		"BASE()":                 {"#VALUE!", "BASE requires at least 2 arguments"},
 		"BASE(1,2,3,4)":          {"#VALUE!", "BASE allows at most 3 arguments"},
