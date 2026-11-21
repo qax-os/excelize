@@ -179,6 +179,11 @@ func TestGetMergeCells(t *testing.T) {
 	// Test get merged cells on not exists worksheet
 	_, err = f.GetMergeCells("SheetN")
 	assert.EqualError(t, err, "sheet SheetN does not exist")
+	// Test get merged cells with unsupported charset shared strings table
+	f.SharedStrings = nil
+	f.Pkg.Store(defaultXMLPathSharedStrings, MacintoshCyrillicCharset)
+	_, err = f.GetMergeCells("Sheet1")
+	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
 	assert.NoError(t, f.Close())
 }
 
