@@ -986,11 +986,21 @@ func TestCalcCellValue(t *testing.T) {
 		"SUMSQ(\"1\",SUMSQ(1))":     "2",
 		"SUMSQ(MUNIT(3))":           "3",
 		// SUMX2MY2
-		"SUMX2MY2(A1:A4,B1:B4)": "-36",
+		"SUMX2MY2(A1:A4,B1:B4)":                "-36",
+		"SUMX2MY2(3,0)":                        "9",
+		"SUMX2MY2(0,4)":                        "-16",
+		"SUMX2MY2(-3,0)":                       "9",
+		"SUMX2MY2({3,0,TRUE},{0,4,2})":         "-7",
+		"SUMX2MY2({3,0,TRUE,\"x\"},{0,4,2,5})": "-7",
 		// SUMX2PY2
-		"SUMX2PY2(A1:A4,B1:B4)": "46",
+		"SUMX2PY2(A1:A4,B1:B4)":                 "46",
+		"SUMX2PY2(0,4)":                         "16",
+		"SUMX2PY2({3,0,TRUE},{0,4,2})":          "25",
+		"SUMX2PY2({3,0,FALSE,\"x\"},{0,4,2,5})": "25",
 		// SUMXMY2
-		"SUMXMY2(A1:A4,B1:B4)": "18",
+		"SUMXMY2(A1:A4,B1:B4)":        "18",
+		"SUMXMY2(A1:A4,{0,0,0,0})":    "14",
+		"SUMXMY2({3,0,TRUE},{0,4,2})": "25",
 		// TAN
 		"TAN(1.047197551)": "1.73205080678249",
 		"TAN(0)":           "0",
@@ -3213,12 +3223,16 @@ func TestCalcCellValue(t *testing.T) {
 		"SUMPRODUCT(A1,NA())":     {"#N/A", "#N/A"},
 		// SUMX2MY2
 		"SUMX2MY2()":         {"#VALUE!", "SUMX2MY2 requires 2 arguments"},
+		"SUMX2MY2(A1)":       {"#VALUE!", "SUMX2MY2 requires 2 arguments"},
+		"SUMX2MY2(A1,B1,C1)": {"#VALUE!", "SUMX2MY2 requires 2 arguments"},
 		"SUMX2MY2(A1,B1:B2)": {"#N/A", "#N/A"},
 		// SUMX2PY2
 		"SUMX2PY2()":         {"#VALUE!", "SUMX2PY2 requires 2 arguments"},
+		"SUMX2PY2(A1)":       {"#VALUE!", "SUMX2PY2 requires 2 arguments"},
 		"SUMX2PY2(A1,B1:B2)": {"#N/A", "#N/A"},
 		// SUMXMY2
 		"SUMXMY2()":         {"#VALUE!", "SUMXMY2 requires 2 arguments"},
+		"SUMXMY2(A1)":       {"#VALUE!", "SUMXMY2 requires 2 arguments"},
 		"SUMXMY2(A1,B1:B2)": {"#N/A", "#N/A"},
 		// TAN
 		"TAN()":      {"#VALUE!", "TAN requires 1 numeric argument"},
@@ -5381,21 +5395,24 @@ func TestCalcBoolean(t *testing.T) {
 	cellData := [][]interface{}{{0.5, "TRUE", -0.5, "FALSE", true}}
 	f := prepareCalcData(cellData)
 	formulaList := map[string]string{
-		"ISNUMBER(E1)":     "FALSE",
-		"ISNUMBER(E1:E1)":  "FALSE",
-		"AVERAGEA(A1:C1)":  "0.333333333333333",
-		"MAX(0.5,B1)":      "0.5",
-		"MAX(A1:B1)":       "0.5",
-		"MAXA(A1:B1)":      "0.5",
-		"MAXA(A1:E1)":      "1",
-		"MAXA(0.5,B1)":     "1",
-		"MIN(-0.5,D1)":     "-0.5",
-		"MIN(C1:D1)":       "-0.5",
-		"MINA(C1:D1)":      "-0.5",
-		"MINA(-0.5,D1)":    "-0.5",
-		"STDEV(A1:C1)":     "0.707106781186548",
-		"STDEV(A1,B1,C1)":  "0.707106781186548",
-		"STDEVA(A1:C1,B1)": "0.707106781186548",
+		"ISNUMBER(E1)":                "FALSE",
+		"ISNUMBER(E1:E1)":             "FALSE",
+		"AVERAGEA(A1:C1)":             "0.333333333333333",
+		"MAX(0.5,B1)":                 "0.5",
+		"MAX(A1:B1)":                  "0.5",
+		"MAXA(A1:B1)":                 "0.5",
+		"MAXA(A1:E1)":                 "1",
+		"MAXA(0.5,B1)":                "1",
+		"MIN(-0.5,D1)":                "-0.5",
+		"MIN(C1:D1)":                  "-0.5",
+		"MINA(C1:D1)":                 "-0.5",
+		"MINA(-0.5,D1)":               "-0.5",
+		"STDEV(A1:C1)":                "0.707106781186548",
+		"STDEV(A1,B1,C1)":             "0.707106781186548",
+		"STDEVA(A1:C1,B1)":            "0.707106781186548",
+		"SUMX2MY2(A1:E1,{1,1,1,1,1})": "-1.5",
+		"SUMX2PY2(A1:E1,{1,1,1,1,1})": "2.5",
+		"SUMXMY2(A1:E1,{1,1,1,1,1})":  "2.5",
 	}
 	for formula, expected := range formulaList {
 		assert.NoError(t, f.SetCellFormula("Sheet1", "B10", formula))
