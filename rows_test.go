@@ -989,6 +989,40 @@ func TestDuplicateRowTo(t *testing.T) {
 	assert.EqualError(t, f.DuplicateRowTo("Sheet:1", 1, 2), ErrSheetNameInvalid.Error())
 }
 
+func TestDuplicateRowSharedFormula(t *testing.T) {
+	f, sheetName := NewFile(), "Sheet1"
+	formulaType, ref := STCellFormulaTypeShared, "C1:C5"
+	assert.NoError(t, f.SetCellFormula(sheetName, "C1", "A1+B1", FormulaOpts{Type: &formulaType, Ref: &ref}))
+	ref = "D1:D5"
+	assert.NoError(t, f.SetCellFormula(sheetName, "D1", "A1*B1", FormulaOpts{Type: &formulaType, Ref: &ref}))
+	assert.NoError(t, f.DuplicateRow(sheetName, 1))
+	assert.NoError(t, f.DuplicateRow(sheetName, 6))
+	ws, err := f.workSheetReader(sheetName)
+	assert.NoError(t, err)
+	for _, cell := range []string{"C2", "D2", "C7", "D7"} {
+		col, row, err := CellNameToCoordinates(cell)
+		assert.NoError(t, err)
+		cellFormula := ws.SheetData.Row[row-1].C[col-1].F
+		assert.Empty(t, cellFormula.T, cell)
+		assert.Empty(t, cellFormula.Ref, cell)
+		assert.Nil(t, cellFormula.Si, cell)
+	}
+	for row := 1; row <= 7; row++ {
+		for col, expected := range map[string]string{"C": "A%d+B%d", "D": "A%d*B%d"} {
+			formula, err := f.GetCellFormula(sheetName, col+strconv.Itoa(row))
+			assert.NoError(t, err)
+			assert.Equal(t, fmt.Sprintf(expected, row, row), formula)
+		}
+	}
+
+	f = NewFile()
+	ws, err = f.workSheetReader(sheetName)
+	assert.NoError(t, err)
+	ws.SheetData.Row = []xlsxRow{{R: 1, C: []xlsxC{{R: "A1", F: &xlsxF{T: STCellFormulaTypeShared, Si: intPtr(1)}}}}}
+	assert.NoError(t, f.DuplicateRow(sheetName, 1))
+	assert.Equal(t, &xlsxF{T: STCellFormulaTypeShared, Si: intPtr(1)}, ws.SheetData.Row[1].C[0].F)
+}
+
 func TestDuplicateMergeCells(t *testing.T) {
 	f := File{}
 	ws := &xlsxWorksheet{MergeCells: &xlsxMergeCells{
