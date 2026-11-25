@@ -9,7 +9,7 @@ require (
 	github.com/xuri/efp v0.0.3-0.20260924042702-217b81952dec
 	github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9
 	golang.org/x/crypto v0.59.0
-	golang.org/x/image v0.44.0
+	golang.org/x/image v0.48.0
 	golang.org/x/net v0.63.0
 	golang.org/x/text v0.44.0
 )
