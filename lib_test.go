@@ -431,3 +431,62 @@ func TestCheckFileSize(t *testing.T) {
 	assert.EqualError(t, f.checkFileSize(1, UnzipSizeLimit+1), newUnzipSizeLimitError(UnzipSizeLimit).Error())
 	assert.EqualError(t, f.checkFileSize(-1, 1), newUnzipSizeLimitError(UnzipSizeLimit).Error())
 }
+
+func TestStrictWorkbookNamespaceDeclarations(t *testing.T) {
+	// Replace the root element of the workbook part with the one written by
+	// Excel when saving a Strict Open XML workbook.
+	src := NewFile()
+	buf, err := src.WriteToBuffer()
+	assert.NoError(t, err)
+	assert.NoError(t, src.Close())
+	zr, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+	assert.NoError(t, err)
+	var out bytes.Buffer
+	zw := zip.NewWriter(&out)
+	for _, zf := range zr.File {
+		rc, err := zf.Open()
+		assert.NoError(t, err)
+		content, err := io.ReadAll(rc)
+		assert.NoError(t, err)
+		assert.NoError(t, rc.Close())
+		if zf.Name == defaultXMLPathWorkbook {
+			content = []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+				`<workbook xmlns="` + StrictNameSpaceSpreadSheet + `" xmlns:r="` + StrictSourceRelationship +
+				`" conformance="strict"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>`)
+		}
+		w, err := zw.Create(zf.Name)
+		assert.NoError(t, err)
+		_, err = w.Write(content)
+		assert.NoError(t, err)
+	}
+	assert.NoError(t, zw.Close())
+
+	f, err := OpenReader(&out)
+	assert.NoError(t, err)
+	assert.NoError(t, f.SetCellValue("Sheet1", "A1", "x"))
+	saved, err := f.WriteToBuffer()
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+
+	zr, err = zip.NewReader(bytes.NewReader(saved.Bytes()), int64(saved.Len()))
+	assert.NoError(t, err)
+	rc, err := zr.Open(defaultXMLPathWorkbook)
+	assert.NoError(t, err)
+	content, err := io.ReadAll(rc)
+	assert.NoError(t, err)
+	assert.NoError(t, rc.Close())
+	// The saved part must be well-formed XML, with the r prefix declared.
+	decoder := xml.NewDecoder(bytes.NewReader(content))
+	for {
+		_, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		assert.NoError(t, err)
+		if err != nil {
+			break
+		}
+	}
+	assert.Contains(t, string(content), `xmlns:r="`+SourceRelationship.Value+`"`)
+	assert.Contains(t, string(content), `r:id="rId1"`)
+}

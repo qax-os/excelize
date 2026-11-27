@@ -731,7 +731,15 @@ func (f *File) replaceNameSpaceBytes(path string, contentMarshal []byte) []byte 
 	if attrs, ok := f.xmlAttr.Load(path); ok {
 		targetXmlns = []byte(genXMLNamespace(attrs.([]xml.Attr)))
 	}
-	return bytesReplace(contentMarshal, sourceXmlns, bytes.ReplaceAll(targetXmlns, []byte(" mc:Ignorable=\"r\""), []byte{}), -1)
+	targetXmlns = bytes.ReplaceAll(targetXmlns, []byte(" mc:Ignorable=\"r\""), []byte{})
+	if bytes.Contains(contentMarshal, sourceXmlns) {
+		return bytesReplace(contentMarshal, sourceXmlns, targetXmlns, -1)
+	}
+	// The root element has other attributes after the default namespace
+	// declaration, such as the conformance attribute of a Strict workbook, so
+	// keep them and only replace the namespace declarations.
+	sourceXmlns = fmt.Appendf(nil, `xmlns="%s" `, NameSpaceSpreadSheet.Value)
+	return bytesReplace(contentMarshal, sourceXmlns, append(bytes.TrimSuffix(targetXmlns, []byte(">")), ' '), 1)
 }
 
 // addNameSpaces provides a function to add an XML attribute by the given
