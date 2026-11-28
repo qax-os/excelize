@@ -2545,6 +2545,9 @@ func TestCalcCellValue(t *testing.T) {
 	mathCalcError := map[string][]string{
 		"1/0":                {"#DIV/0!", "#DIV/0!"},
 		"(1/0)":              {"#DIV/0!", "#DIV/0!"},
+		"1E+308*10":          {"#NUM!", "#NUM!"},
+		"-1E+308*10":         {"#NUM!", "#NUM!"},
+		"10^400":             {"#NUM!", "#NUM!"},
 		"(A1/0+B1/0)":        {"#DIV/0!", "#DIV/0!"},
 		"1^\"text\"":         {"#VALUE!", "#VALUE!"},
 		"\"text\"^1":         {"#VALUE!", "#VALUE!"},
@@ -2899,6 +2902,8 @@ func TestCalcCellValue(t *testing.T) {
 		// ATANH
 		"ATANH()":      {"#VALUE!", "ATANH requires 1 numeric argument"},
 		"ATANH(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"ATANH(1)":     {"#NUM!", "#NUM!"},
+		"ATANH(-1)":    {"#NUM!", "#NUM!"},
 		// ATAN2
 		"ATAN2()":        {"#VALUE!", "ATAN2 requires 2 numeric arguments"},
 		"ATAN2(\"X\",0)": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
@@ -2977,6 +2982,7 @@ func TestCalcCellValue(t *testing.T) {
 		// EXP
 		"EXP()":      {"#VALUE!", "EXP requires 1 numeric argument"},
 		"EXP(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"EXP(710)":   {"#NUM!", "#NUM!"},
 		// FACT
 		"FACT()":      {"#VALUE!", "FACT requires 1 numeric argument"},
 		"FACT(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
@@ -3023,6 +3029,7 @@ func TestCalcCellValue(t *testing.T) {
 		// LN
 		"LN()":      {"#VALUE!", "LN requires 1 numeric argument"},
 		"LN(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"LN(0)":     {"#NUM!", "#NUM!"},
 		// LOG
 		"LOG()":        {"#VALUE!", "LOG requires at least 1 argument"},
 		"LOG(1,2,3)":   {"#VALUE!", "LOG allows at most 2 arguments"},
@@ -3034,6 +3041,7 @@ func TestCalcCellValue(t *testing.T) {
 		// LOG10
 		"LOG10()":      {"#VALUE!", "LOG10 requires 1 numeric argument"},
 		"LOG10(\"X\")": {"#VALUE!", "strconv.ParseFloat: parsing \"X\": invalid syntax"},
+		"LOG10(0)":     {"#NUM!", "#NUM!"},
 		// MDETERM
 		"MDETERM()":      {"#VALUE!", "MDETERM requires 1 argument"},
 		"MDETERM(A1:B3)": {"#VALUE!", "#VALUE!"},

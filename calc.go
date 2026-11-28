@@ -976,7 +976,7 @@ func getPriority(token efp.Token) (pri int) {
 
 // newNumberFormulaArg constructs a number formula argument.
 func newNumberFormulaArg(n float64) formulaArg {
-	if math.IsNaN(n) {
+	if math.IsNaN(n) || math.IsInf(n, 0) {
 		return newErrorFormulaArg(formulaErrorNUM, formulaErrorNUM)
 	}
 	if n == 0 {
