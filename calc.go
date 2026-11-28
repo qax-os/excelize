@@ -4202,6 +4202,9 @@ func (fn *formulaFuncs) ATAN2(argsList *list.List) formulaArg {
 	if y.Type == ArgError {
 		return y
 	}
+	if x.Number == 0 && y.Number == 0 {
+		return newErrorFormulaArg(formulaErrorDIV, formulaErrorDIV)
+	}
 	return newNumberFormulaArg(math.Atan2(x.Number, y.Number))
 }
 
