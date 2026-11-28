@@ -5083,6 +5083,23 @@ func TestCalcWithDefinedName(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "YES", result, "IF(\"B1_as_string\"=defined_name1,\"YES\",\"NO\")")
 
+	// the external workbook index 0 refers to the workbook scope defined name
+	// in the current workbook
+	for formula, expected := range map[string]string{
+		"[0]!defined_name1":                          "A1_as_string",
+		"[0]!defined_name2":                          "123",
+		"SUM([0]!defined_name2,1)":                   "124",
+		"CONCATENATE(\"<\",[0]!defined_name1,\">\")": "<A1_as_string>",
+	} {
+		assert.NoError(t, f.SetCellFormula("Sheet1", "D1", formula))
+		result, err = f.CalcCellValue("Sheet1", "D1")
+		assert.NoError(t, err, formula)
+		assert.Equal(t, expected, result, formula)
+	}
+	assert.NoError(t, f.SetCellFormula("Sheet1", "D1", "[0]!defined_name3"))
+	_, err = f.CalcCellValue("Sheet1", "D1")
+	assert.EqualError(t, err, formulaErrorNAME)
+
 	t.Run("for_sheet_name_with_space", func(t *testing.T) {
 		f := NewFile()
 		defer func() {
