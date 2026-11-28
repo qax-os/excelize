@@ -701,6 +701,12 @@ func TestGetDefaultFont(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathStyles, MacintoshCyrillicCharset)
 	_, err = f.GetDefaultFont()
 	assert.EqualError(t, err, "XML syntax error on line 1: invalid UTF-8")
+	// Test get default font on a workbook without the styles part
+	f = NewFile()
+	f.Styles = nil
+	f.Pkg.Delete(defaultXMLPathStyles)
+	_, err = f.GetDefaultFont()
+	assert.Equal(t, ErrWorkbookFileFormat, err)
 }
 
 func TestSetDefaultFont(t *testing.T) {
