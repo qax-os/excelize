@@ -295,15 +295,14 @@ const (
 
 // formulaArg is the argument of a formula or function.
 type formulaArg struct {
-	SheetName            string
 	Number               float64
 	String               string
 	List                 []formulaArg
 	Matrix               [][]formulaArg
-	Boolean              bool
 	Error                string
-	Type                 ArgType
 	cellRefs, cellRanges *list.List
+	Type                 ArgType
+	Boolean              bool
 }
 
 // Value returns a string data type of the formula argument.
