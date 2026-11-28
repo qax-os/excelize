@@ -1347,3 +1347,25 @@ func TestAdjustDefinedNames(t *testing.T) {
 	f.Pkg.Store(defaultXMLPathWorkbook, MacintoshCyrillicCharset)
 	assert.EqualError(t, f.adjustDefinedNames("Sheet1", columns, 0, 0), "XML syntax error on line 1: invalid UTF-8")
 }
+
+func TestAdjustRangeSheetName(t *testing.T) {
+	for _, tc := range []struct {
+		rng, source, target, expected string
+	}{
+		{"Sheet1!$A$1:$B$2", "Sheet1", "Sheet2", "Sheet2!$A$1:$B$2"},
+		{"Sheet1!$A$1", "Sheet1", "New Sheet", "'New Sheet'!$A$1"},
+		{"'My Data'!$A$1:$A$3", "My Data", "Renamed", "Renamed!$A$1:$A$3"},
+		{"'My Data'!$A$1", "My Data", "New Data", "'New Data'!$A$1"},
+		{"Sheet2!$A$1", "Sheet1", "Renamed", "Sheet2!$A$1"},
+		{"Sheet1!A1,Sheet2!A1", "Sheet1", "Renamed", "Renamed!A1,Sheet2!A1"},
+	} {
+		assert.Equal(t, tc.expected, adjustRangeSheetName(tc.rng, tc.source, tc.target))
+	}
+}
+
+func TestUnescapeSheetName(t *testing.T) {
+	assert.Equal(t, "Sheet1", unescapeSheetName("Sheet1"))
+	assert.Equal(t, "My Data", unescapeSheetName("'My Data'"))
+	assert.Equal(t, "O'Brien", unescapeSheetName("'O''Brien'"))
+	assert.Equal(t, "'", unescapeSheetName("'"))
+}
