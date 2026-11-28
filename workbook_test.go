@@ -1,6 +1,8 @@
 package excelize
 
 import (
+	"encoding/xml"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -79,4 +81,17 @@ func TestDeleteWorkbookRels(t *testing.T) {
 	rID, err := f.deleteWorkbookRels("", "")
 	assert.Empty(t, rID)
 	assert.NoError(t, err)
+}
+
+func TestStrictWorkbookRootElement(t *testing.T) {
+	f := NewFile()
+	f.WorkBook = nil
+	f.xmlAttr.Delete(defaultXMLPathWorkbook)
+	f.Pkg.Store(defaultXMLPathWorkbook, fmt.Appendf(nil, `%s<workbook xmlns="%s" xmlns:r="%s" xmlns:mc="%s" mc:Ignorable="x15" xmlns:x15="%s" conformance="strict"><sheets></sheets></workbook>`,
+		xml.Header, StrictNameSpaceSpreadSheet, StrictSourceRelationship, SourceRelationshipCompatibility.Value, NameSpaceSpreadSheetX15.Value))
+	_, err := f.workbookReader()
+	assert.NoError(t, err)
+	f.workBookWriter()
+	assert.Equal(t, fmt.Sprintf(`%s<workbook xmlns="%s" xmlns:r="%s" xmlns:mc="%s" mc:Ignorable="x15" xmlns:x15="%s" conformance="strict"><sheets></sheets></workbook>`,
+		xml.Header, NameSpaceSpreadSheet.Value, SourceRelationship.Value, SourceRelationshipCompatibility.Value, NameSpaceSpreadSheetX15.Value), string(f.readXML(defaultXMLPathWorkbook)))
 }

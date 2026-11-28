@@ -268,6 +268,7 @@ func (f *File) workbookReader() (*xlsxWorkbook, error) {
 // structure.
 func (f *File) workBookWriter() {
 	if f.WorkBook != nil {
+		f.WorkBook.Conformance = ""
 		if f.WorkBook.DecodeAlternateContent != nil {
 			f.WorkBook.AlternateContent = &xlsxAlternateContent{
 				Content: f.WorkBook.DecodeAlternateContent.Content,
