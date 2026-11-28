@@ -27,6 +27,16 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
+// SheetStats contains statistics about a worksheet's dimensions.
+// This is populated during streaming writes and can be used by
+// consumers to determine pagination without parsing the full sheet.
+type SheetStats struct {
+	Rows    int    // Total number of rows written
+	Cols    int    // Maximum column index used
+	Cells   int64  // Total number of cells written
+	MaxCell string // Cell reference of the bottom-right used cell (e.g., "Z100")
+}
+
 // File define a populated spreadsheet file struct.
 type File struct {
 	mu               sync.Mutex
@@ -34,6 +44,7 @@ type File struct {
 	formulaChecked   bool
 	zip64Entries     []string
 	options          *Options
+	sheetStats       map[string]*SheetStats
 	sharedStringItem [][]uint
 	sharedStringsMap map[string]int
 	sharedStringTemp *os.File
@@ -122,6 +133,20 @@ type Options struct {
 	LongDatePattern   string
 	LongTimePattern   string
 	CultureInfo       CultureName
+	// StreamingChunkSize is the number of bytes of XML data accumulated in
+	// memory before a streaming worksheet spills to a temp file. A smaller
+	// value reduces peak memory usage at the cost of more disk I/O. Zero
+	// means use the default (StreamChunkSize = 16 MiB). Set to -1 to
+	// disable temp files entirely (all data stays in memory); this
+	// eliminates disk I/O overhead and can be significantly faster when
+	// sufficient memory is available.
+	StreamingChunkSize int
+	// StreamingBufSize is the size of the bufio.Writer used for all disk
+	// writes after the StreamingChunkSize threshold is crossed. Larger values
+	// reduce write syscall counts at the cost of slightly more memory. The
+	// measured inflection point on NVMe and HDD alike is 128 KiB. Zero means
+	// use the default (StreamingBufSizeDefault = 128 KiB).
+	StreamingBufSize int
 }
 
 // OpenFile take the name of a spreadsheet file and returns a populated
