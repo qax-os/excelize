@@ -1059,6 +1059,33 @@ func TestCheckRow(t *testing.T) {
 		assert.Equal(t, "d", ws.(*xlsxWorksheet).SheetData.Row[0].C[3].V)
 		assert.NoError(t, f.Close())
 	})
+	t.Run("with_worksheet_cells_limit", func(t *testing.T) {
+		sparseRows := `<row r="1"><c r="A1"><v>1</v></c><c r="D1" s="1"/></row><row r="2"><c r="A2"><v>1</v></c><c r="D2" s="1"/></row>`
+		denseRows := `<row r="1"><c r="A1"><v>1</v></c><c r="B1"><v>1</v></c><c r="C1"><v>1</v></c><c r="D1" s="1"/></row><row r="2"><c r="A2"><v>1</v></c><c r="B2"><v>1</v></c><c r="C2"><v>1</v></c><c r="D2" s="1"/></row>`
+		newFile := func(limit int64, rows string) *File {
+			f := NewFile(Options{WorksheetCellsLimit: limit})
+			f.Sheet.Delete("xl/worksheets/sheet1.xml")
+			f.checked.Delete("xl/worksheets/sheet1.xml")
+			f.Pkg.Store("xl/worksheets/sheet1.xml", fmt.Appendf(nil, `<worksheet xmlns="%s"><sheetData>%s</sheetData></worksheet>`, NameSpaceSpreadSheet.Value, rows))
+			return f
+		}
+		limit := int64(7)
+		for _, rows := range []string{sparseRows, denseRows} {
+			// Test get cell with worksheet cells exceeding the limit
+			f := newFile(limit, rows)
+			_, err := f.GetCellStyle("Sheet1", "A1")
+			assert.Equal(t, newWorksheetCellsLimitError(limit), err)
+			_, err = f.GetCellValue("Sheet1", "A1")
+			assert.Equal(t, newWorksheetCellsLimitError(limit), err)
+			assert.NoError(t, f.Close())
+			// Test get cell with worksheet cells equal to the limit
+			f = newFile(limit+1, rows)
+			style, err := f.GetCellStyle("Sheet1", "D1")
+			assert.NoError(t, err)
+			assert.Equal(t, 1, style)
+			assert.NoError(t, f.Close())
+		}
+	})
 }
 
 func TestSetRowStyle(t *testing.T) {

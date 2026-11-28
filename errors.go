@@ -420,6 +420,12 @@ func newUnzipSizeLimitError(unzipSizeLimit int64) error {
 	return fmt.Errorf("unzip size exceeds the %d bytes limit", unzipSizeLimit)
 }
 
+// newWorksheetCellsLimitError defined the error message on the number of cells
+// in a worksheet exceeds the limit.
+func newWorksheetCellsLimitError(limit int64) error {
+	return fmt.Errorf("worksheet cells exceed the %d limit", limit)
+}
+
 // newViewIdxError defined the error message on receiving a invalid sheet view
 // index.
 func newViewIdxError(viewIndex int) error {
