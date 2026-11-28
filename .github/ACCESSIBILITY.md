@@ -1,6 +1,6 @@
 # Accessibility
 
-Excelize is a Go library for reading and writing Microsoft Excel™ (XLAM / XLSM / XLSX / XLTM / XLTX) spreadsheets. It is a developer library, not an end-user application, so accessibility for this project has two sides:
+Excelize is an open source library for reading and writing Microsoft Excel&trade; (XLAM / XLSM / XLSX / XLTM / XLTX) spreadsheets. It is a developer library, not an end-user application, so accessibility for this project has two sides:
 
 1. **The spreadsheets your programs produce.** Can people who use assistive technology read and work with the files you generate?
 2. **The project itself.** Can everyone use our documentation, contribute to the code, and take part in discussions?
@@ -16,12 +16,12 @@ We care about both, and this document describes what we commit to, what we suppo
 
 ## Scope
 
-| Area | In scope |
-| --- | --- |
-| Library API (`github.com/xuri/excelize/v2`) | Exposing spreadsheet features that make generated files accessible |
-| Documentation (API reference, examples, README) | Readable by screen readers, usable by keyboard, clear language |
-| GitHub repository (issues, pull requests, discussions) | Templates and contribution guides that do not create unnecessary barriers |
-| Generated `.xlsx` files | Excelize writes what your code tells it to; responsibility is shared (see [Known limitations](#known-limitations)) |
+|Area|In scope|
+|---|---|
+|Library API (`github.com/xuri/excelize/v2`)|Exposing spreadsheet features that make generated files accessible|
+|Documentation (API reference, examples, README)|Readable by screen readers, usable by keyboard, clear language|
+|GitHub repository (issues, pull requests, discussions)|Templates and contribution guides that do not create unnecessary barriers|
+|Generated workbook files|Excelize writes what your code tells it to; responsibility is shared (see [Known limitations](#known-limitations))|
 
 ## Supported environments
 
