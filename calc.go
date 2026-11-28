@@ -6413,14 +6413,14 @@ func (fn *formulaFuncs) sumx(name string, argsList *list.List) formulaArg {
 	}
 	result := 0.0
 	for i := 0; i < n; i++ {
-		if lhs, rhs := left[i].ToNumber(), right[i].ToNumber(); lhs.Number != 0 && rhs.Number != 0 {
+		if left[i].Type == ArgNumber && !left[i].Boolean && right[i].Type == ArgNumber && !right[i].Boolean {
 			switch name {
 			case "SUMX2MY2":
-				result += lhs.Number*lhs.Number - rhs.Number*rhs.Number
+				result += left[i].Number*left[i].Number - right[i].Number*right[i].Number
 			case "SUMX2PY2":
-				result += lhs.Number*lhs.Number + rhs.Number*rhs.Number
+				result += left[i].Number*left[i].Number + right[i].Number*right[i].Number
 			default:
-				result += (lhs.Number - rhs.Number) * (lhs.Number - rhs.Number)
+				result += (left[i].Number - right[i].Number) * (left[i].Number - right[i].Number)
 			}
 		}
 	}
