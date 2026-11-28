@@ -1017,6 +1017,9 @@ func (f *File) GetFormControls(sheet string) ([]FormControl, error) {
 		if err != nil {
 			return formControls, err
 		}
+		if d == nil {
+			return formControls, nil
+		}
 		for _, sp := range d.Shape {
 			if sp.Type != "#_x0000_t201" {
 				continue
