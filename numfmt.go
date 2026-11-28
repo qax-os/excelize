@@ -7812,16 +7812,20 @@ func (nf *numberFormat) secondsHandler(token nfp.Token) {
 // elapsedDateTimesHandler will be handling elapsed date and times types tokens
 // for a number format expression.
 func (nf *numberFormat) elapsedDateTimesHandler(token nfp.Token) {
+	epoch := excel1900Epoc
+	if nf.date1904 {
+		epoch = excel1904Epoc
+	}
 	if strings.Contains(strings.ToUpper(token.TValue), "H") {
-		nf.result += fmt.Sprintf("%.f", math.Floor(nf.t.Sub(excel1900Epoc).Hours()))
+		nf.result += fmt.Sprintf("%.f", math.Floor(nf.t.Sub(epoch).Hours()))
 		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "M") {
-		nf.result += fmt.Sprintf("%.f", math.Floor(nf.t.Sub(excel1900Epoc).Minutes()))
+		nf.result += fmt.Sprintf("%.f", math.Floor(nf.t.Sub(epoch).Minutes()))
 		return
 	}
 	if strings.Contains(strings.ToUpper(token.TValue), "S") {
-		nf.result += fmt.Sprintf("%.f", math.Floor(nf.t.Sub(excel1900Epoc).Seconds()))
+		nf.result += fmt.Sprintf("%.f", math.Floor(nf.t.Sub(epoch).Seconds()))
 		return
 	}
 }

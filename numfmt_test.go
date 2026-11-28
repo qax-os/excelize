@@ -4356,6 +4356,17 @@ func TestNumFmt(t *testing.T) {
 			assert.Equal(t, item[2], result, item)
 		}
 	}
+	// Test format number with elapsed time in the 1904 date system
+	for _, item := range [][]string{
+		{"0.5", "[h]", "12"},
+		{"1.5", "[h]:mm:ss", "36:00:00"},
+		{"100.5", "[h]:mm:ss", "2412:00:00"},
+		{"0.5", "[mm]:ss", "720:00"},
+		{"0.25", "[ss]", "21600"},
+	} {
+		result := format(item[0], item[1], true, CellTypeNumber, nil)
+		assert.Equal(t, item[2], result, item)
+	}
 	nf := numberFormat{}
 	changeNumFmtCode, err := nf.currencyLanguageHandler(nfp.Token{Parts: []nfp.Part{{}}})
 	assert.Equal(t, ErrUnsupportedNumberFormat, err)
