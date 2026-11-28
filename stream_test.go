@@ -370,6 +370,29 @@ func TestStreamSetRow(t *testing.T) {
 	assert.EqualError(t, sw.SetRow("A2", []interface{}{time.Now()}), "XML syntax error on line 1: invalid UTF-8")
 }
 
+func TestStreamSetRowCustomHeight(t *testing.T) {
+	customHeight := func(enable bool) *bool { return &enable }
+	for _, c := range []struct {
+		name   string
+		opts   RowOpts
+		expect string
+	}{
+		{name: "default", opts: RowOpts{Height: 30}, expect: `<row r="1" ht="30" customHeight="1">`},
+		{name: "enabled", opts: RowOpts{Height: 30, CustomHeight: customHeight(true)}, expect: `<row r="1" ht="30" customHeight="1">`},
+		{name: "disabled", opts: RowOpts{Height: 30, CustomHeight: customHeight(false)}, expect: `<row r="1" ht="30">`},
+		{name: "no height", opts: RowOpts{CustomHeight: customHeight(true)}, expect: `<row r="1">`},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			f := NewFile()
+			sw, err := f.NewStreamWriter("Sheet1")
+			assert.NoError(t, err)
+			assert.NoError(t, sw.SetRow("A1", []interface{}{"text"}, c.opts))
+			assert.NoError(t, sw.Flush())
+			assert.Contains(t, savedSheetXML(t, f), c.expect)
+		})
+	}
+}
+
 func TestStreamSetRowNilValues(t *testing.T) {
 	f := NewFile()
 	defer func() {
