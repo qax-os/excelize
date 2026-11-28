@@ -1133,6 +1133,7 @@ func TestCalcCellValue(t *testing.T) {
 		"COUNT({\"5\"},\"5\")":                 "1",
 		"COUNT(TRUE,1)":                        "2",
 		"COUNT(INDIRECT(\"A1\"))":              "1",
+		"COUNT(#VALUE!)":                       "0",
 		// COUNTA
 		"COUNTA()":                              "0",
 		"COUNTA(\"\")":                          "1",
@@ -1516,6 +1517,9 @@ func TestCalcCellValue(t *testing.T) {
 		"ERROR.TYPE(XOR(\"text\"))": "3",
 		"ERROR.TYPE(HEX2BIN(2,1))":  "6",
 		"ERROR.TYPE(NA())":          "7",
+		"ERROR.TYPE(#VALUE!)":       "3",
+		"ERROR.TYPE(#NAME?)":        "5",
+		"ERROR.TYPE(#NULL!)":        "1",
 		// ISBLANK
 		"ISBLANK(A1)": "FALSE",
 		"ISBLANK(A5)": "TRUE",
@@ -1523,12 +1527,15 @@ func TestCalcCellValue(t *testing.T) {
 		"ISERR(A1)":           "FALSE",
 		"ISERR(NA())":         "FALSE",
 		"ISERR(POWER(0,-1)))": "TRUE",
+		"ISERR(#VALUE!)":      "TRUE",
+		"ISERR(#N/A)":         "FALSE",
 		// ISERROR
 		"ISERROR(A1)":          "FALSE",
 		"ISERROR(NA())":        "TRUE",
 		"ISERROR(\"#VALUE!\")": "FALSE",
 		"ISERROR((1/0))":       "TRUE",
 		"ISERROR(1/0+0)":       "TRUE",
+		"ISERROR(#DIV/0!)":     "TRUE",
 		// ISEVEN
 		"ISEVEN(A1)": "FALSE",
 		"ISEVEN(A2)": "TRUE",
@@ -1545,9 +1552,12 @@ func TestCalcCellValue(t *testing.T) {
 		"ISLOGICAL(A1)":        "FALSE",
 		"ISLOGICAL(20/5)":      "FALSE",
 		"ISLOGICAL(OR(1))":     "TRUE",
+		"ISLOGICAL(#VALUE!)":   "FALSE",
 		// ISNA
-		"ISNA(A1)":   "FALSE",
-		"ISNA(NA())": "TRUE",
+		"ISNA(A1)":      "FALSE",
+		"ISNA(NA())":    "TRUE",
+		"ISNA(#N/A)":    "TRUE",
+		"ISNA(#VALUE!)": "FALSE",
 		// ISNONTEXT
 		"ISNONTEXT(A1)":           "TRUE",
 		"ISNONTEXT(A5)":           "TRUE",
@@ -1573,6 +1583,7 @@ func TestCalcCellValue(t *testing.T) {
 		"ISNUMBER(OR(1)*1)":          "TRUE",
 		"ISNUMBER(OR(0)*1)":          "TRUE",
 		"ISNUMBER(INDIRECT(\"A1\"))": "TRUE",
+		"ISNUMBER(#VALUE!)":          "FALSE",
 		// ISODD
 		"ISODD(A1)": "TRUE",
 		"ISODD(A2)": "FALSE",
@@ -1586,6 +1597,7 @@ func TestCalcCellValue(t *testing.T) {
 		"ISTEXT(A1)":               "FALSE",
 		"ISTEXT(OR(1))":            "FALSE",
 		"ISTEXT(INDIRECT(\"E1\"))": "TRUE",
+		"ISTEXT(#VALUE!)":          "FALSE",
 		// N
 		"N(10)":     "10",
 		"N(\"10\")": "10",
@@ -1606,6 +1618,7 @@ func TestCalcCellValue(t *testing.T) {
 		"TYPE(TRUE)":     "4",
 		"TYPE(NA())":     "16",
 		"TYPE(MUNIT(2))": "64",
+		"TYPE(#VALUE!)":  "16",
 		// T
 		"T(\"text\")": "text",
 		"T(N(10))":    "",
@@ -1634,6 +1647,7 @@ func TestCalcCellValue(t *testing.T) {
 		"IFERROR(1/0+0,0)":           "0",
 		"IFERROR(G1,2)":              "0",
 		"IFERROR(B2/MROUND(A2,1),0)": "2.5",
+		"IFERROR(#VALUE!,0)":         "0",
 		// IFNA
 		"IFNA(1,\"not found\")":                   "1",
 		"IFNA(NA(),\"not found\")":                "not found",
@@ -2175,6 +2189,7 @@ func TestCalcCellValue(t *testing.T) {
 		// IF
 		"A1-IF(FALSE,1,C1)":                       "1",
 		"IF(TRUE,C1,1)":                           "",
+		"IF(TRUE,#VALUE!,1)":                      "#VALUE!",
 		"IF(1=1)":                                 "TRUE",
 		"IF(1<>1)":                                "FALSE",
 		"IF(5<0,\"negative\",\"positive\")":       "positive",
@@ -2556,6 +2571,8 @@ func TestCalcCellValue(t *testing.T) {
 		"\"text\"*1":         {"#VALUE!", "#VALUE!"},
 		"1/\"text\"":         {"#VALUE!", "#VALUE!"},
 		"\"text\"/1":         {"#VALUE!", "#VALUE!"},
+		"#VALUE!*1":          {"#VALUE!", "#VALUE!"},
+		"\"x\"&#VALUE!":      {"#VALUE!", "#VALUE!"},
 		"\"\"+1":             {"#VALUE!", "#VALUE!"},
 		"1+\"\"":             {"#VALUE!", "#VALUE!"},
 		"\"\"-1":             {"#VALUE!", "#VALUE!"},
@@ -3198,6 +3215,9 @@ func TestCalcCellValue(t *testing.T) {
 		"1+SUM(SUM(A1+A2/A4)*(2-3),2)": {"#DIV/0!", "#DIV/0!"},
 		"SUM(0:2)":                     {"#NAME?", "invalid reference"},
 		"SUM(1:1048577)":               {"#NAME?", "invalid reference"},
+		"SUM(#VALUE!)":                 {"#VALUE!", "#VALUE!"},
+		"SUM(1,#VALUE!,3)":             {"#VALUE!", "#VALUE!"},
+		"SUM(1,#N/A,3)":                {"#N/A", "#N/A"},
 		// SUMIF
 		"SUMIF()": {"#VALUE!", "SUMIF requires at least 2 arguments"},
 		// SUMSQ
@@ -3713,8 +3733,9 @@ func TestCalcCellValue(t *testing.T) {
 		"LARGE(A1:A5,6)":    {"#NUM!", "k should be <= length of array"},
 		"LARGE(A1:A5,\"\")": {"#VALUE!", "strconv.ParseFloat: parsing \"\": invalid syntax"},
 		// MAX
-		"MAX()":     {"#VALUE!", "MAX requires at least 1 argument"},
-		"MAX(NA())": {"#N/A", "#N/A"},
+		"MAX()":            {"#VALUE!", "MAX requires at least 1 argument"},
+		"MAX(NA())":        {"#N/A", "#N/A"},
+		"MAX(1,#VALUE!,3)": {"#VALUE!", "#VALUE!"},
 		// MAXA
 		"MAXA()":     {"#VALUE!", "MAXA requires at least 1 argument"},
 		"MAXA(NA())": {"#N/A", "#N/A"},
@@ -3970,8 +3991,9 @@ func TestCalcCellValue(t *testing.T) {
 		// ISTEXT
 		"ISTEXT()": {"#VALUE!", "ISTEXT requires 1 argument"},
 		// N
-		"N()":     {"#VALUE!", "N requires 1 argument"},
-		"N(NA())": {"#N/A", "#N/A"},
+		"N()":        {"#VALUE!", "N requires 1 argument"},
+		"N(NA())":    {"#N/A", "#N/A"},
+		"N(#VALUE!)": {"#VALUE!", "#VALUE!"},
 		// NA
 		"NA()":  {"#N/A", "#N/A"},
 		"NA(1)": {"#VALUE!", "NA accepts no arguments"},
@@ -3984,8 +4006,9 @@ func TestCalcCellValue(t *testing.T) {
 		// TYPE
 		"TYPE()": {"#VALUE!", "TYPE requires 1 argument"},
 		// T
-		"T()":     {"#VALUE!", "T requires 1 argument"},
-		"T(NA())": {"#N/A", "#N/A"},
+		"T()":        {"#VALUE!", "T requires 1 argument"},
+		"T(NA())":    {"#N/A", "#N/A"},
+		"T(#VALUE!)": {"#VALUE!", "#VALUE!"},
 		// Logical Functions
 		// AND
 		"AND(\"text\")":                          {"#VALUE!", "#VALUE!"},
@@ -4343,6 +4366,7 @@ func TestCalcCellValue(t *testing.T) {
 		"IF()":                {"#VALUE!", "IF requires at least 1 argument"},
 		"IF(0,1,2,3)":         {"#VALUE!", "IF accepts at most 3 arguments"},
 		"IF(D1,1,2)":          {"#VALUE!", "strconv.ParseBool: parsing \"Month\": invalid syntax"},
+		"IF(#VALUE!,1,2)":     {"#VALUE!", "#VALUE!"},
 		// Excel Lookup and Reference Functions
 		// ADDRESS
 		"ADDRESS()":                        {"#VALUE!", "ADDRESS requires at least 2 arguments"},
